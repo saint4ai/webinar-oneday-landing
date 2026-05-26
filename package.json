@@ -8,11 +8,20 @@
     "start": "next start"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "^0.0.76",
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.12.95",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-international-phone": "^4.8.0",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
