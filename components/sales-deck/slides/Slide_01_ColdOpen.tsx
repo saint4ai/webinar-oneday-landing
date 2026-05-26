@@ -9,12 +9,15 @@ import { SplineScene } from "../SplineScene";
 const ROBOT_SCENE = "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode";
 
 // Зум камеры. Подобрать через DevTools: __spline.setZoom(N)
-const ROBOT_ZOOM = 2.0;
+const ROBOT_ZOOM = 3.0;
 // Имена объекта головы — robot rig в сцене называет голову "Head".
 const HEAD_NAMES = ["Head", "Head 2", "head"];
-// Лимиты поворота головы при mouse-tracking. ±22.5° yaw, ±11.25° pitch.
+// Лимиты поворота головы при mouse-tracking.
+// SENSITIVITY = 2.0 → голова достигает максимума уже на половине экрана, не на самом краю.
+// Итоговый clamp: ±22.5° yaw, ±11.25° pitch.
 const MAX_YAW = Math.PI / 4;
 const MAX_PITCH = Math.PI / 8;
+const MOUSE_SENSITIVITY = 2.0;
 
 /**
  * Slide 1.1 · Cold Open
@@ -56,9 +59,12 @@ export function Slide_01_ColdOpen() {
     let rafId = 0;
     let running = true;
 
+    const clamp = (v: number, lim: number) => Math.max(-lim, Math.min(lim, v));
     const onMove = (e: MouseEvent) => {
-      targetYawRef.current = (e.clientX / window.innerWidth - 0.5) * MAX_YAW;
-      targetPitchRef.current = (e.clientY / window.innerHeight - 0.5) * MAX_PITCH;
+      const nx = (e.clientX / window.innerWidth - 0.5) * MOUSE_SENSITIVITY;
+      const ny = (e.clientY / window.innerHeight - 0.5) * MOUSE_SENSITIVITY;
+      targetYawRef.current = clamp(nx, 0.5) * MAX_YAW;
+      targetPitchRef.current = clamp(ny, 0.5) * MAX_PITCH;
     };
 
     const tick = () => {
