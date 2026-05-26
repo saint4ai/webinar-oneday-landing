@@ -20,15 +20,11 @@ interface SlideDeckProps {
  *   Home / End — в начало/конец
  *   Esc — выход из fullscreen
  */
-export function SlideDeck({ slides, blockLabels = {} }: SlideDeckProps) {
+export function SlideDeck({ slides }: SlideDeckProps) {
   const [idx, setIdx] = useState(0);
   const [speakerMode, setSpeakerMode] = useState<"live" | "preview">("live");
-  // Все служебные UI (стрелки, индикатор, help) скрыты от зрителей.
-  // Показываются на 2.5 сек при движении мыши — потом fade out.
-  const [controlsVisible, setControlsVisible] = useState(false);
-  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cursor-glow — radial-gradient следующий за мышкой (как в исходной vanilla-презентации).
+  // Cursor-glow — radial-gradient следующий за мышкой.
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -42,28 +38,14 @@ export function SlideDeck({ slides, blockLabels = {} }: SlideDeckProps) {
     };
 
     const onMove = (e: MouseEvent) => {
-      // Cursor-glow (rAF-throttle).
       pendingX = e.clientX;
       pendingY = e.clientY;
       if (rafId === null) rafId = requestAnimationFrame(flushCursor);
-
-      // Auto-hide служебных UI.
-      setControlsVisible(true);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = setTimeout(() => setControlsVisible(false), 2500);
-    };
-    const onClick = () => {
-      setControlsVisible(true);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = setTimeout(() => setControlsVisible(false), 2500);
     };
 
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("click", onClick);
     return () => {
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("click", onClick);
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
@@ -139,9 +121,6 @@ export function SlideDeck({ slides, blockLabels = {} }: SlideDeckProps) {
     }
   }, [slides.length]);
 
-  const blockNum = Math.floor(idx / 10) + 1; // приближённо для индикатора
-  const blockLabel = blockLabels[blockNum] || `БЛОК ${blockNum}`;
-
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
       {/* === Cursor-glow · radial gradient за курсором (как в vanilla presentation.html) === */}
@@ -180,36 +159,8 @@ export function SlideDeck({ slides, blockLabels = {} }: SlideDeckProps) {
         }}
       />
 
-      {/* === СЛУЖЕБНЫЕ UI · скрыто от зрителей === */}
-      {/* Появляются только при движении мыши, fade out через 2.5 сек */}
-      <div
-        className={cn(
-          "transition-opacity duration-500 ease-out",
-          controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-      >
-        {/* Indicator: slide N / TOTAL · block · mode */}
-        <div className="fixed bottom-6 right-8 z-50 font-mono text-[11px] tracking-[0.2em] uppercase text-white/45 bg-black/70 backdrop-blur-md px-4 py-2 rounded-full">
-          СЛАЙД <b className="text-[#B6FF00] font-bold">{idx + 1}</b>
-          <span className="text-white/30"> / {slides.length}</span>
-          <span className="mx-2 text-white/20">·</span>
-          {blockLabel}
-          <span className="mx-2 text-white/20">·</span>
-          <span
-            className={cn(
-              "font-bold",
-              speakerMode === "live" ? "text-[#B6FF00]" : "text-white/40"
-            )}
-          >
-            {speakerMode === "live" ? "LIVE 30%" : "PREVIEW"}
-          </span>
-        </div>
-
-        {/* Help bar */}
-        <div className="fixed bottom-6 left-8 z-50 font-mono text-[10px] tracking-[0.18em] uppercase text-white/30">
-          ← → · SPACE · F = FULLSCREEN · S = ЗОНА СПИКЕРА
-        </div>
-      </div>
+      {/* Служебные UI убраны по запросу — никаких индикаторов СЛАЙД/БЛОК/LIVE и help-bar
+          на зрительском экране. Управление работает молча: ← → SPACE F S Home End. */}
     </div>
   );
 }
