@@ -5,24 +5,22 @@ import { motion } from "framer-motion";
 import type { Application, SPEObject } from "@splinetool/runtime";
 import { Spotlight } from "../Spotlight";
 import { SplineScene } from "../SplineScene";
+import { SlideLayout } from "../SlideLayout";
 
 const ROBOT_SCENE = "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode";
 
-// Зум камеры. Подобрать через DevTools: __spline.setZoom(N)
+// Зум камеры подобран так, чтобы робот занимал левую часть и рука выходила в правую.
 const ROBOT_ZOOM = 3.0;
-// Имена объекта головы — robot rig в сцене называет голову "Head".
 const HEAD_NAMES = ["Head", "Head 2", "head"];
-// Лимиты поворота головы при mouse-tracking.
-// SENSITIVITY = 2.0 → голова достигает максимума уже на половине экрана, не на самом краю.
-// Итоговый clamp: ±22.5° yaw, ±11.25° pitch.
 const MAX_YAW = Math.PI / 4;
 const MAX_PITCH = Math.PI / 8;
 const MOUSE_SENSITIVITY = 2.0;
 
 /**
- * Slide 1.1 · Cold Open
- * 3D-робот в большом контейнере (правая рука за экраном),
- * текст слева сверху, голова робота следит за курсором.
+ * Slide 1 · Cold Open — «СТАНЬ АРХИТЕКТОРОМ»
+ * Робот в background (absolute, 110vw, left:-40vw) — корпус частично за левым краем,
+ * рука выходит в правую часть слайда и проходит ЗА полупрозрачным текстом.
+ * Текст без подкладки — фон полностью прозрачный.
  */
 export function Slide_01_ColdOpen() {
   const headRef = useRef<SPEObject | null>(null);
@@ -53,12 +51,9 @@ export function Slide_01_ColdOpen() {
     (window as unknown as { __spline?: Application }).__spline = app;
   }, []);
 
-  // Mouse-tracking: каждый кадр пишем rotation поверх Spline animation loop'а
-  // (иначе Spline перезаписывает наше значение на следующем тике и голова не двигается).
   useEffect(() => {
     let rafId = 0;
     let running = true;
-
     const clamp = (v: number, lim: number) => Math.max(-lim, Math.min(lim, v));
     const onMove = (e: MouseEvent) => {
       const nx = (e.clientX / window.innerWidth - 0.5) * MOUSE_SENSITIVITY;
@@ -66,7 +61,6 @@ export function Slide_01_ColdOpen() {
       targetYawRef.current = clamp(nx, 0.5) * MAX_YAW;
       targetPitchRef.current = clamp(ny, 0.5) * MAX_PITCH;
     };
-
     const tick = () => {
       if (!running) return;
       const head = headRef.current;
@@ -77,7 +71,6 @@ export function Slide_01_ColdOpen() {
       }
       rafId = requestAnimationFrame(tick);
     };
-
     window.addEventListener("mousemove", onMove);
     rafId = requestAnimationFrame(tick);
     return () => {
@@ -88,65 +81,80 @@ export function Slide_01_ColdOpen() {
   }, []);
 
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
-      <Spotlight className="-top-40 right-0 md:right-20 md:-top-20" fill="#B6FF00" />
-
-      {/* === 3D-РОБОТ · контейнер 110vw / right:-40vw — правая рука за экраном === */}
-      <div
-        className="pointer-events-auto absolute top-0 bottom-0 z-[2]"
-        style={{ width: "110vw", right: "-40vw" }}
+    <SlideLayout
+      speakerSide="right"
+      contentClassName="items-stretch text-left"
+      background={
+        <>
+          <Spotlight className="-top-40 right-0 md:right-20 md:-top-20" fill="#B6FF00" />
+          {/* Робот absolute — сдвинут далеко влево (left:-80vw),
+              видна только правая половина (от плеча и правее), рука вытянута через весь слайд.
+              Canvas всё равно занимает всю горизонталь (right edge 80vw, 80vw → +60vw = 100vw покрытия). */}
+          <div
+            className="absolute top-0 bottom-0"
+            style={{ width: "180vw", left: "-80vw", zIndex: 2, pointerEvents: "none" }}
+          >
+            <SplineScene scene={ROBOT_SCENE} className="w-full h-full" onLoad={handleSplineLoad} />
+          </div>
+        </>
+      }
+    >
+      {/* Отступ в vw — пропорционален роботу на любой ширине: на широком
+          экране (1920) текст уходит правее руки, на 1440 остаётся near робота.
+          Без него текст-колонка стартует с X=0 и налезает на робота. */}
+      <div style={{ paddingLeft: "clamp(0px, 18vw, 420px)" }}>
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-5 pointer-events-none"
       >
-        <SplineScene scene={ROBOT_SCENE} className="w-full h-full" onLoad={handleSplineLoad} />
-      </div>
+        // ВОРКШОП
+      </motion.div>
 
-      {/* === Текст · pointer-events: none → мышь проходит на canvas === */}
-      <div
-        className="pointer-events-none relative z-10 h-full flex flex-col justify-center"
+      <motion.h1
+        initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
+        animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
+        transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
+        className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] pointer-events-none"
         style={{
-          paddingLeft: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
-          paddingRight: "48px",
+          fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
+          fontSize: "clamp(22px, 2.4vw, 42px)",
         }}
       >
-        <div className="flex flex-col gap-6 max-w-[820px]">
-          <motion.h1
-            initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
-            animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.25, 1, 0.5, 1] }}
-            className="font-bold uppercase text-white leading-[1.0] tracking-[-0.04em]"
-            style={{
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(40px, 4.5vw, 84px)",
-            }}
-          >
-            СОБЕРИ{" "}
-            <span className="bg-[#B6FF00] text-black px-[0.12em] py-[0.02em] rounded-[0.1em]">
-              AI-сервис
-            </span>
-            <br />
-            ЗА ОДИН ДЕНЬ —
-            <br />
-            БЕЗ КОДА И КОМАНДЫ
-          </motion.h1>
+        СТАНЬ <span className="text-[#B6FF00]">АРХИТЕКТОРОМ</span> СВОЕГО IT-РЕШЕНИЯ.
+        <br />
+        <span className="text-white/80">
+          ОДИН ДЕНЬ — ОТ ИДЕИ ДО РАБОЧЕГО ПРИЛОЖЕНИЯ.
+        </span>
+      </motion.h1>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            className="text-white text-base md:text-lg leading-relaxed mt-2"
-          >
-            На этом воркшопе ты поймёшь, как и почему это работает — и{" "}
-            <span className="text-[#B6FF00] font-semibold">как повторить</span> это для
-            себя.
-          </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.9 }}
+        className="text-white text-sm md:text-base leading-snug mt-6 pointer-events-none"
+      >
+        Свой сервис <span className="text-[#B6FF00] font-semibold">плюс</span> автоматизация{" "}
+        <span className="text-[#B6FF00] font-semibold">70%</span> твоей рабочей рутины.
+      </motion.div>
 
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: 180 }}
-            transition={{ duration: 0.7, delay: 1.0, ease: [0.25, 1, 0.5, 1] }}
-            className="h-[2px] bg-[#B6FF00] mt-3"
-          />
-        </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 1.05 }}
+        className="text-white/65 text-xs md:text-sm leading-relaxed mt-2 pointer-events-none"
+      >
+        Без программистов. С AI как программистом.
+      </motion.div>
+
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: 180 }}
+        transition={{ duration: 0.7, delay: 1.25, ease: [0.25, 1, 0.5, 1] }}
+        className="h-[2px] bg-[#B6FF00] mt-5"
+      />
       </div>
-    </section>
+    </SlideLayout>
   );
 }

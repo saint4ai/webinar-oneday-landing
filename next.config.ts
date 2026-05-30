@@ -36,6 +36,13 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    // ⚠️ В DEV кастомные Cache-Control НЕ ставим. immutable на /_next/static/
+    // ломает Turbopack HMR: браузер кэширует dev-чанки на год и при пересборке
+    // подсовывает старый чанк → "module factory is not available".
+    // Next.js сам предупреждает об этом в dev-логе. Заголовки — ТОЛЬКО в prod.
+    if (process.env.NODE_ENV !== "production") {
+      return [];
+    }
     return [
       // Hashed Next.js статика — immutable на год (cache-bust через имя файла)
       {

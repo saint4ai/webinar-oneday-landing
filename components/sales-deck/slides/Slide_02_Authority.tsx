@@ -13,8 +13,8 @@ export function Slide_02_Authority() {
     <section
       className="relative w-full h-screen overflow-hidden bg-black flex flex-col justify-center"
       style={{
-        paddingLeft: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
-        paddingRight: "48px",
+        paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+        paddingLeft: "48px",
       }}
     >
       <div className="flex flex-col gap-10 max-w-[1100px] relative z-10">

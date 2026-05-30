@@ -12,13 +12,13 @@ export function Slide_03_ThreadsProof() {
     <section
       className="relative w-full h-screen overflow-hidden bg-black"
       style={{
-        paddingLeft: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
-        paddingRight: "48px",
+        paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+        paddingLeft: "48px",
         paddingTop: "48px",
         paddingBottom: "48px",
       }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] h-full gap-12 items-center relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] h-full gap-12 items-center relative z-10">
         {/* LEFT — текст */}
         <div className="flex flex-col gap-6">
           <motion.div

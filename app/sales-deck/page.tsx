@@ -12,7 +12,7 @@ export const metadata = {
  * Управление:
  *   ← → / SPACE — навигация
  *   F — fullscreen
- *   S — toggle speaker-zone (LIVE 30% ↔ PREVIEW)
+ *   S — toggle speaker-zone (30vw ↔ 0)
  */
 export default function SalesDeckPage() {
   return <SalesDeck />;

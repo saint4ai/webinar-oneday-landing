@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 
 interface SlideDeckProps {
   slides: React.ReactNode[];
-  blockLabels?: Record<number, string>;
 }
 
 /**
@@ -16,7 +15,7 @@ interface SlideDeckProps {
  * Управление:
  *   ← → / SPACE — навигация
  *   F — fullscreen
- *   S — toggle speaker-zone (LIVE 30% ↔ PREVIEW 0%)
+ *   S — toggle speaker-zone (30vw ↔ 0)
  *   Home / End — в начало/конец
  *   Esc — выход из fullscreen
  */
@@ -91,9 +90,11 @@ export function SlideDeck({ slides }: SlideDeckProps) {
         e.stopPropagation();
         go(idx - 1);
       } else if (e.key === "f" || e.key === "F") {
-        document.documentElement.requestFullscreen?.();
+        // requestFullscreen возвращает promise + требует transient activation —
+        // глушим reject если браузер не разрешил (например, без gesture после stopPropagation).
+        document.documentElement.requestFullscreen?.().catch(() => {});
       } else if (e.key === "Escape") {
-        document.exitFullscreen?.();
+        document.exitFullscreen?.().catch(() => {});
       } else if (e.key === "Home") {
         go(0);
       } else if (e.key === "End") {
@@ -146,21 +147,26 @@ export function SlideDeck({ slides }: SlideDeckProps) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Speaker-zone vertical divider (Acid Green) */}
+      {/* Speaker-zone vertical divider (Acid Green) — справа, где Александр */}
       <div
         className={cn(
           "pointer-events-none absolute top-[10%] bottom-[10%] w-px z-30 transition-opacity",
           speakerMode === "live" ? "opacity-100" : "opacity-0"
         )}
         style={{
-          left: "var(--sd-speaker-zone)",
+          right: "var(--sd-speaker-zone)",
           background:
             "linear-gradient(to bottom, transparent 0%, rgba(182,255,0,0.15) 30%, rgba(182,255,0,0.25) 50%, rgba(182,255,0,0.15) 70%, transparent 100%)",
         }}
       />
 
-      {/* Служебные UI убраны по запросу — никаких индикаторов СЛАЙД/БЛОК/LIVE и help-bar
-          на зрительском экране. Управление работает молча: ← → SPACE F S Home End. */}
+      {/* Slide counter — правый нижний угол, неброско */}
+      <div
+        className="pointer-events-none fixed bottom-4 right-5 z-30 font-mono text-[11px] tracking-[0.2em] text-white/35"
+        style={{ fontFamily: "var(--font-jetbrains-mono), monospace" }}
+      >
+        {String(idx + 1).padStart(2, "0")} <span className="text-white/20">/</span> {String(slides.length).padStart(2, "0")}
+      </div>
     </div>
   );
 }

@@ -68,7 +68,7 @@ export function AnimatedNumber({
             thickness={0.06}
             softness={0.5}
             intensity={3.5}
-            spotsPerColor={4}
+            spots={4}
             spotSize={0.15}
             pulse={0.15}
             smoke={0.3}
