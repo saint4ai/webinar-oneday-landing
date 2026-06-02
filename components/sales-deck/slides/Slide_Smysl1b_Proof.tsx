@@ -51,7 +51,7 @@ export function Slide_Smysl1b_Proof() {
       {/* Колаут к скрину */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="rounded-xl px-4 py-3 mb-4 max-w-xl" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.35)" }}>
         <span className="text-white/85 text-sm md:text-base leading-snug">
-          Слева — реальный пост. Человек заменил рутину собственным сервисом и посчитал: <span className="text-[#B6FF00] font-bold">720 000 ₽ в год</span> экономии. На одной задаче.
+          Слева — реальный пост. Человек заменил рутину собственным сервисом и посчитал: <span className="text-[#B6FF00] font-bold">больше 4 млн ₸ в год</span> экономии. На одной задаче.
         </span>
       </motion.div>
 

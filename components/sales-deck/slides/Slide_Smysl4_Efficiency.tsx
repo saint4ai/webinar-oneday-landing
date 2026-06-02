@@ -27,7 +27,7 @@ export function Slide_Smysl4_Efficiency() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/65 text-base md:text-lg leading-snug max-w-2xl mb-7">
-        Отчёты, КП, переписки, документы — за это отдельно никто не платит.
+        Отчёты, коммерческие, переписки, документы — за это отдельно никто не платит.
       </motion.div>
 
       {/* Сплит-бар 70/30 */}

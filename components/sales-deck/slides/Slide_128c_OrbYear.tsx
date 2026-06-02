@@ -26,7 +26,7 @@ export function Slide_128c_OrbYear() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-lg leading-snug max-w-2xl mb-7">
-        Первый клиент возвращает вложенное. Каждый следующий — чистый доход.
+        Первый заказ закрывает вложенное. Со второго — ты в плюсе.
       </motion.div>
 
       {/* Уравнение года: входы сверху, итог — отдельной строкой с «=» и крупнее */}

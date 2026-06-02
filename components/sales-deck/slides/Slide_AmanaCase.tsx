@@ -23,8 +23,8 @@ const SCREENS = [
 ];
 
 const POINTS = [
-  "Весь фронтенд: портфель, маркет, сделки, кошелёк, биометрия, аналитика.",
-  "Уровень финтех-продукта — без дизайн-студии и команды разработки.",
+  "Все экраны: портфель, маркет, сделки, кошелёк, вход по лицу, аналитика.",
+  "Выглядит как приложение крупного банка — без дизайн-студии и команды.",
   "Один человек собрал то, под что обычно нанимают команду.",
 ];
 
@@ -48,11 +48,11 @@ export function Slide_AmanaCase() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2vw, 50px)" }}
       >
-        МОБИЛЬНЫЙ MVP ДЛЯ <span className="text-[#B6FF00]">ИНВЕСТ-ПЛАТФОРМЫ</span>
+        МОБИЛЬНОЕ ПРИЛОЖЕНИЕ ДЛЯ <span className="text-[#B6FF00]">ИНВЕСТ-ПЛАТФОРМЫ</span>
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-lg leading-snug max-w-xl mb-5">
-        Фронтенд демо-MVP мобильного приложения инвест-платформы: интерфейс уровня финтех-продукта, с которым компания выходила к инвесторам.
+        Демо-версия мобильного приложения: все экраны, как у настоящего банковского сервиса. С ним компания выходила к инвесторам.
       </motion.div>
 
       <div className="flex flex-col gap-2.5 max-w-xl mb-5">

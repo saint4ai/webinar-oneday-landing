@@ -9,7 +9,7 @@ import { FileText, Library, ListChecks, Camera } from "lucide-react";
 const BONUSES = [
   { icon: FileText, t: "Гайд: Android-приложение через Google AI Studio", p: "50 000 ₸" },
   { icon: Library, t: "Библиотека 30 промптов для Claude Code", p: "15 000 ₸" },
-  { icon: ListChecks, t: "Чек-лист 9 типов AI-сервисов которые покупают сейчас", p: "15 000 ₸" },
+  { icon: ListChecks, t: "Чек-лист: 9 типов AI-сервисов, которые покупают сейчас", p: "15 000 ₸" },
   { icon: Camera, t: "ИИ-креаторство: мультики и сериалы — за отметку @saint4ai", p: "15 000 ₸" },
 ];
 
@@ -26,7 +26,7 @@ export function Slide_161_FourBonuses() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4.2vw, 64px)" }}
       >
-        ВАШИ ЧЕТЫРЕ <span className="text-[#B6FF00]">БОНУСА</span>
+        ТВОИ ЧЕТЫРЕ <span className="text-[#B6FF00]">БОНУСА</span>
       </motion.h1>
       <div className="grid grid-cols-2 gap-3.5 max-w-3xl">
         {BONUSES.map((b, i) => (

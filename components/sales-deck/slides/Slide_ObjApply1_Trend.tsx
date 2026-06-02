@@ -27,7 +27,7 @@ export function Slide_ObjApply1_Trend() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-lg leading-snug max-w-2xl mb-6">
-        На самом деле это звучит иначе: «я пропускаю большой тренд и прикрываюсь тем, что некуда применить».
+        Чаще это значит другое: человек видит, что все осваивают — но боится начать.
       </motion.div>
 
       {/* Аналогия 2000-е → сегодня */}
@@ -50,7 +50,7 @@ export function Slide_ObjApply1_Trend() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.3 }} className="text-white/85 text-base md:text-lg leading-snug max-w-2xl">
-        Это не «когда-нибудь». Это <span className="text-[#B6FF00] font-semibold">мышца — её качают уже сейчас</span>, а не потом.
+        Это не «когда-нибудь». Это <span className="text-[#B6FF00] font-semibold">мышца — и качать её надо уже сейчас</span>.
       </motion.div>
     </SlideLayout>
   );

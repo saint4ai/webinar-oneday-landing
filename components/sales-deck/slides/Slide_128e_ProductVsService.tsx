@@ -61,7 +61,7 @@ export function Slide_128e_ProductVsService() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.5 }} className="text-white/85 text-base md:text-lg leading-snug max-w-2xl">
-        Ты не окажешь услугу десяти людям одновременно — а код может. Это не «пассивный доход». <span className="text-[#B6FF00] font-semibold">Это другая математика.</span>
+        Ты не обслужишь десять человек разом — а то, что ты собрал, может. Это не «пассивный доход» — <span className="text-[#B6FF00] font-semibold">это другая математика.</span>
       </motion.div>
     </SlideLayout>
   );

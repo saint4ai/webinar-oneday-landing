@@ -9,16 +9,16 @@ import { SlideLayout } from "../SlideLayout";
  * Идёт после RemindMainTraining, перед SalesWindow2. Результаты — из реальных promise модулей.
  */
 const MODULES = [
-  { t: "ЗАПУСК ДВИГАТЕЛЯ", r: "первый работающий сайт за неделю" },
-  { t: "ЯЗЫК АГЕНТА", r: "готовое ТЗ + рабочий MVP" },
-  { t: "КОНСТИТУЦИЯ ПРОЕКТА", r: "система памяти — проект не развалится" },
-  { t: "РЕЗЕРВНАЯ КОПИЯ", r: "бэкап — ничего не потеряешь" },
-  { t: "ПРОКАЧКА АГЕНТА", r: "агент-техлид, продукт выглядит дороже" },
-  { t: "АРМИЯ АГЕНТОВ", r: "оркестрация — собираешь в 2-3× быстрее" },
-  { t: "БОЕВОЙ ЗАПУСК", r: "продукт в сети — клиенты могут платить" },
-  { t: "БАЗА ДАННЫХ ПРОДУКТА", r: "живая база с пользователями — это продукт" },
-  { t: "ДЕНЬГИ НА СЧЁТ", r: "первая оплата падает на счёт" },
-  { t: "ПЕРВЫЙ ПЛАТЯЩИЙ КЛИЕНТ", r: "навык в деньги + каналы заказов" },
+  { t: "ЗАПУСК ДВИГАТЕЛЯ", r: "Первый рабочий сайт — за неделю" },
+  { t: "ЯЗЫК АГЕНТА", r: "Идея → техзадание → первая версия продукта" },
+  { t: "КОНСТИТУЦИЯ ПРОЕКТА", r: "Память проекта — не разваливается на полпути" },
+  { t: "РЕЗЕРВНАЯ КОПИЯ", r: "Резервная копия — ни строчки не потеряешь" },
+  { t: "ПРОКАЧКА АГЕНТА", r: "Продукт выглядит дорого — будто над ним сидела команда" },
+  { t: "АРМИЯ АГЕНТОВ", r: "Команда ИИ-агентов — собираешь в 2-3 раза быстрее" },
+  { t: "БОЕВОЙ ЗАПУСК", r: "Продукт в сети — клиенты могут платить" },
+  { t: "БАЗА ДАННЫХ ПРОДУКТА", r: "Живой сервис, которым уже пользуются" },
+  { t: "ДЕНЬГИ НА СЧЁТ", r: "Первая оплата падает на счёт" },
+  { t: "ПЕРВЫЙ ПЛАТЯЩИЙ КЛИЕНТ", r: "Первый клиент + знаешь, где брать заказы" },
 ];
 
 export function Slide_ProgramRecap() {
@@ -43,8 +43,8 @@ export function Slide_ProgramRecap() {
           <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.35 + i * 0.06 }} className="flex items-start gap-2.5 py-1.5">
             <span className="font-bold text-[#B6FF00]/80 tabular-nums shrink-0 w-6" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(14px,1.3vw,18px)" }}>{i + 1}</span>
             <div className="min-w-0">
-              <div className="text-white font-semibold text-[13px] md:text-[15px] leading-tight">{m.t}</div>
-              <div className="text-white/45 text-[13px] leading-tight">{m.r}</div>
+              <div className="font-mono text-[10px] tracking-wide uppercase text-[#B6FF00]/60 leading-tight">{m.t}</div>
+              <div className="text-white font-semibold text-[15px] leading-tight">{m.r}</div>
             </div>
           </motion.div>
         ))}

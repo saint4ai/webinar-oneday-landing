@@ -34,7 +34,7 @@ export function Slide_128d_FirstClient() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-lg leading-snug max-w-2xl mb-6">
-        Не «когда-нибудь». Вот как это выглядит — без «успеха через год».
+        Не «когда-нибудь». Вот как это выглядит на деле.
       </motion.div>
 
       {/* Вертикальный путь клиента */}

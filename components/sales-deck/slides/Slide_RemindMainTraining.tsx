@@ -12,7 +12,7 @@ import { GraduationCap, Users, Inbox } from "lucide-react";
 const CHIPS = [
   { icon: GraduationCap, t: "10 модулей по шагам" },
   { icon: Users, t: "кураторы и проверка домашек" },
-  { icon: Inbox, t: "каналы заказов внутри потока" },
+  { icon: Inbox, t: "где брать первых клиентов" },
 ];
 
 export function Slide_RemindMainTraining() {
@@ -46,7 +46,7 @@ export function Slide_RemindMainTraining() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.1 }} className="text-white/85 text-base md:text-lg leading-snug max-w-2xl">
-        От установки Claude Code <span className="text-[#B6FF00] font-semibold">до первого платящего клиента</span> — по шагам, с поддержкой.
+        От установки Claude Code <span className="text-[#B6FF00] font-semibold">до первого клиента, который платит</span>. С куратором рядом.
       </motion.div>
     </SlideLayout>
   );
