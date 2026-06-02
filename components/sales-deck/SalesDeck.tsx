@@ -188,6 +188,9 @@ import { Slide_157_ThreeWays } from "./slides/Slide_157_ThreeWays";
 import { Slide_158_MoneyPunchline } from "./slides/Slide_158_MoneyPunchline";
 import { Slide_159_WhatYouTake } from "./slides/Slide_159_WhatYouTake";
 import { Slide_160_FinalEngagement } from "./slides/Slide_160_FinalEngagement";
+import { Slide_RemindMainTraining } from "./slides/Slide_RemindMainTraining";
+import { Slide_ProgramRecap } from "./slides/Slide_ProgramRecap";
+import { Slide_SalesWindow2 } from "./slides/Slide_SalesWindow2";
 import { Slide_161_FourBonuses } from "./slides/Slide_161_FourBonuses";
 import { Slide_162_Bonus4Stories } from "./slides/Slide_162_Bonus4Stories";
 import { Slide_163_HowToGetBonuses } from "./slides/Slide_163_HowToGetBonuses";
@@ -439,6 +442,12 @@ export function SalesDeck() {
     /* === ЧАСТЬ XX · ВТОРОЕ ОКНО ПРОДАЖ + ФИНАЛЬНЫЙ CTA (159-170) === */
     <Slide_159_WhatYouTake key="159" />,
     <Slide_160_FinalEngagement key="160" />,
+
+    /* === БЛОК H · 2-Е ОКНО ПРОДАЖ (напоминание → программа → окно#2) === */
+    <Slide_RemindMainTraining key="remind" />,
+    <Slide_ProgramRecap key="programrecap" />,
+    <Slide_SalesWindow2 key="window2" />,
+
     <Slide_161_FourBonuses key="161" />,
     <Slide_162_Bonus4Stories key="162" />,
     <Slide_163_HowToGetBonuses key="163" />,
