@@ -12,6 +12,7 @@ export function Slide_162_Bonus4Stories() {
   return (
     <BonusCardSlide
       badge="БОНУС 4"
+      marketPrice="15 000 ₸"
       condition="за отметку в сторис"
       title="+ БОНУС 4 ЗА ОТМЕТКУ В СТОРИС"
       sub="Отметьте меня @saint4ai в сторис с инсайтом из эфира. Это сверху основных 3 бонусов — не вместо, а в дополнение."

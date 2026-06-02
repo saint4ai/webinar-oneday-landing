@@ -45,7 +45,7 @@ export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel
             <>
               <Gift className="w-9 h-9 text-[#B6FF00]/60" strokeWidth={1.6} />
               <span className="text-white/45 text-xs font-mono uppercase tracking-[0.1em] px-4 leading-snug">{slotLabel}</span>
-              <span className="text-white/25 text-[10px]">Higgsfield · glassmorphism · добавим</span>
+              <span className="text-white/25 text-[13px]">премиум-3D карточка · добавим</span>
             </>
           )}
         </motion.div>

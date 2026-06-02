@@ -7,10 +7,10 @@ import { FileText, Library, ListChecks, Camera } from "lucide-react";
 
 /** Слайд 161 · Список 4 бонусов. Текст 1-в-1 STRUCTURE 2238-2241. */
 const BONUSES = [
-  { icon: FileText, t: "Гайд: Android-приложение через Google AI Studio" },
-  { icon: Library, t: "Библиотека 30 промптов для Claude Code" },
-  { icon: ListChecks, t: "Чек-лист 9 типов AI-сервисов которые покупают сейчас" },
-  { icon: Camera, t: "Бонус 4 — за отметку в сторис (см. следующий слайд)" },
+  { icon: FileText, t: "Гайд: Android-приложение через Google AI Studio", p: "50 000 ₸" },
+  { icon: Library, t: "Библиотека 30 промптов для Claude Code", p: "15 000 ₸" },
+  { icon: ListChecks, t: "Чек-лист 9 типов AI-сервисов которые покупают сейчас", p: "15 000 ₸" },
+  { icon: Camera, t: "AI Workspace — за отметку @saint4ai в сторис", p: "15 000 ₸" },
 ];
 
 export function Slide_161_FourBonuses() {
@@ -34,12 +34,17 @@ export function Slide_161_FourBonuses() {
             <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.3)" }}>
               <b.icon className="w-5 h-5 text-[#B6FF00]" strokeWidth={1.9} />
             </span>
-            <div className="flex items-center min-h-[40px]">
+            <div className="flex flex-col justify-center min-h-[40px]">
               <span className="text-white/85 text-sm md:text-base leading-snug">{b.t}</span>
+              <span className="text-white/40 text-[13px] line-through tabular-nums mt-1" style={{ fontFamily: "var(--font-benzin), system-ui" }}>{b.p}</span>
             </div>
           </motion.div>
         ))}
       </div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.1 }} className="flex items-center gap-3 flex-wrap mt-5 rounded-xl px-5 py-3 max-w-3xl self-start" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
+        <span className="text-white/70 text-sm md:text-base">Всего ценности: <span className="line-through text-white/40">95 000 ₸</span> →</span>
+        <span className="font-bold uppercase text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,1.8vw,26px)" }}>бесплатно за участие</span>
+      </motion.div>
     </SlideLayout>
   );
 }
