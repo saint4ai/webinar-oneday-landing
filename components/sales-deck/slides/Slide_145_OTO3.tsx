@@ -10,6 +10,7 @@ export function Slide_145_OTO3() {
   return (
     <BonusCardSlide
       badge="OTO-3"
+      marketPrice="80 000 ₸"
       cardImage="/cards-gifs-screenshots/bonus/bonus-oto3-dogovor-ai.png"
       condition="за полную оплату"
       title="ДОГОВОР ДЛЯ ВНЕДРЕНИЯ AI-МЕНЕДЖЕРОВ"

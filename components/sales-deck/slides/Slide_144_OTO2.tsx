@@ -10,6 +10,7 @@ export function Slide_144_OTO2() {
   return (
     <BonusCardSlide
       badge="OTO-2"
+      marketPrice="80 000 ₸"
       cardImage="/cards-gifs-screenshots/bonus/bonus-oto2-dogovor-it.png"
       condition="за полную оплату"
       title="ДОГОВОР ДЛЯ ВНЕДРЕНИЯ IT-РЕШЕНИЙ"

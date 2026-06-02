@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { SlideBg } from "./SlideBg";
 import { SlideLayout } from "./SlideLayout";
 import { Gift, Check, ImageIcon } from "lucide-react";
+import { BonusPriceReveal } from "./BonusPriceReveal";
 
 /**
  * BonusCardSlide — слайд бонуса за предоплату (Б-1/Б-2/Б-3). DL-7 premium offer.
@@ -20,9 +21,10 @@ export interface BonusCardSlideProps {
   slotLabel: string; // подпись слота под Higgsfield-карточку
   condition?: string; // "за предоплату" | "за полную оплату до конца дня"
   cardImage?: string; // путь к готовой 3D-карточке; задан → рендерим её вместо плейсхолдера + скрываем H1 (заголовок уже на карточке)
+  marketPrice?: string; // рыночная цена бонуса → зачёрк → «Бесплатно» (BonusPriceReveal)
 }
 
-export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel, condition = "за предоплату", cardImage }: BonusCardSlideProps) {
+export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel, condition = "за предоплату", cardImage, marketPrice }: BonusCardSlideProps) {
   return (
     <SlideLayout
       speakerSide="right"
@@ -67,6 +69,8 @@ export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/65 text-sm md:text-base leading-snug max-w-xl mb-4">
         {sub}
       </motion.div>
+
+      {marketPrice && <BonusPriceReveal marketPrice={marketPrice} />}
 
       <div className="flex flex-col gap-2 max-w-xl mb-4">
         {inside.map((r, i) => (

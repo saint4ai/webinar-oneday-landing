@@ -143,7 +143,15 @@ import { Slide_126_Platform } from "./slides/Slide_126_Platform";
 import { Slide_127_ValueDecomposition } from "./slides/Slide_127_ValueDecomposition";
 import { Slide_128_FullPrice } from "./slides/Slide_128_FullPrice";
 import { Slide_128b_PaysOff } from "./slides/Slide_128b_PaysOff";
+import { Slide_128c_OrbYear } from "./slides/Slide_128c_OrbYear";
+import { Slide_128d_FirstClient } from "./slides/Slide_128d_FirstClient";
+import { Slide_128e_ProductVsService } from "./slides/Slide_128e_ProductVsService";
 import { Slide_129_SecondTier } from "./slides/Slide_129_SecondTier";
+import { Slide_Smysl1_Relevance } from "./slides/Slide_Smysl1_Relevance";
+import { Slide_Smysl1b_Proof } from "./slides/Slide_Smysl1b_Proof";
+import { Slide_Smysl2_Choice } from "./slides/Slide_Smysl2_Choice";
+import { Slide_Smysl3_Career } from "./slides/Slide_Smysl3_Career";
+import { Slide_Smysl4_Efficiency } from "./slides/Slide_Smysl4_Efficiency";
 import { Slide_130_WithVsWithout } from "./slides/Slide_130_WithVsWithout";
 import { Slide_131_SpecialPrice } from "./slides/Slide_131_SpecialPrice";
 import { Slide_132_PrepayBonuses } from "./slides/Slide_132_PrepayBonuses";
@@ -348,16 +356,28 @@ export function SalesDeck() {
     <Slide_127_ValueDecomposition key="127" />,
     <Slide_128_FullPrice key="128" />,
     <Slide_128b_PaysOff key="128b" />,
+    <Slide_128c_OrbYear key="128c" />,
+    <Slide_128d_FirstClient key="128d" />,
+    <Slide_128e_ProductVsService key="128e" />,
     <Slide_129_SecondTier key="129" />,
+
+    /* === БЛОК C · СМЫСЛЫ после 390 (цена 290 900 ещё НЕ названа) === */
+    <Slide_Smysl1_Relevance key="smysl1" />,
+    <Slide_Smysl1b_Proof key="smysl1b" />,
+    <Slide_Smysl2_Choice key="smysl2" />,
+    <Slide_Smysl3_Career key="smysl3" />,
+    <Slide_Smysl4_Efficiency key="smysl4" />,
     <Slide_130_WithVsWithout key="130" />,
 
-    /* === ЧАСТЬ XV · СПЕЦИАЛЬНОЕ ОКНО (131-139) === */
-    <Slide_131_SpecialPrice key="131" />,
+    /* === БЛОК D · ПРЕДОПЛАТА + БОНУСЫ (цена 290 900 ещё НЕ названа) === */
     <Slide_132_PrepayBonuses key="132" />,
     <Slide_133_QR1 key="133" />,
     <Slide_134_BonusB1 key="134" />,
     <Slide_135_BonusB2 key="135" />,
     <Slide_136_BonusB3 key="136" />,
+
+    /* === БЛОК E · ФИНАЛ-ЦЕНА 290 900 НА ПИКЕ === */
+    <Slide_131_SpecialPrice key="131" />,
     <Slide_137_WhatYouGet key="137" />,
     <Slide_138_PerDay key="138" />,
     <Slide_139_QR2 key="139" />,

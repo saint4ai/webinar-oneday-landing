@@ -12,6 +12,7 @@ export function Slide_135_BonusB2() {
   return (
     <BonusCardSlide
       badge="БОНУС Б-2"
+      marketPrice="от 49 000 ₸/мес"
       cardImage="/cards-gifs-screenshots/bonus/bonus-b2-targetolog.png"
       title="AI-ТАРГЕТОЛОГ КАК СКИЛЛ"
       sub="Мой production-сервис app.aoneagency.kz (60+ клиентов, чек 49-99К ₸/мес) — его «мозг» я отдаю тебе как скилл к Claude Code."

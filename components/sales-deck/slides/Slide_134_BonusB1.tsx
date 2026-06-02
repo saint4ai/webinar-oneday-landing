@@ -12,6 +12,7 @@ export function Slide_134_BonusB1() {
   return (
     <BonusCardSlide
       badge="БОНУС Б-1"
+      marketPrice="50 000 ₸"
       cardImage="/cards-gifs-screenshots/bonus/bonus-b1-claude-code.png"
       title="ОБУЧЕНИЕ «CLAUDE CODE · БАЗОВЫЙ»"
       sub="5 уроков · 3 часа практики. Доступ открывается сразу после предоплаты — сегодня вечером ты уже работаешь по-новому."

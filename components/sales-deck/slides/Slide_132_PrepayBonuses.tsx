@@ -9,7 +9,7 @@ import { Gift } from "lucide-react";
 const STEPS = [
   { n: "1", t: "Предоплата 5 000 ₸", d: "сейчас" },
   { n: "2", t: "Полная оплата", d: "в течение 24 часов" },
-  { n: "3", t: "Цена закреплена", d: "290 900 ₸ — твоя" },
+  { n: "3", t: "Цена закреплена за тобой", d: "по спеццене этого дня" },
 ];
 const BONUSES = [
   { b: "Б-1", t: "Обучение «Claude Code · Базовый»", d: "3 часа · 5 уроков · доступ сразу" },
@@ -41,10 +41,6 @@ export function Slide_132_PrepayBonuses() {
             <div className="text-white/45 text-xs md:text-sm">{s.d}</div>
           </motion.div>
         ))}
-        <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.85, ease: [0.34, 1.4, 0.64, 1] }} className="flex flex-col items-center justify-center rounded-xl px-5 py-3 shrink-0" style={{ background: "rgba(252,92,2,0.1)", border: "1px solid rgba(252,92,2,0.4)" }}>
-          <span className="font-bold text-[#FC5C02] leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 40 }}>10</span>
-          <span className="text-white/70 text-[11px] uppercase tracking-[0.1em] mt-1">мест</span>
-        </motion.div>
       </div>
 
       <div className="grid grid-cols-3 gap-2.5 max-w-3xl">
@@ -55,7 +51,7 @@ export function Slide_132_PrepayBonuses() {
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-[#B6FF00]">{b.b}</span>
             </div>
             <div className="text-white font-semibold text-xs md:text-sm leading-tight">{b.t}</div>
-            <div className="text-white/45 text-[11px] mt-0.5 leading-snug">{b.d}</div>
+            <div className="text-white/45 text-[13px] mt-0.5 leading-snug">{b.d}</div>
           </motion.div>
         ))}
       </div>
