@@ -4,10 +4,12 @@ import { SlideDeck } from "./SlideDeck";
 import { Slide_01_ColdOpen } from "./slides/Slide_01_ColdOpen";
 import { Slide_02_ChatActivation } from "./slides/Slide_02_ChatActivation";
 import { Slide_03_OrgInfo } from "./slides/Slide_03_OrgInfo";
+import { Slide_ChatLevelPoll } from "./slides/Slide_ChatLevelPoll";
 import { Slide_04_BonusAnnounce } from "./slides/Slide_04_BonusAnnounce";
 import { Slide_05_BonusList } from "./slides/Slide_05_BonusList";
 import { Slide_06_PollBonus } from "./slides/Slide_06_PollBonus";
 import { Slide_07_Program } from "./slides/Slide_07_Program";
+import { Slide_07b_BigPromise } from "./slides/Slide_07b_BigPromise";
 import { Slide_08_Benefits } from "./slides/Slide_08_Benefits";
 import { Slide_09_Targeting } from "./slides/Slide_09_Targeting";
 import { Slide_10_CaseAzim } from "./slides/Slide_10_CaseAzim";
@@ -76,6 +78,7 @@ import { Slide_71_PracticeChapter } from "./slides/Slide_71_PracticeChapter";
 import { Slide_72_GoogleAIStudio } from "./slides/Slide_72_GoogleAIStudio";
 import { Slide_73_WhatBuild } from "./slides/Slide_73_WhatBuild";
 import { Slide_74_FiveSteps } from "./slides/Slide_74_FiveSteps";
+import { Slide_PracticeStart } from "./slides/Slide_PracticeStart";
 import { Slide_75_AppDone } from "./slides/Slide_75_AppDone";
 import { Slide_76_WhatNext } from "./slides/Slide_76_WhatNext";
 import { Slide_77_MarketPrice } from "./slides/Slide_77_MarketPrice";
@@ -213,10 +216,12 @@ export function SalesDeck() {
     <Slide_01_ColdOpen key="1" />,
     <Slide_02_ChatActivation key="2" />,
     <Slide_03_OrgInfo key="3" />,
+    <Slide_ChatLevelPoll key="level-poll" />,
     <Slide_04_BonusAnnounce key="4" />,
     <Slide_05_BonusList key="5" />,
     <Slide_06_PollBonus key="6" />,
     <Slide_07_Program key="7" />,
+    <Slide_07b_BigPromise key="7b" />,
     <Slide_08_Benefits key="8" />,
     <Slide_09_Targeting key="9" />,
     <Slide_10_CaseAzim key="10" />,
@@ -305,6 +310,7 @@ export function SalesDeck() {
     <Slide_72_GoogleAIStudio key="72" />,
     <Slide_73_WhatBuild key="73" />,
     <Slide_74_FiveSteps key="74" />,
+    <Slide_PracticeStart key="practice-start" />,
     <Slide_75_AppDone key="75" />,
     <Slide_76_WhatNext key="76" />,
     <Slide_77_MarketPrice key="77" />,
