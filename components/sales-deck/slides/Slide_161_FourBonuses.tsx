@@ -10,7 +10,7 @@ const BONUSES = [
   { icon: FileText, t: "Гайд: Android-приложение через Google AI Studio", p: "50 000 ₸" },
   { icon: Library, t: "Библиотека 30 промптов для Claude Code", p: "15 000 ₸" },
   { icon: ListChecks, t: "Чек-лист 9 типов AI-сервисов которые покупают сейчас", p: "15 000 ₸" },
-  { icon: Camera, t: "AI Workspace — за отметку @saint4ai в сторис", p: "15 000 ₸" },
+  { icon: Camera, t: "ИИ-креаторство: мультики и сериалы — за отметку @saint4ai", p: "15 000 ₸" },
 ];
 
 export function Slide_161_FourBonuses() {

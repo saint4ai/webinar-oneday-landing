@@ -108,6 +108,7 @@ import { Slide_101_CaseRenat } from "./slides/Slide_101_CaseRenat";
 import { Slide_102_CaseMerey } from "./slides/Slide_102_CaseMerey";
 import { Slide_103_CaseVladislav } from "./slides/Slide_103_CaseVladislav";
 import { Slide_104_CaseAuthor } from "./slides/Slide_104_CaseAuthor";
+import { Slide_AmanaCase } from "./slides/Slide_AmanaCase";
 import { Slide_105_CasesSummary } from "./slides/Slide_105_CasesSummary";
 import { Slide_106_CasesEngagement } from "./slides/Slide_106_CasesEngagement";
 import { Slide_107_ThreeQuestions } from "./slides/Slide_107_ThreeQuestions";
@@ -319,6 +320,7 @@ export function SalesDeck() {
     <Slide_102_CaseMerey key="102" />,
     <Slide_103_CaseVladislav key="103" />,
     <Slide_104_CaseAuthor key="104" />,
+    <Slide_AmanaCase key="amana" />,
     <Slide_105_CasesSummary key="105" />,
     <Slide_106_CasesEngagement key="106" />,
 
