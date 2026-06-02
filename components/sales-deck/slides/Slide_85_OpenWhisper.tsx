@@ -14,6 +14,9 @@ const PERKS = [
   { icon: Gift, t: "бесплатно" },
 ];
 
+// демо-команда, которую «надиктовали» голосом → печатается в окно агента
+const COMMAND = "Собери лендинг для кофейни — онлайн-запись и тёмная тема";
+
 export function Slide_85_OpenWhisper() {
   return (
     <SlideLayout
@@ -39,21 +42,46 @@ export function Slide_85_OpenWhisper() {
         Бесплатное приложение, превращает голос в текст для агента. Зажал кнопку — наговорил — текст сам в чате Claude Code.
       </motion.div>
 
-      {/* Голос → текст */}
-      <div className="flex items-center gap-5 mb-7">
-        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.6 }} className="flex flex-col items-center gap-2 rounded-2xl px-6 py-5" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.35)" }}>
-          <Mic className="w-7 h-7 text-[#B6FF00]" strokeWidth={1.8} />
-          <div className="flex items-end gap-0.5 h-5">
-            {[40, 80, 55, 100, 65, 85, 45].map((h, i) => (
-              <motion.span key={i} animate={{ height: [`${h * 0.4}%`, `${h}%`, `${h * 0.4}%`] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.1 }} className="w-1 rounded-full" style={{ background: "#B6FF00" }} />
+      {/* Запись → контекстное окно агента */}
+      <div className="flex items-center gap-4 md:gap-6 mb-7 max-w-3xl">
+        {/* Модуль записи */}
+        <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.6 }} className="flex flex-col items-center gap-3 rounded-2xl px-6 py-5 shrink-0" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.35)" }}>
+          <div className="relative">
+            <motion.span animate={{ scale: [1, 1.55], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }} className="absolute inset-0 rounded-full" style={{ border: "2px solid #B6FF00" }} />
+            <span className="relative w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(182,255,0,0.15)", border: "1px solid rgba(182,255,0,0.5)" }}>
+              <Mic className="w-6 h-6 text-[#B6FF00]" strokeWidth={1.8} />
+            </span>
+          </div>
+          <div className="flex items-end gap-0.5 h-6">
+            {[40, 80, 55, 100, 65, 85, 45, 70, 50].map((h, i) => (
+              <motion.span key={i} animate={{ height: [`${h * 0.35}%`, `${h}%`, `${h * 0.35}%`] }} transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.08, ease: "easeInOut" }} className="w-1 rounded-full" style={{ background: "#B6FF00" }} />
             ))}
           </div>
+          <div className="flex items-center gap-1.5">
+            <motion.span animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full" style={{ background: "#FC5C02" }} />
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/60">запись</span>
+          </div>
         </motion.div>
-        <ArrowRight className="w-7 h-7 text-[#B6FF00]" strokeWidth={2.5} />
-        <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.9 }} className="rounded-xl px-4 py-3 flex flex-col gap-1.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", width: 220 }}>
-          {[90, 70, 55].map((w, i) => (
-            <motion.div key={i} initial={{ width: 0 }} animate={{ width: `${w}%` }} transition={{ duration: 0.5, delay: 1.1 + i * 0.2 }} className="h-2 rounded-full" style={{ background: i === 0 ? "rgba(182,255,0,0.6)" : "rgba(255,255,255,0.2)" }} />
-          ))}
+
+        {/* Трансформация */}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <ArrowRight className="w-7 h-7 text-[#B6FF00]" strokeWidth={2.5} />
+          <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-white/40">OpenWhisper</span>
+        </div>
+
+        {/* Контекстное окно — промпт Claude Code (печатается голосом) */}
+        <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.9 }} className="flex-1 min-w-0 rounded-xl overflow-hidden" style={{ background: "#0b0e0a", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.65)" }}>
+          <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
+            <span className="flex gap-1"><span className="w-2 h-2 rounded-full bg-[#ff5f57]" /><span className="w-2 h-2 rounded-full bg-[#ffbd2e]" /><span className="w-2 h-2 rounded-full bg-[#28c840]" /></span>
+            <span className="font-mono text-[10px] text-white/45 ml-1">Claude Code · контекстное окно</span>
+          </div>
+          <div className="px-3.5 py-3 font-mono text-sm md:text-[15px] leading-relaxed">
+            <span className="text-[#B6FF00]">&gt; </span>
+            {COMMAND.split("").map((ch, i) => (
+              <motion.span key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3 + i * 0.045, duration: 0.01 }} className="text-white/90">{ch}</motion.span>
+            ))}
+            <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.9, repeat: Infinity }} className="inline-block w-[2px] h-[1.1em] align-middle ml-0.5" style={{ background: "#B6FF00" }} />
+          </div>
         </motion.div>
       </div>
 

@@ -4,11 +4,13 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { withBase } from "@/lib/api-url";
 
-const THREADS_COUNT = 10;
+// thread-03 (noraproai «не вайб-кодера») исключён — он бьёт по смыслу «бизнес ищет вайбкодера»
+const SLIDES = [1, 2, 4, 5, 6, 7, 8, 9, 10];
+const THREADS_COUNT = SLIDES.length;
 const AUTO_INTERVAL = 5000; // ms — 5 сек на каждый скрин, чтобы успели прочесть
 
 /**
- * Карусель скриншотов тредса (10 шт) — auto-rotation с возможностью
+ * Карусель скриншотов тредса (9 шт) — auto-rotation с возможностью
  * ручного переключения. Скриншоты показываются ЦЕЛИКОМ (object-contain),
  * не обрезаются.
  */
@@ -47,7 +49,7 @@ export function ThreadsCarousel() {
             className="absolute inset-0 flex items-center justify-center p-4"
           >
             <img
-              src={withBase(`/threads/thread-${String(idx + 1).padStart(2, "0")}.png`)}
+              src={withBase(`/threads/thread-${String(SLIDES[idx]).padStart(2, "0")}.png`)}
               alt={`Запрос вайбкодера в Threads #${idx + 1}`}
               className="max-h-full max-w-full object-contain rounded-xl border border-white/10"
               style={{

@@ -10,9 +10,8 @@ import { Check } from "lucide-react";
  * Стопка 9 карточек-пруфов раскладывается (stagger + лёгкий разворот).
  */
 const PROOFS = [
-  "2 млн бизнесов в KZ",
+  "более 2 млн бизнесов в KZ",
   "13 млн в СНГ",
-  "запросы Yandex ×7",
   "Threads ищет вас",
   "6 каналов клиентов",
   "300–500К за сервис",
@@ -34,7 +33,7 @@ export function Slide_64_MarketEngagement() {
         transition={{ duration: 0.4 }}
         className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-4"
       >
-        // ENGAGEMENT
+        // ВОПРОС В ЧАТ
       </motion.div>
 
       <motion.h1

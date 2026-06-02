@@ -13,8 +13,8 @@ export function Slide_62_ThreadsDemand() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="34vw"
-      contentMinWidth={600}
+      objectColumnSize="28vw"
+      contentMinWidth={500}
       background={<SlideBg theme="dark" variant="aura-tl" />}
       leftObject={
         <div className="h-[84vh] w-full max-w-[440px] flex items-center justify-center px-2">

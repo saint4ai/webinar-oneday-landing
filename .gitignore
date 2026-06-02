@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# QA-артефакты, бэкапы, локальное (не коммитим)
+_screenshots/
+.deck-backups/
+.slide-backups/
+.claude/
+*.backup_*
+**/_backup/

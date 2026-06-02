@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { Image as ImageIcon } from "lucide-react";
 import { BrandLogo } from "../BrandLogo";
+import { AdReportDashboard } from "../AdReportDashboard";
 
 /**
  * Слайд 90 · Кейс 1 — один Excel, четыре артефакта. Текст 1-в-1 STRUCTURE 1099-1110.
@@ -60,12 +60,13 @@ export function Slide_90_ExcelFourDocs() {
           </div>
         </div>
 
-        {/* Слот под дашборд */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 1.2, ease: [0.25, 1, 0.5, 1] }} className="flex-1 min-h-0 flex flex-col justify-end mt-4">
-          <div className="relative w-full rounded-xl overflow-hidden border border-dashed flex flex-col items-center justify-center gap-2" style={{ aspectRatio: "16/9", borderColor: "rgba(182,255,0,0.3)", background: "rgba(182,255,0,0.02)", maxHeight: "100%" }}>
-            <ImageIcon className="w-8 h-8 text-white/30" strokeWidth={1.5} />
-            <span className="text-white/45 text-xs font-mono uppercase tracking-[0.1em]">скрин готового HTML-дашборда (бренд-код)</span>
-            <span className="text-white/30 text-[11px]">раньше — день в Excel + PowerPoint · сейчас — <span className="text-[#B6FF00]">30 минут</span></span>
+        {/* Команда №2 → готовый дашборд в бренд-коде */}
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 1.2, ease: [0.25, 1, 0.5, 1] }} className="flex-1 min-h-0 flex flex-col mt-3.5">
+          <div className="flex-1 min-h-0">
+            <AdReportDashboard />
+          </div>
+          <div className="shrink-0 text-white/40 text-[11px] md:text-xs mt-2.5">
+            Раньше — день в Excel + PowerPoint. Сейчас — <span className="text-[#B6FF00] font-semibold">30 минут</span> на всё.
           </div>
         </motion.div>
       </div>

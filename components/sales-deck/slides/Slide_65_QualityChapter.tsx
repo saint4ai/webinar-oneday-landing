@@ -51,7 +51,7 @@ export function Slide_65_QualityChapter() {
           perChar={90}
           startDelay={200}
           className="font-bold uppercase leading-[0.95] tracking-[-0.04em] block"
-          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(46px, 6vw, 104px)", color: "#B6FF00", wordBreak: "keep-all" }}
+          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(38px, 4.6vw, 80px)", color: "#B6FF00", wordBreak: "keep-all" }}
         />
       </div>
 

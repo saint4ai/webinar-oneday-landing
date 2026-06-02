@@ -5,87 +5,74 @@ import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 
 /**
- * Слайд 107 · «У ВАС СЕЙЧАС В ГОЛОВЕ 3 ВОПРОСА». Текст 1-в-1 STRUCTURE 1330-1339.
- * INTERROGATION: три больших знака «?» картами с лайм-glow появляются по очереди,
- * под каждым — сам вопрос. Завязка прививки от возражений.
+ * Слайд 107 · «У вас в голове 3 вопроса». Текст 1-в-1 STRUCTURE 1330-1339.
+ * DESIGN-LANGUAGE: DL-3 editorial × DL-5 cinematic (см. references/DESIGN_LANGUAGES.md).
+ * НЕ дефолт-сетка: гигантские ghost-номера outline + вопросы во всю ширину + hairline-линии +
+ * dot-grid текстура + шторный clip-path reveal. Оранж-кикер (возражение = оранж-семантика).
  */
 const QUESTIONS = [
-  "А я смогу?",
-  "А реально ли заработать?",
-  "А сколько это стоит и где взять время?",
+  { n: "01", q: "А Я", hl: "СМОГУ?" },
+  { n: "02", q: "А РЕАЛЬНО ЛИ", hl: "ЗАРАБОТАТЬ?" },
+  { n: "03", q: "СКОЛЬКО СТОИТ И ГДЕ ВЗЯТЬ", hl: "ВРЕМЯ?" },
 ];
 
 export function Slide_107_ThreeQuestions() {
   return (
     <SlideLayout
       speakerSide="right"
-      contentMinWidth={720}
-      background={<SlideBg theme="dark" variant="lime-right" />}
+      contentMinWidth={760}
+      background={
+        <>
+          <SlideBg theme="dark" variant="orange-pain" />
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+              maskImage: "radial-gradient(ellipse 85% 75% at 28% 42%, #000 38%, transparent 100%)",
+              WebkitMaskImage: "radial-gradient(ellipse 85% 75% at 28% 42%, #000 38%, transparent 100%)",
+            }}
+          />
+        </>
+      }
     >
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3"
-      >
-        // ПРИВИВКА ОТ ВОЗРАЖЕНИЙ
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#FC5C02] mb-3">
+        // ДАВАЙТЕ ЧЕСТНО — Я ЗНАЮ КАКИЕ
       </motion.div>
 
-      <motion.h1
-        initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
-        animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
-        transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
-        className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8vw, 58px)" }}
-      >
-        У ВАС СЕЙЧАС В ГОЛОВЕ <span className="text-[#B6FF00]">3 ВОПРОСА</span>
-      </motion.h1>
-
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-        className="text-white/65 text-base md:text-lg leading-snug max-w-2xl mb-7"
-      >
-        Давайте честно — я знаю какие.
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.15 }} className="text-white/50 font-mono text-xs uppercase tracking-[0.2em] mb-5">
+        У вас сейчас в голове
       </motion.div>
 
-      {/* 3 знака вопроса картами */}
-      <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
-        {QUESTIONS.map((q, i) => (
+      <div className="flex flex-col max-w-3xl">
+        {QUESTIONS.map((item, i) => (
           <motion.div
-            key={q}
-            initial={{ opacity: 0, y: 26, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 + i * 0.25, ease: [0.34, 1.4, 0.64, 1] }}
-            className="relative rounded-2xl px-4 py-5 flex flex-col items-center text-center gap-3"
-            style={{ background: "rgba(182,255,0,0.05)", border: "1px solid rgba(182,255,0,0.25)" }}
+            key={item.n}
+            initial={{ opacity: 0, clipPath: "inset(0 0 100% 0)" }}
+            animate={{ opacity: 1, clipPath: "inset(0 0 0% 0)" }}
+            transition={{ duration: 0.6, delay: 0.4 + i * 0.28, ease: [0.25, 1, 0.5, 1] }}
+            className="relative flex items-center gap-5 py-4"
+            style={{ borderTop: i === 0 ? "1px solid rgba(255,255,255,0.12)" : undefined, borderBottom: "1px solid rgba(255,255,255,0.12)" }}
           >
-            <motion.span
-              animate={{ opacity: [1, 0.55, 1] }}
-              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
-              className="font-bold leading-none"
-              style={{
-                fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-                fontSize: "clamp(64px, 8vw, 120px)",
-                color: "#B6FF00",
-                textShadow: "0 0 60px rgba(182,255,0,0.55), 0 0 120px rgba(182,255,0,0.25)",
-              }}
+            <span
+              className="font-bold leading-none shrink-0 select-none"
+              style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(46px, 6vw, 92px)", color: "transparent", WebkitTextStroke: "1.5px rgba(182,255,0,0.45)" }}
             >
-              ?
-            </motion.span>
-            <span className="text-white/90 text-sm md:text-base font-semibold leading-tight">{q}</span>
+              {item.n}
+            </span>
+            <span
+              className="font-bold uppercase text-white leading-[0.98] tracking-[-0.02em]"
+              style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.8vw, 40px)" }}
+            >
+              {item.q} <span className="text-[#B6FF00]">{item.hl}</span>
+            </span>
           </motion.div>
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.6 }}
-        className="text-white/75 text-base md:text-lg leading-snug max-w-2xl"
-      >
-        Разберёмся по очереди — коротко, без воды. Программу обсудим дальше.
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 1.35 }} className="text-white/60 text-sm md:text-base mt-6 max-w-2xl">
+        Разберёмся по очереди — <span className="text-white/90 font-medium">коротко, без воды.</span>
       </motion.div>
     </SlideLayout>
   );

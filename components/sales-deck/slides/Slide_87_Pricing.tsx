@@ -37,7 +37,7 @@ export function Slide_87_Pricing() {
         Подписка Claude — стартовый план Pro.
       </motion.div>
 
-      <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
+      <div className="grid grid-cols-3 gap-4 max-w-4xl mb-6">
         {PLANS.map((p, i) => (
           <motion.div
             key={p.name + p.price}
@@ -49,7 +49,7 @@ export function Slide_87_Pricing() {
           >
             <div className="text-white/50 font-mono text-xs uppercase tracking-[0.14em] mb-2">{p.name}{p.me && " · я"}</div>
             <div className="flex items-baseline gap-1 mb-3">
-              <span className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(36px,4vw,60px)", color: p.start ? "#B6FF00" : "#FFFFFF" }}>{p.price}</span>
+              <span className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.2vw,48px)", color: p.start ? "#B6FF00" : "#FFFFFF" }}>{p.price}</span>
               <span className="text-white/40 text-sm">{p.per}</span>
             </div>
             <div className="text-white/55 text-xs md:text-sm leading-snug mb-2">{p.d}</div>

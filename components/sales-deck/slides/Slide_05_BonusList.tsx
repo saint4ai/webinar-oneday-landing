@@ -90,7 +90,7 @@ export function Slide_05_BonusList() {
                 boxShadow: `0 0 0 1px rgba(255,255,255,0.04), 0 30px 60px -25px ${color}55, 0 0 50px -15px ${color}40`,
               }}
             >
-              <div className="relative w-full aspect-[2/3]">
+              <div className="relative w-full aspect-[4/5]">
                 <Image
                   src={b.img}
                   alt={b.title}

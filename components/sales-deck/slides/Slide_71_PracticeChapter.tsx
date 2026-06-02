@@ -10,7 +10,7 @@ export function Slide_71_PracticeChapter() {
   return (
     <CyberpunkChapter
       chapterNumber="ПРАКТИКА"
-      subtitle="Соберём Android-приложение прямо сейчас"
+      subtitle="Приступаем к практической части. Сначала коротко разберём инструмент — Google AI Studio — а потом соберём Android-приложение вживую"
     />
   );
 }

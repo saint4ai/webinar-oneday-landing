@@ -23,8 +23,8 @@ export function Slide_47_HRPain() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="33vw"
-      contentMinWidth={600}
+      objectColumnSize="28vw"
+      contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
         <div className="relative h-screen w-full overflow-hidden">

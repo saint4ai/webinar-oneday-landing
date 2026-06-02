@@ -21,7 +21,7 @@ export function Slide_80_FeelEngagement() {
         transition={{ duration: 0.4 }}
         className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-4"
       >
-        // ENGAGEMENT
+        // ВОПРОС В ЧАТ
       </motion.div>
 
       <motion.h1

@@ -37,7 +37,7 @@ export function Slide_60_MarketCIS() {
           className="font-bold leading-[0.9] tabular-nums"
           style={{
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(64px, 9vw, 160px)",
+            fontSize: "clamp(56px, 7vw, 132px)",
             background: "linear-gradient(120deg, #B6FF00 30%, #FC5C02)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
@@ -62,7 +62,7 @@ export function Slide_60_MarketCIS() {
       {/* Сравнение KZ → СНГ */}
       <div className="flex flex-col gap-4 max-w-3xl">
         {[
-          { label: "Казахстан", value: "2 млн", frac: 2 / 13, c: "#B6FF00", delay: 0.7 },
+          { label: "Казахстан", value: "более 2 млн", frac: 2 / 13, c: "#B6FF00", delay: 0.7 },
           { label: "СНГ", value: "13 млн", frac: 1, c: "linear-gradient(90deg, #B6FF00, #FC5C02)", delay: 0.95 },
         ].map((b) => (
           <div key={b.label} className="flex items-center gap-4">
@@ -72,12 +72,11 @@ export function Slide_60_MarketCIS() {
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: b.frac }}
                 transition={{ duration: 1.1, delay: b.delay, ease: [0.25, 1, 0.5, 1] }}
-                className="absolute inset-y-0 left-0 right-0 rounded-lg origin-left flex items-center justify-end pr-3"
+                className="absolute inset-y-0 left-0 right-0 rounded-lg origin-left"
                 style={{ background: b.c }}
-              >
-                <span className="font-bold text-black text-sm" style={{ fontFamily: "var(--font-benzin), system-ui" }}>{b.value}</span>
-              </motion.div>
+              />
             </div>
+            <span className="font-bold text-[#B6FF00] text-sm md:text-base shrink-0 whitespace-nowrap tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui" }}>{b.value}</span>
           </div>
         ))}
       </div>

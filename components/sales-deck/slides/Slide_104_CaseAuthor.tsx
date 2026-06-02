@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { ImageIcon } from "lucide-react";
 
 /**
  * Слайд 104 · Кейс 5 — Я (Александр). Текст по STRUCTURE 1291-1302.
@@ -12,8 +11,8 @@ import { ImageIcon } from "lucide-react";
 const STATS = [
   { v: "3 мес", l: "срок" },
   { v: "1", l: "человек" },
-  { v: "$800", l: "на инструменты" },
-  { v: "250+", l: "учеников" },
+  { v: "$1800", l: "на ИИ-разработку" },
+  { v: "250+", l: "учатся на платформе" },
 ];
 
 export function Slide_104_CaseAuthor() {
@@ -28,18 +27,19 @@ export function Slide_104_CaseAuthor() {
           initial={{ opacity: 0, scale: 0.96, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
-          className="relative w-full rounded-2xl overflow-hidden border border-dashed flex flex-col items-center justify-center gap-2 text-center"
-          style={{ aspectRatio: "4 / 3", borderColor: "rgba(182,255,0,0.32)", background: "rgba(182,255,0,0.03)" }}
+          className="relative w-full rounded-2xl overflow-hidden border flex flex-col"
+          style={{ aspectRatio: "16 / 10", borderColor: "rgba(182,255,0,0.32)", background: "#0b0e0a", boxShadow: "0 30px 70px -28px rgba(0,0,0,0.7), 0 0 60px -26px rgba(182,255,0,0.3)" }}
         >
-          <div className="flex items-center gap-2 px-3.5 py-2 absolute top-0 left-0 right-0" style={{ background: "rgba(182,255,0,0.07)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-center gap-2 px-3.5 py-2 shrink-0" style={{ background: "rgba(182,255,0,0.07)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
             <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
             <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
             <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
             <span className="ml-2 font-mono text-[11px] text-white/45">onai.academy</span>
           </div>
-          <ImageIcon className="w-8 h-8 text-white/30" strokeWidth={1.5} />
-          <span className="text-white/45 text-xs font-mono uppercase tracking-[0.1em]">скрин платформы onAI</span>
-          <span className="text-white/25 text-[10px]">добавит Александр</span>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/handouts/screens/platform_onai.png" alt="Платформа onAI.academy" className="w-full h-full object-contain" />
+          </div>
         </motion.div>
       }
     >
@@ -66,7 +66,7 @@ export function Slide_104_CaseAuthor() {
         </motion.div>
         <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.75 }} className="rounded-xl px-4 py-3 mt-2" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.35)", boxShadow: "0 0 50px -18px rgba(182,255,0,0.5)" }}>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#B6FF00] mb-1">стало</div>
-          <div className="text-white text-sm md:text-base leading-snug font-medium">Собственная платформа: AI-наставник 24/7, аналитика прогресса, персональный путь.</div>
+          <div className="text-white text-sm md:text-base leading-snug font-medium">Собственная платформа: AI-куратор 24/7, аналитика прогресса, геймификация и достижения, персональный путь.</div>
         </motion.div>
       </div>
 

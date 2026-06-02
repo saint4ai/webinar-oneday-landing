@@ -104,7 +104,7 @@ export function Slide_44_ManagerSolution() {
           transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 1, 0.5, 1] }}
           className="flex-1 min-h-0 flex flex-col justify-end mt-6"
         >
-          <div className="relative w-full" style={{ maxHeight: "100%" }}>
+          <div className="relative w-full" style={{ maxHeight: "100%", maxWidth: 820 }}>
             {/* дашборд в браузер-рамке */}
             <div
               className="relative w-full rounded-xl overflow-hidden border border-white/15"
@@ -145,8 +145,8 @@ export function Slide_44_ManagerSolution() {
               transition={{ duration: 0.6, delay: 1.1, ease: [0.25, 1, 0.5, 1] }}
               className="absolute z-20 rounded-2xl p-4 w-[300px] md:w-[340px]"
               style={{
-                right: "-6px",
-                bottom: "-14px",
+                right: "0px",
+                bottom: "8px",
                 background: "rgba(10,12,14,0.92)",
                 backdropFilter: "blur(14px)",
                 border: "1px solid rgba(182,255,0,0.3)",

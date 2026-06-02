@@ -54,7 +54,6 @@ import { Slide_47_HRPain } from "./slides/Slide_47_HRPain";
 import { Slide_48_HRSolution } from "./slides/Slide_48_HRSolution";
 import { Slide_49_NichePunchline } from "./slides/Slide_49_NichePunchline";
 import { Slide_50_Engagement2 } from "./slides/Slide_50_Engagement2";
-import { Slide_51_MarketPrice } from "./slides/Slide_51_MarketPrice";
 import { Slide_52_MarketTime } from "./slides/Slide_52_MarketTime";
 import { Slide_53_Research1 } from "./slides/Slide_53_Research1";
 import { Slide_54_Research2 } from "./slides/Slide_54_Research2";
@@ -64,7 +63,6 @@ import { Slide_57_Research5Perplexity } from "./slides/Slide_57_Research5Perplex
 import { Slide_58_WhereClients } from "./slides/Slide_58_WhereClients";
 import { Slide_59_MarketKZ } from "./slides/Slide_59_MarketKZ";
 import { Slide_60_MarketCIS } from "./slides/Slide_60_MarketCIS";
-import { Slide_61_YandexDemand } from "./slides/Slide_61_YandexDemand";
 import { Slide_62_ThreadsDemand } from "./slides/Slide_62_ThreadsDemand";
 import { Slide_63_EnoughMarket } from "./slides/Slide_63_EnoughMarket";
 import { Slide_64_MarketEngagement } from "./slides/Slide_64_MarketEngagement";
@@ -85,6 +83,8 @@ import { Slide_78_WebApps } from "./slides/Slide_78_WebApps";
 import { Slide_79_MainConclusion } from "./slides/Slide_79_MainConclusion";
 import { Slide_80_FeelEngagement } from "./slides/Slide_80_FeelEngagement";
 import { Slide_81_RoutineTransition } from "./slides/Slide_81_RoutineTransition";
+import { Slide_RoutineChapter } from "./slides/Slide_RoutineChapter";
+import { Slide_BonusReminder } from "./slides/Slide_BonusReminder";
 import { Slide_82_SeventyPercent } from "./slides/Slide_82_SeventyPercent";
 import { Slide_83_ForWhom } from "./slides/Slide_83_ForWhom";
 import { Slide_84_ClaudeCodeJarvis } from "./slides/Slide_84_ClaudeCodeJarvis";
@@ -110,6 +110,83 @@ import { Slide_103_CaseVladislav } from "./slides/Slide_103_CaseVladislav";
 import { Slide_104_CaseAuthor } from "./slides/Slide_104_CaseAuthor";
 import { Slide_105_CasesSummary } from "./slides/Slide_105_CasesSummary";
 import { Slide_106_CasesEngagement } from "./slides/Slide_106_CasesEngagement";
+import { Slide_107_ThreeQuestions } from "./slides/Slide_107_ThreeQuestions";
+import { Slide_108_CanIDoIt } from "./slides/Slide_108_CanIDoIt";
+import { Slide_109_Question2 } from "./slides/Slide_109_Question2";
+import { Slide_110_WhatYouNeed } from "./slides/Slide_110_WhatYouNeed";
+import { Slide_111_WhatIBuilt } from "./slides/Slide_111_WhatIBuilt";
+import { Slide_112_NotCourse } from "./slides/Slide_112_NotCourse";
+import { Slide_113_ProgramOverview } from "./slides/Slide_113_ProgramOverview";
+import { Slide_114_Module1 } from "./slides/Slide_114_Module1";
+import { Slide_114b_Module1Result } from "./slides/Slide_114b_Module1Result";
+import { Slide_115_Module2 } from "./slides/Slide_115_Module2";
+import { Slide_115b_Module2Result } from "./slides/Slide_115b_Module2Result";
+import { Slide_116_Module3 } from "./slides/Slide_116_Module3";
+import { Slide_116b_Module3Result } from "./slides/Slide_116b_Module3Result";
+import { Slide_117_Module4 } from "./slides/Slide_117_Module4";
+import { Slide_117b_Module4Result } from "./slides/Slide_117b_Module4Result";
+import { Slide_118_Module5 } from "./slides/Slide_118_Module5";
+import { Slide_118b_Module5Result } from "./slides/Slide_118b_Module5Result";
+import { Slide_119_Module6 } from "./slides/Slide_119_Module6";
+import { Slide_119b_Module6Result } from "./slides/Slide_119b_Module6Result";
+import { Slide_120_Module7 } from "./slides/Slide_120_Module7";
+import { Slide_120b_Module7Result } from "./slides/Slide_120b_Module7Result";
+import { Slide_121_Module8 } from "./slides/Slide_121_Module8";
+import { Slide_121b_Module8Result } from "./slides/Slide_121b_Module8Result";
+import { Slide_122_Module9 } from "./slides/Slide_122_Module9";
+import { Slide_122b_Module9Result } from "./slides/Slide_122b_Module9Result";
+import { Slide_123_Module10 } from "./slides/Slide_123_Module10";
+import { Slide_123b_Module10Result } from "./slides/Slide_123b_Module10Result";
+import { Slide_124_VibeEngine } from "./slides/Slide_124_VibeEngine";
+import { Slide_125_WhoTeaches } from "./slides/Slide_125_WhoTeaches";
+import { Slide_126_Platform } from "./slides/Slide_126_Platform";
+import { Slide_127_ValueDecomposition } from "./slides/Slide_127_ValueDecomposition";
+import { Slide_128_FullPrice } from "./slides/Slide_128_FullPrice";
+import { Slide_128b_PaysOff } from "./slides/Slide_128b_PaysOff";
+import { Slide_129_SecondTier } from "./slides/Slide_129_SecondTier";
+import { Slide_130_WithVsWithout } from "./slides/Slide_130_WithVsWithout";
+import { Slide_131_SpecialPrice } from "./slides/Slide_131_SpecialPrice";
+import { Slide_132_PrepayBonuses } from "./slides/Slide_132_PrepayBonuses";
+import { Slide_133_QR1 } from "./slides/Slide_133_QR1";
+import { Slide_134_BonusB1 } from "./slides/Slide_134_BonusB1";
+import { Slide_135_BonusB2 } from "./slides/Slide_135_BonusB2";
+import { Slide_136_BonusB3 } from "./slides/Slide_136_BonusB3";
+import { Slide_137_WhatYouGet } from "./slides/Slide_137_WhatYouGet";
+import { Slide_138_PerDay } from "./slides/Slide_138_PerDay";
+import { Slide_139_QR2 } from "./slides/Slide_139_QR2";
+import { Slide_140_Timer } from "./slides/Slide_140_Timer";
+import { Slide_141_HowToPay } from "./slides/Slide_141_HowToPay";
+import { Slide_142_OTOHeader } from "./slides/Slide_142_OTOHeader";
+import { Slide_143_OTO1 } from "./slides/Slide_143_OTO1";
+import { Slide_143a_Cases } from "./slides/Slide_143a_Cases";
+import { Slide_143b_BonusProgram } from "./slides/Slide_143b_BonusProgram";
+import { Slide_144_OTO2 } from "./slides/Slide_144_OTO2";
+import { Slide_145_OTO3 } from "./slides/Slide_145_OTO3";
+import { Slide_146_OTO4 } from "./slides/Slide_146_OTO4";
+import { Slide_147_OTOSummary } from "./slides/Slide_147_OTOSummary";
+import { Slide_148_QR3 } from "./slides/Slide_148_QR3";
+import { Slide_149_QAHeader } from "./slides/Slide_149_QAHeader";
+import { Slide_150_ObjNoMoney } from "./slides/Slide_150_ObjNoMoney";
+import { Slide_151_ObjWontWork } from "./slides/Slide_151_ObjWontWork";
+import { Slide_152_ObjNoCredit } from "./slides/Slide_152_ObjNoCredit";
+import { Slide_153_ObjNoClient } from "./slides/Slide_153_ObjNoClient";
+import { Slide_154_Guarantee } from "./slides/Slide_154_Guarantee";
+import { Slide_155_QAEngagement } from "./slides/Slide_155_QAEngagement";
+import { Slide_156_BaitChapter } from "./slides/Slide_156_BaitChapter";
+import { Slide_157_ThreeWays } from "./slides/Slide_157_ThreeWays";
+import { Slide_158_MoneyPunchline } from "./slides/Slide_158_MoneyPunchline";
+import { Slide_159_WhatYouTake } from "./slides/Slide_159_WhatYouTake";
+import { Slide_160_FinalEngagement } from "./slides/Slide_160_FinalEngagement";
+import { Slide_161_FourBonuses } from "./slides/Slide_161_FourBonuses";
+import { Slide_162_Bonus4Stories } from "./slides/Slide_162_Bonus4Stories";
+import { Slide_163_HowToGetBonuses } from "./slides/Slide_163_HowToGetBonuses";
+import { Slide_164_WhereNotToWrite } from "./slides/Slide_164_WhereNotToWrite";
+import { Slide_165_CodeWord } from "./slides/Slide_165_CodeWord";
+import { Slide_166_Instagram } from "./slides/Slide_166_Instagram";
+import { Slide_167_FinalReminder } from "./slides/Slide_167_FinalReminder";
+import { Slide_168_FinalQR } from "./slides/Slide_168_FinalQR";
+import { Slide_169_ThankYou } from "./slides/Slide_169_ThankYou";
+import { Slide_170_FinalFrame } from "./slides/Slide_170_FinalFrame";
 
 /**
  * SalesDeck — список всех слайдов в правильном порядке.
@@ -185,7 +262,6 @@ export function SalesDeck() {
 
     /* === ЧАСТЬ V · РЫНОК + RESEARCH (50-57) === */
     <Slide_50_Engagement2 key="50" />,
-    <Slide_51_MarketPrice key="51" />,
     <Slide_52_MarketTime key="52" />,
     <Slide_53_Research1 key="53" />,
     <Slide_54_Research2 key="54" />,
@@ -197,7 +273,6 @@ export function SalesDeck() {
     <Slide_58_WhereClients key="58" />,
     <Slide_59_MarketKZ key="59" />,
     <Slide_60_MarketCIS key="60" />,
-    <Slide_61_YandexDemand key="61" />,
     <Slide_62_ThreadsDemand key="62" />,
     <Slide_63_EnoughMarket key="63" />,
     <Slide_64_MarketEngagement key="64" />,
@@ -220,9 +295,97 @@ export function SalesDeck() {
     <Slide_77_MarketPrice key="77" />,
     <Slide_78_WebApps key="78" />,
     <Slide_79_MainConclusion key="79" />,
+    <Slide_BonusReminder key="bonus-reminder" />,
     <Slide_80_FeelEngagement key="80" />,
 
-    /* === ЧАСТЬ VIII · АВТОМАТИЗАЦИЯ РУТИНЫ (81-98) === */
+    /* === ЧАСТЬ IX · КЕЙСЫ УЧЕНИКОВ (99-106) === */
+    <Slide_99_CasesChapter key="99" />,
+    <Slide_100_CaseAidos key="100" />,
+    <Slide_101_CaseRenat key="101" />,
+    <Slide_102_CaseMerey key="102" />,
+    <Slide_103_CaseVladislav key="103" />,
+    <Slide_104_CaseAuthor key="104" />,
+    <Slide_105_CasesSummary key="105" />,
+    <Slide_106_CasesEngagement key="106" />,
+
+    /* === ЧАСТЬ X · ПРИВИВКА ОТ ВОЗРАЖЕНИЙ (107-109) === */
+    <Slide_107_ThreeQuestions key="107" />,
+    <Slide_108_CanIDoIt key="108" />,
+    <Slide_109_Question2 key="109" />,
+
+    /* === ЧАСТЬ XI · ПЕРЕХОД К ПРОДАЖЕ (110-111) === */
+    <Slide_110_WhatYouNeed key="110" />,
+    <Slide_111_WhatIBuilt key="111" />,
+
+    /* === ЧАСТЬ XII · ПРОГРАММА (112+) — модуль → результат модуля === */
+    <Slide_112_NotCourse key="112" />,
+    <Slide_113_ProgramOverview key="113" />,
+    <Slide_114_Module1 key="114" />,
+    <Slide_114b_Module1Result key="114b" />,
+    <Slide_115_Module2 key="115" />,
+    <Slide_115b_Module2Result key="115b" />,
+    <Slide_116_Module3 key="116" />,
+    <Slide_116b_Module3Result key="116b" />,
+    <Slide_117_Module4 key="117" />,
+    <Slide_117b_Module4Result key="117b" />,
+    <Slide_118_Module5 key="118" />,
+    <Slide_118b_Module5Result key="118b" />,
+    <Slide_119_Module6 key="119" />,
+    <Slide_119b_Module6Result key="119b" />,
+    <Slide_120_Module7 key="120" />,
+    <Slide_120b_Module7Result key="120b" />,
+    <Slide_121_Module8 key="121" />,
+    <Slide_121b_Module8Result key="121b" />,
+    <Slide_122_Module9 key="122" />,
+    <Slide_122b_Module9Result key="122b" />,
+    <Slide_123_Module10 key="123" />,
+    <Slide_123b_Module10Result key="123b" />,
+    <Slide_124_VibeEngine key="124" />,
+    <Slide_125_WhoTeaches key="125" />,
+    <Slide_126_Platform key="126" />,
+
+    /* === ЧАСТЬ XIII · ЦЕННОСТЬ + XIV ПОЧЕМУ БЫСТРЕЕ (127-130) === */
+    <Slide_127_ValueDecomposition key="127" />,
+    <Slide_128_FullPrice key="128" />,
+    <Slide_128b_PaysOff key="128b" />,
+    <Slide_129_SecondTier key="129" />,
+    <Slide_130_WithVsWithout key="130" />,
+
+    /* === ЧАСТЬ XV · СПЕЦИАЛЬНОЕ ОКНО (131-139) === */
+    <Slide_131_SpecialPrice key="131" />,
+    <Slide_132_PrepayBonuses key="132" />,
+    <Slide_133_QR1 key="133" />,
+    <Slide_134_BonusB1 key="134" />,
+    <Slide_135_BonusB2 key="135" />,
+    <Slide_136_BonusB3 key="136" />,
+    <Slide_137_WhatYouGet key="137" />,
+    <Slide_138_PerDay key="138" />,
+    <Slide_139_QR2 key="139" />,
+
+    /* === ЧАСТЬ XVI · ДЕДЛАЙН (140-141) + XVII · OTO-БОНУСЫ (142-148) === */
+    <Slide_140_Timer key="140" />,
+    <Slide_141_HowToPay key="141" />,
+    <Slide_142_OTOHeader key="142" />,
+    <Slide_143_OTO1 key="143" />,
+    <Slide_143a_Cases key="143a" />,
+    <Slide_143b_BonusProgram key="143b" />,
+    <Slide_144_OTO2 key="144" />,
+    <Slide_145_OTO3 key="145" />,
+    <Slide_146_OTO4 key="146" />,
+    <Slide_147_OTOSummary key="147" />,
+    <Slide_148_QR3 key="148" />,
+
+    /* === ЧАСТЬ XVIII · Q&A + ВОЗРАЖЕНИЯ (149-155) + XIX · BAIT (156-158) === */
+    <Slide_149_QAHeader key="149" />,
+    <Slide_150_ObjNoMoney key="150" />,
+    <Slide_151_ObjWontWork key="151" />,
+    <Slide_152_ObjNoCredit key="152" />,
+    <Slide_153_ObjNoClient key="153" />,
+    <Slide_154_Guarantee key="154" />,
+    <Slide_155_QAEngagement key="155" />,
+
+    /* === ЭКСПЕРТНЫЙ КОНТЕНТ #2 · РУТИНА (перенесено: после финальной цены = «ещё большее обещание») === */
+    <Slide_RoutineChapter key="routine-chapter" />,
     <Slide_81_RoutineTransition key="81" />,
     <Slide_82_SeventyPercent key="82" />,
     <Slide_83_ForWhom key="83" />,
@@ -242,15 +405,24 @@ export function SalesDeck() {
     <Slide_97_AgentRules key="97" />,
     <Slide_98_LadderTransition key="98" />,
 
-    /* === ЧАСТЬ IX · КЕЙСЫ УЧЕНИКОВ (99-106) === */
-    <Slide_99_CasesChapter key="99" />,
-    <Slide_100_CaseAidos key="100" />,
-    <Slide_101_CaseRenat key="101" />,
-    <Slide_102_CaseMerey key="102" />,
-    <Slide_103_CaseVladislav key="103" />,
-    <Slide_104_CaseAuthor key="104" />,
-    <Slide_105_CasesSummary key="105" />,
-    <Slide_106_CasesEngagement key="106" />,
+    /* === ВТОРАЯ ПРОДАЖА · ДОЖИМ (для не успевших — снова предоплата) === */
+    <Slide_156_BaitChapter key="156" />,
+    <Slide_157_ThreeWays key="157" />,
+    <Slide_158_MoneyPunchline key="158" />,
+
+    /* === ЧАСТЬ XX · ВТОРОЕ ОКНО ПРОДАЖ + ФИНАЛЬНЫЙ CTA (159-170) === */
+    <Slide_159_WhatYouTake key="159" />,
+    <Slide_160_FinalEngagement key="160" />,
+    <Slide_161_FourBonuses key="161" />,
+    <Slide_162_Bonus4Stories key="162" />,
+    <Slide_163_HowToGetBonuses key="163" />,
+    <Slide_164_WhereNotToWrite key="164" />,
+    <Slide_165_CodeWord key="165" />,
+    <Slide_166_Instagram key="166" />,
+    <Slide_167_FinalReminder key="167" />,
+    <Slide_168_FinalQR key="168" />,
+    <Slide_169_ThankYou key="169" />,
+    <Slide_170_FinalFrame key="170" />,
   ];
 
   return <SlideDeck slides={slides} />;

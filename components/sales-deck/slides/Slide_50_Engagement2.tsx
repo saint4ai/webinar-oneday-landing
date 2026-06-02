@@ -32,7 +32,7 @@ export function Slide_50_Engagement2() {
         transition={{ duration: 0.4 }}
         className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-4"
       >
-        // ENGAGEMENT
+        // ВОПРОС В ЧАТ
       </motion.div>
 
       <motion.h1
@@ -42,10 +42,10 @@ export function Slide_50_Engagement2() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(36px, 4.6vw, 72px)",
+          fontSize: "clamp(28px, 3.6vw, 58px)",
         }}
       >
-        ВЫ БЫ ЭТО <span className="text-[#B6FF00]">ПРОДАЛИ?</span>
+        СМОГЛИ БЫ НАЙТИ <span className="text-[#B6FF00]">КЛИЕНТА</span> НА ТАКОЕ РЕШЕНИЕ?
       </motion.h1>
 
       <motion.div

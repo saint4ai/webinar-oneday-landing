@@ -53,20 +53,23 @@ export function Slide_70_QualityPunchline() {
 
       {/* Диаграмма: 4 инструмента → PRODUCTION QUALITY */}
       <div className="relative max-w-3xl mb-6" style={{ height: 230 }}>
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {TOOLS.map((t, i) => (
-            <motion.path
-              key={i}
-              d={`M 28 ${t.y} C 52 ${t.y}, 60 50, 74 50`}
-              fill="none"
-              stroke="#B6FF00"
-              strokeWidth="0.6"
-              strokeOpacity="0.5"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.8, delay: 0.7 + i * 0.16, ease: "easeInOut" }}
-            />
-          ))}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 768 230" preserveAspectRatio="none">
+          {TOOLS.map((t, i) => {
+            const y = (t.y / 100) * 230;
+            return (
+              <motion.path
+                key={i}
+                d={`M 200 ${y} C 360 ${y}, 440 115, 478 115`}
+                fill="none"
+                stroke="#B6FF00"
+                strokeWidth="2"
+                strokeOpacity="0.5"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.8, delay: 0.7 + i * 0.16, ease: "easeInOut" }}
+              />
+            );
+          })}
         </svg>
 
         {TOOLS.map((t, i) => {
@@ -74,11 +77,11 @@ export function Slide_70_QualityPunchline() {
           return (
             <motion.div
               key={t.t}
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, x: -16, y: "-50%" }}
+              animate={{ opacity: 1, x: 0, y: "-50%" }}
               transition={{ duration: 0.45, delay: 0.5 + i * 0.16 }}
               className="absolute flex items-center gap-2.5 rounded-xl px-3 py-2"
-              style={{ top: `${t.y}%`, left: 0, transform: "translateY(-50%)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(182,255,0,0.2)", width: "28%" }}
+              style={{ top: `${t.y}%`, left: 0, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(182,255,0,0.2)", width: "28%" }}
             >
               <Icon className="w-4 h-4 text-[#B6FF00] shrink-0" strokeWidth={1.9} />
               <div className="min-w-0">
@@ -91,13 +94,13 @@ export function Slide_70_QualityPunchline() {
 
         {/* Плашка PRODUCTION QUALITY */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.7, x: "-50%", y: "-50%" }}
+          animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
           transition={{ duration: 0.6, delay: 1.5, ease: [0.34, 1.56, 0.64, 1] }}
           className="absolute flex flex-col items-center justify-center rounded-2xl text-center px-5"
-          style={{ top: "50%", left: "74%", transform: "translate(-50%,-50%)", width: 180, height: 100, background: "rgba(182,255,0,0.12)", border: "2px solid #B6FF00", boxShadow: "0 0 60px rgba(182,255,0,0.5)" }}
+          style={{ top: "50%", left: "74%", width: 180, height: 100, background: "rgba(182,255,0,0.12)", border: "2px solid #B6FF00", boxShadow: "0 0 60px rgba(182,255,0,0.5)" }}
         >
-          <span className="font-bold uppercase leading-[1.05]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 20, color: "#B6FF00" }}>PRODUCTION<br />QUALITY</span>
+          <span className="font-bold uppercase leading-[1.05]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 16, color: "#B6FF00" }}>PRODUCTION<br />QUALITY</span>
         </motion.div>
       </div>
 

@@ -11,7 +11,7 @@ export function Slide_103_CaseVladislav() {
     <CaseSlide
       caseNo="4"
       name="ВЛАДИСЛАВ"
-      sub="Считал прибыль экспедиторам в Excel. После курса — запустил для них SaaS."
+      sub="Считал прибыль экспедиторам в Excel. После обучения — запустил для них SaaS."
       screenshot="/testimonials/vladislav.png"
       handle="Владислав · CASE_STUDY.md"
       pain="Готовых SaaS под экспедиторов KZ нет. Глобальные — английские, не работают с курсом НБ РК."

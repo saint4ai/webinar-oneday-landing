@@ -74,9 +74,9 @@ export function Slide_68_HiggsfieldInside() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 1.1, ease: [0.25, 1, 0.5, 1] }}
           className="relative rounded-xl overflow-hidden shrink-0"
-          style={{ width: 150, height: 188, boxShadow: "0 24px 50px -16px rgba(0,0,0,0.7), 0 0 50px -16px rgba(182,255,0,0.4)" }}
+          style={{ width: 176, height: 220, background: "#0b0e0a", boxShadow: "0 24px 50px -16px rgba(0,0,0,0.7), 0 0 50px -16px rgba(182,255,0,0.4)" }}
         >
-          <Image src="/bonuses/bonus-1.png" alt="Готовая бонус-карточка, сгенерённая через Claude + Higgsfield" fill className="object-cover" sizes="160px" />
+          <Image src="/bonuses/bonus-1.png" alt="Готовая бонус-карточка, сгенерённая через Claude + Higgsfield" fill className="object-contain" sizes="200px" />
         </motion.div>
       </div>
 

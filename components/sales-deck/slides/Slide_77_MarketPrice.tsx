@@ -9,8 +9,8 @@ import { SlideLayout } from "../SlideLayout";
  * Сравнение цен: ты (вайбкодер) 500-800К vs студия от 1.5М. Цифры на проверку.
  */
 const ROWS = [
-  { label: "ТЫ собрал сам", value: "500–800 тыс ₸", sub: "за заказ", frac: 0.45, grad: "linear-gradient(90deg,#B6FF00,#8FCC00)", ink: "#0A0B0F" },
-  { label: "Студия", value: "от 1.5 млн ₸", sub: "за то же самое", frac: 1, grad: "linear-gradient(90deg,#FC5C02,#FF7A2A)", ink: "#FFFFFF" },
+  { label: "ТЫ собрал сам", value: "300–800 тыс ₸", sub: "за заказ", frac: 0.45, grad: "linear-gradient(90deg,#B6FF00,#8FCC00)", vc: "#B6FF00" },
+  { label: "Студия", value: "от 1.5 млн ₸", sub: "за то же самое", frac: 1, grad: "linear-gradient(90deg,#FC5C02,#FF7A2A)", vc: "#FC5C02" },
 ];
 
 export function Slide_77_MarketPrice() {
@@ -45,7 +45,7 @@ export function Slide_77_MarketPrice() {
         transition={{ duration: 0.6, delay: 0.4 }}
         className="text-white/65 text-base md:text-lg leading-snug mb-9"
       >
-        500–800 тысяч ₸ за заказ. Студии берут от 1.5 миллиона.
+        От 300 до 800 тысяч ₸ за заказ. Студии берут от 1.5 миллиона.
       </motion.div>
 
       <div className="flex flex-col gap-5 max-w-3xl">
@@ -57,12 +57,13 @@ export function Slide_77_MarketPrice() {
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: r.frac }}
                 transition={{ duration: 1.1, delay: 0.6 + i * 0.25, ease: [0.25, 1, 0.5, 1] }}
-                className="absolute inset-y-0 left-0 right-0 rounded-xl origin-left flex items-center justify-between px-4"
+                className="absolute inset-y-0 left-0 right-0 rounded-xl origin-left"
                 style={{ background: r.grad }}
-              >
-                <span className="font-bold text-sm md:text-base" style={{ fontFamily: "var(--font-benzin), system-ui", color: r.ink }}>{r.value}</span>
-                <span className="text-xs font-medium" style={{ color: r.ink, opacity: 0.7 }}>{r.sub}</span>
-              </motion.div>
+              />
+            </div>
+            <div className="shrink-0 w-[175px]">
+              <div className="font-bold text-sm md:text-base whitespace-nowrap leading-tight" style={{ fontFamily: "var(--font-benzin), system-ui", color: r.vc }}>{r.value}</div>
+              <div className="text-xs text-white/45">{r.sub}</div>
             </div>
           </div>
         ))}

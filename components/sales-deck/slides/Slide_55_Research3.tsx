@@ -83,14 +83,13 @@ export function Slide_55_Research3() {
           return (
             <motion.div
               key={s.label}
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, x: -16, y: "-50%" }}
+              animate={{ opacity: 1, x: 0, y: "-50%" }}
               transition={{ duration: 0.45, delay: 0.5 + i * 0.18 }}
               className="absolute flex items-center gap-2.5 rounded-xl px-3 py-2"
               style={{
                 top: `${s.y}%`,
                 left: 0,
-                transform: "translateY(-50%)",
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 width: "26%",
@@ -111,14 +110,13 @@ export function Slide_55_Research3() {
 
         {/* центр — БОЛЬ */}
         <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0, x: "-50%", y: "-50%" }}
+          animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
           transition={{ duration: 0.6, delay: 1.5, ease: [0.34, 1.56, 0.64, 1] }}
           className="absolute flex items-center justify-center rounded-full"
           style={{
             top: "50%",
             left: "80%",
-            transform: "translate(-50%,-50%)",
             width: 104,
             height: 104,
             background: "rgba(252,92,2,0.16)",

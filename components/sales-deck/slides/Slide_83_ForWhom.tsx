@@ -32,7 +32,7 @@ export function Slide_83_ForWhom() {
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-6"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9vw, 44px)" }}
       >
-        ЕСЛИ ТЫ РАБОТАЕШЬ ЗА КОМПЬЮТЕРОМ — <span className="text-[#B6FF00]">ЭТО ТЕБЕ</span>
+        ЕСЛИ ТЫ РАБОТАЕШЬ ЗА КОМПЬЮТЕРОМ — <span className="text-[#B6FF00]">ЭТО ДЛЯ ТЕБЯ</span>
       </motion.h1>
 
       <div className="flex flex-wrap gap-2.5 max-w-3xl mb-7">
