@@ -9,7 +9,7 @@ import { AtSign } from "lucide-react";
 const STEPS = [
   { n: "Шаг 1", t: "Открываете мой инстаграм @saint4ai" },
   { n: "Шаг 2", t: "Пишете в директ кодовое слово" },
-  { n: "Шаг 3", t: "Я отправляю вам все четыре бонуса" },
+  { n: "Шаг 3", t: "Я отправляю вам все три бонуса" },
 ];
 
 export function Slide_163_HowToGetBonuses() {

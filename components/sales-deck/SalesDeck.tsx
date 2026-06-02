@@ -457,10 +457,10 @@ export function SalesDeck() {
     <Slide_SalesWindow2 key="window2" />,
 
     <Slide_161_FourBonuses key="161" />,
-    <Slide_162_Bonus4Stories key="162" />,
     <Slide_163_HowToGetBonuses key="163" />,
     <Slide_164_WhereNotToWrite key="164" />,
     <Slide_165_CodeWord key="165" />,
+    <Slide_162_Bonus4Stories key="162" />,
     <Slide_166_Instagram key="166" />,
     <Slide_167_FinalReminder key="167" />,
     <Slide_168_FinalQR key="168" />,

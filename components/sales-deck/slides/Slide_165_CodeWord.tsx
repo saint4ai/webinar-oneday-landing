@@ -32,7 +32,7 @@ export function Slide_165_CodeWord() {
         ))}
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.4 }} className="text-white/55 text-sm md:text-lg mt-6">
-        Это слово пишете в директ @saint4ai — отправлю все 4 бонуса.
+        Это слово пишете в директ @saint4ai — отправлю все 3 бонуса.
       </motion.div>
     </SlideLayout>
   );
