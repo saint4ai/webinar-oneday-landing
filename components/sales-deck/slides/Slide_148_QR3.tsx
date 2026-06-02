@@ -10,7 +10,7 @@ import { SlideLayout } from "../SlideLayout";
  */
 const OTO = [
   "Обучение «AI-менеджеры в ОП» — 300К",
-  "2 договора (IT + AI) — 160К",
+  "2 договора (на сервисы + AI) — 160К",
   "Секретный спикер App Store / Google Play — 50К",
 ];
 
@@ -38,10 +38,10 @@ export function Slide_148_QR3() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.4vw, 50px)" }}
       >
-        УСПЕЙ В <span className="text-[#B6FF00]">24 ЧАСА</span> — ВЗЯТЬ OTO
+        УСПЕЙ В <span className="text-[#B6FF00]">24 ЧАСА</span> — ЗАБРАТЬ БОНУСЫ
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/65 text-sm md:text-base mb-4 max-w-xl">
-        3 бонуса за предоплату ты уже получаешь. Закрой полную сумму за 24 часа → ещё 4 OTO-бонуса (510К сверху):
+        3 бонуса за предоплату ты уже получаешь. Закрой полную сумму за 24 часа → ещё 4 бонуса (510К сверху):
       </motion.div>
       <div className="flex flex-col gap-2 max-w-xl mb-4">
         {OTO.map((o, i) => (

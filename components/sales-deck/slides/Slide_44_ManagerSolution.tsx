@@ -17,7 +17,7 @@ const CONNECT = ["Asana", "Bitrix", "Jira", "Trello", "календарь", "Sla
 const REPORT = [
   { dot: "#FF4D4D", text: "Айгерим перегружена 80 ч/нед — горит." },
   { dot: "rgba(255,255,255,0.4)", text: "Дамир простаивает 12 ч — забери задачи." },
-  { dot: "#FC5C02", text: "У Аскара блок 3 дня — он молчит." },
+  { dot: "#FC5C02", text: "Аскар застрял на 3 дня — он молчит." },
 ];
 
 export function Slide_44_ManagerSolution() {

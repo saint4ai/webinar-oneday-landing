@@ -11,11 +11,11 @@ import { Home, LayoutDashboard, CalendarCheck, ScanLine, Briefcase } from "lucid
  * Тема «каталог/возможности» → карточки всплывают stagger.
  */
 const SERVICES = [
-  { icon: Home, t: "Помощник для риелторов", s: "ведёт объекты, отвечает на вопросы, собирает лиды, делает подборки", span: "col-span-1" },
+  { icon: Home, t: "Помощник для риелторов", s: "ведёт объекты, отвечает на вопросы, собирает заявки, делает подборки", span: "col-span-1" },
   { icon: LayoutDashboard, t: "Дашборд для руководителя", s: "сводит показатели по отделам — перегруз, простои, просадки", span: "col-span-1" },
   { icon: CalendarCheck, t: "Ассистент для салонов, клиник, студий", s: "запись, напоминания, ответы на частые вопросы, загрузка мастеров", span: "col-span-2" },
   { icon: ScanLine, t: "Сканер документов и чеков", s: "обработка входящих бумажек и PDF без ручного ввода", span: "col-span-1" },
-  { icon: Briefcase, t: "AI-помощник для sales / HR", s: "ответы кандидатам, КП, follow-up, квалификация лидов", span: "col-span-1" },
+  { icon: Briefcase, t: "AI-помощник для продаж и найма", s: "ответы кандидатам, коммерческие, напоминания, разбор заявок", span: "col-span-1" },
 ];
 
 export function Slide_35_WhatIsIt() {

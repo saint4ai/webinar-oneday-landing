@@ -17,7 +17,7 @@ const ITEMS = [
   { icon: Smartphone, t: "Приложения для телефона", s: "Android и iOS", span: "col-span-1" },
   { icon: LayoutDashboard, t: "Веб-сервисы", s: "личные кабинеты, CRM, дашборды, оценка нагрузки и сна", span: "col-span-2" },
   { icon: Bot, t: "Боты", s: "Telegram, WhatsApp, Instagram", span: "col-span-1" },
-  { icon: Workflow, t: "Автоматизации", s: "отчёты, рассылки, парсинг, AI-менеджер по продажам", span: "col-span-1" },
+  { icon: Workflow, t: "Автоматизации", s: "отчёты, рассылки, сбор данных, AI-менеджер по продажам", span: "col-span-1" },
 ];
 
 export function Slide_19_WhatToBuild() {

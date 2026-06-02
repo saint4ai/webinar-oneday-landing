@@ -150,7 +150,7 @@ export function Slide_55_Research3() {
         transition={{ duration: 0.6, delay: 2.1 }}
         className="text-white/40 text-xs md:text-sm mt-3 max-w-3xl"
       >
-        + мониторинг конкурентов: что они НЕ делают, где готовые SaaS не покрывают локальную специфику.
+        + мониторинг конкурентов: что они НЕ делают, где готовые сервисы не покрывают локальную специфику.
       </motion.div>
     </SlideLayout>
   );

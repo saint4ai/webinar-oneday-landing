@@ -19,7 +19,7 @@ export function Slide_92_HormoziProposal() {
         КОММЕРЧЕСКОЕ С <span className="text-[#B6FF00]">ВАУ-ЭФФЕКТОМ</span>
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/65 text-sm md:text-base leading-snug max-w-3xl mb-4">
-        «Сделай КП по технике Хормози из 100M Offers» — агент нашёл саммари книги, применил структуру под клиента, оформил в твоём бренд-коде. За 15 минут.
+        «Сделай КП по технике Хормози из 100M Offers» — агент нашёл саммари книги, применил структуру под клиента, оформил в твоём фирменном стиле. За 15 минут.
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.55 }} className="relative inline-block rounded-xl overflow-hidden mb-3" style={{ border: "1px solid rgba(182,255,0,0.25)", maxWidth: "100%" }}>

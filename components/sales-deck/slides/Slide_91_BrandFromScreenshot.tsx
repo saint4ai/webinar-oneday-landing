@@ -41,7 +41,7 @@ export function Slide_91_BrandFromScreenshot() {
         <ArrowRight className="w-6 h-6 text-[#B6FF00] shrink-0" strokeWidth={2.5} />
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.8 }} className="flex items-center gap-2.5 rounded-xl px-4 py-3 shrink-0" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
           <Palette className="w-5 h-5 text-[#B6FF00]" strokeWidth={1.8} />
-          <span className="text-[#B6FF00] text-sm font-semibold">твой бренд-код готов</span>
+          <span className="text-[#B6FF00] text-sm font-semibold">твой фирменный стиль готов</span>
         </motion.div>
       </div>
 

@@ -52,7 +52,7 @@ export function Slide_137_WhatYouGet() {
         <span className="rounded-xl px-4 py-2.5 font-bold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.6vw,24px)" }}>
           ценность 770К → ×2.6 выгоды
         </span>
-        <span className="text-[#FC5C02] text-sm md:text-base font-semibold">+ полная оплата до конца дня → пакет из 4 OTO-бонусов сверху. Покажу через минуту.</span>
+        <span className="text-[#FC5C02] text-sm md:text-base font-semibold">+ полная оплата до конца дня → ещё 4 бонуса сверху. Покажу через минуту.</span>
       </motion.div>
     </SlideLayout>
   );

@@ -10,7 +10,7 @@ import { BonusCardSlide } from "../BonusCardSlide";
 export function Slide_146_OTO4() {
   return (
     <BonusCardSlide
-      badge="OTO-4"
+      badge="БОНУС 4"
       marketPrice="50 000 ₸"
       cardImage="/cards-gifs-screenshots/bonus/bonus-oto4-speaker.png"
       condition="за полную оплату"

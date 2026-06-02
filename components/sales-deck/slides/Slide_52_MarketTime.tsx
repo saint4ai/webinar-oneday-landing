@@ -63,7 +63,7 @@ export function Slide_52_MarketTime() {
           />
         </div>
         <div className="flex justify-between mt-2 font-mono text-[11px] uppercase tracking-[0.1em] text-white/45">
-          <span>ТЗ</span>
+          <span>техзадание</span>
           <span>запуск</span>
         </div>
 
@@ -73,7 +73,7 @@ export function Slide_52_MarketTime() {
           transition={{ duration: 0.6, delay: 0.9 }}
           className="text-white/70 text-base md:text-xl leading-snug mt-7"
         >
-          7–14 дней от ТЗ до запуска. <span className="text-white/45">Всё зависит от вашего опыта.</span>
+          7–14 дней от техзадания до запуска. <span className="text-white/45">Всё зависит от вашего опыта.</span>
         </motion.div>
       </div>
     </SlideLayout>

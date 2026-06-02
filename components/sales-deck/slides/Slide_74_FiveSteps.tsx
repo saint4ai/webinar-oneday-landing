@@ -14,7 +14,7 @@ const STEPS = [
   { icon: MessageSquare, t: "Описываем что нужно" },
   { icon: Sparkles, t: "AI генерирует приложение" },
   { icon: Smartphone, t: "Тестируем в браузере" },
-  { icon: Download, t: "Скачиваем APK на телефон" },
+  { icon: Download, t: "Скачиваем готовое приложение на телефон" },
 ];
 
 export function Slide_74_FiveSteps() {

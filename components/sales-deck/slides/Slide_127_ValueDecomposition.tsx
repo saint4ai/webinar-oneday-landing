@@ -57,10 +57,7 @@ export function Slide_127_ValueDecomposition() {
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 1.2 }} className="flex items-baseline justify-between gap-4 max-w-3xl rounded-xl px-5 py-3" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
         <span className="font-bold uppercase text-white tracking-[0.04em]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2vw,30px)" }}>ИТОГО</span>
-        <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(24px,3vw,48px)" }}>770 000 ₸*</span>
-      </motion.div>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 1.5 }} className="text-white/35 text-[11px] mt-2 max-w-3xl">
-        *цифры-ориентир — Александр подтвердит реальные рыночные KZ-цены [ресёрч / твоё знание рынка]
+        <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(24px,3vw,48px)" }}>770 000 ₸</span>
       </motion.div>
     </SlideLayout>
   );

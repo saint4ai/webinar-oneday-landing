@@ -56,7 +56,7 @@ export function Slide_42_RealtorSolution() {
         transition={{ duration: 0.6, delay: 0.45 }}
         className="text-white/65 text-sm md:text-base leading-snug max-w-2xl mb-7"
       >
-        Загружает фото → AI смотрит на квартиру → 4 текста каждый со своим тоном → автопостинг.
+        Загружает фото → AI смотрит на квартиру → 4 текста каждый со своим тоном → сам публикует.
       </motion.div>
 
       {/* ===== PIPELINE FLOW: 8 фото → AI → 4 объявления ===== */}

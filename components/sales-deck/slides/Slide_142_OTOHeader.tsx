@@ -13,7 +13,7 @@ export function Slide_142_OTOHeader() {
   return (
     <SlideLayout speakerSide="right" contentMinWidth={760} background={<SlideBg theme="dark" variant="climax" />} contentClassName="justify-center">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#FC5C02] mb-4">
-        // ONE TIME OFFER · 24 ЧАСА
+        // ТОЛЬКО ОДИН РАЗ · 24 ЧАСА
       </motion.div>
       <motion.h1
         initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}

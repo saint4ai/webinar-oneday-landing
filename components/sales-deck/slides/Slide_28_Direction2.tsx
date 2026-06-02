@@ -89,7 +89,7 @@ export function Slide_28_Direction2() {
       >
         СВОЙ ПРОДУКТ — ДЛЯ СЕБЯ
         <br />
-        ИЛИ <span className="text-[#B6FF00]">ДЛЯ МАСС (SaaS)</span>
+        ИЛИ <span className="text-[#B6FF00]">НА ПОДПИСКУ ДЛЯ ВСЕХ</span>
       </motion.h1>
 
       <motion.div

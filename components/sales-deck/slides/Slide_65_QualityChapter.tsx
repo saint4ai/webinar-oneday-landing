@@ -14,7 +14,7 @@ const TOOLS = [
   { icon: Puzzle, t: "Skills", d: "навыки агента" },
   { icon: Plug, t: "MCP", d: "подключение к сервисам" },
   { icon: Sparkles, t: "Higgsfield", d: "генерация визуала" },
-  { icon: LayoutPanelTop, t: "Дизайн UI", d: "production-grade интерфейс" },
+  { icon: LayoutPanelTop, t: "Дизайн UI", d: "интерфейс как у топовых приложений" },
 ];
 
 export function Slide_65_QualityChapter() {

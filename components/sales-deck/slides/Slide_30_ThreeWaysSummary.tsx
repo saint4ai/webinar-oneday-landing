@@ -11,7 +11,7 @@ import { Store, Rocket, Workflow } from "lucide-react";
  */
 const WAYS = [
   { n: "01", icon: Store, t: "Сервис для бизнеса", s: "под бизнес-задачи, на заказ", c: "#B6FF00" },
-  { n: "02", icon: Rocket, t: "SaaS-сервис", s: "свой продукт на подписку", c: "#B6FF00" },
+  { n: "02", icon: Rocket, t: "Сервис на подписке", s: "свой продукт для всех", c: "#B6FF00" },
   { n: "03", icon: Workflow, t: "Приложение для себя", s: "+ автоматизация рутины", c: "#FC5C02" },
 ];
 

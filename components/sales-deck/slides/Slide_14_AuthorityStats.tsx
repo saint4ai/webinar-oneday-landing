@@ -52,7 +52,7 @@ const PROJECTS = [
     url: "omnidash.kz",
     tagline: "Дашборд сквозной аналитики рекламы",
     description:
-      "Сводит рекламу, продажи и звонки в один экран. Видно реальный ROI по каждому каналу и менеджеру.",
+      "Сводит рекламу, продажи и звонки в один экран. Видно реальную отдачу по каждому каналу и менеджеру.",
     accent: "orange" as const,
     images: [
       "/handouts/projects/omnidash/01-marketing-roi.png",
@@ -178,7 +178,7 @@ export function Slide_14_AuthorityStats() {
             className="font-mono uppercase font-semibold tracking-[0.18em]"
             style={{ color: "#B6FF00", fontSize: "clamp(11px, 1vw, 14px)" }}
           >
-            2 моих SaaS-проекта для клиентов
+            2 моих сервиса на подписке для клиентов
           </span>
           <span className="h-px flex-1" style={{ background: "linear-gradient(90deg, rgba(182,255,0,0.4), transparent)" }} />
         </motion.div>

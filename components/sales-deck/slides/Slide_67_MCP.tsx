@@ -102,7 +102,7 @@ export function Slide_67_MCP() {
         transition={{ duration: 0.6, delay: 1.5 }}
         className="text-white/55 text-sm md:text-base leading-snug max-w-3xl"
       >
-        Подключаешь к Miro — он строит майнд-мапы и схемы. К Higgsfield — генерит картинки, скачивает, складывает в папку. <span className="text-white/85">Один раз воткнул — Claude умеет работать в этом сервисе как вы сами. Только быстрее.</span>
+        Подключаешь к Miro — он строит карты идей и схемы. К Higgsfield — генерит картинки, скачивает, складывает в папку. <span className="text-white/85">Один раз воткнул — Claude умеет работать в этом сервисе как вы сами. Только быстрее.</span>
       </motion.div>
     </SlideLayout>
   );

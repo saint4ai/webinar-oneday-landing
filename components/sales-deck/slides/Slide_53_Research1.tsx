@@ -55,7 +55,7 @@ export function Slide_53_Research1() {
         className="text-base md:text-lg leading-snug max-w-2xl mb-8"
         style={{ color: INK_MUTED }}
       >
-        9 из 10 SaaS закрываются, потому что собрали без боли. Учимся искать боль{" "}
+        9 из 10 онлайн-сервисов закрываются, потому что собрали без боли. Учимся искать боль{" "}
         <span style={{ background: "#B6FF00", color: INK, padding: "0.02em 0.3em", borderRadius: "0.2em", fontWeight: 700 }}>ДО</span> того, как сесть за код.
       </motion.div>
 

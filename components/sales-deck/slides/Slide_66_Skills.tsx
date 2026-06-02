@@ -10,10 +10,10 @@ import { Puzzle } from "lucide-react";
  * 4 скила «патчами» прилетают к ядру Claude; лайм-блок про точность ×3.
  */
 const SKILLS = [
-  ["frontend-design", "production-grade UI без «AI-slop» эстетики"],
-  ["presentation-storyliner", "слайды по структуре Hormozi"],
+  ["frontend-design", "красивый интерфейс без дешёвого «AI-вида»"],
+  ["presentation-storyliner", "слайды по продающей структуре"],
   ["landing-page-architect", "лендинги по 8-блочной схеме"],
-  ["copywriting-system", "текст под 1 ЦА × 1 стадию × 1 CTA"],
+  ["copywriting-system", "текст под нужную аудиторию и одну цель"],
 ];
 
 export function Slide_66_Skills() {

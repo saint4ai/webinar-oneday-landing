@@ -7,7 +7,7 @@ import { Puzzle, Plug, Sparkles, LayoutPanelTop } from "lucide-react";
 
 /**
  * Слайд 70 · Punchline — связка 4 инструментов. Текст 1-в-1 STRUCTURE 873-883.
- * 4 инструмента → SVG-стрелки сходятся в плашку «PRODUCTION QUALITY».
+ * 4 инструмента → SVG-стрелки сходятся в плашку «УРОВЕНЬ СТУДИИ».
  */
 const TOOLS = [
   { icon: Puzzle, t: "Skills", d: "агент знает как делать", y: 13 },
@@ -48,10 +48,10 @@ export function Slide_70_QualityPunchline() {
         transition={{ duration: 0.6, delay: 0.4 }}
         className="text-white/65 text-sm md:text-base leading-snug max-w-2xl mb-6"
       >
-        4 инструмента вместе = production-quality на выходе. По отдельности — кустарщина.
+        4 инструмента вместе = качество как у студии на выходе. По отдельности — кустарщина.
       </motion.div>
 
-      {/* Диаграмма: 4 инструмента → PRODUCTION QUALITY */}
+      {/* Диаграмма: 4 инструмента → УРОВЕНЬ СТУДИИ */}
       <div className="relative max-w-3xl mb-6" style={{ height: 230 }}>
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 768 230" preserveAspectRatio="none">
           {TOOLS.map((t, i) => {
@@ -92,7 +92,7 @@ export function Slide_70_QualityPunchline() {
           );
         })}
 
-        {/* Плашка PRODUCTION QUALITY */}
+        {/* Плашка УРОВЕНЬ СТУДИИ */}
         <motion.div
           initial={{ opacity: 0, scale: 0.7, x: "-50%", y: "-50%" }}
           animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
@@ -100,7 +100,7 @@ export function Slide_70_QualityPunchline() {
           className="absolute flex flex-col items-center justify-center rounded-2xl text-center px-5"
           style={{ top: "50%", left: "74%", width: 180, height: 100, background: "rgba(182,255,0,0.12)", border: "2px solid #B6FF00", boxShadow: "0 0 60px rgba(182,255,0,0.5)" }}
         >
-          <span className="font-bold uppercase leading-[1.05]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 16, color: "#B6FF00" }}>PRODUCTION<br />QUALITY</span>
+          <span className="font-bold uppercase leading-[1.05]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 16, color: "#B6FF00" }}>УРОВЕНЬ<br />СТУДИИ</span>
         </motion.div>
       </div>
 

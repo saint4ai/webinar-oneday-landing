@@ -29,7 +29,7 @@ export function Slide_15_Chapter1() {
       leftContent={
         <ClaudeCodeTerminal
           prompt="напиши мне приложение для дашборда аналитики учёта склада"
-          response="Создаю Next.js + Supabase, страницу /dashboard с таблицей, графиками, фильтрами по дате..."
+          response="Собираю приложение: экран складских остатков, графики, фильтр по датам. Готово через пару минут..."
           speed={42}
         />
       }

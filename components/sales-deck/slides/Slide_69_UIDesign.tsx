@@ -63,7 +63,7 @@ export function Slide_69_UIDesign() {
         transition={{ duration: 0.6, delay: 0.4 }}
         className="text-white/60 text-sm md:text-base leading-snug max-w-2xl mb-6"
       >
-        Показал Claude скриншот любимого приложения → он повторил типографику, цвета, отступы, motion. Никакой Figma. Никакой команды дизайнеров.
+        Показал Claude скриншот любимого приложения → он повторил шрифты, цвета, отступы, анимации. Никакой Figma. Никакой команды дизайнеров.
       </motion.div>
 
       {/* 3 пары референс → результат */}

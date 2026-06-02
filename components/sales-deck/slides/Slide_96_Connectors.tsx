@@ -19,7 +19,7 @@ export function Slide_96_Connectors() {
   return (
     <SlideLayout speakerSide="right" contentMinWidth={740} background={<SlideBg theme="dark" variant="lime-right" />}>
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
-        // КОННЕКТОРЫ
+        // ПОДКЛЮЧЕНИЯ К СЕРВИСАМ
       </motion.div>
       <motion.h1 initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }} transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }} className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-2" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.8vw, 44px)" }}>
         ГОЛОСОМ В КАЛЕНДАРЬ. В NOTION. <span className="text-[#B6FF00]">В MIRO.</span>

@@ -14,7 +14,7 @@ import { SlideLayout } from "../SlideLayout";
  *    каждые 3 сек (overview → карточка звонка → ошибки → аналитика → динамика).
  * Текст 1-в-1 из STRUCTURE. Скрины: public/handouts/callvision/cv-01..05.png
  */
-const FLOW = ["AmoCRM / Bitrix", "Whisper", "Claude", "дашборд"];
+const FLOW = ["AmoCRM / Bitrix", "голосовой ввод", "Claude", "дашборд"];
 const CHECKLIST = ["поздоровался", "выявил потребность", "отработал «дорого»", "закрыл на след. шаг"];
 
 /** Экраны CallVision для карусели (порядок = история продукта). */
