@@ -159,6 +159,7 @@ import { Slide_133_QR1 } from "./slides/Slide_133_QR1";
 import { Slide_134_BonusB1 } from "./slides/Slide_134_BonusB1";
 import { Slide_135_BonusB2 } from "./slides/Slide_135_BonusB2";
 import { Slide_136_BonusB3 } from "./slides/Slide_136_BonusB3";
+import { Slide_137b_PrepaySummary } from "./slides/Slide_137b_PrepaySummary";
 import { Slide_137_WhatYouGet } from "./slides/Slide_137_WhatYouGet";
 import { Slide_138_PerDay } from "./slides/Slide_138_PerDay";
 import { Slide_139_QR2 } from "./slides/Slide_139_QR2";
@@ -174,6 +175,8 @@ import { Slide_146_OTO4 } from "./slides/Slide_146_OTO4";
 import { Slide_147_OTOSummary } from "./slides/Slide_147_OTOSummary";
 import { Slide_148_QR3 } from "./slides/Slide_148_QR3";
 import { Slide_149_QAHeader } from "./slides/Slide_149_QAHeader";
+import { Slide_ObjApply1_Trend } from "./slides/Slide_ObjApply1_Trend";
+import { Slide_ObjApply2_Diplomas } from "./slides/Slide_ObjApply2_Diplomas";
 import { Slide_150_ObjNoMoney } from "./slides/Slide_150_ObjNoMoney";
 import { Slide_151_ObjWontWork } from "./slides/Slide_151_ObjWontWork";
 import { Slide_152_ObjNoCredit } from "./slides/Slide_152_ObjNoCredit";
@@ -375,6 +378,7 @@ export function SalesDeck() {
     <Slide_134_BonusB1 key="134" />,
     <Slide_135_BonusB2 key="135" />,
     <Slide_136_BonusB3 key="136" />,
+    <Slide_137b_PrepaySummary key="137b" />,
 
     /* === БЛОК E · ФИНАЛ-ЦЕНА 290 900 НА ПИКЕ === */
     <Slide_131_SpecialPrice key="131" />,
@@ -397,6 +401,8 @@ export function SalesDeck() {
 
     /* === ЧАСТЬ XVIII · Q&A + ВОЗРАЖЕНИЯ (149-155) + XIX · BAIT (156-158) === */
     <Slide_149_QAHeader key="149" />,
+    <Slide_ObjApply1_Trend key="objapply1" />,
+    <Slide_ObjApply2_Diplomas key="objapply2" />,
     <Slide_150_ObjNoMoney key="150" />,
     <Slide_151_ObjWontWork key="151" />,
     <Slide_152_ObjNoCredit key="152" />,
