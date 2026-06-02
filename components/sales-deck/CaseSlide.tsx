@@ -90,7 +90,7 @@ export function CaseSlide({
         initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
-        className="font-bold uppercase text-white leading-[0.95] tracking-[-0.03em] mb-2 whitespace-nowrap"
+        className="font-bold uppercase text-white leading-[1.1] tracking-[-0.03em] mb-2 whitespace-nowrap pt-[0.08em]"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 2.9vw, 46px)" }}
       >
         {name}

@@ -81,6 +81,7 @@ export function CyberpunkChapter({
                 : "clamp(56px, 7vw, 120px)",
             wordBreak: "keep-all",
             overflowWrap: "normal",
+            whiteSpace: chapterNumber.length <= 11 ? "nowrap" : "normal",
           }}
         />
       </div>
