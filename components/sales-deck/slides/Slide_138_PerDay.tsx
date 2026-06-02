@@ -6,7 +6,7 @@ import { SlideLayout } from "../SlideLayout";
 import { Coffee } from "lucide-react";
 
 /**
- * Слайд 138 · Цена в пересчёте — 797 ₸ в день. Текст 1-в-1 STRUCTURE 1886-1898.
+ * Слайд 138 · Цена в пересчёте — 399 ₸ в день (рассрочка 24 мес). Текст 1-в-1 STRUCTURE 1886-1898.
  * PLACEHOLDER: логотипы Kaspi Bank / Home Credit Bank / Halyk Bank (добавим).
  */
 const CASCADE = [
@@ -24,11 +24,11 @@ export function Slide_138_PerDay() {
 
       <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 1, 0.5, 1] }} className="flex items-center gap-5 mb-5 flex-wrap">
         <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8vw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}>
-          797 ₸
+          399 ₸
         </div>
         <div>
           <Coffee className="w-9 h-9 text-white/60 mb-1" strokeWidth={1.6} />
-          <div className="text-white/70 text-sm md:text-lg leading-tight">в день — <span className="text-white">как чашка кофе</span></div>
+          <div className="text-white/70 text-sm md:text-lg leading-tight">в день — <span className="text-white">дешевле чашки кофе</span></div>
         </div>
       </motion.div>
 

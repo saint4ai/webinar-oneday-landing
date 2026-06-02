@@ -42,8 +42,8 @@ export function Slide_147_OTOSummary() {
       </div>
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 1.0 }} className="flex items-center gap-4 flex-wrap max-w-3xl rounded-xl px-5 py-3.5" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
-        <span className="text-white/70 text-sm md:text-base">Всего ценности с OTO: <span className="line-through text-white/40">1 370 000 ₸</span> →</span>
-        <span className="font-bold uppercase text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2.2vw,34px)" }}>290 900 ₸ · ×4.7 выгоды</span>
+        <span className="text-white/70 text-sm md:text-base">Всего ценности: <span className="line-through text-white/40">1 569 000 ₸</span> →</span>
+        <span className="font-bold uppercase text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2.2vw,34px)" }}>290 900 ₸ · ×5.4 выгоды</span>
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.3 }} className="text-white/45 text-xs md:text-sm mt-2">
         Кто оплатит после 24 часов — войдёт в обучение, но без OTO-пакета.
