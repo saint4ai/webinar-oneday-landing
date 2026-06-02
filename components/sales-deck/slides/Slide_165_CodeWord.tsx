@@ -5,7 +5,7 @@ import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 
 /** Слайд 165 · Кодовое слово. Текст 1-в-1 STRUCTURE 2284-2286. */
-const WORD = "ВАЙБКОД В ПРОДЕ";
+const WORD = "ВАЙБ";
 
 export function Slide_165_CodeWord() {
   return (

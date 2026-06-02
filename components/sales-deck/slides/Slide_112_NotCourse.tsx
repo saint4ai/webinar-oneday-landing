@@ -34,7 +34,7 @@ export function Slide_112_NotCourse() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-8"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 52px)" }}
       >
-        ЭТО НЕ КУРС. ЭТО <span className="text-[#B6FF00]">ПОТОК.</span>
+        ЭТО НЕ КУРС — ЭТО <span className="text-[#B6FF00]">ОБУЧЕНИЕ С КОМЬЮНИТИ</span>
       </motion.h1>
 
       <div className="grid grid-cols-2 gap-4 max-w-3xl">
@@ -74,7 +74,7 @@ export function Slide_112_NotCourse() {
           style={{ background: "rgba(182,255,0,0.07)", border: "1px solid rgba(182,255,0,0.4)", boxShadow: "0 0 60px -18px rgba(182,255,0,0.5)" }}
         >
           <div className="font-bold uppercase text-[#B6FF00] tracking-[0.08em] mb-5" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 22 }}>
-            ПОТОК
+            КОМЬЮНИТИ
           </div>
           <div className="flex flex-col gap-3.5">
             {STREAM.map((t, i) => (

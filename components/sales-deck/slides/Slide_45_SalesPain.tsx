@@ -1,64 +1,43 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 
 /**
  * Слайд 45 · Боль — Отдел продаж.
- * «ВЛАДЕЛЕЦ СЛУШАЕТ 5 ЗВОНКОВ ИЗ 200». Визуал: сетка телефонов, 5 подсвечены
- * лаймом, остальные меркнут. Счётчик «30 ЧАСОВ НА ПРОСЛУШКУ».
- * Текст 1-в-1 из STRUCTURE.
+ * «РУКОВОДИТЕЛЬ СЛУШАЕТ ТОЛЬКО 5 ЗВОНКОВ ИЗ 200». Слева — Higgsfield-сцена:
+ * руководитель отдела продаж в стрессе среди необработанных звонков + плашка «30 ЧАСОВ».
  */
-const TOTAL = 200;
-const LIT = 5; // сколько реально слушают
-
 export function Slide_45_SalesPain() {
   return (
     <SlideLayout
       speakerSide="right"
       objectColumnSize="32vw"
+      contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
-        <div className="w-[92%] max-w-[440px] flex flex-col items-center">
-          {/* Сетка 200 телефонов (20×10), 5 случайных подсвечены лаймом */}
-          <div
-            className="grid gap-[3px]"
-            style={{ gridTemplateColumns: "repeat(20, 1fr)" }}
-          >
-            {Array.from({ length: TOTAL }).map((_, i) => {
-              const lit = [37, 88, 119, 156, 183].includes(i);
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0.6 }}
-                  animate={{ opacity: lit ? 1 : 0.16 }}
-                  transition={{ duration: 0.5, delay: 0.4 + (i / TOTAL) * 1.2 }}
-                  className="rounded-[2px]"
-                  style={{
-                    aspectRatio: "1 / 1.7",
-                    background: lit ? "#B6FF00" : "#2a2a2a",
-                    boxShadow: lit ? "0 0 10px rgba(182,255,0,0.7)" : "none",
-                  }}
-                />
-              );
-            })}
-          </div>
+        <div className="relative h-screen w-full overflow-hidden">
+          <Image
+            src="/handouts/niches/pain_saleshead.png"
+            alt="Руководитель отдела продаж в стрессе среди необработанных звонков"
+            fill
+            className="object-cover object-center"
+            sizes="35vw"
+            priority
+          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, transparent 48%, rgba(10,11,15,0.5) 80%, #0A0B0F)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,11,15,0.45), transparent 28%)" }} />
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1.8 }}
-            className="mt-6 text-center"
+            transition={{ duration: 0.6, delay: 1.0 }}
+            className="absolute bottom-[7%] left-[8%] rounded-xl px-4 py-2.5"
+            style={{ background: "rgba(10,11,15,0.72)", border: "1px solid rgba(252,92,2,0.5)", backdropFilter: "blur(6px)" }}
           >
-            <div
-              className="font-bold leading-none"
-              style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(26px,3vw,40px)", color: "#FC5C02" }}
-            >
-              30 ЧАСОВ
-            </div>
-            <div className="text-white/45 text-xs uppercase tracking-[0.18em] font-mono mt-1.5">
-              на прослушку
-            </div>
+            <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(24px,2.6vw,38px)", color: "#FC5C02" }}>30 ЧАСОВ</div>
+            <div className="text-white/55 text-[10px] uppercase tracking-[0.18em] font-mono mt-1">на прослушку каждого</div>
           </motion.div>
         </div>
       }
@@ -82,7 +61,7 @@ export function Slide_45_SalesPain() {
           fontSize: "clamp(24px, 2.9vw, 44px)",
         }}
       >
-        ВЛАДЕЛЕЦ СЛУШАЕТ{" "}
+        РУКОВОДИТЕЛЬ СЛУШАЕТ ТОЛЬКО{" "}
         <span style={{ color: "#B6FF00" }}>5 ЗВОНКОВ ИЗ 200</span>
         {" "}— ОСТАЛЬНОЕ ПРОПУСКАЕТ
       </motion.h1>
@@ -93,7 +72,7 @@ export function Slide_45_SalesPain() {
         transition={{ duration: 0.6, delay: 0.55 }}
         className="text-white/80 text-base md:text-lg leading-snug mt-5 max-w-xl"
       >
-        Менеджеры теряют клиентов на возражениях. Владелец не видит где именно.
+        Менеджеры теряют клиентов на возражениях. Руководитель не видит где именно.
       </motion.div>
 
       <motion.div
@@ -104,7 +83,7 @@ export function Slide_45_SalesPain() {
       >
         <p>200+ звонков в неделю. Послушать каждый — <span className="text-white font-semibold">30 часов</span>. Реально слушает 5-10 случайных.</p>
         <p><span style={{ color: "#FC5C02" }}>«Дорого»</span> не отрабатывают — клиент уходит. <span style={{ color: "#FC5C02" }}>«Я подумаю»</span> — не возвращают.</p>
-        <p>Владелец узнаёт о косяках через месяц — когда уже потеряны <span className="text-white font-semibold">30+ клиентов</span> и часть выручки.</p>
+        <p>Руководитель узнаёт о косяках через месяц — когда уже потеряны <span className="text-white font-semibold">30+ клиентов</span> и часть выручки.</p>
       </motion.div>
     </SlideLayout>
   );

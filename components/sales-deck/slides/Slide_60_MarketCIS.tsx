@@ -37,7 +37,7 @@ export function Slide_60_MarketCIS() {
           className="font-bold leading-[0.9] tabular-nums"
           style={{
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(56px, 7vw, 132px)",
+            fontSize: "clamp(44px, 5.6vw, 104px)",
             background: "linear-gradient(120deg, #B6FF00 30%, #FC5C02)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
