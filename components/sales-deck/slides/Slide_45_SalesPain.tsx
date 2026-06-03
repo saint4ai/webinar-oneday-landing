@@ -14,7 +14,7 @@ export function Slide_45_SalesPain() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="32vw"
+      objectColumnSize="30vw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
@@ -58,10 +58,10 @@ export function Slide_45_SalesPain() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(24px, 2.9vw, 44px)",
+          fontSize: "clamp(22px, 2.5vw, 40px)",
         }}
       >
-        РУКОВОДИТЕЛЬ СЛУШАЕТ ТОЛЬКО{" "}
+        РУКОВОДИТЕЛЬ ОП СЛУШАЕТ ТОЛЬКО{" "}
         <span style={{ color: "#B6FF00" }}>5 ЗВОНКОВ ИЗ 200</span>
         {" "}— ОСТАЛЬНОЕ ПРОПУСКАЕТ
       </motion.h1>

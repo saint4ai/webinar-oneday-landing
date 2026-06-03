@@ -43,10 +43,11 @@ export function Slide_49_NichePunchline() {
         initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
-        className="font-bold uppercase text-white leading-[0.98] tracking-[-0.03em] mb-3"
+        className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
           fontSize: "clamp(40px, 5.2vw, 84px)",
+          paddingTop: "0.1em",
         }}
       >
         В КАЖДОЙ НИШЕ <span className="text-[#B6FF00]">ЖДУТ ТЕБЯ</span>
