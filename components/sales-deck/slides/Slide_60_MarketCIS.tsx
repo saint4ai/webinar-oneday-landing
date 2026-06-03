@@ -34,10 +34,11 @@ export function Slide_60_MarketCIS() {
         className="flex items-baseline gap-4 flex-wrap"
       >
         <span
-          className="font-bold leading-[0.9] tabular-nums"
+          className="font-bold leading-[1.0] tabular-nums"
           style={{
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
             fontSize: "clamp(44px, 5.6vw, 104px)",
+            paddingTop: "0.08em",
             background: "linear-gradient(120deg, #B6FF00 30%, #FC5C02)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
