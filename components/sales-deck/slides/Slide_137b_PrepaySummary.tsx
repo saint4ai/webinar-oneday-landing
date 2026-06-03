@@ -7,12 +7,12 @@ import { Gift } from "lucide-react";
 
 /**
  * Слайд 137b · Сводка бонусов ЗА ПРЕДОПЛАТУ — Хормози-стек перед раскрытием финальной цены (131).
- * Идёт после Б-3 (136), перед 131. Числа = ценники бонусов (50/49/100К → 199К), подсвечены Александру.
+ * Перед раскрытием финальной цены. 2 бонуса за предоплату: Claude Code 50К + AI-Таргетолог 49К → 99К.
+ * Источник заказов (Б-3) перенесён в бонусы ЗА ПОКУПКУ (OTO), здесь его НЕТ.
  */
 const BONUSES = [
   { t: "Обучение «Claude Code · Базовый»", d: "5 уроков · доступ сразу после предоплаты", p: "50 000 ₸" },
   { t: "AI-Таргетолог — готовый инструмент", d: "мой работающий сервис у тебя", p: "49 000 ₸" },
-  { t: "Готовый источник заказов", d: "Топ-5 TG-каналов + Threads-бот 24/7", p: "100 000 ₸" },
 ];
 
 export function Slide_137b_PrepaySummary() {
@@ -28,7 +28,7 @@ export function Slide_137b_PrepaySummary() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
       >
-        ТРИ БОНУСА — <span className="text-[#B6FF00]">УЖЕ В ПОДАРОК</span>
+        ДВА БОНУСА — <span className="text-[#B6FF00]">УЖЕ В ПОДАРОК</span>
       </motion.h1>
 
       <div className="flex flex-col max-w-3xl mb-4">
@@ -47,7 +47,7 @@ export function Slide_137b_PrepaySummary() {
       </div>
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 1.0 }} className="flex items-center gap-4 flex-wrap max-w-3xl rounded-xl px-5 py-3.5" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", boxShadow: "0 0 50px -18px rgba(182,255,0,0.5)" }}>
-        <span className="text-white/70 text-sm md:text-base">Всего бонусов: <span className="line-through text-white/40">199 000 ₸</span> →</span>
+        <span className="text-white/70 text-sm md:text-base">Всего бонусов: <span className="line-through text-white/40">99 000 ₸</span> →</span>
         <span className="font-bold uppercase text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2.2vw,32px)" }}>БЕСПЛАТНО за предоплату 5 000 ₸</span>
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.3 }} className="text-white/55 text-xs md:text-sm mt-2.5 max-w-2xl">

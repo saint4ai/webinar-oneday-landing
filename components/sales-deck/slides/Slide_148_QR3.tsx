@@ -9,9 +9,10 @@ import { SlideLayout } from "../SlideLayout";
  * PLACEHOLDER ASSET: landing/public/payment/kaspi-qr-prepayment.png.
  */
 const OTO = [
-  "Обучение «AI-менеджеры в ОП» — 300К",
+  "Обучение «AI-менеджеры в ОП» — 390К",
   "2 договора (на сервисы + AI) — 160К",
-  "Секретный спикер App Store / Google Play — 50К",
+  "Секретный спикер App Store / Google Play — 650К",
+  "Готовый источник заказов (Telegram-канал) — 100К",
 ];
 
 export function Slide_148_QR3() {
@@ -41,7 +42,7 @@ export function Slide_148_QR3() {
         УСПЕЙ В <span className="text-[#B6FF00]">24 ЧАСА</span> — ЗАБРАТЬ БОНУСЫ
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/65 text-sm md:text-base mb-4 max-w-xl">
-        3 бонуса за предоплату ты уже получаешь. Закрой полную сумму за 24 часа → ещё 4 бонуса (510К сверху):
+        2 бонуса за предоплату ты уже получаешь. Закрой полную сумму за 24 часа → ещё 5 бонусов (1 300 000 ₸ сверху):
       </motion.div>
       <div className="flex flex-col gap-2 max-w-xl mb-4">
         {OTO.map((o, i) => (

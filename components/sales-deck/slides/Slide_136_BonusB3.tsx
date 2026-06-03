@@ -14,6 +14,7 @@ export function Slide_136_BonusB3() {
       badge="БОНУС Б-3"
       marketPrice="100 000 ₸"
       cardImage="/cards-gifs-screenshots/bonus/bonus-b3-orders.png"
+      condition="за полную оплату"
       title="ГОТОВЫЙ ИСТОЧНИК ЗАКАЗОВ"
       sub="«Где брать клиентов?» — стопор №1 после любого обучения. Мы создаём Telegram-канал, куда автоматически приходят заявки для вайбкодеров. Открываешь, берёшь заказ, пишешь — без долгого поиска."
       inside={[

@@ -14,7 +14,6 @@ const STEPS = [
 const BONUSES = [
   { b: "Б-1", t: "Обучение «Claude Code · Базовый»", d: "3 часа · 5 уроков · доступ сразу" },
   { b: "Б-2", t: "AI-Таргетолог — готовый инструмент", d: "мой работающий сервис у тебя" },
-  { b: "Б-3", t: "Топ-5 TG-каналов + Threads-бот", d: "источник заказов 24/7" },
 ];
 
 export function Slide_132_PrepayBonuses() {
@@ -43,7 +42,7 @@ export function Slide_132_PrepayBonuses() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5 max-w-3xl">
+      <div className="grid grid-cols-2 gap-3 max-w-2xl">
         {BONUSES.map((b, i) => (
           <motion.div key={b.b} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 1.0 + i * 0.14 }} className="rounded-xl px-3.5 py-3" style={{ background: "rgba(182,255,0,0.06)", border: "1px solid rgba(182,255,0,0.28)" }}>
             <div className="flex items-center gap-1.5 mb-1.5">
