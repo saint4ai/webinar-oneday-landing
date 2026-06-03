@@ -5,12 +5,12 @@ import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 
 /**
- * Слайд 141 · Как внести 5 000 ₸. Текст 1-в-1 STRUCTURE 1934-1940.
+ * Слайд 141 · Как внести 10 000 ₸. Текст 1-в-1 STRUCTURE 1934-1940.
  * PLACEHOLDER ASSET: landing/public/payment/kaspi-qr-prepayment.png.
  */
 const STEPS = [
   { n: "Шаг 1", t: "Сканируй QR в Kaspi", d: "или ссылка в чате под видео" },
-  { n: "Шаг 2", t: "Сумма 5 000 ₸", d: "" },
+  { n: "Шаг 2", t: "Сумма 10 000 ₸", d: "" },
   { n: "Шаг 3", t: "В «Комментарий» — НОМЕР ТЕЛЕФОНА", d: "" },
   { n: "Шаг 4", t: "Менеджер свяжется сегодня", d: "оформит полную оплату" },
 ];
@@ -25,7 +25,7 @@ export function Slide_141_HowToPay() {
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.4)", background: "rgba(255,255,255,0.04)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 5 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
+          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
         </motion.div>
       }
     >
@@ -39,7 +39,7 @@ export function Slide_141_HowToPay() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4vw, 60px)" }}
       >
-        КАК ВНЕСТИ <span className="text-[#B6FF00] whitespace-nowrap">5 000 ₸</span>
+        КАК ВНЕСТИ <span className="text-[#B6FF00] whitespace-nowrap">10 000 ₸</span>
       </motion.h1>
       <div className="flex flex-col gap-2.5 max-w-xl">
         {STEPS.map((s, i) => (

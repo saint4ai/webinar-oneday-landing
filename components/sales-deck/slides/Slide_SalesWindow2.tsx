@@ -24,7 +24,7 @@ export function Slide_SalesWindow2() {
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }} className="relative w-full rounded-2xl overflow-hidden flex items-center justify-center" style={{ background: "#fff", aspectRatio: "1/1", boxShadow: "0 30px 80px -30px rgba(0,0,0,0.6), 0 0 60px -24px rgba(182,255,0,0.35)" }}>
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · предоплата 5 000 ₸" className="block object-contain" style={{ maxWidth: "92%", maxHeight: "92%" }} />
+          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · предоплата 10 000 ₸" className="block object-contain" style={{ maxWidth: "92%", maxHeight: "92%" }} />
         </motion.div>
       }
     >
@@ -58,7 +58,7 @@ export function Slide_SalesWindow2() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.0 }} className="rounded-xl px-4 py-3 max-w-xl" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
-        <span className="text-white text-sm md:text-base font-semibold">Предоплата <span className="text-[#B6FF00]">5 000 ₸</span> по QR закрепляет цену. Рассрочка 24 мес — <span className="text-[#B6FF00]">399 ₸/день</span>.</span>
+        <span className="text-white text-sm md:text-base font-semibold">Предоплата <span className="text-[#B6FF00]">10 000 ₸</span> по QR закрепляет цену. Рассрочка 24 мес — <span className="text-[#B6FF00]">399 ₸/день</span>.</span>
       </motion.div>
     </SlideLayout>
   );

@@ -5,58 +5,41 @@ import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { Gift } from "lucide-react";
 
-/** Слайд 132 · Условие предоплаты + анонс бонусов. Текст 1-в-1 STRUCTURE 1737-1751. DL-7. */
-const STEPS = [
-  { n: "1", t: "Предоплата 5 000 ₸", d: "сейчас" },
-  { n: "2", t: "Полная оплата", d: "в течение 24 часов" },
-  { n: "3", t: "Цена закреплена за тобой", d: "по цене этого дня" },
-];
-const BONUSES = [
-  { b: "Б-1", t: "Обучение «Claude Code · Базовый»", d: "3 часа · 5 уроков · доступ сразу" },
-  { b: "Б-2", t: "AI-Таргетолог — готовый инструмент", d: "мой работающий сервис у тебя" },
-];
-
+/**
+ * Слайд 132 · ТИЗЕР предоплаты — плавный заход к бонусам (НЕ вываливаем список в лоб).
+ * «Для тех, кто внесёт предоплату 10 000 ₸ — мы подготовили крутые бонусы». Дальше каждый бонус
+ * раскрывается отдельным слайдом (134 Claude Code, 135 AI-Таргетолог) → 137b сводка.
+ * ⚠ Сумма 10 000 ₸ и конвертации $19 / 2 000 ₽ — на проверку Александру. QR перегенерировать под 10 000 ₸.
+ */
 export function Slide_132_PrepayBonuses() {
   return (
-    <SlideLayout speakerSide="right" contentMinWidth={760} background={<SlideBg theme="dark" variant="lime-right" />}>
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#B6FF00] mb-3">
-        // УСЛОВИЕ + БОНУСЫ ЗА ПРЕДОПЛАТУ
+    <SlideLayout speakerSide="right" contentMinWidth={760} background={<SlideBg theme="dark" variant="lime-right" />} contentClassName="justify-center">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#B6FF00] mb-4">
+        // ПРЕДОПЛАТА = ДОСТУП К БОНУСАМ
       </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="font-bold uppercase text-white/85 tracking-[-0.01em] leading-[1.05]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.6vw, 40px)" }}>
+        ДЛЯ ТЕХ, КТО ВНЕСЁТ ПРЕДОПЛАТУ
+      </motion.div>
+
       <motion.h1
-        initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
-        animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
-        transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
-        className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
+        initial={{ opacity: 0, scale: 0.92, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
+        className="font-bold leading-[0.95] tabular-nums whitespace-nowrap my-2"
+        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8.5vw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}
       >
-        ПРЕДОПЛАТА <span className="text-[#B6FF00]">5 000 ₸</span> — И НАЧНИ СЕГОДНЯ
+        10 000 ₸
       </motion.h1>
 
-      <div className="flex items-stretch gap-3 mb-5 flex-wrap">
-        {STEPS.map((s, i) => (
-          <motion.div key={s.n} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.4 + i * 0.14 }} className="flex-1 min-w-[170px] rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <span className="font-bold text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 22 }}>{s.n}</span>
-            <div className="text-white font-semibold text-sm md:text-base mt-1 leading-tight">{s.t}</div>
-            <div className="text-white/45 text-xs md:text-sm">{s.d}</div>
-          </motion.div>
-        ))}
-      </div>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }} className="flex items-center gap-3 flex-wrap mb-5">
+        <span className="text-white/80 text-lg md:text-2xl">— мы подготовили для тебя <span className="text-[#B6FF00] font-semibold">крутые бонусы</span></span>
+        <span className="font-mono text-xs uppercase tracking-[0.14em] text-white/45 rounded-md px-2.5 py-1" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)" }}>≈ $19 · 2 000 ₽</span>
+      </motion.div>
 
-      <div className="grid grid-cols-2 gap-3 max-w-2xl">
-        {BONUSES.map((b, i) => (
-          <motion.div key={b.b} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 1.0 + i * 0.14 }} className="rounded-xl px-3.5 py-3" style={{ background: "rgba(182,255,0,0.06)", border: "1px solid rgba(182,255,0,0.28)" }}>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Gift className="w-3.5 h-3.5 text-[#B6FF00] shrink-0" strokeWidth={2.2} />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-[#B6FF00]">{b.b}</span>
-            </div>
-            <div className="text-white font-semibold text-xs md:text-sm leading-tight">{b.t}</div>
-            <div className="text-white/45 text-[13px] mt-0.5 leading-snug">{b.d}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.6 }} className="text-white/70 text-sm md:text-base mt-4 max-w-2xl">
-        Это не «приходи через 2 недели». Это <span className="text-[#B6FF00] font-semibold">начни сегодня вечером</span>.
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.7 }} className="inline-flex items-center gap-3 self-start rounded-xl px-4 py-3 max-w-2xl" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.3)" }}>
+        <Gift className="w-5 h-5 text-[#B6FF00] shrink-0" strokeWidth={2.2} />
+        <span className="text-white/85 text-sm md:text-base leading-snug">Сейчас разберу <span className="text-white font-semibold">каждый бонус отдельно</span> — и все они твои бесплатно, просто за то, что закрепишь место сегодня.</span>
       </motion.div>
     </SlideLayout>
   );

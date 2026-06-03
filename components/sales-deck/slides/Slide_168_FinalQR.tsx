@@ -18,7 +18,7 @@ export function Slide_168_FinalQR() {
       leftObject={
         <motion.div animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.45)", background: "rgba(255,255,255,0.04)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 5 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
+          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
         </motion.div>
       }
     >
@@ -35,7 +35,7 @@ export function Slide_168_FinalQR() {
         КАК ВНЕСТИ <span className="text-[#B6FF00]">ПРЕДОПЛАТУ</span>
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/75 text-base md:text-lg mb-4 max-w-xl">
-        <span className="text-[#B6FF00] font-semibold">5 000 ₸</span> через Kaspi.
+        <span className="text-[#B6FF00] font-semibold">10 000 ₸</span> через Kaspi.
       </motion.div>
       <div className="flex flex-col gap-2 max-w-xl">
         {["Сканируйте QR-код слева", "В сообщении пишите имя и WhatsApp", "Менеджер свяжется с вами сегодня"].map((s, i) => (

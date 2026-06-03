@@ -48,7 +48,7 @@ export function Slide_137b_PrepaySummary() {
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 1.0 }} className="flex items-center gap-4 flex-wrap max-w-3xl rounded-xl px-5 py-3.5" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", boxShadow: "0 0 50px -18px rgba(182,255,0,0.5)" }}>
         <span className="text-white/70 text-sm md:text-base">Всего бонусов: <span className="line-through text-white/40">99 000 ₸</span> →</span>
-        <span className="font-bold uppercase text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2.2vw,32px)" }}>БЕСПЛАТНО за предоплату 5 000 ₸</span>
+        <span className="font-bold uppercase text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2.2vw,32px)" }}>БЕСПЛАТНО за предоплату 10 000 ₸</span>
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.3 }} className="text-white/55 text-xs md:text-sm mt-2.5 max-w-2xl">
         И это — только за то, что закрепил место сегодня. Само обучение — отдельно, и о нём дальше.

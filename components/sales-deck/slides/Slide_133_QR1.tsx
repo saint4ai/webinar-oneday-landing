@@ -10,7 +10,7 @@ import { SlideLayout } from "../SlideLayout";
  */
 const STEPS = [
   { n: "Шаг 1", t: "Скан QR справа в Kaspi", d: "или клик на ссылку под видео" },
-  { n: "Шаг 2", t: "Сумма 5 000 ₸", d: "в «Комментарий» — твой НОМЕР ТЕЛЕФОНА" },
+  { n: "Шаг 2", t: "Сумма 10 000 ₸", d: "в «Комментарий» — твой НОМЕР ТЕЛЕФОНА" },
   { n: "Шаг 3", t: "Менеджер свяжется сегодня", d: "для оформления полной оплаты" },
 ];
 
@@ -24,7 +24,7 @@ export function Slide_133_QR1() {
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.4)", background: "rgba(255,255,255,0.04)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 5 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "68vh" }} />
+          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "68vh" }} />
         </motion.div>
       }
     >
@@ -38,7 +38,7 @@ export function Slide_133_QR1() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6vw, 54px)" }}
       >
-        ВНЕСИ <span className="text-[#B6FF00] whitespace-nowrap">5 000 ₸</span> ПРЯМО СЕЙЧАС
+        ВНЕСИ <span className="text-[#B6FF00] whitespace-nowrap">10 000 ₸</span> ПРЯМО СЕЙЧАС
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/65 text-sm md:text-base mb-5 max-w-xl">
         Сканируй QR справа. Или жми кнопку под видео. 60 секунд — и место за тобой.

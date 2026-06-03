@@ -25,7 +25,7 @@ export function Slide_148_QR3() {
       leftObject={
         <motion.div animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.45)", background: "rgba(255,255,255,0.04)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 5 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
+          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
         </motion.div>
       }
     >
@@ -53,7 +53,7 @@ export function Slide_148_QR3() {
         ))}
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.0 }} className="text-white/70 text-sm md:text-base">
-        QR справа — внеси <span className="text-[#B6FF00] font-semibold">5К сейчас</span>, менеджер закроет полную оплату до конца дня.
+        QR справа — внеси <span className="text-[#B6FF00] font-semibold">10К сейчас</span>, менеджер закроет полную оплату до конца дня.
       </motion.div>
     </SlideLayout>
   );

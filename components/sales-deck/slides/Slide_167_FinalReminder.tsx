@@ -9,7 +9,7 @@ import { SlideLayout } from "../SlideLayout";
  * Без фейк-мест и фейк-часа: предоплата = бронь, держит цену до конца суток.
  */
 const CHIPS = [
-  "5 000 ₸ — это бронь, не вся оплата",
+  "10 000 ₸ — это бронь, не вся оплата",
   "цена 290 900 ₸ + бонусы держатся до конца суток",
 ];
 
@@ -34,7 +34,7 @@ export function Slide_167_FinalReminder() {
         Большие решения не принимают за минуту.
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }} className="text-white/65 text-base md:text-lg leading-snug max-w-3xl mb-7">
-        Предоплата <span className="text-[#B6FF00] font-semibold">5 000 ₸</span> — это бронь, а не вся сумма. Она держит за тобой цену и бонусы, пока ты спокойно думаешь. Надумаешь — доплатишь остаток. День на решение у тебя есть.
+        Предоплата <span className="text-[#B6FF00] font-semibold">10 000 ₸</span> — это бронь, а не вся сумма. Она держит за тобой цену и бонусы, пока ты спокойно думаешь. Надумаешь — доплатишь остаток. День на решение у тебя есть.
       </motion.div>
 
       <div className="flex flex-wrap gap-3">

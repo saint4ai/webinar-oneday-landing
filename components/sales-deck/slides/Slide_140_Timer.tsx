@@ -69,7 +69,7 @@ export function Slide_140_Timer() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.8 }} className="text-white/75 text-base md:text-lg max-w-2xl leading-snug">
-        Внёс предоплату <span className="text-[#B6FF00] font-semibold">5 000 ₸</span> до конца суток — фиксируешь <span className="text-[#B6FF00] font-semibold">290 900 ₸ + бонусы</span>. После — обычная цена обучения.
+        Внёс предоплату <span className="text-[#B6FF00] font-semibold">10 000 ₸</span> до конца суток — фиксируешь <span className="text-[#B6FF00] font-semibold">290 900 ₸ + бонусы</span>. После — обычная цена обучения.
       </motion.div>
     </SlideLayout>
   );

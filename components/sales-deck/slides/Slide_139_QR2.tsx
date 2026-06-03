@@ -18,7 +18,7 @@ export function Slide_139_QR2() {
       leftObject={
         <motion.div animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.45)", background: "rgba(255,255,255,0.04)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 5 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
+          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
         </motion.div>
       }
     >
@@ -37,7 +37,7 @@ export function Slide_139_QR2() {
 
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3 }} className="mb-4">
         <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(36px,4.2vw,68px)", textShadow: "0 0 60px rgba(182,255,0,0.4)" }}>290 900 ₸</span>
-        <div className="text-white/60 text-sm md:text-base mt-1">закрепляются после 5К предоплаты</div>
+        <div className="text-white/60 text-sm md:text-base mt-1">закрепляются после 10К предоплаты</div>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }} className="text-white/70 text-sm md:text-base leading-snug max-w-xl">
