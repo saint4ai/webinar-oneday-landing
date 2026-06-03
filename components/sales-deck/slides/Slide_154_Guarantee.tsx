@@ -34,7 +34,7 @@ export function Slide_154_Guarantee() {
         МОЯ <span className="text-[#B6FF00]">ГАРАНТИЯ</span>
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }} className="text-white/80 text-base md:text-xl leading-snug max-w-xl rounded-xl px-5 py-4" style={{ background: "rgba(182,255,0,0.07)", border: "1px solid rgba(182,255,0,0.3)" }}>
-        За месяц активного обучения ты соберёшь свой <span className="text-[#B6FF00] font-semibold">первый рабочий продукт</span> — сам, с нуля. Не теория — то, что реально работает.
+        За 5 недель активного обучения ты соберёшь свой <span className="text-[#B6FF00] font-semibold">первый рабочий продукт</span> — сам, с нуля. Не теория — то, что реально работает.
       </motion.div>
     </SlideLayout>
   );

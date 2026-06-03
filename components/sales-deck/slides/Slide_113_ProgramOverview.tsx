@@ -32,7 +32,7 @@ export function Slide_113_ProgramOverview() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/65 text-sm md:text-base leading-snug mb-5 max-w-2xl">
-        10 модулей · 50 уроков · сквозной кейс · доступ в OPUS.CLUB на 12 месяцев.
+        10 модулей · 50 коротких уроков по 15–20 минут · сквозной кейс. Весь курс — 5 недель в своём темпе.
       </motion.div>
 
       <div className="flex items-start gap-5 max-w-3xl">
@@ -63,10 +63,15 @@ export function Slide_113_ProgramOverview() {
         >
           <div className="text-center">
             <div className="font-bold leading-none text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 56 }}>50</div>
-            <div className="text-white/70 text-xs uppercase tracking-[0.12em] mt-1">уроков</div>
+            <div className="text-white/70 text-xs uppercase tracking-[0.12em] mt-1">уроков · 15–20 мин</div>
           </div>
-          <div className="rounded-full px-3.5 py-1.5 text-center" style={{ background: "rgba(252,92,2,0.12)", border: "1px solid rgba(252,92,2,0.35)" }}>
-            <span className="text-[#FC5C02] text-xs font-semibold whitespace-nowrap">12 мес доступа</span>
+          <div className="flex flex-col gap-1.5 items-stretch">
+            <div className="rounded-full px-3.5 py-1.5 text-center" style={{ background: "rgba(182,255,0,0.14)", border: "1px solid rgba(182,255,0,0.4)" }}>
+              <span className="text-[#B6FF00] text-xs font-semibold whitespace-nowrap">5 недель · курс</span>
+            </div>
+            <div className="rounded-full px-3.5 py-1.5 text-center" style={{ background: "rgba(252,92,2,0.12)", border: "1px solid rgba(252,92,2,0.35)" }}>
+              <span className="text-[#FC5C02] text-xs font-semibold whitespace-nowrap">12 мес доступа</span>
+            </div>
           </div>
         </motion.div>
       </div>

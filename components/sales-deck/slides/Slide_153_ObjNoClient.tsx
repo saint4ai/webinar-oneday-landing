@@ -19,7 +19,7 @@ const LESSONS = [
 
 export function Slide_153_ObjNoClient() {
   return (
-    <ObjectionSlide n={4} question="А ЕСЛИ Я НЕ НАЙДУ КЛИЕНТА?" answer="Модуль 10 — отдельный месяц учим находить клиентов и закрывать на оплату." bg="aura-tr" qSize="clamp(24px, 3vw, 46px)">
+    <ObjectionSlide n={4} question="А ЕСЛИ Я НЕ НАЙДУ КЛИЕНТА?" answer="Модуль 10 — целиком про то, как находить клиентов и закрывать на оплату." bg="aura-tr" qSize="clamp(24px, 3vw, 46px)">
       <div className="flex items-start gap-5 max-w-4xl">
         <div className="grid grid-cols-2 gap-x-5 gap-y-1.5 flex-1">
           {LESSONS.map((l, i) => (
