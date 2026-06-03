@@ -284,6 +284,20 @@ export function SalesDeck() {
     /* === ЧАСТЬ V · РЫНОК + RESEARCH (50-57) === */
     <Slide_50_Engagement2 key="50" />,
     <Slide_52_MarketTime key="52" />,
+
+    /* === ПРАКТИКА (перенесена сюда: «вот как просто» — собрали приложение ПЕРЕД research) === */
+    <Slide_71_PracticeChapter key="71" />,
+    <Slide_72_GoogleAIStudio key="72" />,
+    <Slide_73_WhatBuild key="73" />,
+    <Slide_74_FiveSteps key="74" />,
+    <Slide_PracticeStart key="practice-start" />,
+    <Slide_75_AppDone key="75" />,
+    <Slide_76_WhatNext key="76" />,
+    <Slide_77_MarketPrice key="77" />,
+    <Slide_78_WebApps key="78" />,
+    <Slide_79_MainConclusion key="79" />,
+
+    /* === RESEARCH (после практики: «теперь — как понять что собирать») === */
     <Slide_53_Research1 key="53" />,
     <Slide_54_Research2 key="54" />,
     <Slide_55_Research3 key="55" />,
@@ -306,17 +320,6 @@ export function SalesDeck() {
     <Slide_69_UIDesign key="69" />,
     <Slide_70_QualityPunchline key="70" />,
 
-    /* === ЧАСТЬ VII · ПРАКТИКА ANDROID (71-80) === */
-    <Slide_71_PracticeChapter key="71" />,
-    <Slide_72_GoogleAIStudio key="72" />,
-    <Slide_73_WhatBuild key="73" />,
-    <Slide_74_FiveSteps key="74" />,
-    <Slide_PracticeStart key="practice-start" />,
-    <Slide_75_AppDone key="75" />,
-    <Slide_76_WhatNext key="76" />,
-    <Slide_77_MarketPrice key="77" />,
-    <Slide_78_WebApps key="78" />,
-    <Slide_79_MainConclusion key="79" />,
     <Slide_BonusReminder key="bonus-reminder" />,
     <Slide_80_FeelEngagement key="80" />,
 
