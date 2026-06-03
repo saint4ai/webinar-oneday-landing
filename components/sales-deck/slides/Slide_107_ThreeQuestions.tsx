@@ -38,7 +38,7 @@ export function Slide_107_ThreeQuestions() {
       }
     >
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#FC5C02] mb-3">
-        // ДАВАЙТЕ ЧЕСТНО — Я ЗНАЮ КАКИЕ
+        // ДАВАЙТЕ ЧЕСТНО — Я ЗНАЮ КАКИЕ ВОПРОСЫ
       </motion.div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.15 }} className="text-white/50 font-mono text-xs uppercase tracking-[0.2em] mb-5">
