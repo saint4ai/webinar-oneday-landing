@@ -16,7 +16,7 @@ export function Slide_07c_ExpertTease() {
   return (
     <SlideLayout speakerSide="right" contentMinWidth={800} background={<SlideBg theme="dark" variant="lime-right" />} contentClassName="justify-center">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#B6FF00] mb-3">
-        // САМОЕ ВКУСНОЕ Я ОСТАВИЛ НА ФИНАЛ
+        // САМОЕ ВКУСНОЕ — В ФИНАЛЕ
       </motion.div>
 
       <motion.h1
@@ -30,19 +30,15 @@ export function Slide_07c_ExpertTease() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/80 text-base md:text-lg leading-snug max-w-2xl mb-5">
-        Сегодня учимся собирать и продавать продукты — это про доход. Но в самом финале открою блок, который почти никто не отдаёт: как <span className="text-white font-semibold">Claude Code</span> и <span className="text-white font-semibold">ChatGPT Codex</span> забирают на себя <span className="text-[#B6FF00] font-bold">до 70% твоей рутины</span>.
+        В финале открою блок, который почти никто не отдаёт: как <span className="text-white font-semibold">Claude Code</span> и <span className="text-white font-semibold">ChatGPT Codex</span> снимают <span className="text-[#B6FF00] font-bold">до 70% твоей рутины</span>.
       </motion.div>
 
-      {/* −70% + инструменты */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.6, ease: [0.25, 1, 0.5, 1] }} className="flex items-center gap-4 flex-wrap mb-5">
+      {/* −70% → время на себя */}
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.6, ease: [0.25, 1, 0.5, 1] }} className="flex items-center gap-4 flex-wrap mb-6">
         <div className="flex items-baseline gap-2.5 rounded-2xl px-5 py-3" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.42)", boxShadow: "0 0 50px -16px rgba(182,255,0,0.5)" }}>
           <span className="font-bold leading-none tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(34px,4vw,60px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.45)" }}>−70%</span>
-          <span className="text-white/70 text-sm md:text-base">рутины делает ИИ — пока ты живёшь</span>
+          <span className="text-white/70 text-sm md:text-base">рутины на ИИ → время на <span className="text-white">себя, семью и хотелки</span></span>
         </div>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.8 }} className="text-white/80 text-sm md:text-base leading-snug max-w-2xl mb-6">
-        Отчёты, переписки, однотипные задачи — на автопилоте. Освобождается вечер, выходной и голова. Время — <span className="text-[#B6FF00] font-semibold">на себя, семью и свои хотелки</span>.
       </motion.div>
 
       {/* Комментарий-реакция (открытая петля) */}
