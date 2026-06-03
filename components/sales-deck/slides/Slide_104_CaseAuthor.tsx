@@ -23,24 +23,42 @@ export function Slide_104_CaseAuthor() {
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
-          className="relative w-full rounded-2xl overflow-hidden border flex flex-col"
-          style={{ aspectRatio: "16 / 10", borderColor: "rgba(182,255,0,0.32)", background: "#0b0e0a", boxShadow: "0 30px 70px -28px rgba(0,0,0,0.7), 0 0 60px -26px rgba(182,255,0,0.3)" }}
-        >
-          <div className="flex items-center gap-2 px-3.5 py-2 shrink-0" style={{ background: "rgba(182,255,0,0.07)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-            <span className="ml-2 font-mono text-[11px] text-white/45">onai.academy</span>
-          </div>
-          <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-col gap-3 w-full items-stretch justify-center h-[88vh]">
+          {/* Платформа onAI.academy */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
+            className="relative w-full rounded-2xl overflow-hidden border flex flex-col shrink-0"
+            style={{ aspectRatio: "16 / 10", borderColor: "rgba(182,255,0,0.32)", background: "#0b0e0a", boxShadow: "0 30px 70px -28px rgba(0,0,0,0.7), 0 0 60px -26px rgba(182,255,0,0.3)" }}
+          >
+            <div className="flex items-center gap-2 px-3.5 py-2 shrink-0" style={{ background: "rgba(182,255,0,0.07)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+              <span className="ml-2 font-mono text-[11px] text-white/45">onai.academy</span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/handouts/screens/platform_onai.png" alt="Платформа onAI.academy" className="w-full h-full object-contain" />
+            </div>
+          </motion.div>
+
+          {/* Пруф: веб-студия Hoster.KZ оценила тот же проект «от 10 млн ₸» */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55, ease: [0.25, 1, 0.5, 1] }}
+            className="relative w-full flex-1 min-h-0 rounded-2xl overflow-hidden border"
+            style={{ borderColor: "rgba(252,92,2,0.45)", background: "#ffffff", boxShadow: "0 24px 60px -28px rgba(0,0,0,0.7)" }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/handouts/screens/platform_onai.png" alt="Платформа onAI.academy" className="w-full h-full object-contain" />
-          </div>
-        </motion.div>
+            <img src="/handouts/screens/hoster_quote.jpg" alt="Веб-студия Hoster.KZ оценила проект от 10 млн ₸" className="w-full h-full object-contain object-top" />
+            <div className="absolute top-2 left-2 font-mono text-[10px] uppercase tracking-[0.12em] font-bold px-2 py-1 rounded-md" style={{ background: "#FC5C02", color: "#fff" }}>
+              студия: от 10 млн ₸
+            </div>
+          </motion.div>
+        </div>
       }
     >
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
