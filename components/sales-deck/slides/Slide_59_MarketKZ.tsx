@@ -54,7 +54,7 @@ export function Slide_59_MarketKZ() {
         {/* Большой реальный скрин stat.gov.kz */}
         <motion.div initial={{ opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 1, 0.5, 1] }} className="flex-1 min-h-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/handouts/screens/statgov_kz.png" alt="stat.gov.kz — число активных бизнесов в Казахстане" className="w-full h-full object-contain object-left rounded-xl border" style={{ borderColor: "rgba(182,255,0,0.22)" }} />
+          <img src="/handouts/screens/statgov_kz.png" alt="stat.gov.kz — число активных бизнесов в Казахстане" className="w-full h-full object-contain object-left" />
         </motion.div>
       </div>
     </SlideLayout>
