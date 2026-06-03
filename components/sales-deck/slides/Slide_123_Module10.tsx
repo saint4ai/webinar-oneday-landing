@@ -7,6 +7,7 @@ export function Slide_123_Module10() {
   return (
     <ModuleSlide
       no="10"
+      bgImage="/cards-gifs-screenshots/module-bg/m10.jpg"
       lessons="10 уроков"
       title="ПЕРВЫЙ ПЛАТЯЩИЙ КЛИЕНТ"
       promise="Превращаете навык в деньги: дадим Telegram-каналы, где ищут вайбкодеров, а внутри потока — реальные заявки на автоматизации от Академии тем, кто сдаст все домашки и покажет свои сервисы."

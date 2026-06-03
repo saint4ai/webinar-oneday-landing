@@ -7,6 +7,7 @@ export function Slide_120_Module7() {
   return (
     <ModuleSlide
       no="07"
+      bgImage="/cards-gifs-screenshots/module-bg/m07.jpg"
       lessons="5 уроков"
       title="БОЕВОЙ ЗАПУСК"
       promise="Ваш продукт в интернете по красивому домену. Клиенты могут платить уже сегодня."

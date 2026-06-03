@@ -7,6 +7,7 @@ export function Slide_116_Module3() {
   return (
     <ModuleSlide
       no="03"
+      bgImage="/cards-gifs-screenshots/module-bg/m03.jpg"
       lessons="4 урока"
       title="КОНСТИТУЦИЯ ПРОЕКТА"
       promise="Авторская система памяти — метод onAI. За неё ко мне и приходят. Ваш проект не развалится на 3-м месяце."

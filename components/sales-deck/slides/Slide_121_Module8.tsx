@@ -7,6 +7,7 @@ export function Slide_121_Module8() {
   return (
     <ModuleSlide
       no="08"
+      bgImage="/cards-gifs-screenshots/module-bg/m08.jpg"
       lessons="4 урока"
       title="БАЗА ДАННЫХ ПРОДУКТА"
       promise="У вашего сервиса живая база с реальными пользователями. Это уже не первая версия — это продукт."

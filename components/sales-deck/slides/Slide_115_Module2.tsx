@@ -7,6 +7,7 @@ export function Slide_115_Module2() {
   return (
     <ModuleSlide
       no="02"
+      bgImage="/cards-gifs-screenshots/module-bg/m02.jpg"
       lessons="5 уроков"
       title="ЯЗЫК АГЕНТА"
       promise="Уже на первой неделе — готовое техзадание и первая рабочая версия веб-сервиса."

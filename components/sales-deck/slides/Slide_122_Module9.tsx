@@ -7,6 +7,7 @@ export function Slide_122_Module9() {
   return (
     <ModuleSlide
       no="09"
+      bgImage="/cards-gifs-screenshots/module-bg/m09.jpg"
       lessons="5 уроков"
       title="ДЕНЬГИ НА СЧЁТ"
       promise="Первая оплата падает на ваш счёт. Уведомление в Telegram. Доступ клиенту выдан автоматически."

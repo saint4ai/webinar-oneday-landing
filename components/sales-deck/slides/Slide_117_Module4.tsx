@@ -7,6 +7,7 @@ export function Slide_117_Module4() {
   return (
     <ModuleSlide
       no="04"
+      bgImage="/cards-gifs-screenshots/module-bg/m04.jpg"
       lessons="3 урока"
       title="РЕЗЕРВНАЯ КОПИЯ"
       promise="Спите спокойно — даже если завтра сгорит комп, проект на месте."

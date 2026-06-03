@@ -7,6 +7,7 @@ export function Slide_118_Module5() {
   return (
     <ModuleSlide
       no="05"
+      bgImage="/cards-gifs-screenshots/module-bg/m05.jpg"
       lessons="6 уроков"
       title="ПРОКАЧКА АГЕНТА"
       promise="Ваш агент превращается из чат-бота в старшего разработчика. Продукт выглядит дороже конкурентов — без дизайнера."

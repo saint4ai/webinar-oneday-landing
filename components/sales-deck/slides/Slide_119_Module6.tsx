@@ -7,6 +7,7 @@ export function Slide_119_Module6() {
   return (
     <ModuleSlide
       no="06"
+      bgImage="/cards-gifs-screenshots/module-bg/m06.jpg"
       lessons="4 урока"
       title="АРМИЯ АГЕНТОВ"
       promise="Вы руководите командой из агентов. Собираете продукты в 2-3 раза быстрее."

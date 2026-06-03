@@ -31,14 +31,16 @@ export function ModuleSlide({ no, lessons, title, promise, items, variant = "aur
         <>
           <SlideBg theme="dark" variant={variant} />
           {bgImage && (
-            <>
+            // Картинка ТОЛЬКО в контентной зоне — НЕ заходит в зону спикера (правые 30vw, там стоит Александр).
+            <div className="absolute top-0 bottom-0 left-0 overflow-hidden pointer-events-none" style={{ right: "var(--sd-speaker-zone, 30vw)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "right center" }} />
-              {/* Затемнение слева под текст (объект остаётся виден справа) */}
-              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(90deg, #000 0%, rgba(0,0,0,0.97) 30%, rgba(0,0,0,0.82) 46%, rgba(0,0,0,0.45) 63%, rgba(0,0,0,0.12) 82%, transparent 100%)" }} />
-              {/* Лёгкая виньетка сверху/снизу для глубины */}
-              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 22%, transparent 72%, rgba(0,0,0,0.5) 100%)" }} />
-            </>
+              {/* Левые ~45% — чистый чёрный под текст (даже на пёстрой картинке), объекты справа остаются красочными */}
+              <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, #000 0%, #000 44%, rgba(0,0,0,0.86) 60%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.4) 100%)" }} />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 24%, transparent 72%, rgba(0,0,0,0.45) 100%)" }} />
+              {/* Мягкое растворение правого края в тёмную зону спикера */}
+              <div className="absolute inset-y-0 right-0" style={{ width: 90, background: "linear-gradient(90deg, transparent, #050505)" }} />
+            </div>
           )}
         </>
       }
