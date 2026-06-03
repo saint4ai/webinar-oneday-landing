@@ -11,9 +11,9 @@ import { SlideLayout } from "../SlideLayout";
  * 4-й бонус (за отметку в сторис — ИИ-креаторство) озвучивается ОТДЕЛЬНО на своём слайде, сюда не входит.
  */
 const BONUSES = [
-  { img: "/cards-gifs-screenshots/bonus/bonus-watch1-android.png", val: "30 000 ₸" },
-  { img: "/cards-gifs-screenshots/bonus/bonus-watch2-prompts.png", val: "20 000 ₸" },
-  { img: "/cards-gifs-screenshots/bonus/bonus-watch3-checklist.png", val: "25 000 ₸" },
+  { img: "/cards-gifs-screenshots/bonus/bonus-watch1-android.png", val: "30 000 ₸", desc: "Своё приложение за 30 минут с Google AI Studio." },
+  { img: "/cards-gifs-screenshots/bonus/bonus-watch2-prompts.png", val: "20 000 ₸", desc: "30 маркетинговых промптов под твои продукты." },
+  { img: "/cards-gifs-screenshots/bonus/bonus-watch3-checklist.png", val: "25 000 ₸", desc: "Какие сервисы в спросе и что собрать на продажу." },
 ];
 
 export function Slide_BonusReminder() {
@@ -35,12 +35,13 @@ export function Slide_BonusReminder() {
         Ты уже собрал приложение. А в конце эфира забираешь ещё это — бесплатно, просто за то, что досмотрел:
       </motion.div>
 
-      <div className="grid grid-cols-3 gap-4 w-full max-w-[940px]">
+      <div className="w-full" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px", maxWidth: "940px" }}>
         {BONUSES.map((b, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, delay: 0.5 + i * 0.15, ease: [0.34, 1.3, 0.64, 1] }} className="flex flex-col items-center gap-2.5">
             <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: "4 / 5", background: "#ffffff", border: "1px solid rgba(182,255,0,0.3)", boxShadow: "0 24px 60px -28px rgba(0,0,0,0.6), 0 0 50px -26px rgba(182,255,0,0.3)" }}>
               <Image src={b.img} alt="Бонус за досмотр" fill className="object-contain" sizes="30vw" priority={i === 0} />
             </div>
+            <p className="text-white/70 text-[13px] leading-snug text-center px-1">{b.desc}</p>
             <div className="rounded-md px-3 py-1 text-[13px] font-semibold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.12)", border: "1px solid rgba(182,255,0,0.3)" }}>
               ценность {b.val}
             </div>

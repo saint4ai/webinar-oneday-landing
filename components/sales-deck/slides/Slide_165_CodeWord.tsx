@@ -31,8 +31,13 @@ export function Slide_165_CodeWord() {
           </span>
         ))}
       </div>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.4 }} className="text-white/55 text-sm md:text-lg mt-6">
-        Это слово пишете в директ @saint4ai — отправлю все 3 бонуса.
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.4 }} className="text-white/60 text-sm md:text-lg mt-6">
+        Пишешь это слово в директ @saint4ai — и забираешь все три:
+      </motion.div>
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.6 }} className="flex flex-col gap-1.5 mt-3 text-white/75 text-sm md:text-base">
+        <span><span className="text-[#B6FF00] font-bold">→</span> приложение за 30 минут с Google AI Studio</span>
+        <span><span className="text-[#B6FF00] font-bold">→</span> 30 маркетинговых промптов для продвижения</span>
+        <span><span className="text-[#B6FF00] font-bold">→</span> чек-лист востребованных AI-сервисов</span>
       </motion.div>
     </SlideLayout>
   );
