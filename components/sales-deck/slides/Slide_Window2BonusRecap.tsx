@@ -67,7 +67,7 @@ export function Slide_Window2BonusRecap() {
       </motion.h1>
 
       <div className="grid grid-cols-2 gap-x-8 gap-y-4 max-w-3xl mb-6">
-        <Group title="За предоплату 5 000 ₸" items={PREPAY} delay={0.35} />
+        <Group title="За предоплату 10 000 ₸" items={PREPAY} delay={0.35} />
         <Group title="За полную оплату" items={FULLPAY} delay={0.55} />
       </div>
 
