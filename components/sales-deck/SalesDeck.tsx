@@ -150,6 +150,7 @@ import { Slide_128b_PaysOff } from "./slides/Slide_128b_PaysOff";
 import { Slide_128c_OrbYear } from "./slides/Slide_128c_OrbYear";
 import { Slide_128d_FirstClient } from "./slides/Slide_128d_FirstClient";
 import { Slide_128e_ProductVsService } from "./slides/Slide_128e_ProductVsService";
+import { Slide_DiscountAlert } from "./slides/Slide_DiscountAlert";
 import { Slide_129_SecondTier } from "./slides/Slide_129_SecondTier";
 import { Slide_Smysl1_Relevance } from "./slides/Slide_Smysl1_Relevance";
 import { Slide_Smysl1b_Proof } from "./slides/Slide_Smysl1b_Proof";
@@ -377,6 +378,8 @@ export function SalesDeck() {
     <Slide_128c_OrbYear key="128c" />,
     <Slide_128d_FirstClient key="128d" />,
     <Slide_128e_ProductVsService key="128e" />,
+    /* Вспышка «ВНИМАНИЕ! СКИДКА» — pattern-interrupt перед раскрытием цены 390 000 ₸ */
+    <Slide_DiscountAlert key="discount-alert" />,
     <Slide_129_SecondTier key="129" />,
 
     /* === БЛОК C · СМЫСЛЫ после 390 (цена 290 900 ещё НЕ названа) === */
