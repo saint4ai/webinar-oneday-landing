@@ -116,16 +116,19 @@ export function Slide_01_ColdOpen() {
         initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
-        className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] pointer-events-none"
+        className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em] pointer-events-none"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
           fontSize: "clamp(22px, 2.4vw, 42px)",
+          maxWidth: "min(820px, 46vw)",
         }}
       >
-        СТАНЬ <span className="text-[#B6FF00]">АРХИТЕКТОРОМ</span> СВОЕГО IT-РЕШЕНИЯ.
+        СТАНЬ <span className="text-[#B6FF00]">АРХИТЕКТОРОМ</span><br />
+        СВОЕГО IT-РЕШЕНИЯ.
         <br />
         <span className="text-white/80">
-          ОДИН ДЕНЬ — ОТ ИДЕИ ДО РАБОЧЕГО ПРИЛОЖЕНИЯ.
+          ОДИН ДЕНЬ — ОТ ИДЕИ<br />
+          ДО РАБОЧЕГО ПРИЛОЖЕНИЯ.
         </span>
       </motion.h1>
 
