@@ -10,6 +10,7 @@ import { Slide_05_BonusList } from "./slides/Slide_05_BonusList";
 import { Slide_06_PollBonus } from "./slides/Slide_06_PollBonus";
 import { Slide_07_Program } from "./slides/Slide_07_Program";
 import { Slide_07b_BigPromise } from "./slides/Slide_07b_BigPromise";
+import { Slide_07c_ExpertTease } from "./slides/Slide_07c_ExpertTease";
 import { Slide_08_Benefits } from "./slides/Slide_08_Benefits";
 import { Slide_09_Targeting } from "./slides/Slide_09_Targeting";
 import { Slide_10_CaseAzim } from "./slides/Slide_10_CaseAzim";
@@ -224,6 +225,8 @@ export function SalesDeck() {
     <Slide_06_PollBonus key="6" />,
     <Slide_07_Program key="7" />,
     <Slide_07b_BigPromise key="7b" />,
+    /* Тизер экспертного контента (открытая петля) — Claude Code + ChatGPT Codex для личной рутины, −70% */
+    <Slide_07c_ExpertTease key="7c" />,
     <Slide_08_Benefits key="8" />,
     <Slide_09_Targeting key="9" />,
     <Slide_10_CaseAzim key="10" />,
