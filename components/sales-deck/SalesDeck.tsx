@@ -159,14 +159,12 @@ import { Slide_Smysl4_Efficiency } from "./slides/Slide_Smysl4_Efficiency";
 import { Slide_130_WithVsWithout } from "./slides/Slide_130_WithVsWithout";
 import { Slide_131_SpecialPrice } from "./slides/Slide_131_SpecialPrice";
 import { Slide_132_PrepayBonuses } from "./slides/Slide_132_PrepayBonuses";
-import { Slide_133_QR1 } from "./slides/Slide_133_QR1";
 import { Slide_134_BonusB1 } from "./slides/Slide_134_BonusB1";
 import { Slide_135_BonusB2 } from "./slides/Slide_135_BonusB2";
 import { Slide_136_BonusB3 } from "./slides/Slide_136_BonusB3";
 import { Slide_137b_PrepaySummary } from "./slides/Slide_137b_PrepaySummary";
 import { Slide_137_WhatYouGet } from "./slides/Slide_137_WhatYouGet";
 import { Slide_138_PerDay } from "./slides/Slide_138_PerDay";
-import { Slide_139_QR2 } from "./slides/Slide_139_QR2";
 import { Slide_140_Timer } from "./slides/Slide_140_Timer";
 import { Slide_141_HowToPay } from "./slides/Slide_141_HowToPay";
 import { Slide_142_OTOHeader } from "./slides/Slide_142_OTOHeader";
@@ -187,6 +185,7 @@ import { Slide_152_ObjNoCredit } from "./slides/Slide_152_ObjNoCredit";
 import { Slide_153_ObjNoClient } from "./slides/Slide_153_ObjNoClient";
 import { Slide_154_Guarantee } from "./slides/Slide_154_Guarantee";
 import { Slide_155_QAEngagement } from "./slides/Slide_155_QAEngagement";
+import { Slide_133_QR1 } from "./slides/Slide_133_QR1";
 import { Slide_156_BaitChapter } from "./slides/Slide_156_BaitChapter";
 import { Slide_157_ThreeWays } from "./slides/Slide_157_ThreeWays";
 import { Slide_158_MoneyPunchline } from "./slides/Slide_158_MoneyPunchline";
@@ -195,6 +194,7 @@ import { Slide_160_FinalEngagement } from "./slides/Slide_160_FinalEngagement";
 import { Slide_RemindMainTraining } from "./slides/Slide_RemindMainTraining";
 import { Slide_ProgramRecap } from "./slides/Slide_ProgramRecap";
 import { Slide_SalesWindow2 } from "./slides/Slide_SalesWindow2";
+import { Slide_Window2BonusRecap } from "./slides/Slide_Window2BonusRecap";
 import { Slide_161_FourBonuses } from "./slides/Slide_161_FourBonuses";
 import { Slide_162_Bonus4Stories } from "./slides/Slide_162_Bonus4Stories";
 import { Slide_163_HowToGetBonuses } from "./slides/Slide_163_HowToGetBonuses";
@@ -205,6 +205,7 @@ import { Slide_167_FinalReminder } from "./slides/Slide_167_FinalReminder";
 import { Slide_168_FinalQR } from "./slides/Slide_168_FinalQR";
 import { Slide_169_ThankYou } from "./slides/Slide_169_ThankYou";
 import { Slide_170_FinalFrame } from "./slides/Slide_170_FinalFrame";
+import { Slide_HowWasWorkshop } from "./slides/Slide_HowWasWorkshop";
 
 /**
  * SalesDeck — список всех слайдов в правильном порядке.
@@ -385,17 +386,14 @@ export function SalesDeck() {
 
     /* === БЛОК D · ПРЕДОПЛАТА + БОНУСЫ (цена 290 900 ещё НЕ названа) === */
     <Slide_132_PrepayBonuses key="132" />,
-    <Slide_133_QR1 key="133" />,
     <Slide_134_BonusB1 key="134" />,
     <Slide_135_BonusB2 key="135" />,
-    <Slide_136_BonusB3 key="136" />,
     <Slide_137b_PrepaySummary key="137b" />,
 
     /* === БЛОК E · ФИНАЛ-ЦЕНА 290 900 НА ПИКЕ === */
     <Slide_131_SpecialPrice key="131" />,
     <Slide_137_WhatYouGet key="137" />,
     <Slide_138_PerDay key="138" />,
-    <Slide_139_QR2 key="139" />,
 
     /* === ЧАСТЬ XVI · ДЕДЛАЙН (140-141) + XVII · OTO-БОНУСЫ (142-148) === */
     <Slide_140_Timer key="140" />,
@@ -407,6 +405,8 @@ export function SalesDeck() {
     <Slide_144_OTO2 key="144" />,
     <Slide_145_OTO3 key="145" />,
     <Slide_146_OTO4 key="146" />,
+    /* Б-3 «Источник заказов» перенесён сюда из блока предоплаты → теперь бонус ЗА ПОЛНУЮ ОПЛАТУ */
+    <Slide_136_BonusB3 key="136" />,
     <Slide_147_OTOSummary key="147" />,
     <Slide_148_QR3 key="148" />,
 
@@ -420,6 +420,9 @@ export function SalesDeck() {
     <Slide_153_ObjNoClient key="153" />,
     <Slide_154_Guarantee key="154" />,
     <Slide_155_QAEngagement key="155" />,
+
+    /* === QR-ПРЕДОПЛАТА · ещё одно касание перед экспертным контентом (после возражений: «закрепи место за 5 000 ₸») === */
+    <Slide_133_QR1 key="133" />,
 
     /* === ЭКСПЕРТНЫЙ КОНТЕНТ #2 · РУТИНА (перенесено: после финальной цены = «ещё большее обещание») === */
     <Slide_RoutineChapter key="routine-chapter" />,
@@ -454,6 +457,8 @@ export function SalesDeck() {
     /* === БЛОК H · 2-Е ОКНО ПРОДАЖ (напоминание → программа → окно#2) === */
     <Slide_RemindMainTraining key="remind" />,
     <Slide_ProgramRecap key="programrecap" />,
+    /* Рекап бонусов (за предоплату + за полную оплату) перед 2-м QR */
+    <Slide_Window2BonusRecap key="window2-bonus-recap" />,
     <Slide_SalesWindow2 key="window2" />,
 
     <Slide_161_FourBonuses key="161" />,
@@ -465,6 +470,8 @@ export function SalesDeck() {
     <Slide_167_FinalReminder key="167" />,
     <Slide_168_FinalQR key="168" />,
     <Slide_169_ThankYou key="169" />,
+    /* Engagement «Как вам воркшоп, друзья?» — после спасибо, перед финал-кадром */
+    <Slide_HowWasWorkshop key="how-was-workshop" />,
     <Slide_170_FinalFrame key="170" />,
   ];
 
