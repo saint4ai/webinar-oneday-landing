@@ -13,15 +13,9 @@ interface ClaudeCodeTerminalProps {
 }
 
 /**
- * ClaudeCodeTerminal — мок claude-code TUI с typewriter-эффектом.
- * Используется в Slide_15 Chapter «ГЛАВА 1» — справа от кибер-заголовка.
- *
- * Стилизован под реальный Claude Code:
- *  - тёмная плашка #0A0A0A
- *  - заголовок с тремя точками macOS
- *  - моноширинный шрифт JetBrains Mono
- *  - лайм-курсор мигающий
- *  - "human:" / "claude:" префиксы
+ * ClaudeCodeTerminal — мок claude-code TUI с ЦИКЛИЧНЫМ typewriter-эффектом.
+ * Печатает промпт человека → печатает ответ Claude → держит → стирает → повторяет.
+ * Живой, не замирает (Александр: «терминал должен быть более живой, текст печатался»).
  */
 export function ClaudeCodeTerminal({
   prompt,
@@ -29,42 +23,78 @@ export function ClaudeCodeTerminal({
   className,
   speed = 35,
 }: ClaudeCodeTerminalProps) {
-  const [typed, setTyped] = useState("");
-  const [showResponse, setShowResponse] = useState(false);
+  const [typedPrompt, setTypedPrompt] = useState("");
+  const [typedResponse, setTypedResponse] = useState("");
+  const [phase, setPhase] = useState<"prompt" | "response" | "hold">("prompt");
 
   useEffect(() => {
     let cancelled = false;
-    let i = 0;
-    const tick = () => {
+    let timer: ReturnType<typeof setTimeout>;
+    const respSpeed = Math.max(12, Math.round(speed * 0.55));
+
+    const run = () => {
       if (cancelled) return;
-      if (i <= prompt.length) {
-        setTyped(prompt.slice(0, i));
-        i++;
-        setTimeout(tick, speed);
-      } else {
-        setTimeout(() => !cancelled && setShowResponse(true), 600);
-      }
+      setTypedPrompt("");
+      setTypedResponse("");
+      setPhase("prompt");
+      let i = 0;
+      let j = 0;
+
+      const typeResponse = () => {
+        if (cancelled) return;
+        if (!response) {
+          setPhase("hold");
+          timer = setTimeout(run, 2400);
+          return;
+        }
+        if (j <= response.length) {
+          setTypedResponse(response.slice(0, j));
+          j++;
+          timer = setTimeout(typeResponse, respSpeed);
+        } else {
+          setPhase("hold");
+          timer = setTimeout(run, 3600); // держим готовый ответ, потом цикл заново
+        }
+      };
+
+      const typePrompt = () => {
+        if (cancelled) return;
+        if (i <= prompt.length) {
+          setTypedPrompt(prompt.slice(0, i));
+          i++;
+          timer = setTimeout(typePrompt, speed);
+        } else {
+          setPhase("response");
+          timer = setTimeout(typeResponse, 500);
+        }
+      };
+
+      timer = setTimeout(typePrompt, 700);
     };
-    const start = setTimeout(tick, 1200);
+
+    run();
     return () => {
       cancelled = true;
-      clearTimeout(start);
+      clearTimeout(timer);
     };
-  }, [prompt, speed]);
+  }, [prompt, response, speed]);
+
+  const cursor = (
+    <span
+      className="inline-block w-2.5 h-4 ml-1 align-middle"
+      style={{ background: "#B6FF00", animation: "sd-cursor-blink 1s steps(1) infinite" }}
+    />
+  );
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.4, ease: [0.25, 1, 0.5, 1] }}
-      className={cn(
-        "relative rounded-xl border border-white/15 overflow-hidden",
-        className
-      )}
+      className={cn("relative rounded-xl border border-white/15 overflow-hidden", className)}
       style={{
         background: "#0A0A0A",
-        boxShadow:
-          "0 30px 80px -20px rgba(0,0,0,0.8), 0 0 60px -10px rgba(182,255,0,0.15)",
+        boxShadow: "0 30px 80px -20px rgba(0,0,0,0.8), 0 0 60px -10px rgba(182,255,0,0.15)",
       }}
     >
       {/* Title bar */}
@@ -82,10 +112,7 @@ export function ClaudeCodeTerminal({
       {/* Terminal body */}
       <div
         className="p-5 md:p-6 text-sm md:text-[15px] leading-relaxed"
-        style={{
-          fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace",
-          minHeight: "260px",
-        }}
+        style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace", minHeight: "260px" }}
       >
         <div className="text-white/55 mb-3">
           <span style={{ color: "#B6FF00" }}>$</span> claude
@@ -93,28 +120,16 @@ export function ClaudeCodeTerminal({
 
         <div className="mb-2">
           <span style={{ color: "#FC5C02" }}>human:</span>{" "}
-          <span className="text-white/90">{typed}</span>
-          {!showResponse && (
-            <span
-              className="inline-block w-2.5 h-4 ml-1 align-middle"
-              style={{
-                background: "#B6FF00",
-                animation: "sd-cursor-blink 1s steps(1) infinite",
-              }}
-            />
-          )}
+          <span className="text-white/90">{typedPrompt}</span>
+          {phase === "prompt" && cursor}
         </div>
 
-        {showResponse && response && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="mt-3"
-          >
+        {(phase === "response" || phase === "hold") && response && (
+          <div className="mt-3">
             <span style={{ color: "#B6FF00" }}>claude:</span>{" "}
-            <span className="text-white/75">{response}</span>
-          </motion.div>
+            <span className="text-white/75">{typedResponse}</span>
+            {phase === "response" && cursor}
+          </div>
         )}
 
         <style jsx>{`
