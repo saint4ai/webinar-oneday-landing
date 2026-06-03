@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
+import { PaymentBanks } from "../PaymentBanks";
 
 /**
  * Слайд 133 · QR-1 — внеси предоплату. Текст 1-в-1 STRUCTURE 1758-1766.
@@ -54,8 +55,11 @@ export function Slide_133_QR1() {
           </motion.div>
         ))}
       </div>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.1 }} className="text-white/80 text-sm md:text-base">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.1 }} className="text-white/80 text-sm md:text-base mb-4">
         Цена <span className="text-[#B6FF00] font-semibold">290 900 ₸</span> закрепляется сразу после предоплаты.
+      </motion.div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.3 }}>
+        <PaymentBanks />
       </motion.div>
     </SlideLayout>
   );
