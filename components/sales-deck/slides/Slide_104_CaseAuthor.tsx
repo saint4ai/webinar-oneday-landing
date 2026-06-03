@@ -50,8 +50,8 @@ export function Slide_104_CaseAuthor() {
         initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
-        className="font-bold uppercase text-white leading-[0.98] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.2vw, 64px)" }}
+        className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em] mb-2"
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.2vw, 64px)", paddingTop: "0.1em" }}
       >
         И Я <span className="text-[#B6FF00]">ТАКОЙ ЖЕ</span>
       </motion.h1>
