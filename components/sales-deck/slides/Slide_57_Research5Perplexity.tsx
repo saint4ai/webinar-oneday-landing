@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { SlideLayout } from "../SlideLayout";
-import { Search, Image as ImageIcon } from "lucide-react";
+import { Search } from "lucide-react";
 
 /**
  * Слайд 57 · Research 5/5 — «ГОТОВЫЙ ПРОМПТ ДЛЯ PERPLEXITY». Текст 1-в-1 STRUCTURE 700-724.
@@ -120,17 +121,15 @@ export function Slide_57_Research5Perplexity() {
             </div>
           </motion.div>
 
-          {/* Слот под реальный скрин Perplexity */}
+          {/* Реальный скрин Perplexity Deep Research */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.7, ease: [0.25, 1, 0.5, 1] }}
-            className="rounded-2xl flex flex-col items-center justify-center gap-2 p-4 text-center"
-            style={{ border: "1.5px dashed rgba(42,37,32,0.25)", background: "rgba(42,37,32,0.02)", flex: "1 1 0%", minWidth: 0 }}
+            className="relative rounded-2xl overflow-hidden"
+            style={{ border: "1px solid rgba(42,37,32,0.15)", background: "#ffffff", boxShadow: "0 30px 70px -30px rgba(42,37,32,0.45)", flex: "1 1 0%", minWidth: 0 }}
           >
-            <ImageIcon className="w-7 h-7" strokeWidth={1.5} style={{ color: "rgba(42,37,32,0.3)" }} />
-            <span className="text-xs font-mono uppercase tracking-[0.1em] leading-snug" style={{ color: INK_MUTED }}>скрин реального<br />Perplexity</span>
-            <span className="text-[10px]" style={{ color: "rgba(42,37,32,0.4)" }}>добавит Александр</span>
+            <Image src="/handouts/screens/perplexity_screen.png" alt="Реальный результат Perplexity Deep Research" fill sizes="30vw" className="object-cover object-top" priority />
           </motion.div>
         </div>
 
