@@ -13,7 +13,7 @@ export function Slide_129_SecondTier() {
   return (
     <SlideLayout speakerSide="right" contentMinWidth={760} background={<SlideBg theme="dark" variant="climax" />} contentClassName="justify-center">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#B6FF00] mb-3">
-        // СТУПЕНЬ 2 · ДЛЯ ТЕХ, КТО УЗНАЛ СЕГОДНЯ
+        // СТУПЕНЬ 2 · ДЛЯ ТЕХ, КТО ОСТАЛСЯ НА ЭФИРЕ
       </motion.div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex items-baseline gap-3 mb-3">
@@ -34,7 +34,7 @@ export function Slide_129_SecondTier() {
         <motion.span animate={{ y: [0, 5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
           <ArrowDown className="w-5 h-5 text-[#FC5C02]" strokeWidth={2.5} />
         </motion.span>
-        Для тех, кто пришёл по рекламе или рекомендации. Но это ещё не финал — у тех, кто на эфире, есть <span className="text-[#B6FF00] font-semibold">третья ступень</span>.
+        Это вторая ступень скидки — за то, что ты всё ещё здесь, с нами в эфире. Остался до этой минуты — <span className="text-[#B6FF00] font-semibold">она твоя</span>.
       </motion.div>
     </SlideLayout>
   );
