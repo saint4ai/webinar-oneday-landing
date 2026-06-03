@@ -38,7 +38,7 @@ export function Slide_ChatLevelPoll() {
         Где ты сейчас? Напиши свою цифру <span className="text-[#B6FF00] font-semibold">1–4</span> в чат.
       </motion.div>
 
-      <div className="grid grid-cols-4 gap-3 md:gap-4 w-full max-w-[1080px]">
+      <div className="w-full" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "16px", maxWidth: "1080px" }}>
         {LEVELS.map((lv, i) => {
           const top = i === 3;
           return (

@@ -105,9 +105,10 @@ export function SlideLayout({
         {/* Колонка 2 — контент (центр) */}
         <div
           className={cn(
-            "relative flex flex-col justify-center px-10 md:px-14 py-8 min-w-0",
+            "relative flex flex-col justify-center min-w-0",
             contentClassName
           )}
+          style={{ padding: "32px 56px" }}
         >
           {children}
         </div>
