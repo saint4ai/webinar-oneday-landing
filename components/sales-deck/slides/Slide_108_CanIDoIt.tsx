@@ -10,7 +10,7 @@ import { Check } from "lucide-react";
  * DESIGN-LANGUAGE: DL-4 brutalist / knockout. Доминанта — гигантский «95%» (split-stat
  * лайм vs оранж 5%), под ним 3 пруфа-чипа с галочками + «ВЫ?». Не дефолт-сетка.
  */
-const PROOFS = ["Айдос не писал код", "Ренат не учил программирование", "Мерей — тренер по фитнесу"];
+const PROOFS = ["Айдос не писал код", "Ренат не учил программирование", "Мерей — работник в найме"];
 
 export function Slide_108_CanIDoIt() {
   return (
