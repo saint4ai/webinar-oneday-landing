@@ -157,6 +157,7 @@ import { Slide_Smysl1_Relevance } from "./slides/Slide_Smysl1_Relevance";
 import { Slide_Smysl1b_Proof } from "./slides/Slide_Smysl1b_Proof";
 import { Slide_Smysl2_Choice } from "./slides/Slide_Smysl2_Choice";
 import { Slide_Smysl3_Career } from "./slides/Slide_Smysl3_Career";
+import { Slide_Smysl3b_Earn35x } from "./slides/Slide_Smysl3b_Earn35x";
 import { Slide_Smysl4_Efficiency } from "./slides/Slide_Smysl4_Efficiency";
 import { Slide_130_WithVsWithout } from "./slides/Slide_130_WithVsWithout";
 import { Slide_131_SpecialPrice } from "./slides/Slide_131_SpecialPrice";
@@ -390,6 +391,8 @@ export function SalesDeck() {
     <Slide_Smysl1b_Proof key="smysl1b" />,
     <Slide_Smysl2_Choice key="smysl2" />,
     <Slide_Smysl3_Career key="smysl3" />,
+    /* Смысл: доход ×3,5 через эффективность — mind map зон буста + контраст с теми, кто не учит AI */
+    <Slide_Smysl3b_Earn35x key="smysl3b" />,
     <Slide_Smysl4_Efficiency key="smysl4" />,
     <Slide_130_WithVsWithout key="130" />,
 
