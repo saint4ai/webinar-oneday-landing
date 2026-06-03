@@ -7,6 +7,7 @@ export function Slide_114_Module1() {
   return (
     <ModuleSlide
       no="01"
+      bgImage="/cards-gifs-screenshots/module-bg/m01.jpg"
       lessons="4 урока"
       title="ЗАПУСК ДВИГАТЕЛЯ"
       promise="После первой недели — ваш первый работающий сайт. Без программистов. Без Python."

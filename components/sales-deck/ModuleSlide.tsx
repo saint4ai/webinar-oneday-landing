@@ -16,12 +16,33 @@ export interface ModuleSlideProps {
   promise: string;   // подзаголовок-обещание (Sub из STRUCTURE)
   items: string[];   // названия уроков (детализация)
   variant?: "aura-tl" | "aura-tr" | "lime-right" | "dual-bottom" | "climax";
+  /** Премиум-фон модуля (Higgsfield): объект справа, уход в чёрный слева под текст. */
+  bgImage?: string;
 }
 
-export function ModuleSlide({ no, lessons, title, promise, items, variant = "aura-tl" }: ModuleSlideProps) {
+export function ModuleSlide({ no, lessons, title, promise, items, variant = "aura-tl", bgImage }: ModuleSlideProps) {
   const twoCols = items.length > 5;
   return (
-    <SlideLayout speakerSide="right" contentMinWidth={820} background={<SlideBg theme="dark" variant={variant} />} contentClassName="justify-center">
+    <SlideLayout
+      speakerSide="right"
+      contentMinWidth={820}
+      contentClassName="justify-center"
+      background={
+        <>
+          <SlideBg theme="dark" variant={variant} />
+          {bgImage && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "right center" }} />
+              {/* Затемнение слева под текст (объект остаётся виден справа) */}
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(90deg, #000 0%, rgba(0,0,0,0.97) 30%, rgba(0,0,0,0.82) 46%, rgba(0,0,0,0.45) 63%, rgba(0,0,0,0.12) 82%, transparent 100%)" }} />
+              {/* Лёгкая виньетка сверху/снизу для глубины */}
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 22%, transparent 72%, rgba(0,0,0,0.5) 100%)" }} />
+            </>
+          )}
+        </>
+      }
+    >
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.2em] uppercase font-semibold text-[#B6FF00] mb-4">
         // ПРОГРАММА · VIBE CODING PRO
       </motion.div>
