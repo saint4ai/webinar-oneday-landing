@@ -167,6 +167,7 @@ import { Slide_135_BonusB2 } from "./slides/Slide_135_BonusB2";
 import { Slide_136_BonusB3 } from "./slides/Slide_136_BonusB3";
 import { Slide_137b_PrepaySummary } from "./slides/Slide_137b_PrepaySummary";
 import { Slide_137_WhatYouGet } from "./slides/Slide_137_WhatYouGet";
+import { Slide_Tariffs } from "./slides/Slide_Tariffs";
 import { Slide_138_PerDay } from "./slides/Slide_138_PerDay";
 import { Slide_140_Timer } from "./slides/Slide_140_Timer";
 import { Slide_141_HowToPay } from "./slides/Slide_141_HowToPay";
@@ -405,6 +406,7 @@ export function SalesDeck() {
     /* === БЛОК E · ФИНАЛ-ЦЕНА 290 900 НА ПИКЕ === */
     <Slide_131_SpecialPrice key="131" />,
     <Slide_137_WhatYouGet key="137" />,
+    <Slide_Tariffs key="tariffs" />,
     <Slide_138_PerDay key="138" />,
 
     /* === ЧАСТЬ XVI · ДЕДЛАЙН (140-141) + XVII · OTO-БОНУСЫ (142-148) === */
