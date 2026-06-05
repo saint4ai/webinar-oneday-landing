@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { Check } from "lucide-react";
+import { PaymentBanks } from "../PaymentBanks";
 
 /**
  * Блок H · 2-е окно продаж — сжатый повтор оффера + QR предоплаты. После ProgramRecap, перед 161 (бонусы за просмотр).
@@ -59,6 +60,9 @@ export function Slide_SalesWindow2() {
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.0 }} className="rounded-xl px-4 py-3 max-w-xl" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
         <span className="text-white text-sm md:text-base font-semibold">Предоплата <span className="text-[#B6FF00]">10 000 ₸</span> по QR закрепляет цену. Рассрочка 24 мес — <span className="text-[#B6FF00]">399 ₸/день</span>.</span>
+      </motion.div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.2 }} className="mt-4">
+        <PaymentBanks />
       </motion.div>
     </SlideLayout>
   );

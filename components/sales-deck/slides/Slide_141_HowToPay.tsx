@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
+import { PaymentBanks } from "../PaymentBanks";
 
 /**
  * Слайд 141 · Как внести 10 000 ₸. Текст 1-в-1 STRUCTURE 1934-1940.
@@ -52,6 +53,9 @@ export function Slide_141_HowToPay() {
           </motion.div>
         ))}
       </div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.1 }} className="mt-5">
+        <PaymentBanks />
+      </motion.div>
     </SlideLayout>
   );
 }

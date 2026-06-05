@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
+import { PaymentBanks } from "../PaymentBanks";
 
 /**
  * Слайд 168 · Финальный QR Kaspi. Текст 1-в-1 STRUCTURE 2313-2315.
@@ -45,6 +46,9 @@ export function Slide_168_FinalQR() {
           </motion.div>
         ))}
       </div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.1 }} className="mt-5">
+        <PaymentBanks />
+      </motion.div>
     </SlideLayout>
   );
 }

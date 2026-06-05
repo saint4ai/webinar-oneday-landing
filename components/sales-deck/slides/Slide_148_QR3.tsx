@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
+import { PaymentBanks } from "../PaymentBanks";
 
 /**
  * Слайд 148 · QR-3 — финальный шанс взять OTO. Текст 1-в-1 STRUCTURE 2066-2078.
@@ -54,6 +55,9 @@ export function Slide_148_QR3() {
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.0 }} className="text-white/70 text-sm md:text-base">
         QR справа — внеси <span className="text-[#B6FF00] font-semibold">10К сейчас</span>, менеджер закроет полную оплату до конца дня.
+      </motion.div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 1.2 }} className="mt-4">
+        <PaymentBanks />
       </motion.div>
     </SlideLayout>
   );
