@@ -6,7 +6,7 @@ import { SlideLayout } from "../SlideLayout";
 
 /**
  * Слайд 113 · Программа курса — обзор. Текст 1-в-1 STRUCTURE 1414-1422.
- * 10 модулей квадратиками (2×5) + крупная «50 уроков» + плашка «12 мес».
+ * 10 модулей квадратиками (2×5) + крупная «54 урока» + плашка «12 мес».
  * Задаёт syllabus-обзор: номер-бейдж + короткое имя модуля.
  */
 const MODULES = [
@@ -32,7 +32,7 @@ export function Slide_113_ProgramOverview() {
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/65 text-sm md:text-base leading-snug mb-5 max-w-2xl">
-        10 модулей · 50 коротких уроков по 15–20 минут · сквозной кейс. Весь курс — 5 недель в своём темпе.
+        10 модулей · 54 коротких урока по 15–20 минут · сквозной кейс. Весь курс — 5 недель в своём темпе.
       </motion.div>
 
       <div className="flex items-start gap-5 max-w-3xl">
@@ -53,7 +53,7 @@ export function Slide_113_ProgramOverview() {
           ))}
         </div>
 
-        {/* Крупная «50 уроков» + плашка 12 мес */}
+        {/* Крупная «54 урока» + плашка 12 мес */}
         <motion.div
           initial={{ opacity: 0, x: 18 }}
           animate={{ opacity: 1, x: 0 }}
@@ -62,7 +62,7 @@ export function Slide_113_ProgramOverview() {
           style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.35)", boxShadow: "0 0 60px -20px rgba(182,255,0,0.5)" }}
         >
           <div className="text-center">
-            <div className="font-bold leading-none text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 56 }}>50</div>
+            <div className="font-bold leading-none text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 56 }}>54</div>
             <div className="text-white/70 text-xs uppercase tracking-[0.12em] mt-1">уроков · 15–20 мин</div>
           </div>
           <div className="flex flex-col gap-1.5 items-stretch">
