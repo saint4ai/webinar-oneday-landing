@@ -168,6 +168,7 @@ import { Slide_136_BonusB3 } from "./slides/Slide_136_BonusB3";
 import { Slide_137b_PrepaySummary } from "./slides/Slide_137b_PrepaySummary";
 import { Slide_137_WhatYouGet } from "./slides/Slide_137_WhatYouGet";
 import { Slide_Tariffs } from "./slides/Slide_Tariffs";
+import { Slide_ProgramTariffs } from "./slides/Slide_ProgramTariffs";
 import { Slide_138_PerDay } from "./slides/Slide_138_PerDay";
 import { Slide_140_Timer } from "./slides/Slide_140_Timer";
 import { Slide_141_HowToPay } from "./slides/Slide_141_HowToPay";
@@ -423,6 +424,7 @@ export function SalesDeck() {
     <Slide_136_BonusB3 key="136" />,
     <Slide_147_OTOSummary key="147" />,
     <Slide_148_QR3 key="148" />,
+    <Slide_ProgramTariffs key="progtariff-1" />,
 
     /* === ЧАСТЬ XVIII · Q&A + ВОЗРАЖЕНИЯ (149-155) + XIX · BAIT (156-158) === */
     <Slide_149_QAHeader key="149" />,
@@ -474,6 +476,7 @@ export function SalesDeck() {
     /* Рекап бонусов (за предоплату + за полную оплату) перед 2-м QR */
     <Slide_Window2BonusRecap key="window2-bonus-recap" />,
     <Slide_SalesWindow2 key="window2" />,
+    <Slide_ProgramTariffs key="progtariff-2" />,
 
     <Slide_161_FourBonuses key="161" />,
     <Slide_163_HowToGetBonuses key="163" />,
