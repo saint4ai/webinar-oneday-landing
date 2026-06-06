@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Презентация воркшопа — onAI Vibe Coding
 
-## Getting Started
+Анимированная sales-deck презентация (Next.js + Framer Motion). Запускается локально, показывается в браузере на весь экран. Маршрут деки: **`/sales-deck`**.
 
-First, run the development server:
+---
+
+## Требования
+- **Node.js 20+** (проверено на 22)
+- **npm**
+- Браузер **Chrome** (последняя версия)
+
+---
+
+## Установка (один раз)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/onaicademy/webinar-oneday-landing.git
+cd webinar-oneday-landing
+git checkout checkpoint/deck-review-part-ix    # ветка с актуальной декой
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Запуск
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Вариант 1 — быстрый (для просмотра и правок)
+```bash
+PORT=3001 npm run dev
+```
+Открыть: **http://localhost:3001/sales-deck**
 
-## Learn More
+### Вариант 2 — для самого показа (рекомендуется: быстрее, без подвисаний и мерцаний)
+```bash
+npm run build
+PORT=3001 npm start
+```
+Открыть: **http://localhost:3001/sales-deck**
 
-To learn more about Next.js, take a look at the following resources:
+> Для живой презентации используй **Вариант 2** — прод-сборка идёт плавно, без задержек на анимациях.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Управление во время показа
+- **← / →** — листать слайды
+- **F11** — полный экран (обязательно перед началом)
+- Дека рассчитана на **16:9 (1920×1080)**. Спикер стоит справа — правые ~30% экрана держатся под него.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Заметки
+- **Порт 3001** — наша договорённость (на `:3000` у другого проекта бэкенд). Если запускаешь репо отдельно от рабочей машины — можно и дефолтный `3000`.
+- **Все ассеты** (картинки, видео, QR, лого банков, фоны модулей) лежат в `public/` и тянутся из репозитория. Ничего из «Загрузок» подключать не нужно.
+- Если после `git pull` что-то не подхватилось или экран белый — почисти кэш и перезапусти:
+  ```bash
+  rm -rf .next && PORT=3001 npm run dev
+  ```
+- Остановить сервер — `Ctrl+C` в терминале, где он запущен.
