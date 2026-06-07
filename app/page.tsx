@@ -14,12 +14,19 @@ import { CaseOnAIAcademy } from "@/components/sections/case-onai-academy";
 import { MyOtherProducts } from "@/components/sections/my-other-products";
 import { Testimonials } from "@/components/sections/testimonials";
 import { FinalCTA } from "@/components/sections/final-cta";
+import { MetaPixelBase } from "@/components/meta-pixel-base";
+import { ymGoal } from "@/lib/analytics/ym";
+import { useScrollGoals } from "@/lib/analytics/useScrollGoals";
 
 export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
+  useScrollGoals();
 
   return (
     <main className="relative flex-1 od-root overflow-hidden min-h-screen pb-24 md:pb-0">
+      {/* Meta Pixel — ТОЛЬКО на лендинге и thank-you (не в layout) */}
+      <MetaPixelBase />
+
       {/* ════ ФОН А-ЛЯ ONAI/OPEN-DAY ════ */}
       <div className="od-blob-orange" />
       <div className="od-blob-lime" />
@@ -109,7 +116,7 @@ export default function Home() {
 
               {/* 4. CTA + цена-якорь + таймер */}
               <div className="flex flex-col items-start gap-3 mt-2 w-full">
-                <LiquidButton onClick={() => setModalOpen(true)} variant="primary">
+                <LiquidButton onClick={() => { ymGoal("cta_click"); setModalOpen(true); }} variant="primary">
                   Зарегистрироваться на воркшоп
                 </LiquidButton>
                 {/* Цена-якорь: зачёркнутая → бесплатно */}
@@ -209,7 +216,7 @@ export default function Home() {
         }}
       >
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => { ymGoal("cta_click"); setModalOpen(true); }}
           aria-label="Зарегистрироваться на воркшоп"
           className="w-full rounded-full py-4 uppercase text-black active:scale-[0.98] transition-transform"
           style={{
