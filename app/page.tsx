@@ -19,7 +19,7 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <main className="relative flex-1 od-root overflow-hidden min-h-screen">
+    <main className="relative flex-1 od-root overflow-hidden min-h-screen pb-24 md:pb-0">
       {/* ════ ФОН А-ЛЯ ONAI/OPEN-DAY ════ */}
       <div className="od-blob-orange" />
       <div className="od-blob-lime" />
@@ -199,6 +199,31 @@ export default function Home() {
       <footer className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-6 text-white/25 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-center">
         onAI.academy · 2026
       </footer>
+
+      {/* Мобильная фикс-кнопка регистрации — только на телефонах (md:hidden), липнет к низу экрана, открывает ту же модалку */}
+      <div
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pt-7"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+          background: "linear-gradient(to top, rgba(8,8,8,0.97) 55%, rgba(8,8,8,0))",
+        }}
+      >
+        <button
+          onClick={() => setModalOpen(true)}
+          aria-label="Зарегистрироваться на воркшоп"
+          className="w-full rounded-full py-4 uppercase text-black active:scale-[0.98] transition-transform"
+          style={{
+            fontFamily: "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
+            fontWeight: 800,
+            fontSize: "16px",
+            letterSpacing: "0.02em",
+            background: "#cdeb52",
+            boxShadow: "0 -2px 30px -4px rgba(205,235,82,0.45)",
+          }}
+        >
+          Зарегистрироваться
+        </button>
+      </div>
 
       {/* Регистрация — модалка */}
       <RegisterModal open={modalOpen} onClose={() => setModalOpen(false)} />
