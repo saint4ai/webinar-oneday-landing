@@ -3,36 +3,13 @@
 import React, { useEffect, useState } from "react";
 
 /**
- * Таймер до следующего 20:00 по Алматы (UTC+5).
- * Каждый день в 20:00 идёт автовебинар — таймер обнуляется и считает до следующего эфира.
+ * Таймер до старта живого воркшопа: 10 июня 2026, 20:00 по Алматы (UTC+5).
+ * 20:00 Almaty = 15:00 UTC.
  */
-function getNextAlmaty20(): number {
-  const now = new Date();
-  // Алматы = UTC+5
-  const ALMATY_OFFSET_MS = 5 * 60 * 60 * 1000;
-  const nowAlmatyMs = now.getTime() + ALMATY_OFFSET_MS;
-  const nowAlmaty = new Date(nowAlmatyMs);
+const WORKSHOP_START_MS = Date.UTC(2026, 5, 10, 15, 0, 0);
 
-  // Целевое: 20:00 по Алматы
-  const target = new Date(
-    Date.UTC(
-      nowAlmaty.getUTCFullYear(),
-      nowAlmaty.getUTCMonth(),
-      nowAlmaty.getUTCDate(),
-      20,
-      0,
-      0,
-      0
-    )
-  );
-
-  // Если уже прошло 20:00 по Алматы — берём завтра
-  if (nowAlmatyMs >= target.getTime()) {
-    target.setUTCDate(target.getUTCDate() + 1);
-  }
-
-  // Возвращаем разницу в миллисекундах (UTC → UTC, без поправки на Almaty offset)
-  return target.getTime() - nowAlmaty.getTime();
+function getTimeToWorkshop(): number {
+  return WORKSHOP_START_MS - Date.now();
 }
 
 function format(ms: number): { h: string; m: string; s: string } {
@@ -53,8 +30,8 @@ export const CountdownTimer = () => {
 
   useEffect(() => {
     setMounted(true);
-    setMs(getNextAlmaty20());
-    const id = setInterval(() => setMs(getNextAlmaty20()), 1000);
+    setMs(getTimeToWorkshop());
+    const id = setInterval(() => setMs(getTimeToWorkshop()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -81,10 +58,10 @@ export const CountdownTimer = () => {
     <div className="inline-flex items-center gap-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md px-5 py-3">
       <div className="flex flex-col">
         <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#cdeb52]">
-          // старт 31 мая
+          // 10 июня · среда
         </span>
         <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45 mt-0.5">
-          эфиры каждый день в 20:00 (алматы)
+          живой эфир · 20:00 алматы
         </span>
       </div>
       <div className="h-10 w-px bg-white/10" />

@@ -8,6 +8,7 @@ import { Check, ArrowRight, MessageCircle, Gift } from "lucide-react";
 import { OnAILogo } from "@/components/ui/onai-logo";
 import { Highlighted } from "@/components/ui/highlighted";
 import { FlyingGifts } from "@/components/ui/flying-gifts";
+import { MetaPixelBase } from "@/components/meta-pixel-base";
 
 /**
  * Thank You page — one-screen sales-driven CTA.
@@ -75,11 +76,16 @@ export default function ThankYouPage() {
     if (typeof window !== "undefined" && typeof window.ym === "function") {
       window.ym(YM_ID, "reachGoal", GOAL_LEAD);
     }
-    // TODO: добавить Facebook Pixel fbq('track', 'Lead') когда Александр даст ID
+    // Facebook Pixel 'Lead' шлётся на сабмит формы (register-modal / final-cta)
+    // с общим event_id + серверный дубль через Conversions API в /api/lead.
+    // Здесь НЕ дублируем, чтобы не плодить событие на refresh / прямой заход.
   }, []);
 
   return (
     <main className="relative od-root overflow-hidden min-h-[100dvh] flex flex-col">
+      {/* Meta Pixel — ТОЛЬКО на лендинге и thank-you (не в layout) */}
+      <MetaPixelBase />
+
       {/* Brand bg */}
       <div className="od-blob-orange" />
       <div className="od-blob-lime" />

@@ -47,7 +47,12 @@ const benzin = localFont({
     },
   ],
   variable: "--font-benzin",
-  display: "swap",
+  // display:optional + выровненный fallback — убирает «скачок» заголовков:
+  // при swap Benzin подменял Space Grotesk (другие метрики) → reflow. optional
+  // не делает поздней подмены (нет прыжка), preload (по умолчанию) почти всегда
+  // успевает показать Benzin сразу; на промахе остаётся метрически-близкий fallback.
+  fallback: ["Space Grotesk", "system-ui", "sans-serif"],
+  display: "optional",
 });
 
 // === Стек prod onAI.academy ===
@@ -182,8 +187,8 @@ export default function RootLayout({
               eventStatus: "https://schema.org/EventScheduled",
               eventAttendanceMode:
                 "https://schema.org/OnlineEventAttendanceMode",
-              startDate: "2026-05-31T20:00:00+05:00",
-              endDate: "2026-05-31T22:00:00+05:00",
+              startDate: "2026-06-10T20:00:00+05:00",
+              endDate: "2026-06-10T22:00:00+05:00",
               location: {
                 "@type": "VirtualLocation",
                 url: SITE_URL,

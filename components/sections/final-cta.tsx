@@ -8,6 +8,8 @@ import { ArrowRight, Check, Gift, Loader2, Lock } from "lucide-react";
 import { Highlighted } from "@/components/ui/highlighted";
 import { BrandPhoneInput } from "@/components/ui/phone-input";
 import { apiUrl, withBase } from "@/lib/api-url";
+import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
+import { ymGoal } from "@/lib/analytics/ym";
 
 /**
  * ЭКРАН 4 · Финальный CTA + Форма (по плану Александра).
@@ -83,6 +85,9 @@ export const FinalCTA = () => {
     if (!formValid || submitting) return;
     setSubmitting(true);
     setError(null);
+    const eventId = newEventId();
+    const meta = collectMetaClientData();
+    ymGoal("lead_submit"); // Я.Метрика: сабмит формы (момент клика, до ответа API)
     try {
       const res = await fetch(apiUrl("/api/lead"), {
         method: "POST",
@@ -92,9 +97,16 @@ export const FinalCTA = () => {
           phone,
           source: "landing-final-cta",
           consent: agree,
+          eventId,
+          fbp: meta.fbp,
+          fbc: meta.fbc,
+          eventSourceUrl: meta.eventSourceUrl,
+          utm: meta.utm,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Браузерный Lead с тем же event_id (дедуп с серверным CAPI в /api/lead)
+      trackLead(eventId);
       setSuccess(true);
       setTimeout(() => router.push("/thank-you"), 400);
     } catch (err) {
@@ -175,7 +187,7 @@ export const FinalCTA = () => {
           </p>
         </div>
 
-        <div className="section-divider">регистрация · 31 мая</div>
+        <div className="section-divider">регистрация · 10 июня</div>
 
         {/* H1 — на mobile: «Регистрируйся —» / [плашка «места ограничены»]
             на 2 строки, чтобы плашка целиком влезла на 320px viewport. */}
