@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { notifyEdbotLead } from "@/lib/edbot/notify";
 import { sendLeadEvent } from "@/lib/meta-capi";
+import { sendBonusSms } from "@/lib/mobizon/send";
 import { captureLead, markFailed, type CapturedLead } from "@/lib/leads/store";
 import { pushLeadToAmo, type PushResult } from "@/lib/leads/process";
 
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
   });
 
   // ── Параллельный fan-out: amoCRM (persist+ретраи) + CAPI + edbot ──
-  const [crmResult, capiResult, edbotResult] = await Promise.allSettled([
+  const [crmResult, capiResult, edbotResult, smsResult] = await Promise.allSettled([
     persistAmoLead(captured),
     sendLeadEvent({
       name: cleanName,
@@ -121,6 +122,7 @@ export async function POST(req: NextRequest) {
       source,
       siteUrl,
     }),
+    sendBonusSms(cleanPhone),
   ]);
 
   const crmStatus =
@@ -141,15 +143,21 @@ export async function POST(req: NextRequest) {
         ? "ok"
         : `fail:${edbotResult.value.reason}`
       : "throw";
-
+  const smsStatus =
+    smsResult.status === "fulfilled"
+      ? smsResult.value.ok
+        ? "ok"
+        : `fail:${smsResult.value.reason}`
+      : "throw";
   console.log(
-    "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s",
+    "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s sms=%s",
     cleanName,
     cleanPhone.slice(-4),
     source,
     crmStatus,
     capiStatus,
-    edbotStatus
+    edbotStatus,
+    smsStatus
   );
 
   return NextResponse.json({ ok: true });
