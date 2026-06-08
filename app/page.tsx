@@ -23,7 +23,7 @@ export default function Home() {
   useScrollGoals();
 
   return (
-    <main className="relative flex-1 od-root overflow-hidden min-h-screen pb-24 md:pb-0">
+    <main className="relative flex-1 od-root overflow-hidden min-h-[100dvh] pb-24 md:pb-0">
       {/* Meta Pixel — ТОЛЬКО на лендинге и thank-you (не в layout) */}
       <MetaPixelBase />
 

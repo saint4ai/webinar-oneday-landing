@@ -103,12 +103,12 @@ export const RegisterModal = ({ open, onClose }: Props) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-[200] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto overscroll-contain"
         >
           {/* Backdrop */}
           <div
             onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md"
             aria-hidden
           />
 
@@ -118,7 +118,7 @@ export const RegisterModal = ({ open, onClose }: Props) => {
             animate={{ scale: 1, y: 0, opacity: 1, filter: "blur(0px)" }}
             exit={{ scale: 0.96, y: 10, opacity: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full max-w-md rounded-3xl overflow-hidden"
+            className="relative w-full max-w-md rounded-3xl overflow-hidden my-auto"
             style={{
               background:
                 "linear-gradient(180deg, rgba(15,15,18,0.98) 0%, rgba(10,10,12,0.98) 100%)",
