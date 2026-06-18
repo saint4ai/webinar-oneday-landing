@@ -29,7 +29,7 @@ const STATS = [
   { value: 3, suffix: "", label: "года в AI-разработке", accent: "lime" as const },
   { value: 900, suffix: "+", label: "выпускников онлайн-школы", accent: "orange" as const },
   { value: 7, suffix: "+", label: "запущенных AI-сервисов", accent: "lime" as const },
-  { value: 500, suffix: "+", label: "клиентов автоматизировал", accent: "orange" as const },
+  { value: 50, suffix: "+", label: "клиентов автоматизировал", accent: "orange" as const },
 ];
 
 const PROJECTS = [

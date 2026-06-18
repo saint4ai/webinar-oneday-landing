@@ -1,12 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BrandPhoneInput } from "@/components/ui/phone-input";
 import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
+import { resolveEasybotRedirect } from "@/lib/easybot/redirect";
+import { pushWorkshopLead } from "@/lib/gtm";
 
 type Props = {
   open: boolean;
@@ -17,12 +18,12 @@ type Props = {
 // и нотифицирует edbot для WhatsApp re-engagement.
 
 export const RegisterModal = ({ open, onClose }: Props) => {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [botDest, setBotDest] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Esc закрывает
@@ -47,6 +48,7 @@ export const RegisterModal = ({ open, onClose }: Props) => {
         setPhone("");
         setAgree(true);
         setSuccess(false);
+        setBotDest("");
         setSubmitting(false);
         setError(null);
       }, 300);
@@ -84,10 +86,18 @@ export const RegisterModal = ({ open, onClose }: Props) => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Браузерный Lead с тем же event_id (дедуп с серверным CAPI в /api/lead)
+      // Персональная ссылка EasyBot (уникальный код) из ответа; нет — статичный фолбэк.
+      const data = await res.json().catch(() => ({}) as { botUrl?: string });
+      const dest = resolveEasybotRedirect(data?.botUrl, meta.utm);
+      setBotDest(dest);
+      // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);
-      setSuccess(true);
-      setTimeout(() => router.push("/thank-you"), 400);
+      ymGoal("lead_workshop");
+      pushWorkshopLead(phone); // Google Ads конверсия (событие workshop_lead → GTM)
+      setSuccess(true); // показывает «сейчас редирект в бота», затем авто-редирект
+      setTimeout(() => {
+        window.location.href = dest;
+      }, 1500);
     } catch (err) {
       console.error("Lead submit failed:", err);
       setError("Что-то пошло не так. Попробуй ещё раз.");
@@ -285,16 +295,25 @@ export const RegisterModal = ({ open, onClose }: Props) => {
                   Готово!
                 </h2>
                 <p className="mt-3 text-white/65 text-[14px] leading-relaxed">
-                  Записал тебя на воркшоп.
+                  Сейчас откроется WhatsApp-бот.
                   <br />
-                  Ссылку на эфир пришлю в WhatsApp.
+                  <span className="text-[#fc5c02] font-semibold">
+                    Отправь боту готовое сообщение — так ты активируешь участие
+                    в воркшопе и получишь ссылку на эфир.
+                  </span>
                 </p>
-                <button
-                  onClick={onClose}
-                  className="mt-7 px-6 py-3 rounded-xl font-mono text-[11px] uppercase tracking-[0.18em] text-white/60 border border-white/10 hover:bg-white/5 hover:text-white transition-colors"
-                >
-                  закрыть
-                </button>
+                <div className="mt-5 flex items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/45">
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-[#cdeb52]/30 border-t-[#cdeb52] animate-spin" />
+                  переводим в бота…
+                </div>
+                {botDest && (
+                  <a
+                    href={botDest}
+                    className="mt-3 inline-block text-[#cdeb52] text-[12px] underline underline-offset-2"
+                  >
+                    Не открывается WhatsApp? Нажми здесь
+                  </a>
+                )}
               </div>
             )}
           </motion.div>

@@ -1,17 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { getNextWorkshop } from "@/lib/workshop-date";
 
 /**
- * Таймер до старта живого воркшопа: 10 июня 2026, 20:00 по Алматы (UTC+5).
- * 20:00 Almaty = 15:00 UTC.
+ * Таймер до следующего живого эфира: каждый день 20:00 по Алматы.
+ * Дата и обратный отсчёт считаются от текущего времени (см. lib/workshop-date),
+ * поэтому после 20:00 всё автоматически переключается на завтрашний эфир.
  */
-const WORKSHOP_START_MS = Date.UTC(2026, 5, 10, 15, 0, 0);
-
-function getTimeToWorkshop(): number {
-  return WORKSHOP_START_MS - Date.now();
-}
-
 function format(ms: number): { h: string; m: string; s: string } {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
@@ -26,12 +22,18 @@ function format(ms: number): { h: string; m: string; s: string } {
 
 export const CountdownTimer = () => {
   const [ms, setMs] = useState<number>(0);
+  const [dateLabel, setDateLabel] = useState<string>("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setMs(getTimeToWorkshop());
-    const id = setInterval(() => setMs(getTimeToWorkshop()), 1000);
+    const tick = () => {
+      const w = getNextWorkshop();
+      setMs(w.msUntil);
+      setDateLabel(w.dateLabel);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -58,7 +60,7 @@ export const CountdownTimer = () => {
     <div className="inline-flex items-center gap-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md px-5 py-3">
       <div className="flex flex-col">
         <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#cdeb52]">
-          // 10 июня · среда
+          // {dateLabel}
         </span>
         <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/45 mt-0.5">
           живой эфир · 20:00 алматы

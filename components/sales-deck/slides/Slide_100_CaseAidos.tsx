@@ -13,6 +13,7 @@ export function Slide_100_CaseAidos() {
       name="АЙДОС"
       sub="Год назад не писал код. Сейчас — сдаёт 3 готовых продукта американской компании."
       screenshot="/testimonials/aidos.png"
+      screenshots={["/testimonials/aidos.png", "/testimonials/aidos-2.png"]}
       handle="Aidos · 22 мая"
       pain="Идеи продуктов в голове. Нанимать программистов — дорого, учить Python самому — 3 года."
       result="3 рабочих продукта в работе у заказчика + контракт с американской компанией."

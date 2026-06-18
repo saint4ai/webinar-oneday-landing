@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { PaymentBanks } from "../PaymentBanks";
+import { PaymentQRPair } from "../PaymentQRPair";
 
 /**
  * Слайд 148 · QR-3 — финальный шанс взять OTO. Текст 1-в-1 STRUCTURE 2066-2078.
@@ -25,8 +26,7 @@ export function Slide_148_QR3() {
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
         <motion.div animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.45)", background: "rgba(255,255,255,0.04)" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "66vh" }} />
+          <PaymentQRPair kaspiMaxH="48vh" />
         </motion.div>
       }
     >

@@ -21,7 +21,7 @@ export function Slide_93_CallToTasks() {
         TLDV (или бесплатная альтернатива Any2Text) пишет звонок, разбивает по ролям — кто что сказал — и выписывает задачи.
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.55 }} className="relative inline-block rounded-xl overflow-hidden mb-3" style={{ border: "1px solid rgba(182,255,0,0.25)", maxWidth: "100%" }}>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.55 }} className="relative self-start rounded-xl overflow-hidden mb-3" style={{ border: "1px solid rgba(182,255,0,0.25)", width: "fit-content", maxWidth: "100%" }}>
         <img src="/handouts/screens/tldv.png" alt="TLDV — роли и задачи" className="block" style={{ maxWidth: "100%", maxHeight: "46vh" }} />
       </motion.div>
 

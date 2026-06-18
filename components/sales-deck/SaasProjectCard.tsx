@@ -88,7 +88,7 @@ export function SaasProjectCard({
               src={images[index]}
               alt={`${name} — экран ${index + 1}`}
               fill
-              className="object-contain object-top"
+              className="object-cover object-top"
               sizes="40vw"
               priority={index === 0}
             />

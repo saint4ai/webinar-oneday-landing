@@ -15,9 +15,9 @@ import { Send } from "lucide-react";
  */
 const CONNECT = ["Asana", "Bitrix", "Jira", "Trello", "календарь", "Slack/Telegram"];
 const REPORT = [
-  { dot: "#FF4D4D", text: "Айгерим перегружена 80 ч/нед — горит." },
-  { dot: "rgba(255,255,255,0.4)", text: "Дамир простаивает 12 ч — забери задачи." },
-  { dot: "#FC5C02", text: "Аскар застрял на 3 дня — он молчит." },
+  { dot: "#FF4D4D", text: "Айгерим перегружена — разгрузи, пока не выгорела." },
+  { dot: "rgba(255,255,255,0.4)", text: "У Дамира есть ресурс — можно передать часть задач." },
+  { dot: "#FC5C02", text: "Аскар застрял 3 дня — нужна помощь, подключись." },
 ];
 
 export function Slide_44_ManagerSolution() {
@@ -56,8 +56,8 @@ export function Slide_44_ManagerSolution() {
               hyphens: "none",
             }}
           >
-            <span className="text-white">ОДИН ДАШБОРД ПОКАЗЫВАЕТ </span>
-            <span style={{ color: "#B6FF00" }}>КТО ЧЕМ ЗАНЯТ ПРЯМО СЕЙЧАС</span>
+            <span className="text-white">ОДИН ДАШБОРД ПОКАЗЫВАЕТ, </span>
+            <span style={{ color: "#B6FF00" }}>ГДЕ КОМАНДЕ НУЖНА ПОМОЩЬ</span>
           </motion.h1>
 
           <motion.div
@@ -66,7 +66,7 @@ export function Slide_44_ManagerSolution() {
             transition={{ duration: 0.6, delay: 0.45 }}
             className="text-white/65 text-sm md:text-base leading-snug max-w-2xl mt-3"
           >
-            AI считает реальную нагрузку каждого + подсвечивает перегруз и простой → отчёт владельцу к 9 утра.
+            AI видит реальную нагрузку команды, подсвечивает перегруз и узкие места → ты вовремя разгружаешь и держишь темп. Отчёт к 9 утра.
           </motion.div>
 
           {/* ряд: что подключаем + цена */}

@@ -30,7 +30,6 @@ import { Slide_21b_DownsidesFix } from "./slides/Slide_21b_DownsidesFix";
 import { Slide_22_Cost } from "./slides/Slide_22_Cost";
 import { Slide_23_ForWhom } from "./slides/Slide_23_ForWhom";
 import { Slide_24_WhoIsVibecoder } from "./slides/Slide_24_WhoIsVibecoder";
-import { Slide_25_PollIdea } from "./slides/Slide_25_PollIdea";
 import { Slide_26_Chapter3Ways } from "./slides/Slide_26_Chapter3Ways";
 import { Slide_27_Direction1 } from "./slides/Slide_27_Direction1";
 import { Slide_28_Direction2 } from "./slides/Slide_28_Direction2";
@@ -146,12 +145,11 @@ import { Slide_124_VibeEngine } from "./slides/Slide_124_VibeEngine";
 import { Slide_125_WhoTeaches } from "./slides/Slide_125_WhoTeaches";
 import { Slide_126_Platform } from "./slides/Slide_126_Platform";
 import { Slide_127_ValueDecomposition } from "./slides/Slide_127_ValueDecomposition";
-import { Slide_128_FullPrice } from "./slides/Slide_128_FullPrice";
 import { Slide_128b_PaysOff } from "./slides/Slide_128b_PaysOff";
-import { Slide_128c_OrbYear } from "./slides/Slide_128c_OrbYear";
 import { Slide_128d_FirstClient } from "./slides/Slide_128d_FirstClient";
 import { Slide_128e_ProductVsService } from "./slides/Slide_128e_ProductVsService";
 import { Slide_DiscountAlert } from "./slides/Slide_DiscountAlert";
+import { Slide_FinalDiscountAlert } from "./slides/Slide_FinalDiscountAlert";
 import { Slide_129_SecondTier } from "./slides/Slide_129_SecondTier";
 import { Slide_Smysl1_Relevance } from "./slides/Slide_Smysl1_Relevance";
 import { Slide_Smysl1b_Proof } from "./slides/Slide_Smysl1b_Proof";
@@ -206,6 +204,7 @@ import { Slide_163_HowToGetBonuses } from "./slides/Slide_163_HowToGetBonuses";
 import { Slide_164_WhereNotToWrite } from "./slides/Slide_164_WhereNotToWrite";
 import { Slide_165_CodeWord } from "./slides/Slide_165_CodeWord";
 import { Slide_166_Instagram } from "./slides/Slide_166_Instagram";
+import { Slide_StoriesBonusHowTo } from "./slides/Slide_StoriesBonusHowTo";
 import { Slide_167_FinalReminder } from "./slides/Slide_167_FinalReminder";
 import { Slide_168_FinalQR } from "./slides/Slide_168_FinalQR";
 import { Slide_169_ThankYou } from "./slides/Slide_169_ThankYou";
@@ -217,6 +216,9 @@ import { Slide_HowWasWorkshop } from "./slides/Slide_HowWasWorkshop";
  * Глава 1 (Слайды 1-17) реализована. Следующие — добавляются по мере утверждения.
  */
 export function SalesDeck() {
+  // Слайды на cream-фоне — для них счётчик в углу красится тёмным (иначе сливается). См. SlideDeck.
+  const lightSlideKeys = new Set(["12", "16", "17", "24", "33", "53", "57", "63", "89"]);
+
   const slides = [
     /* === ЧАСТЬ I · ОТКРЫТИЕ + АКТИВАЦИЯ (1-14) === */
     <Slide_01_ColdOpen key="1" />,
@@ -251,7 +253,6 @@ export function SalesDeck() {
     <Slide_22_Cost key="22" />,
     <Slide_23_ForWhom key="23" />,
     <Slide_24_WhoIsVibecoder key="24" />,
-    <Slide_25_PollIdea key="25" />,
 
     /* === ЧАСТЬ III · 3 НАПРАВЛЕНИЯ ПРИМЕНЕНИЯ (26-33) === */
     <Slide_26_Chapter3Ways key="26" />,
@@ -379,9 +380,7 @@ export function SalesDeck() {
 
     /* === ЧАСТЬ XIII · ЦЕННОСТЬ + XIV ПОЧЕМУ БЫСТРЕЕ (127-130) === */
     <Slide_127_ValueDecomposition key="127" />,
-    <Slide_128_FullPrice key="128" />,
     <Slide_128b_PaysOff key="128b" />,
-    <Slide_128c_OrbYear key="128c" />,
     <Slide_128d_FirstClient key="128d" />,
     <Slide_128e_ProductVsService key="128e" />,
     /* Вспышка «ВНИМАНИЕ! СКИДКА» — pattern-interrupt перед раскрытием цены 390 000 ₸ */
@@ -405,6 +404,7 @@ export function SalesDeck() {
     <Slide_137b_PrepaySummary key="137b" />,
 
     /* === БЛОК E · ФИНАЛ-ЦЕНА 290 900 НА ПИКЕ === */
+    <Slide_FinalDiscountAlert key="finaldiscount" />,
     <Slide_131_SpecialPrice key="131" />,
     <Slide_137_WhatYouGet key="137" />,
     <Slide_Tariffs key="tariffs" />,
@@ -484,6 +484,7 @@ export function SalesDeck() {
     <Slide_165_CodeWord key="165" />,
     <Slide_162_Bonus4Stories key="162" />,
     <Slide_166_Instagram key="166" />,
+    <Slide_StoriesBonusHowTo key="storiesbonus" />,
     <Slide_167_FinalReminder key="167" />,
     <Slide_168_FinalQR key="168" />,
     <Slide_169_ThankYou key="169" />,
@@ -492,5 +493,5 @@ export function SalesDeck() {
     <Slide_170_FinalFrame key="170" />,
   ];
 
-  return <SlideDeck slides={slides} />;
+  return <SlideDeck slides={slides} lightSlideKeys={lightSlideKeys} />;
 }

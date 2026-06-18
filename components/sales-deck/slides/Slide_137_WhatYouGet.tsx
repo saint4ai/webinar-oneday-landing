@@ -26,7 +26,7 @@ export function Slide_137_WhatYouGet() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
       >
-        ЧТО ВЫ ПОЛУЧАЕТЕ ЗА <span className="text-[#B6FF00]">290 900 ₸</span>
+        ЧТО ВЫ ПОЛУЧАЕТЕ ЗА <span className="text-[#B6FF00]" style={{ whiteSpace: "nowrap" }}>290&nbsp;900&nbsp;₸</span>
       </motion.h1>
 
       <div className="grid grid-cols-2 gap-4 max-w-3xl mb-4">

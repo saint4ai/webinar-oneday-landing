@@ -24,9 +24,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { notifyEdbotLead } from "@/lib/edbot/notify";
 import { sendLeadEvent } from "@/lib/meta-capi";
-import { sendBonusSms } from "@/lib/mobizon/send";
 import { captureLead, markFailed, type CapturedLead } from "@/lib/leads/store";
 import { pushLeadToAmo, type PushResult } from "@/lib/leads/process";
+import { registerEasybotLead } from "@/lib/easybot/register";
 
 type LeadPayload = {
   name: string;
@@ -103,8 +103,21 @@ export async function POST(req: NextRequest) {
     fbclid,
   });
 
-  // ── Параллельный fan-out: amoCRM (persist+ретраи) + CAPI + edbot ──
-  const [crmResult, capiResult, edbotResult, smsResult] = await Promise.allSettled([
+  // ── EasyBot — нужен для редиректа формы, поэтому ЖДЁМ (таймаут внутри) ──
+  // Возвращает персональную ссылку с уникальным кодом → форма редиректит на неё.
+  const easybotResult = await registerEasybotLead({
+    name: cleanName,
+    phone: cleanPhone,
+    utm,
+    location: siteUrl,
+  });
+  const easybotUrl = easybotResult.ok ? easybotResult.botUrl : undefined;
+
+  // ── Остальные плечи — В ФОНЕ, НЕ блокируем форму/редирект ──────────
+  // Лид уже durable (captureLead → Supabase + WAL); при сбое amoCRM его дожмёт
+  // /api/reconcile. next start = долгоживущий процесс — фоновые промисы доедут.
+  // SMS-бонусы убраны: бонусы выдаёт бот, лишнее сообщение не нужно.
+  void Promise.allSettled([
     persistAmoLead(captured),
     sendLeadEvent({
       name: cleanName,
@@ -116,51 +129,42 @@ export async function POST(req: NextRequest) {
       clientIp,
       userAgent,
     }),
-    notifyEdbotLead({
-      name: cleanName,
-      phone: cleanPhone,
+    notifyEdbotLead({ name: cleanName, phone: cleanPhone, source, siteUrl }),
+  ]).then(([crmResult, capiResult, edbotResult]) => {
+    const crmStatus =
+      crmResult.status === "fulfilled"
+        ? crmResult.value.ok
+          ? `ok:${crmResult.value.leadId}`
+          : `fail:${crmResult.value.error}`
+        : "throw";
+    const capiStatus =
+      capiResult.status === "fulfilled"
+        ? capiResult.value.ok
+          ? `ok:${capiResult.value.received}`
+          : `skip:${capiResult.value.reason}`
+        : "throw";
+    const edbotStatus =
+      edbotResult.status === "fulfilled"
+        ? edbotResult.value.ok
+          ? "ok"
+          : `fail:${edbotResult.value.reason}`
+        : "throw";
+    const easybotStatus = easybotResult.ok
+      ? "ok"
+      : `fail:${easybotResult.reason}`;
+    console.log(
+      "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s easybot=%s",
+      cleanName,
+      cleanPhone.slice(-4),
       source,
-      siteUrl,
-    }),
-    sendBonusSms(cleanPhone),
-  ]);
+      crmStatus,
+      capiStatus,
+      edbotStatus,
+      easybotStatus
+    );
+  });
 
-  const crmStatus =
-    crmResult.status === "fulfilled"
-      ? crmResult.value.ok
-        ? `ok:${crmResult.value.leadId}`
-        : `fail:${crmResult.value.error}`
-      : "throw";
-  const capiStatus =
-    capiResult.status === "fulfilled"
-      ? capiResult.value.ok
-        ? `ok:${capiResult.value.received}`
-        : `skip:${capiResult.value.reason}`
-      : "throw";
-  const edbotStatus =
-    edbotResult.status === "fulfilled"
-      ? edbotResult.value.ok
-        ? "ok"
-        : `fail:${edbotResult.value.reason}`
-      : "throw";
-  const smsStatus =
-    smsResult.status === "fulfilled"
-      ? smsResult.value.ok
-        ? "ok"
-        : `fail:${smsResult.value.reason}`
-      : "throw";
-  console.log(
-    "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s sms=%s",
-    cleanName,
-    cleanPhone.slice(-4),
-    source,
-    crmStatus,
-    capiStatus,
-    edbotStatus,
-    smsStatus
-  );
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, botUrl: easybotUrl });
 }
 
 /**

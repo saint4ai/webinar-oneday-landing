@@ -3,17 +3,19 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { MessageCircle, Phone, FileText, Banknote, Radar, Hash } from "lucide-react";
+import { MessageCircle, Phone, FileText, Banknote, Hash } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { BrandLogo } from "../BrandLogo";
 
 /**
  * Слайд 128d · «Твой первый клиент» — ОТКУДА заявки + схема до первого чека.
- * Источник потока даём мы: сервис Tred Sparser (ловит свежие запросы на вайбкодеров) + готовые TG-каналы.
+ * Источник потока даём мы: Threads Parser (парсит посты в Threads, где ищут вайбкодеров) + 5 готовых TG-каналов.
  * Дальше — действия ученика: написал → созвон → КП в нейросети → первый чек.
- * ⚠ Название сервиса «Tred Sparser» и сумма 300 000 ₸ — со слов Александра, на проверку.
+ * ⚠ Сумма 300 000 ₸ — со слов Александра, на проверку.
  */
-const SOURCES = [
-  { Icon: Radar, name: "Tred Sparser", desc: "наш сервис ловит свежие запросы на вайбкодеров → в твою группу" },
-  { Icon: Hash, name: "Готовые TG-каналы", desc: "где бизнес ищет подрядчиков на проекты" },
+const SOURCES: { Icon?: LucideIcon; logo?: string; name: string; desc: string }[] = [
+  { logo: "threads", name: "Threads Parser", desc: "парсит посты в Threads, где ищут вайбкодеров → заявки в твою группу" },
+  { Icon: Hash, name: "5 готовых Telegram-каналов", desc: "где бизнес ищет разработчиков и вайбкодеров" },
 ];
 
 const STEPS = [
@@ -50,7 +52,11 @@ export function Slide_128d_FirstClient() {
           {SOURCES.map((s) => (
             <div key={s.name} className="flex-1 flex items-start gap-3">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
-                <s.Icon className="w-[18px] h-[18px] text-[#B6FF00]" strokeWidth={2.2} />
+                {s.logo ? (
+                  <BrandLogo name={s.logo} alt={s.name} className="w-[18px] h-[18px]" />
+                ) : s.Icon ? (
+                  <s.Icon className="w-[18px] h-[18px] text-[#B6FF00]" strokeWidth={2.2} />
+                ) : null}
               </div>
               <div className="min-w-0">
                 <div className="text-white font-semibold text-sm md:text-base leading-tight">{s.name}</div>

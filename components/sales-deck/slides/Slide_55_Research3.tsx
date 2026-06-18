@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { Users } from "lucide-react";
+import { Users, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "../BrandLogo";
 
@@ -14,7 +14,7 @@ import { BrandLogo } from "../BrandLogo";
 const SOURCES: { icon?: LucideIcon; logo?: string; label: string; tag: string; y: number }[] = [
   { logo: "reddit", label: "Reddit", tag: "люди", y: 12 },
   { logo: "threads", label: "Threads", tag: "люди", y: 38 },
-  { logo: "excel", label: "Excel у владельца", tag: "бизнес", y: 62 },
+  { icon: Star, label: "Отзывы на сервисы", tag: "люди", y: 62 },
   { icon: Users, label: "Разговор с владельцем", tag: "бизнес", y: 88 },
 ];
 
@@ -141,7 +141,7 @@ export function Slide_55_Research3() {
         </div>
         <div className="text-white/70 leading-snug">
           <span className="text-[#B6FF00] font-mono text-[10px] uppercase tracking-[0.12em] mr-1.5">бизнес:</span>
-          «что делаете в Excel?», «какие отчёты собираете руками по понедельникам?». Где Excel — там продукт.
+          на созвонах и в чатах с владельцами — «надоело делать вручную», «нет нормального сервиса под нас». Где рутина повторяется — там продукт.
         </div>
       </motion.div>
       <motion.div

@@ -13,7 +13,7 @@ export function Slide_170_FinalFrame() {
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
         transition={{ duration: 1.0, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase leading-[0.95] tracking-[-0.04em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(60px, 10vw, 180px)", color: "#B6FF00", textShadow: "0 0 90px rgba(182,255,0,0.3)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(48px, 7vw, 140px)", color: "#B6FF00", textShadow: "0 0 90px rgba(182,255,0,0.3)" }}
       >
         УВИДИМСЯ
       </motion.h1>

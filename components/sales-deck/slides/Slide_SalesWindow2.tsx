@@ -5,6 +5,7 @@ import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { Check } from "lucide-react";
 import { PaymentBanks } from "../PaymentBanks";
+import { PaymentQRPair } from "../PaymentQRPair";
 
 /**
  * Блок H · 2-е окно продаж — сжатый повтор оффера + QR предоплаты. После ProgramRecap, перед 161 (бонусы за просмотр).
@@ -24,8 +25,8 @@ export function Slide_SalesWindow2() {
       contentMinWidth={520}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
-        <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }} className="relative w-full rounded-2xl overflow-hidden flex items-center justify-center" style={{ background: "#fff", aspectRatio: "1/1", boxShadow: "0 30px 80px -30px rgba(0,0,0,0.6), 0 0 60px -24px rgba(182,255,0,0.35)" }}>
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · предоплата 10 000 ₸" className="block object-contain" style={{ maxWidth: "92%", maxHeight: "92%" }} />
+        <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }} className="relative w-full flex items-center justify-center">
+          <PaymentQRPair kaspiMaxH="48vh" />
         </motion.div>
       }
     >
@@ -43,10 +44,10 @@ export function Slide_SalesWindow2() {
         ЗАЙТИ МОЖНО <span className="text-[#B6FF00]">ПРЯМО СЕЙЧАС</span>
       </motion.h1>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.35 }} className="flex items-baseline gap-3 mb-4">
-        <span className="text-white/40 line-through tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,1.8vw,26px)" }}>390 000 ₸</span>
-        <span className="font-bold tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.4vw,52px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.4)" }}>290 900 ₸</span>
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/45">спеццена эфира</span>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.35 }} className="flex items-baseline gap-3 flex-wrap mb-4">
+        <span className="text-white/40 line-through tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,1.8vw,26px)", whiteSpace: "nowrap" }}>390&nbsp;000&nbsp;₸</span>
+        <span className="font-bold tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.4vw,52px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.4)", whiteSpace: "nowrap" }}>290&nbsp;900&nbsp;₸</span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/45 whitespace-nowrap">спеццена эфира</span>
       </motion.div>
 
       <div className="flex flex-col gap-2 max-w-xl mb-4">

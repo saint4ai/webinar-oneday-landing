@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { getNextWorkshop } from "@/lib/workshop-date";
 
 // Yandex Metrika ID — тот же что на основном onai.academy
 const YM_ID = 109147153;
@@ -155,11 +156,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Почасовой ISR: статическая страница перегенерируется раз в час, поэтому
+// дата эфира в Schema.org (startDate/endDate) остаётся актуальной без ручных правок.
+export const revalidate = 3600;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nextWs = getNextWorkshop();
   return (
     <html
       lang="ru"
@@ -187,8 +193,8 @@ export default function RootLayout({
               eventStatus: "https://schema.org/EventScheduled",
               eventAttendanceMode:
                 "https://schema.org/OnlineEventAttendanceMode",
-              startDate: "2026-06-10T20:00:00+05:00",
-              endDate: "2026-06-10T22:00:00+05:00",
+              startDate: nextWs.isoStart,
+              endDate: nextWs.isoEnd,
               location: {
                 "@type": "VirtualLocation",
                 url: SITE_URL,
@@ -213,6 +219,16 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-black text-white">
+        {/* Google Tag Manager (noscript) — конверсия Google Ads/YouTube */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-TLK5NPZF"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+            title="gtm"
+          />
+        </noscript>
         {children}
 
         {/* edbot.me chatbot — трекинг визитов + re-engagement WhatsApp.
@@ -225,6 +241,17 @@ export default function RootLayout({
           data-chatbotid={EDBOT_CHATBOT_ID}
           data-regtype="whatsapp"
         />
+
+        {/* Google Tag Manager — конверсия Google Ads (новый чистый контейнер
+            GTM-TLK5NPZF под воркшоп; старый GTM-5H7FFH9Q не используем).
+            Конверсия фаятся по событию `workshop_lead` на сабмит формы. */}
+        <Script id="gtm-base" strategy="afterInteractive">
+          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','GTM-TLK5NPZF');`}
+        </Script>
 
         {/* Yandex Metrika — тот же счётчик что на onai.academy */}
         <Script id="yandex-metrika" strategy="afterInteractive">

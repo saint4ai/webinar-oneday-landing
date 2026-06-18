@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { CalendarCheck, Flame, Plus } from "lucide-react";
+import { CalendarCheck, Flame } from "lucide-react";
 
 /**
  * Слайд 73 · Что мы соберём. Текст 1-в-1 STRUCTURE 908-912.
@@ -53,7 +53,7 @@ export function Slide_73_WhatBuild() {
         Трекер привычек или калькулятор калорий — на ваш выбор.
       </motion.div>
 
-      <div className="grid grid-cols-3 gap-4 max-w-4xl">
+      <div className="grid grid-cols-2 gap-5 max-w-3xl">
         {CHOICES.map((c, i) => {
           const Icon = c.icon;
           return (
@@ -86,19 +86,6 @@ export function Slide_73_WhatBuild() {
             </motion.div>
           );
         })}
-
-        {/* 3-я тема — плейсхолдер (пометка Александра) */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.85, ease: [0.25, 1, 0.5, 1] }}
-          className="rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-2 border-dashed"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1.5px dashed rgba(252,92,2,0.4)" }}
-        >
-          <Plus className="w-7 h-7" strokeWidth={1.8} style={{ color: "#FC5C02" }} />
-          <div className="text-sm font-semibold" style={{ color: "#FC5C02" }}>3-я тема</div>
-          <div className="text-white/40 text-[11px] leading-snug">Александр выберет популярную app-идею, что быстро собирается в AI Studio</div>
-        </motion.div>
       </div>
     </SlideLayout>
   );

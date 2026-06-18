@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 interface SlideDeckProps {
   slides: React.ReactNode[];
+  /** Ключи слайдов на светлом (cream) фоне — для них счётчик красится тёмным, иначе сливается. */
+  lightSlideKeys?: Set<string>;
 }
 
 /**
@@ -19,7 +21,7 @@ interface SlideDeckProps {
  *   Home / End — в начало/конец
  *   Esc — выход из fullscreen
  */
-export function SlideDeck({ slides }: SlideDeckProps) {
+export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
   const [idx, setIdx] = useState(0);
   const [speakerMode, setSpeakerMode] = useState<"live" | "preview">("live");
 
@@ -122,6 +124,10 @@ export function SlideDeck({ slides }: SlideDeckProps) {
     }
   }, [slides.length]);
 
+  // Тема текущего слайда — для читаемости счётчика на cream-фоне.
+  const currentKey = (slides[idx] as React.ReactElement | null)?.key ?? null;
+  const counterLight = currentKey != null && !!lightSlideKeys?.has(String(currentKey));
+
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
       {/* === Cursor-glow · radial gradient за курсором (как в vanilla presentation.html) === */}
@@ -160,12 +166,17 @@ export function SlideDeck({ slides }: SlideDeckProps) {
         }}
       />
 
-      {/* Slide counter — правый нижний угол, неброско */}
+      {/* Slide counter — правый нижний угол, неброско. На cream-слайдах — тёмные чернила (#2A2520), иначе сливается. */}
       <div
-        className="pointer-events-none fixed bottom-4 right-5 z-30 font-mono text-[11px] tracking-[0.2em] text-white/35"
-        style={{ fontFamily: "var(--font-jetbrains-mono), monospace" }}
+        className="pointer-events-none fixed bottom-4 right-5 z-30 font-mono text-[11px] tracking-[0.2em]"
+        style={{
+          fontFamily: "var(--font-jetbrains-mono), monospace",
+          color: counterLight ? "rgba(42,37,32,0.55)" : "rgba(255,255,255,0.35)",
+        }}
       >
-        {String(idx + 1).padStart(2, "0")} <span className="text-white/20">/</span> {String(slides.length).padStart(2, "0")}
+        {String(idx + 1).padStart(2, "0")}{" "}
+        <span style={{ color: counterLight ? "rgba(42,37,32,0.3)" : "rgba(255,255,255,0.2)" }}>/</span>{" "}
+        {String(slides.length).padStart(2, "0")}
       </div>
     </div>
   );

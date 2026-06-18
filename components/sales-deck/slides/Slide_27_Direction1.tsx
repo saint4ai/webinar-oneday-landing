@@ -51,7 +51,7 @@ export function Slide_27_Direction1() {
               hyphens: "none",
             }}
           >
-            СВОЙ СЕРВИС, КОТОРЫЙ{" "}
+            СЕРВИС, КОТОРЫЙ{" "}
             <span className="text-[#B6FF00]">ПРОДАЁШЬ БИЗНЕСУ</span>
           </motion.h1>
 

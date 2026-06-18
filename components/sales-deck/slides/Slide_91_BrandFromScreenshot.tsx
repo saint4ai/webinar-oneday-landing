@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { Link2, ArrowRight, Palette, Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
+import { Link2, ArrowRight, Palette } from "lucide-react";
 
 /**
  * Слайд 91 · Лайфхак — бренд-код по скриншоту. Текст 1-в-1 STRUCTURE 1114-1122.
@@ -45,11 +46,16 @@ export function Slide_91_BrandFromScreenshot() {
         </motion.div>
       </div>
 
-      {/* Слот под скрин Canva color combinations */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 1.0 }} className="mt-6 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2 max-w-2xl" style={{ borderColor: "rgba(182,255,0,0.3)", background: "rgba(182,255,0,0.02)", height: 150 }}>
-        <ImageIcon className="w-7 h-7 text-white/30" strokeWidth={1.5} />
-        <span className="text-white/45 text-xs font-mono uppercase tracking-[0.1em]">скрин Canva «100 цветовых сочетаний»</span>
-        <span className="text-white/25 text-[10px]">+ видео-нарезка урока — Александр даст</span>
+      {/* Скрин Canva «100 цветовых сочетаний» + ссылка */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 1.0 }} className="mt-6 flex items-start gap-5 flex-wrap max-w-3xl">
+        <div className="rounded-xl overflow-hidden shrink-0" style={{ width: 230, border: "1px solid rgba(182,255,0,0.28)", boxShadow: "0 24px 60px -24px rgba(0,0,0,0.7)" }}>
+          <Image src="/handouts/canva-palettes.png" alt="Canva — 100 цветовых сочетаний" width={1638} height={1392} className="w-full h-auto block" />
+        </div>
+        <div className="flex flex-col gap-2 pt-1 min-w-0">
+          <div className="flex items-center gap-2 text-white/55 text-xs font-mono uppercase tracking-[0.12em]"><Palette className="w-3.5 h-3.5 text-[#B6FF00]" strokeWidth={1.8} />Canva · 100 готовых палитр</div>
+          <a href="https://www.canva.com/ru_ru/obuchenie/100-cvetovyx-sochetnij/" target="_blank" rel="noopener noreferrer" className="text-[#B6FF00] text-sm font-medium underline decoration-[#B6FF00]/40 break-all">canva.com/ru_ru/obuchenie/100-cvetovyx-sochetnij</a>
+          <span className="text-white/25 text-[10px]">+ видео-нарезка урока — Александр даст</span>
+        </div>
       </motion.div>
     </SlideLayout>
   );

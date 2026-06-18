@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { Gift, Globe, Download } from "lucide-react";
+import Image from "next/image";
 import { BrandLogo } from "../BrandLogo";
 
 /**
@@ -94,10 +95,14 @@ export function Slide_72_GoogleAIStudio() {
               <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
               <span className="ml-3 font-mono text-[11px] text-white/45">🔒 aistudio.google.com</span>
             </div>
-            <div className="flex flex-col items-center justify-center gap-2 text-center" style={{ minHeight: 180 }}>
-              <BrandLogo name="google" alt="Google" className="w-8 h-8" />
-              <span className="text-white/50 text-sm font-mono uppercase tracking-[0.1em] mt-1">скрин AI Studio</span>
-              <span className="text-white/25 text-[10px]">добавит Александр</span>
+            <div className="relative w-full" style={{ aspectRatio: "1890 / 740" }}>
+              <Image
+                src="/handouts/aistudio-screen.png"
+                alt="Google AI Studio"
+                fill
+                className="object-cover object-top"
+                sizes="50vw"
+              />
             </div>
           </motion.div>
         </div>

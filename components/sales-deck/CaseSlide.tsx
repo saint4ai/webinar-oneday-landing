@@ -1,16 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { SlideBg } from "./SlideBg";
 import { SlideLayout } from "./SlideLayout";
 import { BrandLogo } from "./BrandLogo";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface CaseSlideProps {
   caseNo: string;            // "1"
   name: string;              // "АЙДОС"
   sub: string;               // одна строка-подзаголовок
   screenshot: string;        // "/testimonials/aidos.png"
+  screenshots?: string[];    // если 2+, рендерим ручную мини-карусель скринов
   handle: string;            // "Aidos · 22 мая"
   pain: string;              // Точка А (боль) — оранж
   result: string;            // Точка Б (результат) — лайм
@@ -31,6 +33,7 @@ export function CaseSlide({
   name,
   sub,
   screenshot,
+  screenshots,
   handle,
   pain,
   result,
@@ -40,6 +43,10 @@ export function CaseSlide({
   variant = "aura-tl",
   objectColumnSize = "34vw",
 }: CaseSlideProps) {
+  const imgs = screenshots && screenshots.length ? screenshots : [screenshot];
+  const [si, setSi] = useState(0);
+  const multi = imgs.length > 1;
+  const goImg = (d: number) => setSi((i) => (i + d + imgs.length) % imgs.length);
   return (
     <SlideLayout
       speakerSide="right"
@@ -66,14 +73,30 @@ export function CaseSlide({
             <span className="font-mono text-[10px] tracking-[0.06em] text-white/60">{handle}</span>
             <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.14em] text-[#B6FF00]/70">реальный кейс</span>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={screenshot}
-            alt={`Кейс — ${name}`}
-            draggable={false}
-            className="w-full block"
-            style={{ maxHeight: "64vh", objectFit: "contain", background: "#0b0e0a" }}
-          />
+          <div className="relative w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imgs[si]}
+              alt={`Кейс — ${name}`}
+              draggable={false}
+              className="w-full block"
+              style={{ maxHeight: "64vh", objectFit: "contain", background: "#0b0e0a" }}
+            />
+            {multi && (
+              <div
+                className="pointer-events-auto absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full px-2 py-1"
+                style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(182,255,0,0.4)", backdropFilter: "blur(6px)" }}
+              >
+                <button type="button" onClick={() => goImg(-1)} aria-label="Предыдущий скрин" className="w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95" style={{ background: "rgba(182,255,0,0.14)" }}>
+                  <ChevronLeft className="w-4 h-4 text-[#B6FF00]" strokeWidth={2.6} />
+                </button>
+                <span className="font-mono text-[11px] text-white/75 tabular-nums w-7 text-center">{si + 1}/{imgs.length}</span>
+                <button type="button" onClick={() => goImg(1)} aria-label="Следующий скрин" className="w-7 h-7 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95" style={{ background: "rgba(182,255,0,0.14)" }}>
+                  <ChevronRight className="w-4 h-4 text-[#B6FF00]" strokeWidth={2.6} />
+                </button>
+              </div>
+            )}
+          </div>
         </motion.div>
       }
     >

@@ -3,13 +3,13 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { AtSign } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
-/** Слайд 163 · Как получить бонусы. Текст 1-в-1 STRUCTURE 2267-2269. */
+/** Слайд 163 · Как получить бонусы. Выдача — через менеджера в WhatsApp. */
 const STEPS = [
-  { n: "Шаг 1", t: "Открываете мой инстаграм @saint4ai" },
-  { n: "Шаг 2", t: "Пишете в директ кодовое слово" },
-  { n: "Шаг 3", t: "Я отправляю вам все три бонуса" },
+  { n: "Шаг 1", t: "Берёте номер менеджера из чата эфира" },
+  { n: "Шаг 2", t: "Пишете менеджеру в WhatsApp кодовое слово" },
+  { n: "Шаг 3", t: "Менеджер выдаёт вам все три бонуса" },
 ];
 
 export function Slide_163_HowToGetBonuses() {
@@ -21,7 +21,7 @@ export function Slide_163_HowToGetBonuses() {
       background={<SlideBg theme="dark" variant="lime-right" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="flex items-center justify-center w-full">
-          <AtSign className="text-[#B6FF00]" strokeWidth={1.1} style={{ width: "clamp(120px, 15vw, 240px)", height: "auto", filter: "drop-shadow(0 0 50px rgba(182,255,0,0.35))" }} />
+          <MessageCircle className="text-[#B6FF00]" strokeWidth={1.1} style={{ width: "clamp(120px, 15vw, 240px)", height: "auto", filter: "drop-shadow(0 0 50px rgba(182,255,0,0.35))" }} />
         </motion.div>
       }
     >

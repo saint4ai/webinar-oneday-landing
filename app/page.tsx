@@ -17,6 +17,7 @@ import { FinalCTA } from "@/components/sections/final-cta";
 import { MetaPixelBase } from "@/components/meta-pixel-base";
 import { ymGoal } from "@/lib/analytics/ym";
 import { useScrollGoals } from "@/lib/analytics/useScrollGoals";
+import { withBase } from "@/lib/api-url";
 
 export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -203,8 +204,24 @@ export default function Home() {
       <FinalCTA />
 
       {/* Footer */}
-      <footer className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-6 text-white/25 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-center">
-        onAI.academy · 2026
+      <footer className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-8 pb-32 md:pb-8 text-center">
+        <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap mb-3">
+          <a
+            href="https://onai.academy/offer"
+            className="text-white/70 hover:text-[#B6FF00] underline underline-offset-4 text-sm font-medium transition-colors"
+          >
+            Публичная оферта
+          </a>
+          <a
+            href={withBase("/privacy")}
+            className="text-white/70 hover:text-[#B6FF00] underline underline-offset-4 text-sm font-medium transition-colors"
+          >
+            Политика конфиденциальности
+          </a>
+        </div>
+        <p className="text-white/30 font-mono text-[10px] uppercase tracking-[0.18em]">
+          onAI.academy · 2026
+        </p>
       </footer>
 
       {/* Мобильная фикс-кнопка регистрации — только на телефонах (md:hidden), липнет к низу экрана, открывает ту же модалку */}

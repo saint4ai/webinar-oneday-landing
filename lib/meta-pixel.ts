@@ -47,6 +47,50 @@ function readCookie(name: string): string | undefined {
   return m ? decodeURIComponent(m[1]) : undefined;
 }
 
+// ── Sticky-трекинг: метка переживает уход в Instagram-профиль и возврат без ?utm ──
+const TRACK_STORAGE_KEY = "onai_tracking_v1";
+const TRACK_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
+
+type StoredTracking = { utm: Record<string, string>; fbclid?: string; ts: number };
+
+function readStoredTracking(): StoredTracking | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem(TRACK_STORAGE_KEY);
+    if (!raw) return undefined;
+    const data = JSON.parse(raw) as StoredTracking;
+    if (!data?.ts || Date.now() - data.ts > TRACK_TTL_MS) return undefined;
+    return data;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Ловит utm/fbclid из URL и кладёт в localStorage (last-touch).
+ * Вызывать на маунте лендинга — чтобы метка с рекламного клика пережила
+ * уход в Instagram-профиль и возврат на лендинг уже без ?utm в адресе.
+ */
+export function persistTrackingFromUrl(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const utm: Record<string, string> = {};
+    for (const k of UTM_KEYS) {
+      const v = params.get(k);
+      if (v) utm[k] = v;
+    }
+    const fbclid = params.get("fbclid") || undefined;
+    if (Object.keys(utm).length === 0 && !fbclid) return; // нечего сохранять
+    window.localStorage.setItem(
+      TRACK_STORAGE_KEY,
+      JSON.stringify({ utm, fbclid, ts: Date.now() } satisfies StoredTracking)
+    );
+  } catch {
+    /* localStorage недоступен (приватный режим) — деградируем тихо */
+  }
+}
+
 export type MetaClientData = {
   fbp?: string;
   fbc?: string;
@@ -76,6 +120,16 @@ export function collectMetaClientData(): MetaClientData {
     for (const k of UTM_KEYS) {
       const v = params.get(k);
       if (v) utm[k] = v;
+    }
+    // Метка в URL есть → сохраняем (last-touch). Нет → подтягиваем из localStorage,
+    // чтобы лид с рекламы не терял креатив после захода через Instagram-профиль.
+    persistTrackingFromUrl();
+    if (Object.keys(utm).length === 0) {
+      const stored = readStoredTracking();
+      if (stored?.utm) Object.assign(utm, stored.utm);
+      if (!fbc && stored?.fbclid) {
+        fbc = `fb.1.${Date.now()}.${stored.fbclid}`;
+      }
     }
   }
 

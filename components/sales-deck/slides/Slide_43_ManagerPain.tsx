@@ -11,11 +11,11 @@ import { NicheTag } from "../NicheTag";
  * Higgsfield-сцена (владелец смотрит на силуэты команды) + orange-pain фон.
  * Плавающие load-бейджи 80ч (перегруз) / 12ч (простой). Пара к Slide 44.
  */
-const HIDDEN = ["кто перегружен", "кто простаивает", "кто застрял", "кто работает в 3 ночи", "кто уходит в 16:00"];
+const HIDDEN = ["кто перегружен", "у кого есть ресурс", "кто застрял и ждёт помощи", "где аврал", "где узкое место"];
 const CONSEQ = [
-  "Перегруженный увольняется через 3 месяца — ты не успел перераспределить.",
-  "Простаивающему платишь полную зарплату — «вроде что-то делает».",
-  "Не знаешь кого повысить, кого нагрузить, кого отпустить.",
+  "Перегруженный выгорает и уходит через 3 месяца — а ты не успел его разгрузить.",
+  "Узкие места тормозят всю команду — задачи стоят, а ты не видишь где.",
+  "Не понимаешь, кому передать задачи, чтобы команда работала ровно.",
 ];
 
 export function Slide_43_ManagerPain() {
@@ -40,7 +40,7 @@ export function Slide_43_ManagerPain() {
             style={{ background: "rgba(252,92,2,0.16)", border: "1px solid rgba(252,92,2,0.5)", backdropFilter: "blur(4px)" }}
           >
             <div className="font-bold text-sm leading-none" style={{ color: "#FC5C02" }}>80 ч/нед</div>
-            <div className="text-[10px] text-white/60 mt-0.5">горит</div>
+            <div className="text-[10px] text-white/60 mt-0.5">перегруз</div>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -50,7 +50,7 @@ export function Slide_43_ManagerPain() {
             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)", backdropFilter: "blur(4px)" }}
           >
             <div className="font-bold text-sm leading-none text-white/70">12 ч/нед</div>
-            <div className="text-[10px] text-white/45 mt-0.5">простой</div>
+            <div className="text-[10px] text-white/45 mt-0.5">есть ресурс</div>
           </motion.div>
         </div>
       }
@@ -72,7 +72,7 @@ export function Slide_43_ManagerPain() {
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-3"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9vw, 44px)" }}
       >
-        ВЛАДЕЛЕЦ НЕ ВИДИТ <span style={{ color: "#FC5C02" }}>КТО РЕАЛЬНО РАБОТАЕТ</span>
+        КОМАНДА РАБОТАЕТ НЕРАВНОМЕРНО — <span style={{ color: "#FC5C02" }}>А ТЫ НЕ ВИДИШЬ ГДЕ ПОМОЧЬ</span>
       </motion.h1>
 
       <motion.div
@@ -81,7 +81,7 @@ export function Slide_43_ManagerPain() {
         transition={{ duration: 0.6, delay: 0.45 }}
         className="text-white/65 text-sm md:text-base leading-snug max-w-xl mb-5"
       >
-        Один пашет за троих и выгорает. Другой 6 часов «в работе», а сделал на час.
+        Один пашет за троих и выгорает. Другой недогружен и теряет интерес.
       </motion.div>
 
       <motion.div

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Gift, Loader2, Lock } from "lucide-react";
 import { Highlighted } from "@/components/ui/highlighted";
@@ -10,6 +9,9 @@ import { BrandPhoneInput } from "@/components/ui/phone-input";
 import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
+import { resolveEasybotRedirect } from "@/lib/easybot/redirect";
+import { pushWorkshopLead } from "@/lib/gtm";
+import { getNextWorkshop } from "@/lib/workshop-date";
 
 /**
  * ЭКРАН 4 · Финальный CTA + Форма (по плану Александра).
@@ -67,12 +69,18 @@ const BONUSES: BonusCard[] = [
 // Lead создаётся в amoCRM на стороне edbot-бота когда юзер напишет в WhatsApp.
 
 export const FinalCTA = () => {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(true); // pre-checked
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [botDest, setBotDest] = useState("");
+  // Дата следующего эфира (после 20:00 → завтра). Заполняем на клиенте,
+  // чтобы не было рассинхрона гидрации на статической странице.
+  const [dayMonth, setDayMonth] = useState<string>("");
+  useEffect(() => {
+    setDayMonth(getNextWorkshop().dayMonth);
+  }, []);
   const [error, setError] = useState<string | null>(null);
 
   // Минимум 8 цифр в номере (включая код страны)
@@ -105,10 +113,18 @@ export const FinalCTA = () => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Браузерный Lead с тем же event_id (дедуп с серверным CAPI в /api/lead)
+      // Персональная ссылка EasyBot (уникальный код) из ответа; нет — статичный фолбэк.
+      const data = await res.json().catch(() => ({}) as { botUrl?: string });
+      const dest = resolveEasybotRedirect(data?.botUrl, meta.utm);
+      setBotDest(dest);
+      // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);
-      setSuccess(true);
-      setTimeout(() => router.push("/thank-you"), 400);
+      ymGoal("lead_workshop");
+      pushWorkshopLead(phone); // Google Ads конверсия (событие workshop_lead → GTM)
+      setSuccess(true); // показывает «сейчас редирект в бота», затем авто-редирект
+      setTimeout(() => {
+        window.location.href = dest;
+      }, 1500);
     } catch (err) {
       console.error("Lead submit failed:", err);
       setError("Что-то пошло не так. Попробуй ещё раз.");
@@ -187,7 +203,9 @@ export const FinalCTA = () => {
           </p>
         </div>
 
-        <div className="section-divider">регистрация · 10 июня</div>
+        <div className="section-divider">
+          регистрация{dayMonth ? ` · ${dayMonth}` : ""}
+        </div>
 
         {/* H1 — на mobile: «Регистрируйся —» / [плашка «места ограничены»]
             на 2 строки, чтобы плашка целиком влезла на 320px viewport. */}
@@ -260,8 +278,24 @@ export const FinalCTA = () => {
                   Готово
                 </div>
                 <p className="text-white/65 text-[14px] leading-relaxed max-w-xs">
-                  Ссылку на эфир пришлю в WhatsApp за час до старта.
+                  Сейчас откроется WhatsApp-бот.{" "}
+                  <span className="text-[#fc5c02] font-semibold">
+                    Отправь боту готовое сообщение — так ты активируешь участие
+                    в воркшопе и получишь ссылку на эфир.
+                  </span>
                 </p>
+                <div className="mt-5 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/45">
+                  <Loader2 size={14} className="animate-spin text-[#cdeb52]" />
+                  переводим в бота…
+                </div>
+                {botDest && (
+                  <a
+                    href={botDest}
+                    className="mt-3 text-[#cdeb52] text-[12px] underline underline-offset-2"
+                  >
+                    Не открывается WhatsApp? Нажми здесь
+                  </a>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">

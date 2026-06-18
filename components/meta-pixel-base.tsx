@@ -1,7 +1,8 @@
 "use client";
 
 import Script from "next/script";
-import { META_PIXEL_ID } from "@/lib/meta-pixel";
+import { useEffect } from "react";
+import { META_PIXEL_ID, persistTrackingFromUrl } from "@/lib/meta-pixel";
 
 /**
  * Базовый Meta Pixel + PageView.
@@ -14,6 +15,12 @@ import { META_PIXEL_ID } from "@/lib/meta-pixel";
  * дублируется server-side через Conversions API в /api/lead (дедуп по event_id).
  */
 export function MetaPixelBase() {
+  // Sticky-захват utm/fbclid при заходе на лендинг — метка переживает уход
+  // в Instagram-профиль и возврат без ?utm (тогда склейка по телефону вернёт креатив).
+  useEffect(() => {
+    persistTrackingFromUrl();
+  }, []);
+
   return (
     <>
       <Script id="meta-pixel-base" strategy="afterInteractive">

@@ -48,11 +48,18 @@ export async function notifyEdbotLead(input: NotifyInput): Promise<NotifyResult>
   };
 
   try {
+    // Таймаут 2.5с: platform.edbot.me часто недоступен (undici-дефолт = 10с
+    // connect-timeout), и без этого плечо вешает весь /api/lead → форма не
+    // успевает редиректнуть юзера в бота. Edbot — догон не дошедших, не критичен.
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 2500);
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: ctrl.signal,
     });
+    clearTimeout(t);
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");

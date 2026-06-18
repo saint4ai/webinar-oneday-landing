@@ -4,13 +4,14 @@ import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { PaymentBanks } from "../PaymentBanks";
+import { PaymentQRPair } from "../PaymentQRPair";
 
 /**
  * Слайд 133 · QR-1 — внеси предоплату. Текст 1-в-1 STRUCTURE 1758-1766.
  * PLACEHOLDER ASSET: landing/public/payment/kaspi-qr-prepayment.png — скрин Kaspi от Александра.
  */
 const STEPS = [
-  { n: "Шаг 1", t: "Скан QR справа в Kaspi", d: "или клик на ссылку под видео" },
+  { n: "Шаг 1", t: "Скан QR справа в Kaspi", d: "или по кнопке под видео" },
   { n: "Шаг 2", t: "Сумма 10 000 ₸", d: "в «Комментарий» — твой НОМЕР ТЕЛЕФОНА" },
   { n: "Шаг 3", t: "Менеджер свяжется сегодня", d: "для оформления полной оплаты" },
 ];
@@ -24,8 +25,7 @@ export function Slide_133_QR1() {
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.4)", background: "rgba(255,255,255,0.04)" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/payment/kaspi-qr-prepayment.png" alt="Kaspi QR · 10 000 ₸" className="block object-contain" style={{ maxWidth: "100%", maxHeight: "68vh" }} />
+          <PaymentQRPair kaspiMaxH="50vh" />
         </motion.div>
       }
     >

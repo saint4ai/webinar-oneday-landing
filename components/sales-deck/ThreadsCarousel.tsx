@@ -19,7 +19,7 @@ export function ThreadsCarousel() {
   const indexes = Array.from({ length: THREADS_COUNT }, (_, i) => i);
 
   return (
-    <div className="relative w-full h-full flex flex-col">
+    <div className="relative w-full h-full flex flex-col pointer-events-auto">
       {/* Main display — большой текущий скрин */}
       <div className="relative flex-1 flex items-center justify-center overflow-hidden">
         <AnimatePresence mode="wait">

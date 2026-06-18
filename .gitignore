@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# runtime data (WhatsApp-ссылка через бота, WAL лидов) — локальные артефакты
+/.data/
+
 # production
 /build
 

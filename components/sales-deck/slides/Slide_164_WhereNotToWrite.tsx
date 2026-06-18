@@ -3,10 +3,10 @@
 import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
-import { Ban, AtSign } from "lucide-react";
+import { Ban, MessageCircle } from "lucide-react";
 
-/** Слайд 164 · Куда НЕ писать. Текст 1-в-1 STRUCTURE 2276-2277. */
-const DONT = ["НЕ пишите слово в чат эфира", "НЕ пишите менеджерам в WhatsApp"];
+/** Слайд 164 · Куда НЕ писать. Выдача — только у менеджера в WhatsApp. */
+const DONT = ["НЕ пишите слово в общий чат эфира", "НЕ пишите мне в директ Instagram"];
 
 export function Slide_164_WhereNotToWrite() {
   return (
@@ -32,8 +32,8 @@ export function Slide_164_WhereNotToWrite() {
         ))}
       </div>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.75 }} className="inline-flex items-center gap-3 rounded-xl px-4 py-3 self-start max-w-2xl" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
-        <AtSign className="w-5 h-5 shrink-0 text-[#B6FF00]" strokeWidth={2} />
-        <span className="text-[#B6FF00] font-semibold text-sm md:text-lg">Только в директ моего инстаграма @saint4ai</span>
+        <MessageCircle className="w-5 h-5 shrink-0 text-[#B6FF00]" strokeWidth={2} />
+        <span className="text-[#B6FF00] font-semibold text-sm md:text-lg">Только менеджеру в WhatsApp — номер в чате эфира</span>
       </motion.div>
     </SlideLayout>
   );

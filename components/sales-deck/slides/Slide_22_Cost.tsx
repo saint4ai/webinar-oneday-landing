@@ -85,6 +85,15 @@ export function Slide_22_Cost() {
           );
         })}
       </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 1.25 }}
+        className="mt-6 text-white/70 text-sm md:text-base leading-snug max-w-2xl"
+      >
+        Вход дешевле, чем кажется — <span className="text-[#B6FF00] font-semibold">никаких сотен тысяч</span>.
+      </motion.div>
     </SlideLayout>
   );
 }

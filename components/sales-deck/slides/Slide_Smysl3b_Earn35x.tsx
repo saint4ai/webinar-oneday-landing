@@ -4,26 +4,44 @@ import { motion } from "framer-motion";
 import { SlideBg } from "../SlideBg";
 import { SlideLayout } from "../SlideLayout";
 import { Zap, Layers, BarChart3, Clock, Sparkles, CheckCircle2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 /**
- * Блок C · Смысл — доход ×3,5 через эффективность. Этап продажи, после Smysl3_Career.
- * Mind map: вайбкодинг усиливает 6 человеческих зон → специалист с AI делает больше и эффективнее.
- * Контраст с теми, кто не учит AI (×1, всё вручную).
- * ⚠ «3,5×» — со слов Александра, подсветить (иллюстрация рынка, источник на проверку).
+ * Блок C · Смысл — доход ×3,5 через эффективность.
+ * Симметричная схема: 3 зоны слева + хаб «ТЫ+AI» + 3 зоны справа. Без наложений и обрезки.
+ * ⚠ «3,5×» — со слов Александра (иллюстрация), источник на проверку.
  */
-const W = 820;
-const H = 350;
-const CX = W / 2;
-const CY = H / 2;
-
-const ZONES = [
-  { Icon: Zap, zone: "СКОРОСТЬ", benefit: "час вместо дня", x: CX, y: 34 },
-  { Icon: Layers, zone: "ОБЪЁМ", benefit: "больше задач", x: W - 92, y: 118 },
-  { Icon: BarChart3, zone: "РЕШЕНИЯ", benefit: "данные → выводы", x: W - 92, y: H - 118 },
-  { Icon: Clock, zone: "СВОБОДА", benefit: "рутина на ИИ", x: CX, y: H - 34 },
-  { Icon: Sparkles, zone: "УМЕНИЯ", benefit: "собираешь сам", x: 92, y: H - 118 },
-  { Icon: CheckCircle2, zone: "КАЧЕСТВО", benefit: "меньше ошибок", x: 92, y: 118 },
+type Zone = { Icon: LucideIcon; zone: string; benefit: string };
+const LEFT: Zone[] = [
+  { Icon: CheckCircle2, zone: "КАЧЕСТВО", benefit: "меньше ошибок" },
+  { Icon: Sparkles, zone: "УМЕНИЯ", benefit: "собираешь сам" },
+  { Icon: Clock, zone: "СВОБОДА", benefit: "рутина на ИИ" },
 ];
+const RIGHT: Zone[] = [
+  { Icon: Zap, zone: "СКОРОСТЬ", benefit: "час вместо дня" },
+  { Icon: Layers, zone: "ОБЪЁМ", benefit: "больше задач" },
+  { Icon: BarChart3, zone: "РЕШЕНИЯ", benefit: "данные → выводы" },
+];
+
+function ZoneCard({ z, reverse, delay }: { z: Zone; reverse: boolean; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: reverse ? -16 : 16, scale: 0.92 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ duration: 0.45, delay, ease: [0.34, 1.3, 0.64, 1] }}
+      className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 ${reverse ? "flex-row-reverse" : ""}`}
+      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(182,255,0,0.3)", boxShadow: "0 12px 30px -18px rgba(0,0,0,0.6)" }}
+    >
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(182,255,0,0.12)", border: "1px solid rgba(182,255,0,0.4)" }}>
+        <z.Icon className="w-[18px] h-[18px] text-[#B6FF00]" strokeWidth={2.2} />
+      </div>
+      <div className={`min-w-0 leading-tight ${reverse ? "text-right" : ""}`}>
+        <div className="font-bold text-white text-sm uppercase tracking-[0.02em]" style={{ fontFamily: "var(--font-benzin), system-ui" }}>{z.zone}</div>
+        <div className="text-white/55 text-[12px]">{z.benefit}</div>
+      </div>
+    </motion.div>
+  );
+}
 
 export function Slide_Smysl3b_Earn35x() {
   return (
@@ -42,55 +60,32 @@ export function Slide_Smysl3b_Earn35x() {
         СО ЗНАНИЕМ AI — В <span className="text-[#B6FF00]">3,5× БОЛЬШЕ</span>
       </motion.h1>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-base leading-snug max-w-2xl mb-4">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-base leading-snug max-w-2xl mb-6">
         Не умнее — <span className="text-white font-semibold">эффективнее</span>. Вайбкодинг усиливает сразу 6 зон:
       </motion.div>
 
-      {/* Mind map: хаб + 6 зон */}
-      <div className="relative mb-4" style={{ width: W, maxWidth: "100%", height: H }}>
-        {/* связи */}
-        <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden>
-          {ZONES.map((z, i) => (
-            <motion.line
-              key={i}
-              x1={CX} y1={CY} x2={z.x} y2={z.y}
-              stroke="rgba(182,255,0,0.35)" strokeWidth={1.5}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.6 + i * 0.08 }}
-            />
-          ))}
-        </svg>
+      {/* Симметричная схема: 3 слева · хаб · 3 справа */}
+      <div className="grid items-center gap-x-5 md:gap-x-8 w-full max-w-4xl mb-6" style={{ gridTemplateColumns: "1fr auto 1fr" }}>
+        <div className="flex flex-col gap-3">
+          {LEFT.map((z, i) => <ZoneCard key={z.zone} z={z} reverse delay={0.55 + i * 0.1} />)}
+        </div>
 
-        {/* хаб */}
         <motion.div
           initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.45, ease: [0.34, 1.4, 0.64, 1] }}
-          className="absolute flex flex-col items-center justify-center rounded-full text-center"
-          style={{ left: CX, top: CY, width: 150, height: 150, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(182,255,0,0.22), rgba(182,255,0,0.06) 70%)", border: "2px solid #B6FF00", boxShadow: "0 0 60px -10px rgba(182,255,0,0.6)" }}
+          className="flex flex-col items-center justify-center rounded-full text-center shrink-0"
+          style={{ width: 150, height: 150, background: "radial-gradient(circle, rgba(182,255,0,0.22), rgba(182,255,0,0.06) 70%)", border: "2px solid #B6FF00", boxShadow: "0 0 60px -8px rgba(182,255,0,0.6)" }}
         >
-          <span className="font-bold uppercase text-white leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 26 }}>ТЫ</span>
-          <span className="font-bold uppercase leading-none mt-1" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 22, color: "#B6FF00" }}>+ AI</span>
+          <span className="font-bold uppercase text-white leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 28 }}>ТЫ</span>
+          <span className="font-bold uppercase leading-none mt-1" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 24, color: "#B6FF00" }}>+ AI</span>
         </motion.div>
 
-        {/* узлы-зоны */}
-        {ZONES.map((z, i) => (
-          <motion.div
-            key={z.zone}
-            initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay: 0.7 + i * 0.09, ease: [0.34, 1.3, 0.64, 1] }}
-            className="absolute flex items-center gap-2.5 rounded-xl px-3 py-2"
-            style={{ left: z.x, top: z.y, transform: "translate(-50%,-50%)", width: 168, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(182,255,0,0.3)", boxShadow: "0 12px 30px -16px rgba(0,0,0,0.6)" }}
-          >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(182,255,0,0.12)", border: "1px solid rgba(182,255,0,0.4)" }}>
-              <z.Icon className="w-4 h-4 text-[#B6FF00]" strokeWidth={2.2} />
-            </div>
-            <div className="min-w-0 leading-tight">
-              <div className="font-bold text-white text-[13px] uppercase tracking-[0.02em] truncate" style={{ fontFamily: "var(--font-benzin), system-ui" }}>{z.zone}</div>
-              <div className="text-white/55 text-[11px] truncate">{z.benefit}</div>
-            </div>
-          </motion.div>
-        ))}
+        <div className="flex flex-col gap-3">
+          {RIGHT.map((z, i) => <ZoneCard key={z.zone} z={z} reverse={false} delay={0.55 + i * 0.1} />)}
+        </div>
       </div>
 
       {/* Контраст ×1 vs ×3,5 */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.5 }} className="flex items-center gap-3 flex-wrap text-sm md:text-base max-w-3xl">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.3 }} className="flex items-center gap-3 flex-wrap text-sm md:text-base max-w-4xl">
         <span className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-white/45" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
           <span className="font-bold" style={{ fontFamily: "var(--font-benzin), system-ui" }}>×1</span> кто не учит AI — всё вручную: дольше, меньше
         </span>
