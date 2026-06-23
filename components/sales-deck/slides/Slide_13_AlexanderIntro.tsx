@@ -40,7 +40,7 @@ export function Slide_13_AlexanderIntro() {
             src="/handouts/alex/alex_portrait_story.png"
             alt="Александр — основатель onAI Academy"
             fill
-            sizes="(max-width: 1280px) 28cqw, 420px"
+            sizes="(max-width: 1280px) 28vw, 420px"
             className="object-cover"
             style={{ objectPosition: "center bottom" }}
             priority

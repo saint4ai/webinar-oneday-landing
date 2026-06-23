@@ -89,7 +89,7 @@ export function SaasProjectCard({
               alt={`${name} — экран ${index + 1}`}
               fill
               className="object-cover object-top"
-              sizes="40cqw"
+              sizes="40vw"
               priority={index === 0}
             />
           </motion.div>

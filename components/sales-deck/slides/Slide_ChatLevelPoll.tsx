@@ -58,7 +58,7 @@ export function Slide_ChatLevelPoll() {
                 {lv.n}
               </div>
               <div className="relative w-full" style={{ aspectRatio: "4 / 5" }}>
-                <Image src={lv.img} alt={lv.cap} fill sizes="22cqw" className="object-cover" priority={i < 2} />
+                <Image src={lv.img} alt={lv.cap} fill sizes="22vw" className="object-cover" priority={i < 2} />
               </div>
               <div className="px-3 py-3 text-center">
                 <span className={`leading-tight ${top ? "text-[#B6FF00] font-semibold" : "text-white/80"}`} style={{ fontSize: "clamp(13px, 0.95cqw, 15px)" }}>{lv.cap}</span>

@@ -57,7 +57,7 @@ export function Slide_23_ForWhom() {
               className="relative w-full rounded-2xl overflow-hidden"
               style={{ aspectRatio: "4 / 5", background: "#0d0f0a", border: "1px solid rgba(182,255,0,0.18)", boxShadow: "0 20px 50px -28px rgba(0,0,0,0.7), 0 0 40px -24px rgba(182,255,0,0.35)" }}
             >
-              <Image src={r.img} alt={r.t} fill sizes="18cqw" className="object-cover" priority={i < 3} />
+              <Image src={r.img} alt={r.t} fill sizes="18vw" className="object-cover" priority={i < 3} />
             </div>
             <div className="mt-2.5 text-center px-1">
               <div className="text-white font-semibold text-[13px] md:text-[15px] leading-tight">{r.t}</div>

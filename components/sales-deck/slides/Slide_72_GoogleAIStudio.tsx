@@ -101,7 +101,7 @@ export function Slide_72_GoogleAIStudio() {
                 alt="Google AI Studio"
                 fill
                 className="object-cover object-top"
-                sizes="50cqw"
+                sizes="50vw"
               />
             </div>
           </motion.div>

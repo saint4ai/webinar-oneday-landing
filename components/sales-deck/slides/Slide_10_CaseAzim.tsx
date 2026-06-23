@@ -72,7 +72,7 @@ export function Slide_10_CaseAzim() {
           src="/handouts/students/azim_chat.png"
           alt="Переписка с Азимом — выпускник прошлого потока"
           fill
-          sizes="(max-width: 1280px) 70cqw, 1000px"
+          sizes="(max-width: 1280px) 70vw, 1000px"
           className="object-contain"
           priority
         />

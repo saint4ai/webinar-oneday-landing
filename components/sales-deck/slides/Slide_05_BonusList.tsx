@@ -98,7 +98,7 @@ export function Slide_05_BonusList() {
                     src={b.img}
                     alt={b.title}
                     fill
-                    sizes="(max-width: 1280px) 28cqw, 320px"
+                    sizes="(max-width: 1280px) 28vw, 320px"
                     className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
                     priority={i === 0}
                   />

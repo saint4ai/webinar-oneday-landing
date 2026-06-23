@@ -68,7 +68,7 @@ export function Slide_11_PollFire() {
             src="/handouts/emoji/fire_3d.png"
             alt="🔥"
             fill
-            sizes="(max-width: 1280px) 11cqw, 180px"
+            sizes="(max-width: 1280px) 11vw, 180px"
             className="object-contain"
             priority
           />

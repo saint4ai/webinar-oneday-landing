@@ -24,7 +24,7 @@ export function Slide_45_SalesPain() {
             alt="Руководитель отдела продаж в стрессе среди необработанных звонков"
             fill
             className="object-cover object-center"
-            sizes="35cqw"
+            sizes="35vw"
             priority
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, transparent 48%, rgba(10,11,15,0.5) 80%, #0A0B0F)" }} />

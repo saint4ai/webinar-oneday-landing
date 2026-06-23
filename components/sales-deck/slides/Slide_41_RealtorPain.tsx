@@ -27,7 +27,7 @@ export function Slide_41_RealtorPain() {
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
         <div className="relative h-full w-full overflow-hidden">
-          <Image src="/handouts/niches/pain_realtor.png" alt="Уставший риелтор за ноутом — рутина объявлений" fill className="object-cover object-center" sizes="35cqw" priority />
+          <Image src="/handouts/niches/pain_realtor.png" alt="Уставший риелтор за ноутом — рутина объявлений" fill className="object-cover object-center" sizes="35vw" priority />
           <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, transparent 50%, rgba(10,11,15,0.55) 80%, #0A0B0F)" }} />
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,11,15,0.5), transparent 30%)" }} />
         </div>

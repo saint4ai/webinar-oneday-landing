@@ -170,7 +170,7 @@ export function Slide_46_SalesSolution() {
                     alt="CallVision — мой дашборд оценки звонков для руководителей отдела продаж"
                     fill
                     className="object-cover object-top"
-                    sizes="75cqw"
+                    sizes="75vw"
                     priority={screen === 0}
                   />
                 </motion.div>

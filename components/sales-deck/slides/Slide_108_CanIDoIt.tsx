@@ -52,7 +52,7 @@ export function Slide_108_CanIDoIt() {
           style={{ border: "1px solid rgba(182,255,0,0.22)", boxShadow: "0 40px 90px -34px rgba(0,0,0,0.7), 0 0 60px -26px rgba(182,255,0,0.22)" }}
         >
           <div className="relative w-full" style={{ aspectRatio: "1930 / 990" }}>
-            <Image src="/handouts/last-project-10m.png" alt="Платформа обучения на вайбкодинге" fill className="object-cover object-top" sizes="60cqw" priority />
+            <Image src="/handouts/last-project-10m.png" alt="Платформа обучения на вайбкодинге" fill className="object-cover object-top" sizes="60vw" priority />
           </div>
         </motion.div>
       </div>

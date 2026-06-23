@@ -132,7 +132,7 @@ export function Slide_44_ManagerSolution() {
                   alt="Дашборд реальной нагрузки команды — кто перегружен, кто простаивает"
                   fill
                   className="object-cover object-top"
-                  sizes="70cqw"
+                  sizes="70vw"
                   priority
                 />
               </div>

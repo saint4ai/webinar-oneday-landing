@@ -129,7 +129,7 @@ export function Slide_57_Research5Perplexity() {
             className="relative rounded-2xl overflow-hidden"
             style={{ border: "1px solid rgba(42,37,32,0.15)", background: "#ffffff", boxShadow: "0 30px 70px -30px rgba(42,37,32,0.45)", flex: "1 1 0%", minWidth: 0 }}
           >
-            <Image src="/handouts/screens/perplexity_app.jpg" alt="Perplexity Pro — реальное приложение" fill sizes="30cqw" className="object-contain" priority />
+            <Image src="/handouts/screens/perplexity_app.jpg" alt="Perplexity Pro — реальное приложение" fill sizes="30vw" className="object-contain" priority />
           </motion.div>
         </div>
 

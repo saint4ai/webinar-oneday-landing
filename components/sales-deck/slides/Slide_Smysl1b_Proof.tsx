@@ -30,7 +30,7 @@ export function Slide_Smysl1b_Proof() {
           className="relative w-full h-[80cqh] rounded-2xl overflow-hidden border"
           style={{ borderColor: "rgba(255,255,255,0.12)", boxShadow: "0 30px 80px -30px rgba(0,0,0,0.7)" }}
         >
-          <Image src="/cards-gifs-screenshots/social-proof/proof-ai-nishanov.png" alt="Реальный пост в Threads: экономия 720 000 в год" fill sizes="28cqw" className="object-cover object-top" priority />
+          <Image src="/cards-gifs-screenshots/social-proof/proof-ai-nishanov.png" alt="Реальный пост в Threads: экономия 720 000 в год" fill sizes="28vw" className="object-cover object-top" priority />
         </motion.div>
       }
     >

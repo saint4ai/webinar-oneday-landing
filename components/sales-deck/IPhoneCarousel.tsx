@@ -33,7 +33,7 @@ export function IPhoneCarousel({ images, interval = 1800 }: { images: string[]; 
               transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
               className="absolute inset-0"
             >
-              <Image src={images[i]} alt={`Экран приложения ${i + 1}`} fill sizes="28cqw" className="object-cover" priority={i === 0} />
+              <Image src={images[i]} alt={`Экран приложения ${i + 1}`} fill sizes="28vw" className="object-cover" priority={i === 0} />
             </motion.div>
           </AnimatePresence>
           {/* Dynamic Island */}

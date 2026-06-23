@@ -40,7 +40,7 @@ export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel
           style={{ aspectRatio: "4 / 5", border: cardImage ? "1px solid rgba(182,255,0,0.3)" : "1px dashed rgba(182,255,0,0.32)", background: cardImage ? "#ffffff" : "rgba(182,255,0,0.03)", boxShadow: cardImage ? "0 30px 80px -30px rgba(0,0,0,0.55), 0 0 60px -26px rgba(182,255,0,0.3)" : "none" }}
         >
           {cardImage ? (
-            <Image src={cardImage} alt={title} fill sizes="34cqw" className="object-cover" priority />
+            <Image src={cardImage} alt={title} fill sizes="34vw" className="object-cover" priority />
           ) : (
             <>
               <Gift className="w-9 h-9 text-[#B6FF00]/60" strokeWidth={1.6} />
