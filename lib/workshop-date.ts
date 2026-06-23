@@ -23,6 +23,11 @@ const TZ = "Asia/Almaty";
 const START_HOUR = 20; // старт эфира по Алматы
 const DURATION_HOURS = 2;
 
+// Фиксированная дата ЖИВОГО воркшопа (YYYY-MM-DD по Алматы). Пока стоит —
+// лендинг / таймер / Schema показывают именно её, без ежедневного авто-переноса.
+// Вернуть ежедневный эфир 20:00 → поставить null.
+const FIXED_DATE: string | null = "2026-06-24";
+
 const MONTHS_GEN = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
   "июля", "августа", "сентября", "октября", "ноября", "декабря",
@@ -111,18 +116,25 @@ export type NextWorkshop = {
 };
 
 export function getNextWorkshop(nowMs: number = Date.now()): NextWorkshop {
-  const now = partsInTZ(nowMs); // календарная дата Алматы «сейчас»
-  let startMs = almatyWallToUTC(now.year, now.month - 1, now.day, START_HOUR);
-  if (nowMs >= startMs) {
-    // Уже 20:00 или позже → следующий календарный день Алматы (с переносом месяца/года).
-    const next = new Date(Date.UTC(now.year, now.month - 1, now.day));
-    next.setUTCDate(next.getUTCDate() + 1);
-    startMs = almatyWallToUTC(
-      next.getUTCFullYear(),
-      next.getUTCMonth(),
-      next.getUTCDate(),
-      START_HOUR,
-    );
+  let startMs: number;
+  if (FIXED_DATE) {
+    // Фиксированный живой эфир — всегда эта дата (без ежедневного переноса).
+    const [fy, fm, fd] = FIXED_DATE.split("-").map(Number);
+    startMs = almatyWallToUTC(fy, fm - 1, fd, START_HOUR);
+  } else {
+    const now = partsInTZ(nowMs); // календарная дата Алматы «сейчас»
+    startMs = almatyWallToUTC(now.year, now.month - 1, now.day, START_HOUR);
+    if (nowMs >= startMs) {
+      // Уже 20:00 или позже → следующий календарный день Алматы (с переносом месяца/года).
+      const next = new Date(Date.UTC(now.year, now.month - 1, now.day));
+      next.setUTCDate(next.getUTCDate() + 1);
+      startMs = almatyWallToUTC(
+        next.getUTCFullYear(),
+        next.getUTCMonth(),
+        next.getUTCDate(),
+        START_HOUR,
+      );
+    }
   }
 
   // Подпись и ISO — от календарной даты Алматы у самого старта.

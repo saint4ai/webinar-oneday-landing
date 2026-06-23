@@ -26,7 +26,6 @@ import { notifyEdbotLead } from "@/lib/edbot/notify";
 import { sendLeadEvent } from "@/lib/meta-capi";
 import { captureLead, markFailed, type CapturedLead } from "@/lib/leads/store";
 import { pushLeadToAmo, type PushResult } from "@/lib/leads/process";
-import { registerEasybotLead } from "@/lib/easybot/register";
 
 type LeadPayload = {
   name: string;
@@ -103,15 +102,11 @@ export async function POST(req: NextRequest) {
     fbclid,
   });
 
-  // ── EasyBot — нужен для редиректа формы, поэтому ЖДЁМ (таймаут внутри) ──
-  // Возвращает персональную ссылку с уникальным кодом → форма редиректит на неё.
-  const easybotResult = await registerEasybotLead({
-    name: cleanName,
-    phone: cleanPhone,
-    utm,
-    location: siteUrl,
-  });
-  const easybotUrl = easybotResult.ok ? easybotResult.botUrl : undefined;
+  // EasyBot ОТКЛЮЧЁН на период набора в WhatsApp-сообщество (живой эфир — среда):
+  // EasyBot добавляет раз в сутки — слишком медленно. Форма теперь ведёт на
+  // /thank-you → диплинк в сообщество. Раньше EasyBot был await-нут ради ссылки
+  // редиректа; убран с критического пути, чтобы не тормозить/ломать форму.
+  // Вернуть: import registerEasybotLead + await + botUrl в ответ (см. git).
 
   // ── Остальные плечи — В ФОНЕ, НЕ блокируем форму/редирект ──────────
   // Лид уже durable (captureLead → Supabase + WAL); при сбое amoCRM его дожмёт
@@ -149,22 +144,18 @@ export async function POST(req: NextRequest) {
           ? "ok"
           : `fail:${edbotResult.value.reason}`
         : "throw";
-    const easybotStatus = easybotResult.ok
-      ? "ok"
-      : `fail:${easybotResult.reason}`;
     console.log(
-      "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s easybot=%s",
+      "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s",
       cleanName,
       cleanPhone.slice(-4),
       source,
       crmStatus,
       capiStatus,
-      edbotStatus,
-      easybotStatus
+      edbotStatus
     );
   });
 
-  return NextResponse.json({ ok: true, botUrl: easybotUrl });
+  return NextResponse.json({ ok: true });
 }
 
 /**

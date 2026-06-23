@@ -25,10 +25,11 @@ import { dirname } from "node:path";
 const LINK_PATH =
   process.env.WHATSAPP_LINK_PATH || "/var/lib/workshop/whatsapp-link.json";
 
-// Фолбэк, если файл ещё не создан или нечитаем. Текущая боевая ссылка.
+// Фолбэк, если файл ещё не создан или нечитаем. Текущая боевая ссылка
+// сообщества воркшопа (живой эфир — среда). Обновлено 2026-06-21.
 const FALLBACK =
   process.env.WHATSAPP_COMMUNITY_FALLBACK ||
-  "https://chat.whatsapp.com/D246UdEsaSf71bw0mrfLoz?s=cl&p=i&ilr=0";
+  "https://chat.whatsapp.com/JVdWLXG9L8jCTUp2W2vxeu";
 
 export type LinkRecord = {
   link: string;

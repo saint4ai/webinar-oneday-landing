@@ -1,32 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { Check, ArrowRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { OnAILogo } from "@/components/ui/onai-logo";
 import { MetaPixelBase } from "@/components/meta-pixel-base";
-import { collectMetaClientData } from "@/lib/meta-pixel";
+import { WhatsAppCommunityCTA } from "./WhatsAppCommunityCTA";
 
 /**
- * Thank You page — мост в WhatsApp-бот воронки (EasyBot).
+ * Thank You — мост в закрытое WhatsApp-СООБЩЕСТВО воркшопа.
  *
- * Флоу: форма → /api/lead → router.push('/thank-you') → этот экран показывает
- * «переводим в бот» и через 2 сек авто-редиректит в WhatsApp-бота EasyBot,
- * который выдаёт ссылку на эфир + бонусы и дальше работает как рассыльщик.
+ * Флоу: форма → /api/lead → /thank-you → этот экран: «ты записан» + надёжная
+ * кнопка-диплинк «Вступить в сообщество» (Android intent:// / iOS-нудж «открой
+ * в Safari» / копирование) + через 2.5с авто-редирект в сообщество.
+ *
+ * Ссылка сообщества приходит пропом (server component читает рантайм-файл,
+ * управляемый Telegram-ботом — может меняться без пересборки).
  *
  * На загрузке (НЕ ломать): Я.Метрика цель lead_workshop + Meta Pixel base.
- * Pixel 'Lead' шлётся на сабмите формы (register-modal/final-cta) + серверный
- * дубль через CAPI в /api/lead — здесь НЕ дублируем.
- *
- * UTM пробрасываем в ссылку EasyBot, чтобы он атрибутировал бот-юзера к
- * креативу (метки берутся из sticky-localStorage, см. lib/meta-pixel.ts).
+ * Pixel 'Lead' шлётся на сабмите формы + серверный дубль через CAPI — здесь НЕ дублируем.
  */
 
-// Прямая ссылка воронки EasyBot → редиректит в WhatsApp-бота (+77002190603)
-// с предзаполненным кодом регистрации. Хэш в скобках (%3C..%3E) — НЕ убирать.
-const EASYBOT_DIRECT = "https://my.easybot.kz/api/?hash=%3C5kKKpd0H%3E";
-const REDIRECT_DELAY_MS = 2000;
+const YM_ID = 109147153;
+const GOAL_LEAD = "lead_workshop";
+const REDIRECT_DELAY_MS = 2500;
 
 // Yandex Metrika type (window.ym)
 declare global {
@@ -35,63 +33,26 @@ declare global {
   }
 }
 
-const YM_ID = 109147153;
-const GOAL_LEAD = "lead_workshop";
-
-// Фолбэк: статичная прямая ссылка EasyBot (общий код) + UTM.
-function buildStaticEasybotUrl(): string {
-  try {
-    const { utm } = collectMetaClientData();
-    const params = new URLSearchParams();
-    for (const k of [
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "utm_term",
-      "utm_content",
-    ]) {
-      const v = utm?.[k];
-      if (v) params.set(k, v);
-    }
-    const qs = params.toString();
-    return qs ? `${EASYBOT_DIRECT}&${qs}` : EASYBOT_DIRECT;
-  } catch {
-    return EASYBOT_DIRECT;
-  }
-}
-
-// Предпочитаем персональную ссылку EasyBot (уникальный код из /api/lead → форма
-// положила в sessionStorage). Её нет (прямой заход / register не ответил) — статичная.
-function resolveBotUrl(): string {
-  try {
-    const stored = sessionStorage.getItem("onai_easybot_url");
-    if (stored && /^https?:\/\//i.test(stored)) {
-      sessionStorage.removeItem("onai_easybot_url"); // одноразовая
-      return stored;
-    }
-  } catch {
-    /* приватный режим — на фолбэк */
-  }
-  return buildStaticEasybotUrl();
-}
-
-export default function ThankYouClient() {
+export default function ThankYouClient({
+  communityHref,
+}: {
+  communityHref: string;
+}) {
   const reduced = useReducedMotion();
-  const [botUrl, setBotUrl] = useState(EASYBOT_DIRECT);
 
   useEffect(() => {
     // Конверсия: дошёл до Thank You = lead подтверждён.
     if (typeof window !== "undefined" && typeof window.ym === "function") {
       window.ym(YM_ID, "reachGoal", GOAL_LEAD);
     }
-    // Персональная ссылка EasyBot из sessionStorage (или статичный фолбэк).
-    const url = resolveBotUrl();
-    setBotUrl(url);
+    // Авто-редирект в сообщество. В обычном браузере (Safari/Chrome) откроет
+    // WhatsApp / страницу инвайта; во встроенном браузере Instagram авто-редирект
+    // ненадёжен — там сработает кнопка-диплинк ниже (Android intent / iOS-нудж).
     const t = setTimeout(() => {
-      window.location.href = url;
+      window.location.href = communityHref;
     }, REDIRECT_DELAY_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [communityHref]);
 
   return (
     <main className="relative od-root overflow-hidden min-h-[100dvh] flex flex-col">
@@ -166,19 +127,21 @@ export default function ThankYouClient() {
 
           {/* Subtitle */}
           <p className="text-white/70 text-[14px] sm:text-[16px] leading-relaxed max-w-[520px] mx-auto mb-3">
-            Сейчас переведём тебя в{" "}
-            <span className="text-white font-bold">WhatsApp-бот</span> — там
-            ссылка на живой эфир воркшопа и бонусы.
+            Последний шаг — вступи в закрытое{" "}
+            <span className="text-white font-bold">WhatsApp-сообщество</span>.
+            Там ссылка на живой эфир воркшопа, бонусы и напоминание за час до старта.
           </p>
 
-          {/* Важное предупреждение про сообщение боту */}
+          {/* Важное предупреждение */}
           <p className="text-[13px] sm:text-[14px] leading-relaxed max-w-[520px] mx-auto mb-6 sm:mb-7 text-[#fc5c02] font-semibold">
-            Обязательно напиши боту — отправь сообщение с кодом, не меняя его.
-            Без этого не получишь ссылку на эфир.
+            Без входа в сообщество ты не получишь ссылку на эфир. Жми кнопку ниже.
           </p>
 
-          {/* Спиннер «переводим» */}
-          <div className="flex items-center justify-center gap-2.5 mb-6">
+          {/* MEGA-CTA — надёжный диплинк в сообщество (Android intent / iOS-нудж / копия) */}
+          <WhatsAppCommunityCTA href={communityHref} />
+
+          {/* Спиннер «переводим» (авто-редирект подстрахует тех, у кого браузер обычный) */}
+          <div className="flex items-center justify-center gap-2.5 mt-6">
             {!reduced && (
               <motion.span
                 className="w-4 h-4 rounded-full border-2 border-[#cdeb52]/30 border-t-[#cdeb52]"
@@ -188,31 +151,13 @@ export default function ThankYouClient() {
               />
             )}
             <span className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.16em] text-white/55">
-              Переводим в WhatsApp-бот…
+              Открываем сообщество…
             </span>
           </div>
 
-          {/* Кнопка-фолбэк (если авто-редирект заблокирован браузером) */}
-          <a
-            href={botUrl}
-            className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-[#cdeb52] text-black font-bold uppercase tracking-wide px-7 py-4 text-[14px] sm:text-[15px] transition-transform hover:scale-[1.03] active:scale-[0.98]"
-            style={{
-              fontFamily:
-                "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
-              boxShadow: "0 14px 40px -10px rgba(205, 235, 82, 0.5)",
-            }}
-          >
-            Перейти в WhatsApp-бот
-            <ArrowRight
-              size={18}
-              strokeWidth={2.5}
-              className="transition-transform group-hover:translate-x-1"
-            />
-          </a>
-
           {/* Microcopy */}
           <p className="mt-4 text-white/40 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.14em]">
-            не переводит? нажми кнопку выше
+            не открылось? нажми кнопку выше
           </p>
         </motion.div>
       </section>

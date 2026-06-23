@@ -9,7 +9,6 @@ import { BrandPhoneInput } from "@/components/ui/phone-input";
 import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
-import { resolveEasybotRedirect } from "@/lib/easybot/redirect";
 import { pushWorkshopLead } from "@/lib/gtm";
 import { getNextWorkshop } from "@/lib/workshop-date";
 
@@ -113,18 +112,17 @@ export const FinalCTA = () => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Персональная ссылка EasyBot (уникальный код) из ответа; нет — статичный фолбэк.
-      const data = await res.json().catch(() => ({}) as { botUrl?: string });
-      const dest = resolveEasybotRedirect(data?.botUrl, meta.utm);
+      // Лид принят. Ведём на /thank-you → диплинк в закрытое WhatsApp-СООБЩЕСТВО.
+      const dest = withBase("/thank-you");
       setBotDest(dest);
       // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);
       ymGoal("lead_workshop");
       pushWorkshopLead(phone); // Google Ads конверсия (событие workshop_lead → GTM)
-      setSuccess(true); // показывает «сейчас редирект в бота», затем авто-редирект
+      setSuccess(true); // краткий экран «переводим в сообщество», затем /thank-you
       setTimeout(() => {
         window.location.href = dest;
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error("Lead submit failed:", err);
       setError("Что-то пошло не так. Попробуй ещё раз.");
@@ -278,22 +276,22 @@ export const FinalCTA = () => {
                   Готово
                 </div>
                 <p className="text-white/65 text-[14px] leading-relaxed max-w-xs">
-                  Сейчас откроется WhatsApp-бот.{" "}
+                  Переводим в закрытое{" "}
                   <span className="text-[#fc5c02] font-semibold">
-                    Отправь боту готовое сообщение — так ты активируешь участие
-                    в воркшопе и получишь ссылку на эфир.
-                  </span>
+                    WhatsApp-сообщество
+                  </span>{" "}
+                  — там ссылка на живой эфир и бонусы.
                 </p>
                 <div className="mt-5 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-white/45">
                   <Loader2 size={14} className="animate-spin text-[#cdeb52]" />
-                  переводим в бота…
+                  переводим в сообщество…
                 </div>
                 {botDest && (
                   <a
                     href={botDest}
                     className="mt-3 text-[#cdeb52] text-[12px] underline underline-offset-2"
                   >
-                    Не открывается WhatsApp? Нажми здесь
+                    Не переводит? Нажми здесь
                   </a>
                 )}
               </div>
