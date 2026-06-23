@@ -14,7 +14,7 @@ export function Slide_45_SalesPain() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30cqw"
+      objectColumnSize="22cqw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
@@ -58,7 +58,7 @@ export function Slide_45_SalesPain() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(22px, 2.5cqw, 40px)",
+          fontSize: "clamp(19px, 2.2cqw, 32px)",
         }}
       >
         РУКОВОДИТЕЛЬ ОП СЛУШАЕТ ТОЛЬКО{" "}

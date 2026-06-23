@@ -16,7 +16,7 @@ export function Slide_131_SpecialPrice() {
         <span className="font-mono text-xs uppercase tracking-[0.14em] text-white/45">для остальных — завтра</span>
       </motion.div>
       <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 1, 0.5, 1] }} className="flex items-end gap-5 mb-4 flex-wrap">
-        <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8.2cqw, 156px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.45)" }}>
+        <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(44px, 6cqw, 112px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.45)" }}>
           290 900 ₸
         </div>
         <div className="rounded-xl px-4 py-2.5 mb-3" style={{ background: "rgba(252,92,2,0.12)", border: "1px solid rgba(252,92,2,0.4)" }}>

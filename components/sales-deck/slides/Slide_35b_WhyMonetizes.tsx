@@ -13,7 +13,7 @@ export function Slide_35b_WhyMonetizes() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28cqw"
+      objectColumnSize="22cqw"
       objectOverflow="visible"
       background={<Spotlight className="-top-40 left-0 md:-top-20" fill="#B6FF00" />}
       leftObject={<FlyingDollar />}
@@ -34,7 +34,7 @@ export function Slide_35b_WhyMonetizes() {
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3cqw, 48px)",
+          fontSize: "clamp(21px, 2.5cqw, 38px)",
           wordBreak: "keep-all",
           overflowWrap: "normal",
         }}
