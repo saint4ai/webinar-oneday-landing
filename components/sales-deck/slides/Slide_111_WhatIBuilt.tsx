@@ -22,7 +22,7 @@ export function Slide_111_WhatIBuilt() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.9, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[0.96] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(40px, 6cqw, 96px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 4cqw, 64px)" }}
       >
         ПОЭТОМУ Я СОБРАЛ <span className="text-[#B6FF00]">ПРОГРАММУ</span>
       </motion.h1>

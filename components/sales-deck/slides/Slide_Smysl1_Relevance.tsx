@@ -22,7 +22,7 @@ export function Slide_Smysl1_Relevance() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 2cqw, 38px)" }}
       >
         НЕ НЕЙРОСЕТЬ ЗАБЕРЁТ ТВОЮ РАБОТУ — <span className="text-[#B6FF00]">ЗАБЕРЁТ ТОТ, КТО ЕЁ ОСВОИЛ</span>
       </motion.h1>

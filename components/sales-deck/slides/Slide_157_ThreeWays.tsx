@@ -23,7 +23,7 @@ export function Slide_157_ThreeWays() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.02em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 1.95cqw, 37px)" }}
       >
         3 СПОСОБА НАЙТИ ПЕРВОГО КЛИЕНТА <span className="text-[#B6FF00]">ЗА 7 ДНЕЙ</span>
       </motion.h1>

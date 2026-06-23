@@ -39,7 +39,7 @@ export function Slide_SalesWindow2() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2cqw, 50px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.1cqw, 33px)" }}
       >
         ЗАЙТИ МОЖНО <span className="text-[#B6FF00]">ПРЯМО СЕЙЧАС</span>
       </motion.h1>

@@ -46,7 +46,7 @@ export function Slide_AmanaCase() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.7cqw, 40px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 1.6cqw, 30px)" }}
       >
         МОБИЛЬНОЕ ПРИЛОЖЕНИЕ ДЛЯ <span className="text-[#B6FF00]">ИНВЕСТ-ПЛАТФОРМЫ</span>
       </motion.h1>

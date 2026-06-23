@@ -84,7 +84,7 @@ export function Slide_28_Direction2() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3cqw, 44px)",
+          fontSize: "clamp(23px, 1.4cqw, 26px)",
         }}
       >
         СВОЙ ПРОДУКТ — ДЛЯ СЕБЯ

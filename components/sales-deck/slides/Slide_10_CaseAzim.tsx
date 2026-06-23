@@ -36,7 +36,7 @@ export function Slide_10_CaseAzim() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.4cqw, 52px)",
+          fontSize: "clamp(24px, 2.3cqw, 35px)",
         }}
       >
         ПОЧЕМУ ВАЖНО <span className="text-[#B6FF00]">ДОСМОТРЕТЬ</span>

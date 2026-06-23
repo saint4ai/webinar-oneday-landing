@@ -9,7 +9,7 @@ export function Slide_149_QAHeader() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="26cqw"
+      objectColumnSize="22cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="aura-tl" />}
       leftObject={
@@ -26,7 +26,7 @@ export function Slide_149_QAHeader() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.6cqw, 52px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3cqw, 44px)" }}
       >
         ЧТО ОБЫЧНО <span className="text-[#B6FF00]">СПРАШИВАЮТ</span>
       </motion.h1>

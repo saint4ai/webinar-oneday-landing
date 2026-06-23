@@ -22,7 +22,7 @@ export function Slide_ObjApply2_Diplomas() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 2cqw, 38px)" }}
       >
         РОБОТЫ ПРИШЛИ НЕ ЗА РУЧНЫМ ТРУДОМ — <span className="text-[#B6FF00]">А ЗА ДИПЛОМАМИ</span>
       </motion.h1>
