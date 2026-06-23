@@ -11,9 +11,9 @@ import { AnimatedNumber } from "../AnimatedNumber";
 export function Slide_02_Authority() {
   return (
     <section
-      className="relative w-full h-screen overflow-hidden bg-black flex flex-col justify-center"
+      className="relative w-full h-full overflow-hidden bg-black flex flex-col justify-center"
       style={{
-        paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+        paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)",
         paddingLeft: "48px",
       }}
     >
@@ -34,7 +34,7 @@ export function Slide_02_Authority() {
           className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em]"
           style={{
             fontFamily: "'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(40px, 4.5vw, 80px)",
+            fontSize: "clamp(40px, 4.5cqw, 80px)",
           }}
         >
           За последние <span className="text-[#B6FF00]">1,5 года</span> в onAI Academy<br />я обучил...

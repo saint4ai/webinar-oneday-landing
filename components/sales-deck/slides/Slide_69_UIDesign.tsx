@@ -52,7 +52,7 @@ export function Slide_69_UIDesign() {
         animate={{ opacity: 1, clipPath: "inset(-16% 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.14] tracking-[-0.02em] mb-2 pt-1"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9vw, 44px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 44px)" }}
       >
         ТВОЁ ПРИЛОЖЕНИЕ БУДЕТ ВЫГЛЯДЕТЬ <span className="text-[#B6FF00]">КАК У APPLE</span>
       </motion.h1>

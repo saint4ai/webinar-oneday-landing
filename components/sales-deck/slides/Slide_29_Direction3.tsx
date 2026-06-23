@@ -34,7 +34,7 @@ export function Slide_29_Direction3() {
         <span className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00]">// НАПРАВЛЕНИЕ</span>
         <span
           className="font-bold leading-none"
-          style={{ color: "#B6FF00", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(36px,4.5vw,64px)", textShadow: "0 0 30px rgba(182,255,0,0.4)" }}
+          style={{ color: "#B6FF00", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(36px,4.5cqw,64px)", textShadow: "0 0 30px rgba(182,255,0,0.4)" }}
         >
           03
         </span>
@@ -47,7 +47,7 @@ export function Slide_29_Direction3() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3.2vw, 46px)",
+          fontSize: "clamp(26px, 3.2cqw, 46px)",
         }}
       >
         АВТОМАТИЗАЦИЯ <span className="text-[#B6FF00]">70%</span>

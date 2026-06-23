@@ -22,7 +22,7 @@ export function Slide_Smysl1_Relevance() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 46px)" }}
       >
         НЕ НЕЙРОСЕТЬ ЗАБЕРЁТ ТВОЮ РАБОТУ — <span className="text-[#B6FF00]">ЗАБЕРЁТ ТОТ, КТО ЕЁ ОСВОИЛ</span>
       </motion.h1>
@@ -51,7 +51,7 @@ export function Slide_Smysl1_Relevance() {
           })}
         </div>
         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 1.1 }} className="flex flex-col">
-          <span className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2vw,32px)", color: "#fff" }}>каждый седьмой</span>
+          <span className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2cqw,32px)", color: "#fff" }}>каждый седьмой</span>
           <span className="text-white/55 text-sm md:text-base leading-tight mt-1">работающий казахстанец уже использует ИИ</span>
           <span className="text-white/45 text-sm md:text-base leading-tight mt-1">и их всё больше с каждым месяцем</span>
         </motion.div>

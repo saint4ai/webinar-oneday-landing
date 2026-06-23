@@ -57,12 +57,12 @@ export function Slide_06_PollBonus() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       objectOverflow="visible"
       background={
         <>
           <Spotlight className="-top-40 right-0 md:right-20 md:-top-20" fill="#B6FF00" />
-          <Spotlight className="bottom-0 left-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+          <Spotlight className="bottom-0 left-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
           <div className="absolute inset-0 pointer-events-none">
             {CONFETTI.map((p, i) => (
               <Particle key={i} p={p} />
@@ -85,7 +85,7 @@ export function Slide_06_PollBonus() {
               }}
             >
               <Gift
-                style={{ width: "clamp(150px, 19vw, 300px)", height: "auto", color: LIME, filter: "drop-shadow(0 0 55px rgba(182,255,0,0.55))" }}
+                style={{ width: "clamp(150px, 19cqw, 300px)", height: "auto", color: LIME, filter: "drop-shadow(0 0 55px rgba(182,255,0,0.55))" }}
                 strokeWidth={1.4}
               />
             </motion.div>
@@ -102,7 +102,7 @@ export function Slide_06_PollBonus() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 190, damping: 12, delay: 0.2 }}
         className="font-bold uppercase text-white leading-[0.95] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(38px, 5.2vw, 92px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(38px, 5.2cqw, 92px)" }}
       >
         КАК ВАМ
         <br />

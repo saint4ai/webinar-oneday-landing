@@ -13,7 +13,7 @@ import { SlideLayout } from "../SlideLayout";
 export function Slide_108_CanIDoIt() {
   return (
     <SlideLayout speakerSide="right" contentClassName="!justify-start !py-0" background={<SlideBg theme="dark" variant="aura-tl" />}>
-      <div className="flex flex-col h-full w-full justify-center" style={{ paddingTop: "clamp(24px,4vh,52px)", paddingBottom: "clamp(24px,4vh,52px)" }}>
+      <div className="flex flex-col h-full w-full justify-center" style={{ paddingTop: "clamp(24px,4cqh,52px)", paddingBottom: "clamp(24px,4cqh,52px)" }}>
         {/* ВЕРХ: заголовок + посыл */}
         <div className="shrink-0">
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
@@ -25,7 +25,7 @@ export function Slide_108_CanIDoIt() {
             animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
             transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
             className="font-bold uppercase text-white leading-[1.02] tracking-[-0.02em] mb-3"
-            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3vw, 50px)" }}
+            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3cqw, 50px)" }}
           >
             ПЛАТФОРМА ОБУЧЕНИЯ ЗА <span className="text-[#B6FF00]" style={{ whiteSpace: "nowrap" }}>10+&nbsp;МЛН&nbsp;₸</span>
           </motion.h1>
@@ -52,7 +52,7 @@ export function Slide_108_CanIDoIt() {
           style={{ border: "1px solid rgba(182,255,0,0.22)", boxShadow: "0 40px 90px -34px rgba(0,0,0,0.7), 0 0 60px -26px rgba(182,255,0,0.22)" }}
         >
           <div className="relative w-full" style={{ aspectRatio: "1930 / 990" }}>
-            <Image src="/handouts/last-project-10m.png" alt="Платформа обучения на вайбкодинге" fill className="object-cover object-top" sizes="60vw" priority />
+            <Image src="/handouts/last-project-10m.png" alt="Платформа обучения на вайбкодинге" fill className="object-cover object-top" sizes="60cqw" priority />
           </div>
         </motion.div>
       </div>

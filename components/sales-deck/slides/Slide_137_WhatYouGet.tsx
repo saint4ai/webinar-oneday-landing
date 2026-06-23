@@ -24,7 +24,7 @@ export function Slide_137_WhatYouGet() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 46px)" }}
       >
         ЧТО ВЫ ПОЛУЧАЕТЕ ЗА <span className="text-[#B6FF00]" style={{ whiteSpace: "nowrap" }}>290&nbsp;900&nbsp;₸</span>
       </motion.h1>
@@ -49,7 +49,7 @@ export function Slide_137_WhatYouGet() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 1.0 }} className="flex items-center gap-3 flex-wrap max-w-3xl">
-        <span className="rounded-xl px-4 py-2.5 font-bold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.6vw,24px)" }}>
+        <span className="rounded-xl px-4 py-2.5 font-bold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.6cqw,24px)" }}>
           ценность 770К → ×2.6 выгоды
         </span>
         <span className="text-[#FC5C02] text-sm md:text-base font-semibold">+ полная оплата до конца дня → ещё 5 бонусов сверху. Покажу через минуту.</span>

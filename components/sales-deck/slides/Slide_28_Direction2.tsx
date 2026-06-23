@@ -15,7 +15,7 @@ export function Slide_28_Direction2() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="26vw"
+      objectColumnSize="26cqw"
       contentMinWidth={560}
       background={
         <>
@@ -25,8 +25,8 @@ export function Slide_28_Direction2() {
             aria-hidden
             className="absolute pointer-events-none"
             style={{
-              left: "12vw",
-              bottom: "8vh",
+              left: "12cqw",
+              bottom: "8cqh",
               width: 360,
               height: 360,
               borderRadius: "50%",
@@ -39,7 +39,7 @@ export function Slide_28_Direction2() {
       leftObject={
         <div
           className="relative flex items-center justify-center"
-          style={{ height: "84vh", maxHeight: "820px" }}
+          style={{ height: "84cqh", maxHeight: "820px" }}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -71,7 +71,7 @@ export function Slide_28_Direction2() {
         <span className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00]">// НАПРАВЛЕНИЕ</span>
         <span
           className="font-bold leading-none"
-          style={{ color: "#B6FF00", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(40px,5vw,72px)", textShadow: "0 0 30px rgba(182,255,0,0.4)" }}
+          style={{ color: "#B6FF00", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(40px,5cqw,72px)", textShadow: "0 0 30px rgba(182,255,0,0.4)" }}
         >
           02
         </span>
@@ -84,7 +84,7 @@ export function Slide_28_Direction2() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3vw, 44px)",
+          fontSize: "clamp(26px, 3cqw, 44px)",
         }}
       >
         СВОЙ ПРОДУКТ — ДЛЯ СЕБЯ

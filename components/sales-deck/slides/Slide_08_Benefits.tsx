@@ -17,15 +17,15 @@ const BENEFITS = [
 
 export function Slide_08_Benefits() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-full overflow-hidden bg-black">
       <Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />
-      <Spotlight className="bottom-0 right-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+      <Spotlight className="bottom-0 right-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
 
       <div
         className="relative z-10 h-full flex flex-col justify-center"
-        style={{ paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)", paddingLeft: "48px" }}
+        style={{ paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)", paddingLeft: "48px" }}
       >
-        <div className="flex flex-col gap-7" style={{ maxWidth: "min(960px, 62vw)" }}>
+        <div className="flex flex-col gap-7" style={{ maxWidth: "min(960px, 62cqw)" }}>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -40,7 +40,7 @@ export function Slide_08_Benefits() {
             animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
             transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
             className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em]"
-            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4vw, 60px)" }}
+            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4cqw, 60px)" }}
           >
             ЧТО ТЫ <span className="text-[#B6FF00]">ЗАБЕРЁШЬ</span> С СОБОЙ
           </motion.h1>

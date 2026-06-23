@@ -16,12 +16,12 @@ export function Slide_163_HowToGetBonuses() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       contentMinWidth={520}
       background={<SlideBg theme="dark" variant="lime-right" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="flex items-center justify-center w-full">
-          <MessageCircle className="text-[#B6FF00]" strokeWidth={1.1} style={{ width: "clamp(120px, 15vw, 240px)", height: "auto", filter: "drop-shadow(0 0 50px rgba(182,255,0,0.35))" }} />
+          <MessageCircle className="text-[#B6FF00]" strokeWidth={1.1} style={{ width: "clamp(120px, 15cqw, 240px)", height: "auto", filter: "drop-shadow(0 0 50px rgba(182,255,0,0.35))" }} />
         </motion.div>
       }
     >
@@ -33,7 +33,7 @@ export function Slide_163_HowToGetBonuses() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8vw, 56px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8cqw, 56px)" }}
       >
         КАК ПОЛУЧИТЬ <span className="text-[#B6FF00]">БОНУСЫ</span>
       </motion.h1>

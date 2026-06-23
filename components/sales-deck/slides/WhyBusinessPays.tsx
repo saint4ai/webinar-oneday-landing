@@ -32,7 +32,7 @@ export function WhyBusinessPays({ step }: { step: 1 | 2 | 3 | 4 | 5 }) {
       background={
         <>
           <Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />
-          {step === 5 && <Spotlight className="bottom-0 left-[10vw] md:bottom-[-20vh]" fill="#B6FF00" />}
+          {step === 5 && <Spotlight className="bottom-0 left-[10cqw] md:bottom-[-20cqh]" fill="#B6FF00" />}
         </>
       }
     >
@@ -52,7 +52,7 @@ export function WhyBusinessPays({ step }: { step: 1 | 2 | 3 | 4 | 5 }) {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-8"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 56px)",
+          fontSize: "clamp(30px, 3.8cqw, 56px)",
         }}
       >
         ПОЧЕМУ БИЗНЕС <span className="text-[#B6FF00]">ПЛАТИТ</span>
@@ -97,7 +97,7 @@ export function WhyBusinessPays({ step }: { step: 1 | 2 | 3 | 4 | 5 }) {
                         </div>
                         <span className="text-white/40 font-mono text-[11px] uppercase tracking-[0.14em]">человек</span>
                       </div>
-                      <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(26px,2.8vw,42px)", color: "rgba(255,255,255,0.45)", textDecoration: "line-through", textDecorationColor: "#FC5C02", textDecorationThickness: "3px" }}>
+                      <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(26px,2.8cqw,42px)", color: "rgba(255,255,255,0.45)", textDecoration: "line-through", textDecorationColor: "#FC5C02", textDecorationThickness: "3px" }}>
                         4 часа / день
                       </div>
                     </motion.div>
@@ -109,7 +109,7 @@ export function WhyBusinessPays({ step }: { step: 1 | 2 | 3 | 4 | 5 }) {
                       transition={{ duration: 0.4, delay: 0.7 }}
                       className="flex items-center justify-center shrink-0"
                     >
-                      <span style={{ color: "#B6FF00", fontSize: "clamp(28px,3vw,44px)" }}>→</span>
+                      <span style={{ color: "#B6FF00", fontSize: "clamp(28px,3cqw,44px)" }}>→</span>
                     </motion.div>
 
                     {/* AI — акцент, пульсация */}
@@ -133,7 +133,7 @@ export function WhyBusinessPays({ step }: { step: 1 | 2 | 3 | 4 | 5 }) {
                         </div>
                         <span className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: "#B6FF00" }}>ai</span>
                       </div>
-                      <div className="relative font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(26px,2.8vw,42px)", color: "#B6FF00" }}>
+                      <div className="relative font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(26px,2.8cqw,42px)", color: "#B6FF00" }}>
                         30 секунд
                       </div>
                     </motion.div>

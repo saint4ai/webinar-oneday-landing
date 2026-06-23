@@ -36,7 +36,7 @@ export function Slide_63_EnoughMarket() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase leading-[0.98] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(44px, 6vw, 104px)", color: INK }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(44px, 6cqw, 104px)", color: INK }}
       >
         РЫНКА ХВАТИТ{" "}
         <MarkerReveal color="#B6FF00" textColor={INK} delay={0.7}>ВСЕМ</MarkerReveal>

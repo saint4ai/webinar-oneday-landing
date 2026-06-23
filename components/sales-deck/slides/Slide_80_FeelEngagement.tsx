@@ -29,7 +29,7 @@ export function Slide_80_FeelEngagement() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-5 max-w-3xl"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4vw, 64px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4cqw, 64px)" }}
       >
         УЖЕ ЧУВСТВУЕТЕ, КАК НЕЙРОСЕТИ ДЕЛАЮТ ЖИЗНЬ <span className="text-[#B6FF00]">ПРОЩЕ?</span>
       </motion.h1>

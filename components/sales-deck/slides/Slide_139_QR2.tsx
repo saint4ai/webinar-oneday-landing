@@ -13,12 +13,12 @@ export function Slide_139_QR2() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       contentMinWidth={480}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
         <motion.div animate={{ scale: [1, 1.02, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.45)", background: "rgba(255,255,255,0.04)" }}>
-          <PaymentQRPair kaspiMaxH="48vh" />
+          <PaymentQRPair kaspiMaxH="48cqh" />
         </motion.div>
       }
     >
@@ -30,13 +30,13 @@ export function Slide_139_QR2() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6vw, 54px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6cqw, 54px)" }}
       >
         ВОТ QR ЕЩЁ РАЗ — <span className="text-[#B6FF00]">НЕ УПУСТИ</span>
       </motion.h1>
 
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3 }} className="mb-4">
-        <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(36px,4.2vw,68px)", textShadow: "0 0 60px rgba(182,255,0,0.4)" }}>290 900 ₸</span>
+        <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(36px,4.2cqw,68px)", textShadow: "0 0 60px rgba(182,255,0,0.4)" }}>290 900 ₸</span>
         <div className="text-white/60 text-sm md:text-base mt-1">закрепляются после 10К предоплаты</div>
       </motion.div>
 

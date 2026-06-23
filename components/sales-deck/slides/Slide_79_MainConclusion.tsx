@@ -30,7 +30,7 @@ export function Slide_79_MainConclusion() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8vw, 58px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8cqw, 58px)" }}
       >
         ГЛАВНЫЙ <span className="text-[#B6FF00]">ВЫВОД</span>
       </motion.h1>
@@ -57,7 +57,7 @@ export function Slide_79_MainConclusion() {
           <div className="flex gap-1 mb-3">
             {Array.from({ length: 5 }).map((_, i) => <User key={i} className="w-6 h-6" strokeWidth={1.8} style={{ color: "rgba(252,92,2,0.8)" }} />)}
           </div>
-          <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2vw,30px)", color: "rgba(255,255,255,0.5)", textDecoration: "line-through", textDecorationColor: "#FC5C02", textDecorationThickness: "2px" }}>5 человек × 6 месяцев</div>
+          <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2cqw,30px)", color: "rgba(255,255,255,0.5)", textDecoration: "line-through", textDecorationColor: "#FC5C02", textDecorationThickness: "2px" }}>5 человек × 6 месяцев</div>
         </motion.div>
 
         <motion.div
@@ -66,7 +66,7 @@ export function Slide_79_MainConclusion() {
           transition={{ duration: 0.4, delay: 0.95 }}
           className="flex items-center justify-center shrink-0"
         >
-          <span style={{ color: "#B6FF00", fontSize: "clamp(28px,3vw,44px)" }}>→</span>
+          <span style={{ color: "#B6FF00", fontSize: "clamp(28px,3cqw,44px)" }}>→</span>
         </motion.div>
 
         <motion.div
@@ -81,7 +81,7 @@ export function Slide_79_MainConclusion() {
             <User className="w-7 h-7 text-[#B6FF00]" strokeWidth={2} />
             <span className="text-white/40 text-sm">+ AI</span>
           </div>
-          <div className="font-bold leading-none text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2vw,30px)" }}>1 человек × 1 неделя</div>
+          <div className="font-bold leading-none text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2cqw,30px)" }}>1 человек × 1 неделя</div>
         </motion.div>
       </div>
     </SlideLayout>

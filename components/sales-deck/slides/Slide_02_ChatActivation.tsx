@@ -16,17 +16,17 @@ const QUESTIONS = [
 
 export function Slide_02_ChatActivation() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-full overflow-hidden bg-black">
       <Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />
 
       <div
         className="relative z-10 h-full flex flex-col justify-center"
         style={{
-          paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+          paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)",
           paddingLeft: "48px",
         }}
       >
-        <div className="flex flex-col gap-8" style={{ maxWidth: "min(900px, 60vw)" }}>
+        <div className="flex flex-col gap-8" style={{ maxWidth: "min(900px, 60cqw)" }}>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -43,7 +43,7 @@ export function Slide_02_ChatActivation() {
             className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(40px, 5vw, 80px)",
+              fontSize: "clamp(40px, 5cqw, 80px)",
             }}
           >
             ДАВАЙТЕ <span className="text-[#B6FF00]">ЗНАКОМИТЬСЯ</span>
@@ -77,7 +77,7 @@ export function Slide_02_ChatActivation() {
                   style={{
                     color: "#B6FF00",
                     fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-                    fontSize: "clamp(28px, 3vw, 44px)",
+                    fontSize: "clamp(28px, 3cqw, 44px)",
                     textShadow: "0 0 18px rgba(182,255,0,0.4)",
                     minWidth: "1.5em",
                   }}

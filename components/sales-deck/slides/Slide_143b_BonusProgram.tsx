@@ -39,7 +39,7 @@ export function Slide_143b_BonusProgram() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 52px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4cqw, 52px)" }}
       >
         5 МОДУЛЕЙ — <span className="text-[#B6FF00]">ОТ НУЛЯ ДО ПРОДАЖ</span>
       </motion.h1>
@@ -56,7 +56,7 @@ export function Slide_143b_BonusProgram() {
           >
             <span
               className="font-bold leading-none shrink-0"
-              style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,1.9vw,30px)", color: "#B6FF00", minWidth: 42 }}
+              style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,1.9cqw,30px)", color: "#B6FF00", minWidth: 42 }}
             >
               {m.n}
             </span>

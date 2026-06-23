@@ -41,7 +41,7 @@ export function CaseSlide({
   chips,
   stack,
   variant = "aura-tl",
-  objectColumnSize = "34vw",
+  objectColumnSize = "34cqw",
 }: CaseSlideProps) {
   const imgs = screenshots && screenshots.length ? screenshots : [screenshot];
   const [si, setSi] = useState(0);
@@ -80,7 +80,7 @@ export function CaseSlide({
               alt={`Кейс — ${name}`}
               draggable={false}
               className="w-full block"
-              style={{ maxHeight: "64vh", objectFit: "contain", background: "#0b0e0a" }}
+              style={{ maxHeight: "64cqh", objectFit: "contain", background: "#0b0e0a" }}
             />
             {multi && (
               <div
@@ -114,7 +114,7 @@ export function CaseSlide({
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.1] tracking-[-0.03em] mb-2 whitespace-nowrap pt-[0.08em]"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 2.9vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 2.9cqw, 46px)" }}
       >
         {name}
       </motion.h1>

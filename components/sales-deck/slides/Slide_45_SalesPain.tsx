@@ -14,17 +14,17 @@ export function Slide_45_SalesPain() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
-        <div className="relative h-screen w-full overflow-hidden">
+        <div className="relative h-full w-full overflow-hidden">
           <Image
             src="/handouts/niches/pain_saleshead.png"
             alt="Руководитель отдела продаж в стрессе среди необработанных звонков"
             fill
             className="object-cover object-center"
-            sizes="35vw"
+            sizes="35cqw"
             priority
           />
           <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, transparent 48%, rgba(10,11,15,0.5) 80%, #0A0B0F)" }} />
@@ -36,7 +36,7 @@ export function Slide_45_SalesPain() {
             className="absolute bottom-[7%] left-[8%] rounded-xl px-4 py-2.5"
             style={{ background: "rgba(10,11,15,0.72)", border: "1px solid rgba(252,92,2,0.5)", backdropFilter: "blur(6px)" }}
           >
-            <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(24px,2.6vw,38px)", color: "#FC5C02" }}>30 ЧАСОВ</div>
+            <div className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(24px,2.6cqw,38px)", color: "#FC5C02" }}>30 ЧАСОВ</div>
             <div className="text-white/55 text-[10px] uppercase tracking-[0.18em] font-mono mt-1">на прослушку каждого</div>
           </motion.div>
         </div>
@@ -58,7 +58,7 @@ export function Slide_45_SalesPain() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(22px, 2.5vw, 40px)",
+          fontSize: "clamp(22px, 2.5cqw, 40px)",
         }}
       >
         РУКОВОДИТЕЛЬ ОП СЛУШАЕТ ТОЛЬКО{" "}

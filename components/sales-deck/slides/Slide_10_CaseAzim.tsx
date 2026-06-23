@@ -36,7 +36,7 @@ export function Slide_10_CaseAzim() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.4vw, 52px)",
+          fontSize: "clamp(28px, 3.4cqw, 52px)",
         }}
       >
         ПОЧЕМУ ВАЖНО <span className="text-[#B6FF00]">ДОСМОТРЕТЬ</span>
@@ -62,7 +62,7 @@ export function Slide_10_CaseAzim() {
         className="relative rounded-2xl overflow-hidden"
         style={{
           aspectRatio: "1834 / 914",
-          maxHeight: "52vh",
+          maxHeight: "52cqh",
           maxWidth: "100%",
           boxShadow:
             "0 30px 60px -20px rgba(182,255,0,0.35), 0 0 0 1px rgba(255,255,255,0.08)",
@@ -72,7 +72,7 @@ export function Slide_10_CaseAzim() {
           src="/handouts/students/azim_chat.png"
           alt="Переписка с Азимом — выпускник прошлого потока"
           fill
-          sizes="(max-width: 1280px) 70vw, 1000px"
+          sizes="(max-width: 1280px) 70cqw, 1000px"
           className="object-contain"
           priority
         />

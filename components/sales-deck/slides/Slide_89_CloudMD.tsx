@@ -39,7 +39,7 @@ export function Slide_89_CloudMD() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase leading-[1.04] tracking-[-0.02em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3vw, 46px)", color: INK }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3cqw, 46px)", color: INK }}
       >
         CLAUDE.md — <span style={{ color: ORANGE }}>ПАМЯТЬ И МОЗГ АГЕНТА</span>
       </motion.h1>
@@ -62,7 +62,7 @@ export function Slide_89_CloudMD() {
             <span className="w-3 h-3 rounded-full" style={{ background: "#3FB950" }} />
             <span className="ml-2 font-mono text-[12px] font-medium" style={{ color: "#8A7E6B" }}>CLAUDE.md</span>
           </div>
-          <div className="px-5 py-4 font-mono" style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace", fontSize: "clamp(12px,1vw,14px)", lineHeight: 1.7 }}>
+          <div className="px-5 py-4 font-mono" style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace", fontSize: "clamp(12px,1cqw,14px)", lineHeight: 1.7 }}>
             {LINES.map((l, i) => (
               <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.8 + i * 0.13 }}>
                 {l.h ? (

@@ -19,7 +19,7 @@ export function Slide_169_ThankYou() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.9, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.6vw, 74px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.6cqw, 74px)" }}
       >
         СПАСИБО ЧТО <span className="text-[#B6FF00]">ОСТАЛИСЬ</span>
       </motion.h1>

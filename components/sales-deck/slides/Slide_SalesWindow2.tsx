@@ -21,12 +21,12 @@ export function Slide_SalesWindow2() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="27vw"
+      objectColumnSize="27cqw"
       contentMinWidth={520}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }} className="relative w-full flex items-center justify-center">
-          <PaymentQRPair kaspiMaxH="48vh" />
+          <PaymentQRPair kaspiMaxH="48cqh" />
         </motion.div>
       }
     >
@@ -39,14 +39,14 @@ export function Slide_SalesWindow2() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2vw, 50px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2cqw, 50px)" }}
       >
         ЗАЙТИ МОЖНО <span className="text-[#B6FF00]">ПРЯМО СЕЙЧАС</span>
       </motion.h1>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.35 }} className="flex items-baseline gap-3 flex-wrap mb-4">
-        <span className="text-white/40 line-through tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,1.8vw,26px)", whiteSpace: "nowrap" }}>390&nbsp;000&nbsp;₸</span>
-        <span className="font-bold tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.4vw,52px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.4)", whiteSpace: "nowrap" }}>290&nbsp;900&nbsp;₸</span>
+        <span className="text-white/40 line-through tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,1.8cqw,26px)", whiteSpace: "nowrap" }}>390&nbsp;000&nbsp;₸</span>
+        <span className="font-bold tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.4cqw,52px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.4)", whiteSpace: "nowrap" }}>290&nbsp;900&nbsp;₸</span>
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/45 whitespace-nowrap">спеццена эфира</span>
       </motion.div>
 

@@ -20,7 +20,7 @@ export function Slide_142_OTOHeader() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[0.98] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4.4vw, 76px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4.4cqw, 76px)" }}
       >
         + 4 БОНУСА <span className="text-[#B6FF00]">ЗА ПОЛНУЮ ОПЛАТУ</span> ДО КОНЦА ДНЯ
       </motion.h1>
@@ -35,7 +35,7 @@ export function Slide_142_OTOHeader() {
             </motion.span>
           ))}
         </div>
-        <span className="rounded-xl px-4 py-2.5 font-bold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(15px,1.5vw,22px)" }}>
+        <span className="rounded-xl px-4 py-2.5 font-bold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(15px,1.5cqw,22px)" }}>
           ценность 500 000 ₸+ сверху
         </span>
       </motion.div>

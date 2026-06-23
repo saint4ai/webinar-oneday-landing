@@ -43,7 +43,7 @@ export function Slide_50_Engagement2() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.6vw, 54px)",
+          fontSize: "clamp(28px, 3.6cqw, 54px)",
         }}
       >
         СМОГЛИ БЫ НАЙТИ <span className="text-[#B6FF00]">КЛИЕНТА?</span>

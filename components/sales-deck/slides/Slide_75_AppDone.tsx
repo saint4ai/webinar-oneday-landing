@@ -25,7 +25,7 @@ export function Slide_75_AppDone() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       contentMinWidth={620}
       background={<SlideBg theme="dark" variant="aura-tr" />}
       leftObject={
@@ -78,7 +78,7 @@ export function Slide_75_AppDone() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3vw, 48px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3cqw, 48px)" }}
       >
         ГОТОВО — У ВАС <span className="text-[#B6FF00]">СВОЁ ПРИЛОЖЕНИЕ</span>
       </motion.h1>

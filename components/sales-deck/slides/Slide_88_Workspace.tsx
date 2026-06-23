@@ -32,7 +32,7 @@ export function Slide_88_Workspace() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3cqw, 46px)" }}
       >
         ОДНА ПАПКА — <span className="text-[#B6FF00]">ВСЯ ТВОЯ РАБОЧАЯ ЖИЗНЬ</span>
       </motion.h1>
@@ -52,7 +52,7 @@ export function Slide_88_Workspace() {
           <Terminal className="w-3.5 h-3.5 text-[#B6FF00]" strokeWidth={2} />
           <span className="font-mono text-[11px] text-white/45">claude code — tree ~/AI Workspace</span>
         </div>
-        <div className="px-5 py-4 font-mono leading-relaxed" style={{ fontSize: "clamp(12px,1vw,15px)" }}>
+        <div className="px-5 py-4 font-mono leading-relaxed" style={{ fontSize: "clamp(12px,1cqw,15px)" }}>
           {TREE.map((row, i) => (
             <motion.div
               key={i}

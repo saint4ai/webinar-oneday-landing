@@ -16,7 +16,7 @@ export function PriceChip({ price, payback }: { price: string; payback: string }
       <BorderBeam color="#B6FF00" duration={6} lightWidth={120} />
       <div
         className="font-bold text-[#B6FF00] leading-none whitespace-nowrap"
-        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(17px,1.4vw,23px)" }}
+        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(17px,1.4cqw,23px)" }}
       >
         {price}
       </div>

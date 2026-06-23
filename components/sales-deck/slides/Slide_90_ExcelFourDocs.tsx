@@ -25,7 +25,7 @@ export function Slide_90_ExcelFourDocs() {
       contentMinWidth={740}
       background={<SlideBg theme="dark" variant="climax" />}
     >
-      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(34px,6vh,68px)", paddingBottom: "clamp(28px,4vh,52px)" }}>
+      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(34px,6cqh,68px)", paddingBottom: "clamp(28px,4cqh,52px)" }}>
         <div className="shrink-0">
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
             // КЕЙС 1 · ОТЧЁТ
@@ -35,7 +35,7 @@ export function Slide_90_ExcelFourDocs() {
             animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
             transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
             className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2vw, 50px)" }}
+            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2cqw, 50px)" }}
           >
             ОДИН EXCEL — <span className="text-[#B6FF00]">ЧЕТЫРЕ ДОКУМЕНТА</span>
           </motion.h1>

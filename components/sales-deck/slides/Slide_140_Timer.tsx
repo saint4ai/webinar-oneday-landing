@@ -46,7 +46,7 @@ export function Slide_140_Timer() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-7"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8vw, 60px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8cqw, 60px)" }}
       >
         КУПИ <span className="text-[#FC5C02]">ДО КОНЦА СУТОК</span>
       </motion.h1>
@@ -59,7 +59,7 @@ export function Slide_140_Timer() {
       >
         <span
           className="font-bold leading-none tabular-nums"
-          style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8vw, 150px)", color: "#FC5C02", textShadow: "0 0 70px rgba(252,92,2,0.4)" }}
+          style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8cqw, 150px)", color: "#FC5C02", textShadow: "0 0 70px rgba(252,92,2,0.4)" }}
         >
           {pad(h)}:{pad(m)}:<motion.span animate={{ opacity: [1, 0.55, 1] }} transition={{ duration: 1, repeat: Infinity }} className="inline-block">{pad(s)}</motion.span>
         </span>

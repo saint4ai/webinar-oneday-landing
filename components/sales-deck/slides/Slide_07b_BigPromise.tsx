@@ -37,7 +37,7 @@ export function Slide_07b_BigPromise() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4vw, 60px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4cqw, 60px)" }}
       >
         ОТДАМ ВСЁ, ЧТО <span className="text-[#B6FF00]">ЗНАЮ</span>
       </motion.h1>
@@ -55,7 +55,7 @@ export function Slide_07b_BigPromise() {
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${c.accent}1f`, border: `1px solid ${c.accent}66` }}>
               <c.Icon className="w-5 h-5" strokeWidth={2.2} style={{ color: c.accent }} />
             </div>
-            <div className="font-bold text-white leading-tight" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px, 1.7vw, 26px)" }}>{c.title}</div>
+            <div className="font-bold text-white leading-tight" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px, 1.7cqw, 26px)" }}>{c.title}</div>
             <div className="text-white/75 text-sm md:text-base leading-snug">{c.body}</div>
           </motion.div>
         ))}

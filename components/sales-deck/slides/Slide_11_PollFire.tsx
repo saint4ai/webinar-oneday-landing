@@ -8,7 +8,7 @@ import { SlideLayout } from "../SlideLayout";
 /**
  * Слайд 11 · Engagement пожар — «КАК ВАМ ТАКОЙ ФОРМАТ?»
  * Огромный «ОГОНЬ» прижат по правому краю content-колонки + 3D fire emoji слева от него.
- * 📐 SlideLayout с зоной спикера справа (25-30vw).
+ * 📐 SlideLayout с зоной спикера справа (25-30cqw).
  *
  * АЛЕКСАНДР: «Терминатор-рука из лавы — 5 сек через Higgsfield» → TODO.
  */
@@ -34,7 +34,7 @@ export function Slide_11_PollFire() {
         className="font-bold uppercase text-white leading-[1.05] tracking-[-0.02em] mb-4"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3vw, 44px)",
+          fontSize: "clamp(26px, 3cqw, 44px)",
         }}
       >
         КАК ВАМ ТАКОЙ ФОРМАТ?
@@ -59,8 +59,8 @@ export function Slide_11_PollFire() {
           }}
           className="relative shrink-0"
           style={{
-            width: "clamp(90px, 12vw, 180px)",
-            height: "clamp(90px, 12vw, 180px)",
+            width: "clamp(90px, 12cqw, 180px)",
+            height: "clamp(90px, 12cqw, 180px)",
             filter: "drop-shadow(0 0 50px rgba(252,92,2,0.75)) drop-shadow(0 0 90px rgba(252,92,2,0.45))",
           }}
         >
@@ -68,7 +68,7 @@ export function Slide_11_PollFire() {
             src="/handouts/emoji/fire_3d.png"
             alt="🔥"
             fill
-            sizes="(max-width: 1280px) 11vw, 180px"
+            sizes="(max-width: 1280px) 11cqw, 180px"
             className="object-contain"
             priority
           />
@@ -83,7 +83,7 @@ export function Slide_11_PollFire() {
           style={{
             color: "#B6FF00",
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(90px, 12vw, 220px)",
+            fontSize: "clamp(90px, 12cqw, 220px)",
             textShadow:
               "0 0 60px rgba(182,255,0,0.55), 0 0 120px rgba(252,92,2,0.4)",
           }}

@@ -39,7 +39,7 @@ export function Slide_23_ForWhom() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 50px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4cqw, 50px)" }}
       >
         КОМУ ВАЙБКОДИНГ <span className="text-[#B6FF00]">ПОДХОДИТ</span>
       </motion.h1>
@@ -57,7 +57,7 @@ export function Slide_23_ForWhom() {
               className="relative w-full rounded-2xl overflow-hidden"
               style={{ aspectRatio: "4 / 5", background: "#0d0f0a", border: "1px solid rgba(182,255,0,0.18)", boxShadow: "0 20px 50px -28px rgba(0,0,0,0.7), 0 0 40px -24px rgba(182,255,0,0.35)" }}
             >
-              <Image src={r.img} alt={r.t} fill sizes="18vw" className="object-cover" priority={i < 3} />
+              <Image src={r.img} alt={r.t} fill sizes="18cqw" className="object-cover" priority={i < 3} />
             </div>
             <div className="mt-2.5 text-center px-1">
               <div className="text-white font-semibold text-[13px] md:text-[15px] leading-tight">{r.t}</div>

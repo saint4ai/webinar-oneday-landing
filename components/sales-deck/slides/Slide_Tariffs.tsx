@@ -35,7 +35,7 @@ function PriceLadder({ rungs, final, off, accent }: { rungs: string[]; final: st
           <span key={r} className="text-white/35 line-through tabular-nums text-[13px] md:text-sm">{r}</span>
         ))}
       </div>
-      <span className="font-bold tabular-nums leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(26px,2.7vw,40px)", color: accent, textShadow: `0 0 44px ${accent}55` }}>{final}</span>
+      <span className="font-bold tabular-nums leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(26px,2.7cqw,40px)", color: accent, textShadow: `0 0 44px ${accent}55` }}>{final}</span>
       <span className="rounded-md px-2 py-1 text-[11px] font-bold mb-0.5" style={{ background: `${accent}1a`, border: `1px solid ${accent}66`, color: accent }}>{off}</span>
     </div>
   );
@@ -52,7 +52,7 @@ export function Slide_Tariffs() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 46px)" }}
       >
         КАК ЗАЙДЁШЬ <span className="text-[#B6FF00]">В ОБУЧЕНИЕ</span>
       </motion.h1>
@@ -61,7 +61,7 @@ export function Slide_Tariffs() {
         {/* Solo — базовый, приглушённый */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.4 }} className="rounded-2xl p-5 flex flex-col" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.12)" }}>
           <span className="self-start font-mono text-[10px] uppercase tracking-[0.14em] text-white/50 rounded-full px-2.5 py-1 mb-3" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)" }}>без обратной связи</span>
-          <div className="font-bold uppercase text-white mb-2.5" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2vw,30px)" }}>Вайб Solo</div>
+          <div className="font-bold uppercase text-white mb-2.5" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2cqw,30px)" }}>Вайб Solo</div>
           <div className="mb-4"><PriceLadder rungs={["400 000 ₸", "300 000 ₸"]} final="220 000 ₸" off="−45%" accent="#FFFFFF" /></div>
           <div className="flex flex-col gap-2">
             {SOLO.map((s) => (
@@ -74,7 +74,7 @@ export function Slide_Tariffs() {
         {/* Pro — полный, акцент */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, delay: 0.55 }} className="rounded-2xl p-5 flex flex-col relative" style={{ background: "rgba(182,255,0,0.06)", border: "1px solid rgba(182,255,0,0.45)", boxShadow: "0 0 70px -24px rgba(182,255,0,0.5)" }}>
           <span className="self-start font-mono text-[10px] uppercase tracking-[0.14em] text-[#B6FF00] rounded-full px-2.5 py-1 mb-3 font-bold" style={{ background: "rgba(182,255,0,0.12)", border: "1px solid rgba(182,255,0,0.45)" }}>рекомендуем · с обратной связью</span>
-          <div className="font-bold uppercase text-white mb-2.5" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2vw,30px)" }}>Вайбкодер <span className="text-[#B6FF00]">Pro</span></div>
+          <div className="font-bold uppercase text-white mb-2.5" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2cqw,30px)" }}>Вайбкодер <span className="text-[#B6FF00]">Pro</span></div>
           <div className="mb-3"><PriceLadder rungs={["490 000 ₸", "390 000 ₸"]} final="290 900 ₸" off="−40%" accent="#B6FF00" /></div>
           <div className="text-white/85 text-[13px] md:text-sm font-semibold mb-2">Всё из Solo, плюс:</div>
           <div className="flex flex-col gap-1.5">

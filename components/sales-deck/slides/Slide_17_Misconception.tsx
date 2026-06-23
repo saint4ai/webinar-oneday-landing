@@ -58,7 +58,7 @@ export function Slide_17_Misconception() {
     >
       <div
         className="flex flex-col h-full w-full"
-        style={{ paddingTop: "clamp(40px,7vh,90px)", paddingBottom: "clamp(28px,4vh,56px)" }}
+        style={{ paddingTop: "clamp(40px,7cqh,90px)", paddingBottom: "clamp(28px,4cqh,56px)" }}
       >
         {/* ===== ВЕРХ: заголовок во всю ширину ===== */}
         <div className="shrink-0">
@@ -80,7 +80,7 @@ export function Slide_17_Misconception() {
             style={{
               color: INK,
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(28px, 3.4vw, 58px)",
+              fontSize: "clamp(28px, 3.4cqw, 58px)",
             }}
           >
             ВАМ{" "}

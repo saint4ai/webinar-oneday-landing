@@ -22,7 +22,7 @@ export function Slide_Smysl3_Career() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.85, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.035em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4.4vw, 70px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4.4cqw, 70px)" }}
       >
         РОСТ — ЭТО НЕ <span className="text-[#B6FF00]">БОЛЬШЕ РАБОТАТЬ</span>
       </motion.h1>

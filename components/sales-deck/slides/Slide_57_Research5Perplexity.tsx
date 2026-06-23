@@ -47,7 +47,7 @@ export function Slide_57_Research5Perplexity() {
         </>
       }
     >
-      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(32px,5vh,64px)", paddingBottom: "clamp(24px,4vh,48px)" }}>
+      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(32px,5cqh,64px)", paddingBottom: "clamp(24px,4cqh,48px)" }}>
         <div className="shrink-0">
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -64,7 +64,7 @@ export function Slide_57_Research5Perplexity() {
             animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
             transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
             className="font-bold uppercase leading-[1.0] tracking-[-0.03em] mb-2"
-            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2vw, 48px)", color: INK }}
+            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2cqw, 48px)", color: INK }}
           >
             ГОТОВЫЙ ПРОМПТ ДЛЯ <span style={{ color: ORANGE }}>PERPLEXITY</span>
           </motion.h1>
@@ -103,7 +103,7 @@ export function Slide_57_Research5Perplexity() {
                 <Search className="w-3 h-3" strokeWidth={2.2} style={{ color: ORANGE }} /> perplexity.ai — Deep Research
               </span>
             </div>
-            <div className="px-5 py-4 font-mono" style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace", fontSize: "clamp(11px, 0.92vw, 14px)", lineHeight: 1.7 }}>
+            <div className="px-5 py-4 font-mono" style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace", fontSize: "clamp(11px, 0.92cqw, 14px)", lineHeight: 1.7 }}>
               {PROMPT_LINES.map((line, i) => (
                 <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25, delay: 0.9 + i * 0.2 }} style={{ color: INK }}>
                   {line.parts.map((p, j) =>
@@ -129,7 +129,7 @@ export function Slide_57_Research5Perplexity() {
             className="relative rounded-2xl overflow-hidden"
             style={{ border: "1px solid rgba(42,37,32,0.15)", background: "#ffffff", boxShadow: "0 30px 70px -30px rgba(42,37,32,0.45)", flex: "1 1 0%", minWidth: 0 }}
           >
-            <Image src="/handouts/screens/perplexity_app.jpg" alt="Perplexity Pro — реальное приложение" fill sizes="30vw" className="object-contain" priority />
+            <Image src="/handouts/screens/perplexity_app.jpg" alt="Perplexity Pro — реальное приложение" fill sizes="30cqw" className="object-contain" priority />
           </motion.div>
         </div>
 

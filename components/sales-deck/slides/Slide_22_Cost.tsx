@@ -40,7 +40,7 @@ export function Slide_22_Cost() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-7"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 56px)",
+          fontSize: "clamp(30px, 3.8cqw, 56px)",
         }}
       >
         СКОЛЬКО НА ЭТО <span className="text-[#B6FF00]">НУЖНО</span>
@@ -76,7 +76,7 @@ export function Slide_22_Cost() {
                 style={{
                   color: c.price === "0 ₸" ? "#B6FF00" : "#fff",
                   fontFamily: "var(--font-benzin), system-ui, sans-serif",
-                  fontSize: "clamp(15px, 1.6vw, 22px)",
+                  fontSize: "clamp(15px, 1.6cqw, 22px)",
                 }}
               >
                 {c.price}

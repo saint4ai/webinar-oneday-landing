@@ -70,7 +70,7 @@ export function CodeTermCard({ filename = "vibecoding.py", lines, hints, delay =
         className="px-5 py-4"
         style={{
           fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace",
-          fontSize: "clamp(12px, 1.05vw, 15px)",
+          fontSize: "clamp(12px, 1.05cqw, 15px)",
           lineHeight: 1.75,
         }}
       >

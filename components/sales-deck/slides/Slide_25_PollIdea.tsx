@@ -15,11 +15,11 @@ export function Slide_25_PollIdea() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       background={
         <>
           <Spotlight className="-top-40 left-0 md:-top-20" fill="#B6FF00" />
-          <Spotlight className="bottom-0 right-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+          <Spotlight className="bottom-0 right-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
         </>
       }
       leftObject={
@@ -49,7 +49,7 @@ export function Slide_25_PollIdea() {
         className="font-bold uppercase text-white leading-[0.95] tracking-[-0.03em] mb-6"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(32px, 4vw, 60px)",
+          fontSize: "clamp(32px, 4cqw, 60px)",
         }}
       >
         А ЧТО{" "}

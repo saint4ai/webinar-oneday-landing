@@ -21,7 +21,7 @@ export function Slide_ObjApply1_Trend() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2vw, 50px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.2cqw, 50px)" }}
       >
         «МНЕ НЕКУДА <span className="text-[#B6FF00]">ЭТО ПРИМЕНИТЬ»</span>
       </motion.h1>

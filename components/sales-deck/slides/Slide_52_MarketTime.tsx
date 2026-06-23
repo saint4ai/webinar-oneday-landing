@@ -31,7 +31,7 @@ export function Slide_52_MarketTime() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-8"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.6vw, 56px)",
+          fontSize: "clamp(30px, 3.6cqw, 56px)",
         }}
       >
         СКОЛЬКО <span className="text-[#B6FF00]">ЗАЙМЁТ ВРЕМЕНИ</span>
@@ -46,10 +46,10 @@ export function Slide_52_MarketTime() {
           className="flex items-baseline gap-3 mb-5"
           style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif" }}
         >
-          <span className="font-bold leading-none text-[#B6FF00]" style={{ fontSize: "clamp(56px, 8vw, 130px)", textShadow: "0 0 70px rgba(182,255,0,0.4)" }}>7</span>
-          <span className="font-bold leading-none text-white/40" style={{ fontSize: "clamp(40px, 5vw, 84px)" }}>—</span>
-          <span className="font-bold leading-none text-[#B6FF00]" style={{ fontSize: "clamp(56px, 8vw, 130px)", textShadow: "0 0 70px rgba(182,255,0,0.4)" }}>14</span>
-          <span className="font-bold uppercase text-white leading-none ml-1" style={{ fontSize: "clamp(28px, 3vw, 52px)" }}>дней</span>
+          <span className="font-bold leading-none text-[#B6FF00]" style={{ fontSize: "clamp(56px, 8cqw, 130px)", textShadow: "0 0 70px rgba(182,255,0,0.4)" }}>7</span>
+          <span className="font-bold leading-none text-white/40" style={{ fontSize: "clamp(40px, 5cqw, 84px)" }}>—</span>
+          <span className="font-bold leading-none text-[#B6FF00]" style={{ fontSize: "clamp(56px, 8cqw, 130px)", textShadow: "0 0 70px rgba(182,255,0,0.4)" }}>14</span>
+          <span className="font-bold uppercase text-white leading-none ml-1" style={{ fontSize: "clamp(28px, 3cqw, 52px)" }}>дней</span>
         </motion.div>
 
         {/* Бар с заливкой */}

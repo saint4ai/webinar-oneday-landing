@@ -12,7 +12,7 @@ export function Slide_125_WhoTeaches() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="27vw"
+      objectColumnSize="27cqw"
       contentMinWidth={480}
       background={<SlideBg theme="dark" variant="aura-tl" />}
       leftObject={
@@ -35,7 +35,7 @@ export function Slide_125_WhoTeaches() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 50px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4cqw, 50px)" }}
       >
         КТО ВЕДЁТ <span className="text-[#B6FF00]">ПРОГРАММУ</span>
       </motion.h1>

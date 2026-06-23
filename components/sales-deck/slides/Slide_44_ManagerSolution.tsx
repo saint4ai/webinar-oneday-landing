@@ -29,7 +29,7 @@ export function Slide_44_ManagerSolution() {
     >
       <div
         className="flex flex-col h-full w-full"
-        style={{ paddingTop: "clamp(36px,6vh,72px)", paddingBottom: "clamp(28px,4vh,52px)" }}
+        style={{ paddingTop: "clamp(36px,6cqh,72px)", paddingBottom: "clamp(28px,4cqh,52px)" }}
       >
         {/* ===== ВЕРХ ===== */}
         <div className="shrink-0">
@@ -50,7 +50,7 @@ export function Slide_44_ManagerSolution() {
             className="font-bold uppercase leading-[1.04] tracking-[-0.02em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(22px, 2.5vw, 40px)",
+              fontSize: "clamp(22px, 2.5cqw, 40px)",
               wordBreak: "keep-all",
               overflowWrap: "normal",
               hyphens: "none",
@@ -89,7 +89,7 @@ export function Slide_44_ManagerSolution() {
               ))}
             </div>
             <div className="flex items-baseline gap-2.5">
-              <span className="font-bold" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(18px,1.7vw,26px)", color: "#B6FF00", whiteSpace: "nowrap" }}>
+              <span className="font-bold" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(18px,1.7cqw,26px)", color: "#B6FF00", whiteSpace: "nowrap" }}>
                 от 700 000 ₸
               </span>
               <span className="text-white/50 text-[12px]">окупается за 2 месяца</span>
@@ -132,7 +132,7 @@ export function Slide_44_ManagerSolution() {
                   alt="Дашборд реальной нагрузки команды — кто перегружен, кто простаивает"
                   fill
                   className="object-cover object-top"
-                  sizes="70vw"
+                  sizes="70cqw"
                   priority
                 />
               </div>

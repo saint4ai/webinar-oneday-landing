@@ -17,7 +17,7 @@ interface SlideDeckProps {
  * Управление:
  *   ← → / SPACE — навигация
  *   F — fullscreen
- *   S — toggle speaker-zone (30vw ↔ 0)
+ *   S — toggle speaker-zone (30cqw ↔ 0)
  *   Home / End — в начало/конец
  *   Esc — выход из fullscreen
  */
@@ -61,7 +61,7 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--sd-speaker-zone",
-      speakerMode === "live" ? "30vw" : "0vw"
+      speakerMode === "live" ? "40cqw" : "0cqw"
     );
     localStorage.setItem("sd-speaker", speakerMode);
   }, [speakerMode]);
@@ -129,11 +129,17 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
   const counterLight = currentKey != null && !!lightSlideKeys?.has(String(currentKey));
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
+    <div className="fixed inset-0 bg-black overflow-hidden flex items-center justify-center">
+      {/* 16:9 рамка — лочим формат 1920×1080; на широких экранах чёрные поля по бокам.
+          container-type: size → cqw/cqh внутри считаются от РАМКИ, а не от вьюпорта. */}
+      <div
+        className="relative overflow-hidden"
+        style={{ width: "min(100vw, 177.778vh)", height: "min(100vh, 56.25vw)", containerType: "size" }}
+      >
       {/* === Cursor-glow · radial gradient за курсором (как в vanilla presentation.html) === */}
       {cursor && (
         <div
-          className="pointer-events-none fixed inset-0 z-[1]"
+          className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background: `radial-gradient(450px circle at ${cursor.x}px ${cursor.y}px, rgba(182,255,0,0.18), transparent 65%)`,
           }}
@@ -168,7 +174,7 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
 
       {/* Slide counter — правый нижний угол, неброско. На cream-слайдах — тёмные чернила (#2A2520), иначе сливается. */}
       <div
-        className="pointer-events-none fixed bottom-4 right-5 z-30 font-mono text-[11px] tracking-[0.2em]"
+        className="pointer-events-none absolute bottom-4 right-5 z-30 font-mono text-[11px] tracking-[0.2em]"
         style={{
           fontFamily: "var(--font-jetbrains-mono), monospace",
           color: counterLight ? "rgba(42,37,32,0.55)" : "rgba(255,255,255,0.35)",
@@ -177,6 +183,7 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
         {String(idx + 1).padStart(2, "0")}{" "}
         <span style={{ color: counterLight ? "rgba(42,37,32,0.3)" : "rgba(255,255,255,0.2)" }}>/</span>{" "}
         {String(slides.length).padStart(2, "0")}
+      </div>
       </div>
     </div>
   );

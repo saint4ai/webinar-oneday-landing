@@ -15,7 +15,7 @@ export function Slide_98_LadderTransition() {
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
         // ПЕРЕХОД
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }} transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }} className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8vw, 56px)" }}>
+      <motion.h1 initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }} animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }} transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }} className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8cqw, 56px)" }}>
         ЭТО ТОЛЬКО <span style={{ color: "#FC5C02" }}>ЛИЧНЫЕ ДЕЛА</span>
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/65 text-base md:text-lg leading-snug max-w-2xl mb-8">
@@ -40,7 +40,7 @@ export function Slide_98_LadderTransition() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 1.1 }} className="flex-[1.25] rounded-2xl px-6 py-5 relative self-stretch flex flex-col justify-end" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)", boxShadow: "0 0 60px -14px rgba(182,255,0,0.5)", marginBottom: 36 }}>
           <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#B6FF00] mb-2">ступень 2 · горит</span>
           <div className="font-bold text-base md:text-xl leading-tight text-white">Сервисы для бизнеса</div>
-          <div className="font-bold leading-none mt-2 whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(17px,1.6vw,25px)", color: "#B6FF00" }}>600 000 — 10 000 000 ₸</div>
+          <div className="font-bold leading-none mt-2 whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(17px,1.6cqw,25px)", color: "#B6FF00" }}>600 000 — 10 000 000 ₸</div>
         </motion.div>
       </div>
 

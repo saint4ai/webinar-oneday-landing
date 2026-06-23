@@ -19,7 +19,7 @@ const LESSONS = [
 
 export function Slide_153_ObjNoClient() {
   return (
-    <ObjectionSlide n={4} question="А ЕСЛИ Я НЕ НАЙДУ КЛИЕНТА?" answer="Модуль 10 — целиком про то, как находить клиентов и закрывать на оплату." bg="aura-tr" qSize="clamp(24px, 3vw, 46px)">
+    <ObjectionSlide n={4} question="А ЕСЛИ Я НЕ НАЙДУ КЛИЕНТА?" answer="Модуль 10 — целиком про то, как находить клиентов и закрывать на оплату." bg="aura-tr" qSize="clamp(24px, 3cqw, 46px)">
       <div className="flex items-start gap-5 max-w-4xl">
         <div className="grid grid-cols-2 gap-x-5 gap-y-1.5 flex-1">
           {LESSONS.map((l, i) => (
@@ -32,7 +32,7 @@ export function Slide_153_ObjNoClient() {
         <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 1.2, ease: [0.34, 1.4, 0.64, 1] }} className="flex flex-col items-center rounded-2xl px-5 py-4 shrink-0" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
           <Trophy className="w-7 h-7 text-[#B6FF00] mb-2" strokeWidth={1.8} />
           <span className="text-white/60 text-[10px] uppercase tracking-[0.1em] text-center mb-1">первый клиент<br />с чеком от</span>
-          <span className="font-bold text-[#B6FF00] leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3vw,46px)" }}>$500</span>
+          <span className="font-bold text-[#B6FF00] leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3cqw,46px)" }}>$500</span>
         </motion.div>
       </div>
     </ObjectionSlide>

@@ -28,7 +28,7 @@ export function Slide_124_VibeEngine() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 46px)" }}
       >
         МЕТОД VIBE ENGINE — <span className="text-[#B6FF00]">6 ПРИНЦИПОВ</span>
       </motion.h1>
@@ -46,7 +46,7 @@ export function Slide_124_VibeEngine() {
             className="flex items-start gap-3 pt-3"
             style={{ borderTop: "1px solid rgba(182,255,0,0.28)" }}
           >
-            <span className="font-bold leading-none shrink-0 select-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2vw,30px)", color: "transparent", WebkitTextStroke: "1.2px rgba(182,255,0,0.5)" }}>
+            <span className="font-bold leading-none shrink-0 select-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(20px,2cqw,30px)", color: "transparent", WebkitTextStroke: "1.2px rgba(182,255,0,0.5)" }}>
               {i + 1}
             </span>
             <div className="min-w-0">

@@ -17,7 +17,7 @@ export function Slide_04_BonusAnnounce() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       objectOverflow="visible"
       background={
         <Spotlight className="-top-40 left-0 md:left-20 md:-top-20" fill="#B6FF00" />
@@ -40,7 +40,7 @@ export function Slide_04_BonusAnnounce() {
         className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.4vw, 50px)",
+          fontSize: "clamp(28px, 3.4cqw, 50px)",
         }}
       >
         ДЛЯ ТЕХ КТО ПРОЙДЁТ ВОРКШОП{" "}

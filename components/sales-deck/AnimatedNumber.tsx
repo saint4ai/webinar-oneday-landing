@@ -49,10 +49,10 @@ export function AnimatedNumber({
   }, [inView, value, duration]);
 
   const sizes = {
-    sm: { num: "clamp(56px, 5vw, 88px)", padding: "20px 28px" },
-    md: { num: "clamp(72px, 7vw, 120px)", padding: "28px 40px" },
-    lg: { num: "clamp(100px, 10vw, 180px)", padding: "32px 56px" },
-    xl: { num: "clamp(140px, 14vw, 260px)", padding: "40px 72px" },
+    sm: { num: "clamp(56px, 5cqw, 88px)", padding: "20px 28px" },
+    md: { num: "clamp(72px, 7cqw, 120px)", padding: "28px 40px" },
+    lg: { num: "clamp(100px, 10cqw, 180px)", padding: "32px 56px" },
+    xl: { num: "clamp(140px, 14cqw, 260px)", padding: "40px 72px" },
   };
 
   return (

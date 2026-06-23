@@ -19,7 +19,7 @@ export function Slide_21b_DownsidesFix() {
       background={
         <>
           <Spotlight className="-top-40 left-0 md:-top-20" fill="#FC5C02" />
-          <Spotlight className="bottom-0 right-[10vw] md:bottom-[-20vh]" fill="#B6FF00" />
+          <Spotlight className="bottom-0 right-[10cqw] md:bottom-[-20cqh]" fill="#B6FF00" />
         </>
       }
     >
@@ -79,7 +79,7 @@ export function Slide_21b_DownsidesFix() {
         className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em] max-w-3xl"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3vw, 44px)",
+          fontSize: "clamp(26px, 3cqw, 44px)",
         }}
       >
         ВАЖНА <span className="text-[#B6FF00]">АРХИТЕКТУРА</span>,

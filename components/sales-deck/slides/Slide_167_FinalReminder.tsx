@@ -25,7 +25,7 @@ export function Slide_167_FinalReminder() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6vw, 56px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6cqw, 56px)" }}
       >
         ЕЩЁ ДУМАЕШЬ? <span className="text-[#FC5C02]">ЭТО НОРМАЛЬНО</span>
       </motion.h1>

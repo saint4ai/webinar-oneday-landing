@@ -91,7 +91,7 @@ export function AdReportDashboard() {
             >
               <div className="text-white/40 text-[9px] uppercase tracking-[0.1em] font-mono mb-1.5">{k.label}</div>
               <div className="flex items-baseline gap-1">
-                <span className="font-bold leading-none" style={{ color: k.c, fontSize: "clamp(15px,1.5vw,21px)", fontFamily: "var(--font-benzin), system-ui" }}>{k.val}</span>
+                <span className="font-bold leading-none" style={{ color: k.c, fontSize: "clamp(15px,1.5cqw,21px)", fontFamily: "var(--font-benzin), system-ui" }}>{k.val}</span>
                 {k.unit && <span className="font-bold leading-none" style={{ color: k.c, fontSize: "12px", fontFamily: "var(--font-benzin), system-ui" }}>{k.unit}</span>}
                 {k.up && <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" style={{ color: LIME }} strokeWidth={2.5} />}
               </div>

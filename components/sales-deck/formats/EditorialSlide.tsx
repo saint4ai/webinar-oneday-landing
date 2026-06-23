@@ -59,7 +59,7 @@ export function EditorialSlide({
 
   return (
     <section
-      className={cn("relative w-screen h-screen overflow-hidden bg-black text-white", className)}
+      className={cn("relative w-full h-full overflow-hidden bg-black text-white", className)}
     >
       {/* Blueprint-грид с радиальным mask — НЕ gradient-сфера */}
       <div
@@ -81,11 +81,11 @@ export function EditorialSlide({
           {...anim({ opacity: 0, x: -40 }, { opacity: 1, x: 0 }, 0.1)}
           className="absolute z-0 pointer-events-none select-none font-bold leading-none"
           style={{
-            right: "calc(var(--sd-speaker-zone, 25vw) - 4vw)",
+            right: "calc(var(--sd-speaker-zone, 25cqw) - 4cqw)",
             top: "50%",
             transform: "translateY(-50%)",
             fontFamily: "var(--font-benzin), system-ui, sans-serif",
-            fontSize: "clamp(180px, 32vw, 520px)",
+            fontSize: "clamp(180px, 32cqw, 520px)",
             color: "transparent",
             WebkitTextStroke: `1.5px ${accent}22`,
           }}
@@ -108,7 +108,7 @@ export function EditorialSlide({
       {/* Контент — editorial-колонка, прижата влево, зона спикера справа свободна */}
       <div
         className="relative z-10 h-full flex flex-col justify-center"
-        style={{ paddingLeft: "clamp(48px, 9vw, 160px)", paddingRight: "calc(var(--sd-speaker-zone, 25vw) + 32px)" }}
+        style={{ paddingLeft: "clamp(48px, 9cqw, 160px)", paddingRight: "calc(var(--sd-speaker-zone, 25cqw) + 32px)" }}
       >
         <div className="max-w-[46rem]">
           {kicker && (
@@ -132,7 +132,7 @@ export function EditorialSlide({
             className="font-bold uppercase leading-[0.92] tracking-[-0.04em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(34px, 5vw, 84px)",
+              fontSize: "clamp(34px, 5cqw, 84px)",
             }}
           >
             {title}

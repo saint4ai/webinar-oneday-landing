@@ -44,7 +44,7 @@ export function Slide_46_SalesSolution() {
     >
       <div
         className="flex flex-col h-full w-full"
-        style={{ paddingTop: "clamp(36px,6vh,72px)", paddingBottom: "clamp(28px,4vh,52px)" }}
+        style={{ paddingTop: "clamp(36px,6cqh,72px)", paddingBottom: "clamp(28px,4cqh,52px)" }}
       >
         {/* ===== ВЕРХ: текст + блоки горизонтально ===== */}
         <div className="shrink-0">
@@ -65,7 +65,7 @@ export function Slide_46_SalesSolution() {
             className="font-bold uppercase leading-[1.04] tracking-[-0.02em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(22px, 2.5vw, 40px)",
+              fontSize: "clamp(22px, 2.5cqw, 40px)",
               wordBreak: "keep-all",
               overflowWrap: "normal",
               hyphens: "none",
@@ -99,7 +99,7 @@ export function Slide_46_SalesSolution() {
 
             {/* цена */}
             <div className="flex items-baseline gap-2.5">
-              <span className="font-bold" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(18px,1.7vw,26px)", color: "#B6FF00" }}>
+              <span className="font-bold" style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(18px,1.7cqw,26px)", color: "#B6FF00" }}>
                 от 700 000 ₸
               </span>
               <span className="text-white/50 text-[12px]">конверсия +10-20% за месяц</span>
@@ -170,7 +170,7 @@ export function Slide_46_SalesSolution() {
                     alt="CallVision — мой дашборд оценки звонков для руководителей отдела продаж"
                     fill
                     className="object-cover object-top"
-                    sizes="75vw"
+                    sizes="75cqw"
                     priority={screen === 0}
                   />
                 </motion.div>

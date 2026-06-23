@@ -17,7 +17,7 @@ export function Slide_10b_AzimApp() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       background={<Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />}
       leftObject={
         <motion.div
@@ -25,7 +25,7 @@ export function Slide_10b_AzimApp() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 1, 0.5, 1] }}
           className="relative"
-          style={{ height: "82vh", maxHeight: "780px" }}
+          style={{ height: "82cqh", maxHeight: "780px" }}
         >
           <IPhoneMockup>
             <AzimAppMockup />
@@ -49,7 +49,7 @@ export function Slide_10b_AzimApp() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.4vw, 50px)",
+          fontSize: "clamp(28px, 3.4cqw, 50px)",
         }}
       >
         ВОТ ТАК ВЫГЛЯДИТ
@@ -86,7 +86,7 @@ export function Slide_10b_AzimApp() {
               style={{
                 color: m.color,
                 fontFamily: "var(--font-benzin), system-ui, sans-serif",
-                fontSize: m.val.length > 3 ? "clamp(26px, 2.8vw, 42px)" : "clamp(32px, 3.2vw, 48px)",
+                fontSize: m.val.length > 3 ? "clamp(26px, 2.8cqw, 42px)" : "clamp(32px, 3.2cqw, 48px)",
                 textShadow: `0 0 24px ${m.color}40`,
               }}
             >

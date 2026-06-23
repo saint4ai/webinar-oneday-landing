@@ -14,7 +14,7 @@ export function Slide_166_Instagram() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="27vw"
+      objectColumnSize="27cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="aura-tl" />}
       leftObject={
@@ -36,7 +36,7 @@ export function Slide_166_Instagram() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 52px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4cqw, 52px)" }}
       >
         ОТМЕТЬ МЕНЯ <span className="text-[#B6FF00]">В СТОРИС</span>
       </motion.h1>
@@ -45,7 +45,7 @@ export function Slide_166_Instagram() {
       </motion.div>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.6, ease: [0.34, 1.3, 0.64, 1] }} className="inline-flex items-center gap-3 self-start rounded-2xl px-5 py-3" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.4)" }}>
         <AtSign className="w-7 h-7 text-[#B6FF00]" strokeWidth={1.8} />
-        <span className="font-bold text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(24px,2.6vw,40px)" }}>@saint4ai</span>
+        <span className="font-bold text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(24px,2.6cqw,40px)" }}>@saint4ai</span>
       </motion.div>
     </SlideLayout>
   );

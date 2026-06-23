@@ -32,7 +32,7 @@ export function Slide_31_TodayShow() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 56px)",
+          fontSize: "clamp(30px, 3.8cqw, 56px)",
         }}
       >
         СЕГОДНЯ <span className="text-[#B6FF00]">Я ПОКАЖУ</span>

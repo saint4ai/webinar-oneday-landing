@@ -19,7 +19,7 @@ export function Slide_32_PollWhich() {
       background={
         <>
           <Spotlight className="-top-40 left-0 md:-top-20" fill="#B6FF00" />
-          <Spotlight className="bottom-0 right-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+          <Spotlight className="bottom-0 right-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
         </>
       }
     >
@@ -30,7 +30,7 @@ export function Slide_32_PollWhich() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 56px)",
+          fontSize: "clamp(30px, 3.8cqw, 56px)",
         }}
       >
         КАКОЕ ИЗ ТРЁХ — <span className="text-[#B6FF00]">ВАШЕ?</span>
@@ -66,12 +66,12 @@ export function Slide_32_PollWhich() {
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
               className="rounded-3xl flex items-center justify-center"
               style={{
-                width: "clamp(80px, 9vw, 130px)",
-                height: "clamp(80px, 9vw, 130px)",
+                width: "clamp(80px, 9cqw, 130px)",
+                height: "clamp(80px, 9cqw, 130px)",
                 background: "#B6FF00",
               }}
             >
-              <span className="font-bold text-black leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(48px, 5.5vw, 80px)" }}>{n}</span>
+              <span className="font-bold text-black leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(48px, 5.5cqw, 80px)" }}>{n}</span>
             </motion.div>
             <span className="text-white/55 text-xs md:text-sm uppercase tracking-[0.08em] font-mono">{LABELS[i]}</span>
           </motion.div>

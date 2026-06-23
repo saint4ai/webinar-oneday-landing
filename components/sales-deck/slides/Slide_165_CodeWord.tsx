@@ -23,7 +23,7 @@ export function Slide_165_CodeWord() {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.35, delay: 0.3 + (wi * 8 + ci) * 0.05, ease: [0.25, 1, 0.5, 1] }}
                 className="font-bold uppercase leading-none"
-                style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(40px, 5.6vw, 110px)", color: "#B6FF00", textShadow: "0 0 60px rgba(182,255,0,0.35)" }}
+                style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(40px, 5.6cqw, 110px)", color: "#B6FF00", textShadow: "0 0 60px rgba(182,255,0,0.35)" }}
               >
                 {ch}
               </motion.span>

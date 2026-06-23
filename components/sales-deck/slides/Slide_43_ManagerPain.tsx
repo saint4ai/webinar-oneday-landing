@@ -22,12 +22,12 @@ export function Slide_43_ManagerPain() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
-        <div className="relative h-screen w-full overflow-hidden">
-          <Image src="/handouts/niches/pain_owner.png" alt="Владелец в стрессе пытается понять кто работает, а кто бездействует" fill className="object-cover object-center" sizes="35vw" priority />
+        <div className="relative h-full w-full overflow-hidden">
+          <Image src="/handouts/niches/pain_owner.png" alt="Владелец в стрессе пытается понять кто работает, а кто бездействует" fill className="object-cover object-center" sizes="35cqw" priority />
           <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, transparent 50%, rgba(10,11,15,0.55) 80%, #0A0B0F)" }} />
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,11,15,0.5), transparent 30%)" }} />
 
@@ -70,7 +70,7 @@ export function Slide_43_ManagerPain() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9vw, 44px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 44px)" }}
       >
         КОМАНДА РАБОТАЕТ НЕРАВНОМЕРНО — <span style={{ color: "#FC5C02" }}>А ТЫ НЕ ВИДИШЬ ГДЕ ПОМОЧЬ</span>
       </motion.h1>

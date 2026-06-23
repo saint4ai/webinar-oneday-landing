@@ -19,7 +19,7 @@ export function Slide_HowWasWorkshop() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.75, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[0.98] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(36px, 5vw, 92px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(36px, 5cqw, 92px)" }}
       >
         КАК ВАМ <span className="text-[#B6FF00]">ВОРКШОП</span>, ДРУЗЬЯ?
       </motion.h1>

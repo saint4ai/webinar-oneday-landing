@@ -17,7 +17,7 @@ export function BonusPriceReveal({ marketPrice, delay = 0.9 }: { marketPrice: st
     >
       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">на рынке</span>
       <div className="relative inline-block">
-        <span className="font-bold text-white/55 tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.5vw,22px)" }}>{marketPrice}</span>
+        <span className="font-bold text-white/55 tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.5cqw,22px)" }}>{marketPrice}</span>
         <motion.span
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
@@ -32,7 +32,7 @@ export function BonusPriceReveal({ marketPrice, delay = 0.9 }: { marketPrice: st
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.45, delay: delay + 0.4, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold text-[#B6FF00] whitespace-nowrap"
-        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.5vw,22px)", textShadow: "0 0 24px rgba(182,255,0,0.5)" }}
+        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.5cqw,22px)", textShadow: "0 0 24px rgba(182,255,0,0.5)" }}
       >
         БЕСПЛАТНО <span className="text-[#B6FF00]/60 text-[13px] font-normal">· бонусом</span>
       </motion.span>

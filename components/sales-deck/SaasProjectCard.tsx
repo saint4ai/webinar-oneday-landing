@@ -89,7 +89,7 @@ export function SaasProjectCard({
               alt={`${name} — экран ${index + 1}`}
               fill
               className="object-cover object-top"
-              sizes="40vw"
+              sizes="40cqw"
               priority={index === 0}
             />
           </motion.div>
@@ -117,7 +117,7 @@ export function SaasProjectCard({
         <div className="flex items-baseline gap-2 flex-wrap">
           <h4
             className="font-bold uppercase leading-none"
-            style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(17px, 1.4vw, 23px)" }}
+            style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(17px, 1.4cqw, 23px)" }}
           >
             {name}
           </h4>

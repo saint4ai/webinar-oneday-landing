@@ -5,7 +5,7 @@
  * Все остальные QR убраны (правка Александра): для другой карты / других банков / СНГ —
  * оплата по КНОПКЕ ПОД ВИДЕО (в плеере Bizon), не QR.
  */
-export function PaymentQRPair({ kaspiMaxH = "48vh" }: { kaspiMaxH?: string }) {
+export function PaymentQRPair({ kaspiMaxH = "48cqh" }: { kaspiMaxH?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 w-full">
       {/* eslint-disable-next-line @next/next/no-img-element */}

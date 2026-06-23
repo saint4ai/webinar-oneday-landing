@@ -19,7 +19,7 @@ export function Slide_Smysl1b_Proof() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="aura-tl" />}
       leftObject={
@@ -27,10 +27,10 @@ export function Slide_Smysl1b_Proof() {
           initial={{ opacity: 0, scale: 0.95, y: 18 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
-          className="relative w-full h-[80vh] rounded-2xl overflow-hidden border"
+          className="relative w-full h-[80cqh] rounded-2xl overflow-hidden border"
           style={{ borderColor: "rgba(255,255,255,0.12)", boxShadow: "0 30px 80px -30px rgba(0,0,0,0.7)" }}
         >
-          <Image src="/cards-gifs-screenshots/social-proof/proof-ai-nishanov.png" alt="Реальный пост в Threads: экономия 720 000 в год" fill sizes="28vw" className="object-cover object-top" priority />
+          <Image src="/cards-gifs-screenshots/social-proof/proof-ai-nishanov.png" alt="Реальный пост в Threads: экономия 720 000 в год" fill sizes="28cqw" className="object-cover object-top" priority />
         </motion.div>
       }
     >
@@ -43,7 +43,7 @@ export function Slide_Smysl1b_Proof() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.1vw, 50px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.1cqw, 50px)" }}
       >
         ЭТО НЕ Я ГОВОРЮ — <span className="text-[#B6FF00]">ЭТО УЖЕ ОБСУЖДАЮТ</span>
       </motion.h1>

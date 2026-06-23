@@ -41,7 +41,7 @@ export function Slide_20_TimeScale() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.6vw, 52px)",
+          fontSize: "clamp(28px, 3.6cqw, 52px)",
         }}
       >
         ОТ ИДЕИ ДО <span className="text-[#B6FF00]">РАБОЧЕЙ ВЕРСИИ</span>
@@ -100,7 +100,7 @@ export function Slide_20_TimeScale() {
                   style={{
                     color: i === MARKS.length - 1 ? "#FC5C02" : "#B6FF00",
                     fontFamily: "var(--font-benzin), system-ui, sans-serif",
-                    fontSize: "clamp(16px, 1.8vw, 24px)",
+                    fontSize: "clamp(16px, 1.8cqw, 24px)",
                   }}
                 >
                   {m.label}

@@ -115,10 +115,10 @@ export function Slide_14_AuthorityStats() {
       <div
         className="flex flex-col h-full w-full"
         style={{
-          paddingLeft: "clamp(40px, 5vw, 90px)",
-          paddingRight: "2.5vw",
-          paddingTop: "clamp(36px, 5.5vh, 64px)",
-          paddingBottom: "clamp(28px, 4.5vh, 52px)",
+          paddingLeft: "clamp(40px, 5cqw, 90px)",
+          paddingRight: "2.5cqw",
+          paddingTop: "clamp(36px, 5.5cqh, 64px)",
+          paddingBottom: "clamp(28px, 4.5cqh, 52px)",
         }}
       >
         {/* H1 — в одну строку */}
@@ -129,7 +129,7 @@ export function Slide_14_AuthorityStats() {
           className="font-bold uppercase shrink-0"
           style={{
             fontFamily: "var(--font-benzin)",
-            fontSize: "clamp(24px, 2.9vw, 44px)",
+            fontSize: "clamp(24px, 2.9cqw, 44px)",
             letterSpacing: "-0.02em",
             whiteSpace: "nowrap",
           }}
@@ -156,7 +156,7 @@ export function Slide_14_AuthorityStats() {
               >
                 <div
                   className="font-bold leading-none mb-1.5"
-                  style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(28px, 3.2vw, 48px)", color }}
+                  style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(28px, 3.2cqw, 48px)", color }}
                 >
                   <CountUp value={s.value} delay={i * 0.8} />
                   {s.suffix}
@@ -176,7 +176,7 @@ export function Slide_14_AuthorityStats() {
         >
           <span
             className="font-mono uppercase font-semibold tracking-[0.18em]"
-            style={{ color: "#B6FF00", fontSize: "clamp(11px, 1vw, 14px)" }}
+            style={{ color: "#B6FF00", fontSize: "clamp(11px, 1cqw, 14px)" }}
           >
             2 моих сервиса на подписке для клиентов
           </span>

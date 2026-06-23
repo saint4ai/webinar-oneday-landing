@@ -21,18 +21,18 @@ const RULES = [
 
 export function Slide_03_OrgInfo() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-full overflow-hidden bg-black">
       <Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />
-      <Spotlight className="bottom-0 left-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+      <Spotlight className="bottom-0 left-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
 
       <div
         className="relative z-10 h-full flex flex-col justify-center"
         style={{
-          paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+          paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)",
           paddingLeft: "48px",
         }}
       >
-        <div className="flex flex-col gap-8" style={{ maxWidth: "min(900px, 60vw)" }}>
+        <div className="flex flex-col gap-8" style={{ maxWidth: "min(900px, 60cqw)" }}>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -49,7 +49,7 @@ export function Slide_03_OrgInfo() {
             className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(34px, 4.2vw, 64px)",
+              fontSize: "clamp(34px, 4.2cqw, 64px)",
             }}
           >
             КАК ПРОЙДЁТ <span className="text-[#B6FF00]">ВОРКШОП</span>

@@ -65,12 +65,12 @@ export function KineticSlide({
   return (
     <section
       className={cn(
-        "relative w-screen h-screen overflow-hidden bg-black text-white flex flex-col justify-center",
+        "relative w-full h-full overflow-hidden bg-black text-white flex flex-col justify-center",
         className
       )}
       style={{
-        paddingLeft: isCenter ? undefined : "clamp(48px, 9vw, 160px)",
-        paddingRight: "calc(var(--sd-speaker-zone, 25vw) + 32px)",
+        paddingLeft: isCenter ? undefined : "clamp(48px, 9cqw, 160px)",
+        paddingRight: "calc(var(--sd-speaker-zone, 25cqw) + 32px)",
         alignItems: isCenter ? "center" : "flex-start",
         textAlign: isCenter ? "center" : "left",
       }}
@@ -95,8 +95,8 @@ export function KineticSlide({
         className={cn("font-bold uppercase leading-[0.95] tracking-[-0.035em]", isCenter ? "justify-center" : "", "flex flex-wrap gap-x-[0.25em]")}
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(40px, 6.5vw, 110px)",
-          maxWidth: isCenter ? "min(90vw, 70rem)" : "min(46rem, 100%)",
+          fontSize: "clamp(40px, 6.5cqw, 110px)",
+          maxWidth: isCenter ? "min(90cqw, 70rem)" : "min(46rem, 100%)",
         }}
       >
         {words.map((w, i) => (
@@ -119,7 +119,7 @@ export function KineticSlide({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: reduce ? 0 : 0.2 + words.length * 0.09 + 0.1 }}
           className="text-white/70 text-base md:text-2xl leading-snug mt-7"
-          style={{ maxWidth: isCenter ? "min(80vw, 44rem)" : "min(40rem, 100%)" }}
+          style={{ maxWidth: isCenter ? "min(80cqw, 44rem)" : "min(40rem, 100%)" }}
         >
           {sub}
         </motion.div>

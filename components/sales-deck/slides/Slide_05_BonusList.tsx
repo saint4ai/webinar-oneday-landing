@@ -67,7 +67,7 @@ export function Slide_05_BonusList() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-7"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.6vw, 52px)",
+          fontSize: "clamp(30px, 3.6cqw, 52px)",
         }}
       >
         ТРИ БОНУСА <span className="text-[#B6FF00]">В КОНЦЕ</span>
@@ -98,7 +98,7 @@ export function Slide_05_BonusList() {
                     src={b.img}
                     alt={b.title}
                     fill
-                    sizes="(max-width: 1280px) 28vw, 320px"
+                    sizes="(max-width: 1280px) 28cqw, 320px"
                     className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
                     priority={i === 0}
                   />

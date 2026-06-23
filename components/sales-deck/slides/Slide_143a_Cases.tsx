@@ -14,7 +14,7 @@ export function Slide_143a_Cases() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
@@ -22,7 +22,7 @@ export function Slide_143a_Cases() {
           initial={{ opacity: 0, scale: 0.96, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
-          className="relative w-full h-[82vh]"
+          className="relative w-full h-[82cqh]"
         >
           <CasesCarousel />
         </motion.div>
@@ -44,7 +44,7 @@ export function Slide_143a_Cases() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 52px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4cqw, 52px)" }}
       >
         ИХ РЕЗУЛЬТАТЫ — <span className="text-[#B6FF00]">НЕ ОБЕЩАНИЯ</span>
       </motion.h1>

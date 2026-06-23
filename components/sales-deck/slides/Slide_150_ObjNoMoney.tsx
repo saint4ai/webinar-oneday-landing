@@ -30,7 +30,7 @@ export function Slide_150_ObjNoMoney() {
             <motion.div key={p.mo} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.9 + i * 0.14, ease: [0.34, 1.3, 0.64, 1] }} className="rounded-xl px-5 py-3.5" style={{ background: "rgba(182,255,0,0.08)", border: "1px solid rgba(182,255,0,0.35)" }}>
               <div className="text-white/55 text-xs uppercase tracking-[0.1em] mb-1">{p.mo}</div>
               <div className="flex items-baseline gap-1.5">
-                <span className="font-bold text-[#B6FF00] tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px,2.2vw,34px)" }}>{p.sum}</span>
+                <span className="font-bold text-[#B6FF00] tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px,2.2cqw,34px)" }}>{p.sum}</span>
                 <span className="text-white/50 text-xs">{p.note}</span>
               </div>
             </motion.div>

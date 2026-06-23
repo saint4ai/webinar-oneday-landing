@@ -39,7 +39,7 @@ export function CyberpunkChapter({
     <SlideLayout
       speakerSide="right"
       className={className}
-      objectColumnSize={leftContent ? "28vw" : "0px"}
+      objectColumnSize={leftContent ? "28cqw" : "0px"}
       background={
         <>
           <LiquidBackground variant="water" opacity={0.35} />
@@ -75,10 +75,10 @@ export function CyberpunkChapter({
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
             fontSize:
               chapterNumber.length > 11
-                ? (leftContent ? "clamp(38px, 3.8vw, 68px)" : "clamp(42px, 4.4vw, 80px)")
+                ? (leftContent ? "clamp(38px, 3.8cqw, 68px)" : "clamp(42px, 4.4cqw, 80px)")
                 : chapterNumber.length > 7
-                ? (leftContent ? "clamp(42px, 4.6vw, 80px)" : "clamp(48px, 5.4vw, 96px)")
-                : (leftContent ? "clamp(48px, 5.2vw, 92px)" : "clamp(56px, 7vw, 120px)"),
+                ? (leftContent ? "clamp(42px, 4.6cqw, 80px)" : "clamp(48px, 5.4cqw, 96px)")
+                : (leftContent ? "clamp(48px, 5.2cqw, 92px)" : "clamp(56px, 7cqw, 120px)"),
             wordBreak: "keep-all",
             overflowWrap: "normal",
             whiteSpace: chapterNumber.length <= 11 ? "nowrap" : "normal",

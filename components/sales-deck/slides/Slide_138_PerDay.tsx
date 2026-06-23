@@ -23,7 +23,7 @@ export function Slide_138_PerDay() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.25, 1, 0.5, 1] }} className="flex items-center gap-5 mb-5 flex-wrap">
-        <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8vw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}>
+        <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8cqw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}>
           399 ₸
         </div>
         <div>
@@ -35,7 +35,7 @@ export function Slide_138_PerDay() {
       <div className="flex flex-wrap gap-2.5 max-w-3xl mb-4">
         {CASCADE.map((c, i) => (
           <motion.div key={c.l} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.5 + i * 0.13 }} className="rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <div className="font-bold text-white tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.5vw,22px)" }}>{c.v}</div>
+            <div className="font-bold text-white tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(16px,1.5cqw,22px)" }}>{c.v}</div>
             <div className="text-white/45 text-xs mt-0.5">{c.l}</div>
           </motion.div>
         ))}

@@ -10,9 +10,9 @@ import { ThreadsCarousel } from "../ThreadsCarousel";
 export function Slide_03_ThreadsProof() {
   return (
     <section
-      className="relative w-full h-screen overflow-hidden bg-black"
+      className="relative w-full h-full overflow-hidden bg-black"
       style={{
-        paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+        paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)",
         paddingLeft: "48px",
         paddingTop: "48px",
         paddingBottom: "48px",
@@ -37,7 +37,7 @@ export function Slide_03_ThreadsProof() {
             className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em]"
             style={{
               fontFamily: "'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(32px, 3.5vw, 64px)",
+              fontSize: "clamp(32px, 3.5cqw, 64px)",
             }}
           >
             Бизнес ищет тех, кто умеет{" "}

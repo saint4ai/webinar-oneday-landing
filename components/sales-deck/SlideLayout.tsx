@@ -10,7 +10,7 @@ interface SlideLayoutProps {
   children: ReactNode;
   /** Где зона спикера ("right" по умолчанию — Александр стоит справа). */
   speakerSide?: "right" | "left";
-  /** Ширина колонки 3D-объекта. По умолчанию 30vw (раньше было 40vw — слишком жадно). */
+  /** Ширина колонки 3D-объекта. По умолчанию 30cqw (раньше было 40cqw — слишком жадно). */
   objectColumnSize?: string;
   /** Минимальная ширина текстовой колонки в px. По умолчанию 480px. */
   contentMinWidth?: number;
@@ -55,7 +55,7 @@ export function SlideLayout({
   leftObject,
   children,
   speakerSide = "right",
-  objectColumnSize = "30vw",
+  objectColumnSize = "30cqw",
   contentMinWidth = 480,
   background,
   className,
@@ -66,7 +66,7 @@ export function SlideLayout({
   const hasLeft = !!leftObject;
   const objCol = hasLeft ? objectColumnSize : "0px";
   const objOverflowClass = objectOverflow === "visible" ? "overflow-visible" : "overflow-hidden";
-  const speakerCol = "var(--sd-speaker-zone, 30vw)";
+  const speakerCol = "var(--sd-speaker-zone, 40cqw)";
   const contentCol = `minmax(${contentMinWidth}px, 1fr)`;
 
   const cols = speakerSide === "right"
@@ -76,7 +76,7 @@ export function SlideLayout({
   return (
     <section
       className={cn(
-        "relative w-screen h-screen overflow-hidden bg-black",
+        "relative w-full h-full overflow-hidden bg-black",
         className
       )}
       style={style}

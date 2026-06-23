@@ -21,12 +21,12 @@ export function Slide_141_HowToPay() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       contentMinWidth={480}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="relative w-full rounded-2xl overflow-hidden border flex items-center justify-center" style={{ borderColor: "rgba(182,255,0,0.4)", background: "rgba(255,255,255,0.04)" }}>
-          <PaymentQRPair kaspiMaxH="48vh" />
+          <PaymentQRPair kaspiMaxH="48cqh" />
         </motion.div>
       }
     >
@@ -38,7 +38,7 @@ export function Slide_141_HowToPay() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4vw, 60px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4cqw, 60px)" }}
       >
         КАК ВНЕСТИ <span className="text-[#B6FF00] whitespace-nowrap">10 000 ₸</span>
       </motion.h1>

@@ -21,7 +21,7 @@ export function Slide_Smysl4_Efficiency() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.85, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.035em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4.2vw, 66px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4.2cqw, 66px)" }}
       >
         РУТИНА — ЭТО <span className="text-[#B6FF00]">НЕ ТВОЯ РАБОТА</span>
       </motion.h1>
@@ -38,7 +38,7 @@ export function Slide_Smysl4_Efficiency() {
             className="h-full flex flex-col justify-center px-5 overflow-hidden"
             style={{ background: "rgba(255,255,255,0.07)", borderRight: "2px solid #B6FF00" }}
           >
-            <span className="font-bold text-white/55 whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2vw,30px)" }}>70% — рутина</span>
+            <span className="font-bold text-white/55 whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2cqw,30px)" }}>70% — рутина</span>
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.1em] text-white/35 whitespace-nowrap">AI закрывает это</span>
           </motion.div>
           <motion.div
@@ -46,7 +46,7 @@ export function Slide_Smysl4_Efficiency() {
             className="h-full flex-1 flex flex-col justify-center px-5 overflow-hidden"
             style={{ background: "rgba(182,255,0,0.12)" }}
           >
-            <span className="font-bold text-[#B6FF00] whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2vw,30px)" }}>30% — ты</span>
+            <span className="font-bold text-[#B6FF00] whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2cqw,30px)" }}>30% — ты</span>
             <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.1em] text-[#B6FF00]/70 whitespace-nowrap">решения · результат</span>
           </motion.div>
         </div>

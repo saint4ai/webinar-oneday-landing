@@ -5,7 +5,7 @@ import { Zap } from "lucide-react";
 
 /**
  * Базовый слайд-вспышка «ВНИМАНИЕ · СКИДКА» — pattern-interrupt перед раскрытием цены.
- * Текст выровнен по левому краю и не заходит в зону спикера (правые 30vw).
+ * Текст выровнен по левому краю и не заходит в зону спикера (правые 30cqw).
  * Фоновые лучи/свечение/искры — полноэкранные по центру (не зависят от выравнивания текста).
  * props.gifts=true — добавляет падающие подарки 🎁 (для финального слайда скидки).
  */
@@ -27,19 +27,19 @@ const GIFTS = [
 export function DiscountAlertBase({ discount, subtitle, gifts = false }: { discount: string; subtitle: string; gifts?: boolean }) {
   return (
     <section
-      className="relative w-screen h-screen overflow-hidden flex items-center justify-start"
-      style={{ background: "radial-gradient(circle at 42% 45%, #1c1500 0%, #0a0a05 55%, #000 100%)", paddingLeft: "clamp(40px, 6vw, 120px)", paddingRight: "var(--sd-speaker-zone, 30vw)" }}
+      className="relative w-full h-full overflow-hidden flex items-center justify-start"
+      style={{ background: "radial-gradient(circle at 42% 45%, #1c1500 0%, #0a0a05 55%, #000 100%)", paddingLeft: "clamp(40px, 6cqw, 120px)", paddingRight: "var(--sd-speaker-zone, 30cqw)" }}
     >
       {/* Лучи лайм */}
       <motion.div
         aria-hidden className="absolute left-1/2 top-1/2 pointer-events-none"
-        style={{ width: "190vw", height: "190vw", x: "-50%", y: "-50%", background: "repeating-conic-gradient(from 0deg at 50% 50%, rgba(182,255,0,0.10) 0deg 6deg, transparent 6deg 18deg)", maskImage: "radial-gradient(circle, #000 0%, transparent 60%)", WebkitMaskImage: "radial-gradient(circle, #000 0%, transparent 60%)" }}
+        style={{ width: "190cqw", height: "190cqw", x: "-50%", y: "-50%", background: "repeating-conic-gradient(from 0deg at 50% 50%, rgba(182,255,0,0.10) 0deg 6deg, transparent 6deg 18deg)", maskImage: "radial-gradient(circle, #000 0%, transparent 60%)", WebkitMaskImage: "radial-gradient(circle, #000 0%, transparent 60%)" }}
         animate={{ rotate: 360 }} transition={{ duration: 30, ease: "linear", repeat: Infinity }}
       />
       {/* Лучи оранж — в противоход */}
       <motion.div
         aria-hidden className="absolute left-1/2 top-1/2 pointer-events-none"
-        style={{ width: "170vw", height: "170vw", x: "-50%", y: "-50%", background: "repeating-conic-gradient(from 9deg at 50% 50%, rgba(252,92,2,0.08) 0deg 5deg, transparent 5deg 16deg)", maskImage: "radial-gradient(circle, #000 0%, transparent 56%)", WebkitMaskImage: "radial-gradient(circle, #000 0%, transparent 56%)" }}
+        style={{ width: "170cqw", height: "170cqw", x: "-50%", y: "-50%", background: "repeating-conic-gradient(from 9deg at 50% 50%, rgba(252,92,2,0.08) 0deg 5deg, transparent 5deg 16deg)", maskImage: "radial-gradient(circle, #000 0%, transparent 56%)", WebkitMaskImage: "radial-gradient(circle, #000 0%, transparent 56%)" }}
         animate={{ rotate: -360 }} transition={{ duration: 40, ease: "linear", repeat: Infinity }}
       />
       {/* Свечение */}
@@ -52,7 +52,7 @@ export function DiscountAlertBase({ discount, subtitle, gifts = false }: { disco
 
       {/* Падающие подарки */}
       {gifts && GIFTS.map((g, i) => (
-        <motion.div key={`g${i}`} aria-hidden className="absolute pointer-events-none z-[6]" style={{ left: g.left, top: 0, fontSize: g.size, filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.5))" }} initial={{ y: "-12vh", opacity: 0, rotate: -20 }} animate={{ y: "115vh", opacity: [0, 1, 1, 0.85, 0], rotate: [-20, 18, -8] }} transition={{ duration: g.dur, delay: g.delay, ease: "linear", repeat: Infinity }}>
+        <motion.div key={`g${i}`} aria-hidden className="absolute pointer-events-none z-[6]" style={{ left: g.left, top: 0, fontSize: g.size, filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.5))" }} initial={{ y: "-12cqh", opacity: 0, rotate: -20 }} animate={{ y: "115cqh", opacity: [0, 1, 1, 0.85, 0], rotate: [-20, 18, -8] }} transition={{ duration: g.dur, delay: g.delay, ease: "linear", repeat: Infinity }}>
           🎁
         </motion.div>
       ))}
@@ -69,11 +69,11 @@ export function DiscountAlertBase({ discount, subtitle, gifts = false }: { disco
           <span className="font-bold uppercase tracking-[0.2em] text-black text-sm md:text-base" style={{ fontFamily: "var(--font-benzin), system-ui" }}>Внимание</span>
         </motion.div>
 
-        <div className="font-bold uppercase text-white leading-[0.9] tracking-[-0.02em]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(46px, 7vw, 116px)", textShadow: "0 0 36px rgba(0,0,0,0.55)" }}>
+        <div className="font-bold uppercase text-white leading-[0.9] tracking-[-0.02em]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(46px, 7cqw, 116px)", textShadow: "0 0 36px rgba(0,0,0,0.55)" }}>
           СКИДКА
         </div>
 
-        <motion.div className="font-bold leading-[0.82] tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(110px, 16vw, 280px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.6), 0 0 150px rgba(182,255,0,0.35)" }} animate={{ scale: [1, 1.035, 1] }} transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}>
+        <motion.div className="font-bold leading-[0.82] tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(110px, 16cqw, 280px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.6), 0 0 150px rgba(182,255,0,0.35)" }} animate={{ scale: [1, 1.035, 1] }} transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}>
           {discount}
         </motion.div>
 

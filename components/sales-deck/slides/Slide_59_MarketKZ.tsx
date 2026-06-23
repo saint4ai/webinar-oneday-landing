@@ -20,7 +20,7 @@ export function Slide_59_MarketKZ() {
       contentMinWidth={720}
       background={<SlideBg theme="dark" variant="dual-bottom" />}
     >
-      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(26px,4.5vh,52px)", paddingBottom: "clamp(22px,3.5vh,44px)" }}>
+      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(26px,4.5cqh,52px)", paddingBottom: "clamp(22px,3.5cqh,44px)" }}>
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-2 shrink-0">
           // РЫНОК · КАЗАХСТАН
         </motion.div>
@@ -32,7 +32,7 @@ export function Slide_59_MarketKZ() {
           className="font-bold leading-[1.06] tabular-nums whitespace-nowrap shrink-0 pt-1"
           style={{
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(44px, 5vw, 92px)",
+            fontSize: "clamp(44px, 5cqw, 92px)",
             background: "linear-gradient(120deg, #B6FF00 35%, #FC5C02)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
@@ -43,7 +43,7 @@ export function Slide_59_MarketKZ() {
           {n.toLocaleString("ru-RU")}
         </motion.div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.5 }} className="font-bold uppercase text-white leading-[1.0] tracking-[-0.02em] mt-1 shrink-0" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px,2.6vw,42px)" }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.5 }} className="font-bold uppercase text-white leading-[1.0] tracking-[-0.02em] mt-1 shrink-0" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px,2.6cqw,42px)" }}>
           БИЗНЕСОВ В КАЗАХСТАНЕ
         </motion.div>
 

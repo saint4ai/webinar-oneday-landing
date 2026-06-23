@@ -44,7 +44,7 @@ export function Slide_42_RealtorSolution() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(24px, 2.9vw, 44px)",
+          fontSize: "clamp(24px, 2.9cqw, 44px)",
         }}
       >
         AI ПИШЕТ 4 ОБЪЯВЛЕНИЯ ИЗ 8 ФОТО ЗА <span className="text-[#B6FF00]">3 МИНУТЫ</span>
@@ -134,7 +134,7 @@ export function Slide_42_RealtorSolution() {
         >
           <div className="flex items-center gap-1.5">
             <Clock className="w-5 h-5 text-[#B6FF00]" strokeWidth={2} />
-            <span className="font-bold text-[#B6FF00] leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3vw,44px)" }}>3:00</span>
+            <span className="font-bold text-[#B6FF00] leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3cqw,44px)" }}>3:00</span>
           </div>
           <span className="text-white/45 text-[10px] md:text-[11px] mt-1 font-mono uppercase tracking-[0.08em]">вместо <span style={{ color: "#FC5C02" }}>40 минут</span></span>
         </motion.div>

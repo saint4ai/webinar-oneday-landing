@@ -23,7 +23,7 @@ export function Slide_109_Question2() {
 
       {/* Герой: 10.5М */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 1, 0.5, 1] }} className="rounded-2xl px-6 py-5 mb-3 max-w-4xl w-fit" style={{ background: "rgba(182,255,0,0.09)", border: "1px solid rgba(182,255,0,0.35)", boxShadow: "0 0 70px -26px rgba(182,255,0,0.5)" }}>
-        <div className="font-bold leading-none tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(34px, 4.8vw, 84px)", color: "#B6FF00" }}>
+        <div className="font-bold leading-none tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(34px, 4.8cqw, 84px)", color: "#B6FF00" }}>
           10 500 000 ₸
         </div>
         <div className="text-white/70 text-sm md:text-base mt-2">один клиентский проект <span className="text-white/40">· + ещё 600 000 ₸ и 400 000 ₸</span></div>
@@ -34,7 +34,7 @@ export function Slide_109_Question2() {
         {STATS.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 + i * 0.16 }} className="flex-1 min-w-[200px] rounded-xl px-5 py-3.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
             <div className="flex items-baseline gap-2">
-              <span className="font-bold tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3vw,46px)", color: "#B6FF00" }}>{s.value}</span>
+              <span className="font-bold tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3cqw,46px)", color: "#B6FF00" }}>{s.value}</span>
               <span className="text-white/50 text-sm">{s.unit}</span>
             </div>
             <div className="text-white font-semibold text-sm md:text-base mt-1">{s.label}</div>

@@ -18,7 +18,7 @@ export function Slide_132_PrepayBonuses() {
         // ПРЕДОПЛАТА = ДОСТУП К БОНУСАМ
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="font-bold uppercase text-white/85 tracking-[-0.01em] leading-[1.05]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.6vw, 40px)" }}>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="font-bold uppercase text-white/85 tracking-[-0.01em] leading-[1.05]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.6cqw, 40px)" }}>
         ДЛЯ ТЕХ, КТО ВНЕСЁТ ПРЕДОПЛАТУ
       </motion.div>
 
@@ -27,7 +27,7 @@ export function Slide_132_PrepayBonuses() {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.3, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold leading-[0.95] tabular-nums whitespace-nowrap my-2"
-        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8.5vw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}
+        style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8.5cqw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}
       >
         10 000 ₸
       </motion.h1>

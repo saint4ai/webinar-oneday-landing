@@ -103,7 +103,7 @@ export function TerminalTransition({
             className="font-bold leading-[1.02] tracking-[-0.025em] mt-5"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(26px, 3.2vw, 50px)",
+              fontSize: "clamp(26px, 3.2cqw, 50px)",
               color: "#2A2520",
               textTransform: uppercase ? "uppercase" : "none",
             }}

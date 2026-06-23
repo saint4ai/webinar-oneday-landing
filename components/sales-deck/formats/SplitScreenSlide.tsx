@@ -71,17 +71,17 @@ export function SplitScreenSlide({
 
   return (
     <section
-      className={cn("relative w-screen h-screen overflow-hidden bg-black text-white", className)}
+      className={cn("relative w-full h-full overflow-hidden bg-black text-white", className)}
     >
       <div
         className="relative z-10 h-full grid items-center"
         style={{
           // асимметрия 1.15 / 0.85 + зона спикера справа
-          gridTemplateColumns: "1.15fr 0.85fr var(--sd-speaker-zone, 25vw)",
+          gridTemplateColumns: "1.15fr 0.85fr var(--sd-speaker-zone, 25cqw)",
         }}
       >
         {/* ЛЕВО — крупный текст */}
-        <div className="flex flex-col justify-center" style={{ paddingLeft: "clamp(48px, 7vw, 130px)", paddingRight: "3vw" }}>
+        <div className="flex flex-col justify-center" style={{ paddingLeft: "clamp(48px, 7cqw, 130px)", paddingRight: "3cqw" }}>
           {kicker && (
             <motion.div
               {...anim({ opacity: 0, y: -8 }, { opacity: 1, y: 0 }, 0.1)}
@@ -103,7 +103,7 @@ export function SplitScreenSlide({
             className="font-bold uppercase leading-[0.95] tracking-[-0.035em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(30px, 3.8vw, 60px)",
+              fontSize: "clamp(30px, 3.8cqw, 60px)",
             }}
           >
             {title}
@@ -133,7 +133,7 @@ export function SplitScreenSlide({
             background: "#0a0c0a",
             border: "1px solid rgba(255,255,255,0.1)",
             boxShadow: `0 30px 60px -25px ${accent}30`,
-            maxHeight: "78vh",
+            maxHeight: "78cqh",
           }}
         >
           {/* Title bar редактора */}

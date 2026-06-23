@@ -21,17 +21,17 @@ const TARGETING = [
 
 export function Slide_09_Targeting() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-full overflow-hidden bg-black">
       <Spotlight className="-top-40 left-0 md:-top-20" fill="#B6FF00" />
 
       <div
         className="relative z-10 h-full flex flex-col justify-center"
         style={{
-          paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+          paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)",
           paddingLeft: "48px",
         }}
       >
-        <div className="flex flex-col gap-7" style={{ maxWidth: "min(1000px, 62vw)" }}>
+        <div className="flex flex-col gap-7" style={{ maxWidth: "min(1000px, 62cqw)" }}>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -48,7 +48,7 @@ export function Slide_09_Targeting() {
             className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(34px, 4.2vw, 60px)",
+              fontSize: "clamp(34px, 4.2cqw, 60px)",
             }}
           >
             ВОРКШОП ДЛЯ ВАС <span className="text-[#B6FF00]">ЕСЛИ</span>

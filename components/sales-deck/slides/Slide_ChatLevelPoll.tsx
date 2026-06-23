@@ -29,7 +29,7 @@ export function Slide_ChatLevelPoll() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 48px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 48px)" }}
       >
         ОЦЕНИ СВОЙ УРОВЕНЬ ВЛАДЕНИЯ <span className="text-[#B6FF00]">НЕЙРОСЕТЯМИ</span>
       </motion.h1>
@@ -58,10 +58,10 @@ export function Slide_ChatLevelPoll() {
                 {lv.n}
               </div>
               <div className="relative w-full" style={{ aspectRatio: "4 / 5" }}>
-                <Image src={lv.img} alt={lv.cap} fill sizes="22vw" className="object-cover" priority={i < 2} />
+                <Image src={lv.img} alt={lv.cap} fill sizes="22cqw" className="object-cover" priority={i < 2} />
               </div>
               <div className="px-3 py-3 text-center">
-                <span className={`leading-tight ${top ? "text-[#B6FF00] font-semibold" : "text-white/80"}`} style={{ fontSize: "clamp(13px, 0.95vw, 15px)" }}>{lv.cap}</span>
+                <span className={`leading-tight ${top ? "text-[#B6FF00] font-semibold" : "text-white/80"}`} style={{ fontSize: "clamp(13px, 0.95cqw, 15px)" }}>{lv.cap}</span>
               </div>
             </motion.div>
           );

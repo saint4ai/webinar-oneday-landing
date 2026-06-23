@@ -36,7 +36,7 @@ export function Slide_128d_FirstClient() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.03] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.5vw, 56px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.5cqw, 56px)" }}
       >
         ТВОЙ <span className="text-[#B6FF00]">ПЕРВЫЙ КЛИЕНТ</span>
       </motion.h1>
@@ -93,7 +93,7 @@ export function Slide_128d_FirstClient() {
             <Banknote className="w-5 h-5 text-black" strokeWidth={2.2} />
           </div>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="font-bold leading-none whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.6vw,52px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.4)" }}>300 000 ₸</span>
+            <span className="font-bold leading-none whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.6cqw,52px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.4)" }}>300 000 ₸</span>
             <span className="text-white/60 text-sm md:text-base">первый чек — за то, что собрал сам</span>
           </div>
         </motion.div>

@@ -20,7 +20,7 @@ export function Slide_PracticeStart() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(36px, 5vw, 84px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(36px, 5cqw, 84px)" }}
       >
         ПРИСТУПАЕМ К <span className="text-[#B6FF00]">ПРАКТИКЕ!</span>
       </motion.h1>

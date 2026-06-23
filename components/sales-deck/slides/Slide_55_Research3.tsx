@@ -41,7 +41,7 @@ export function Slide_55_Research3() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 58px)",
+          fontSize: "clamp(30px, 3.8cqw, 58px)",
         }}
       >
         ГДЕ <span className="text-[#B6FF00]">ИСКАТЬ</span>

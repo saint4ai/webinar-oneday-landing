@@ -18,7 +18,7 @@ const MOUSE_SENSITIVITY = 2.0;
 
 /**
  * Slide 1 · Cold Open — «СТАНЬ АРХИТЕКТОРОМ»
- * Робот в background (absolute, 110vw, left:-40vw) — корпус частично за левым краем,
+ * Робот в background (absolute, 110cqw, left:-40cqw) — корпус частично за левым краем,
  * рука выходит в правую часть слайда и проходит ЗА полупрозрачным текстом.
  * Текст без подкладки — фон полностью прозрачный.
  */
@@ -87,12 +87,12 @@ export function Slide_01_ColdOpen() {
       background={
         <>
           <Spotlight className="-top-40 right-0 md:right-20 md:-top-20" fill="#B6FF00" />
-          {/* Робот absolute — сдвинут далеко влево (left:-80vw),
+          {/* Робот absolute — сдвинут далеко влево (left:-80cqw),
               видна только правая половина (от плеча и правее), рука вытянута через весь слайд.
-              Canvas всё равно занимает всю горизонталь (right edge 80vw, 80vw → +60vw = 100vw покрытия). */}
+              Canvas всё равно занимает всю горизонталь (right edge 80cqw, 80cqw → +60cqw = 100cqw покрытия). */}
           <div
             className="absolute top-0 bottom-0"
-            style={{ width: "180vw", left: "-80vw", zIndex: 2, pointerEvents: "none" }}
+            style={{ width: "180cqw", left: "-80cqw", zIndex: 2, pointerEvents: "none" }}
           >
             <SplineScene scene={ROBOT_SCENE} className="w-full h-full" onLoad={handleSplineLoad} />
           </div>
@@ -102,7 +102,7 @@ export function Slide_01_ColdOpen() {
       {/* Отступ в vw — пропорционален роботу на любой ширине: на широком
           экране (1920) текст уходит правее руки, на 1440 остаётся near робота.
           Без него текст-колонка стартует с X=0 и налезает на робота. */}
-      <div style={{ paddingLeft: "clamp(0px, 18vw, 420px)" }}>
+      <div style={{ paddingLeft: "clamp(0px, 18cqw, 420px)" }}>
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -119,8 +119,8 @@ export function Slide_01_ColdOpen() {
         className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em] pointer-events-none"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(22px, 2.4vw, 42px)",
-          maxWidth: "min(820px, 46vw)",
+          fontSize: "clamp(22px, 2.4cqw, 42px)",
+          maxWidth: "min(820px, 46cqw)",
         }}
       >
         СТАНЬ <span className="text-[#B6FF00]">АРХИТЕКТОРОМ</span><br />

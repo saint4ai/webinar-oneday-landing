@@ -38,7 +38,7 @@ export function QuestionMarkPulse({
       style={{
         fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
         fontWeight: 800,
-        fontSize: "clamp(180px, 28vw, 480px)",
+        fontSize: "clamp(180px, 28cqw, 480px)",
         lineHeight: 0.9,
         color,
         textShadow: `0 0 80px ${color}66, 0 0 160px ${color}33`,

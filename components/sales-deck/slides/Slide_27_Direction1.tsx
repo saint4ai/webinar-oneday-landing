@@ -19,7 +19,7 @@ export function Slide_27_Direction1() {
     >
       <div
         className="flex flex-col h-full w-full justify-center"
-        style={{ paddingTop: "clamp(24px,4vh,48px)", paddingBottom: "clamp(24px,4vh,48px)" }}
+        style={{ paddingTop: "clamp(24px,4cqh,48px)", paddingBottom: "clamp(24px,4cqh,48px)" }}
       >
         {/* ===== ВЕРХ: нумерация + H1 + подзаголовки ===== */}
         <div className="shrink-0">
@@ -32,7 +32,7 @@ export function Slide_27_Direction1() {
             <span className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00]">// НАПРАВЛЕНИЕ</span>
             <span
               className="font-bold leading-none"
-              style={{ color: "#B6FF00", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(32px,3.6vw,56px)", textShadow: "0 0 30px rgba(182,255,0,0.4)" }}
+              style={{ color: "#B6FF00", fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(32px,3.6cqw,56px)", textShadow: "0 0 30px rgba(182,255,0,0.4)" }}
             >
               01
             </span>
@@ -45,7 +45,7 @@ export function Slide_27_Direction1() {
             className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em]"
             style={{
               fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(24px, 2.8vw, 46px)",
+              fontSize: "clamp(24px, 2.8cqw, 46px)",
               wordBreak: "keep-all",
               overflowWrap: "normal",
               hyphens: "none",

@@ -19,11 +19,11 @@ export function Slide_104_CaseAuthor() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="34vw"
+      objectColumnSize="34cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
-        <div className="flex flex-col gap-3 w-full items-stretch justify-center h-[88vh]">
+        <div className="flex flex-col gap-3 w-full items-stretch justify-center h-[88cqh]">
           {/* Платформа onAI.academy */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 20 }}
@@ -69,7 +69,7 @@ export function Slide_104_CaseAuthor() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.2vw, 64px)", paddingTop: "0.1em" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.2cqw, 64px)", paddingTop: "0.1em" }}
       >
         И Я <span className="text-[#B6FF00]">ТАКОЙ ЖЕ</span>
       </motion.h1>

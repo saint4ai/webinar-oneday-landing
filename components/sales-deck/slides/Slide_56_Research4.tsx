@@ -42,7 +42,7 @@ export function Slide_56_Research4() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.4vw, 52px)",
+          fontSize: "clamp(28px, 3.4cqw, 52px)",
         }}
       >
         ЧТО ДЕЛАЕТ ИДЕЮ <span className="text-[#B6FF00]">СИЛЬНОЙ</span>

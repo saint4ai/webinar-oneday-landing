@@ -46,7 +46,7 @@ export function Slide_49_NichePunchline() {
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(40px, 5.2vw, 84px)",
+          fontSize: "clamp(40px, 5.2cqw, 84px)",
           paddingTop: "0.1em",
         }}
       >

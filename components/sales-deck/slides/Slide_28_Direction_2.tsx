@@ -11,15 +11,15 @@ import { Spotlight } from "../Spotlight";
  */
 export function Slide_28_Direction_2() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-full overflow-hidden bg-black">
       {/* Двойной spotlight: лайм сверху + оранж снизу для атмосферы */}
       <Spotlight className="-top-40 right-0 md:right-20 md:-top-20" fill="#B6FF00" />
-      <Spotlight className="bottom-0 right-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+      <Spotlight className="bottom-0 right-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
 
       {/* === iPhone 360° видео справа === */}
       <div
         className="pointer-events-none absolute top-0 bottom-0 z-[2] flex items-center justify-center"
-        style={{ width: "55vw", left: 0 }}
+        style={{ width: "55cqw", left: 0 }}
       >
         <video
           autoPlay
@@ -36,11 +36,11 @@ export function Slide_28_Direction_2() {
       <div
         className="pointer-events-none relative z-10 h-full flex flex-col justify-center"
         style={{
-          paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)",
+          paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)",
           paddingLeft: "48px",
         }}
       >
-        <div className="flex flex-col gap-6" style={{ maxWidth: "min(720px, 45vw)" }}>
+        <div className="flex flex-col gap-6" style={{ maxWidth: "min(720px, 45cqw)" }}>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -57,7 +57,7 @@ export function Slide_28_Direction_2() {
             className="font-bold uppercase text-white leading-[1.05] tracking-[-0.04em]"
             style={{
               fontFamily: "'Space Grotesk', system-ui, sans-serif",
-              fontSize: "clamp(28px, 3vw, 56px)",
+              fontSize: "clamp(28px, 3cqw, 56px)",
             }}
           >
             СВОЙ{" "}

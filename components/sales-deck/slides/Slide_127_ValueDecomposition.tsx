@@ -31,7 +31,7 @@ export function Slide_127_ValueDecomposition() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 46px)" }}
       >
         ЧТО ВНУТРИ — <span className="text-[#B6FF00]">ПО РЫНОЧНЫМ ЦЕНАМ</span>
       </motion.h1>
@@ -50,14 +50,14 @@ export function Slide_127_ValueDecomposition() {
               <span className="text-white font-semibold text-sm md:text-base">{it.t}</span>
               {it.d && <span className="text-white/40 text-xs md:text-sm"> · {it.d}</span>}
             </div>
-            <span className="font-bold tabular-nums shrink-0 text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(15px,1.4vw,20px)" }}>{it.p} ₸</span>
+            <span className="font-bold tabular-nums shrink-0 text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(15px,1.4cqw,20px)" }}>{it.p} ₸</span>
           </motion.div>
         ))}
       </div>
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 1.2 }} className="flex items-baseline justify-between gap-4 max-w-3xl rounded-xl px-5 py-3" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.4)" }}>
-        <span className="font-bold uppercase text-white tracking-[0.04em]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2vw,30px)" }}>ИТОГО</span>
-        <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(24px,3vw,48px)" }}>770 000 ₸</span>
+        <span className="font-bold uppercase text-white tracking-[0.04em]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(18px,2cqw,30px)" }}>ИТОГО</span>
+        <span className="font-bold tabular-nums text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(24px,3cqw,48px)" }}>770 000 ₸</span>
       </motion.div>
     </SlideLayout>
   );

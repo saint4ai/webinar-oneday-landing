@@ -43,7 +43,7 @@ export function Slide_19_WhatToBuild() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-7"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 56px)",
+          fontSize: "clamp(30px, 3.8cqw, 56px)",
         }}
       >
         ЧТО МОЖНО <span className="text-[#B6FF00]">СОБРАТЬ</span>

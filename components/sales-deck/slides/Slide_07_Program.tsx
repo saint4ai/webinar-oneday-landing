@@ -19,14 +19,14 @@ const TOPICS = [
 
 export function Slide_07_Program() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black">
+    <section className="relative w-full h-full overflow-hidden bg-black">
       <Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />
 
       <div
         className="relative z-10 h-full flex flex-col justify-center"
-        style={{ paddingRight: "calc(var(--sd-speaker-zone, 30vw) + 48px)", paddingLeft: "48px" }}
+        style={{ paddingRight: "calc(var(--sd-speaker-zone, 30cqw) + 48px)", paddingLeft: "48px" }}
       >
-        <div className="flex flex-col gap-7" style={{ maxWidth: "min(1000px, 64vw)" }}>
+        <div className="flex flex-col gap-7" style={{ maxWidth: "min(1000px, 64cqw)" }}>
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -41,7 +41,7 @@ export function Slide_07_Program() {
             animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
             transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
             className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em]"
-            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4vw, 60px)" }}
+            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4cqw, 60px)" }}
           >
             ЧТО БУДЕТ НА <span className="text-[#B6FF00]">ВОРКШОПЕ</span>
           </motion.h1>
@@ -58,7 +58,7 @@ export function Slide_07_Program() {
               >
                 <span
                   className="font-bold leading-none shrink-0"
-                  style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px, 2vw, 30px)", color: "#B6FF00" }}
+                  style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px, 2cqw, 30px)", color: "#B6FF00" }}
                 >
                   {t.n}
                 </span>

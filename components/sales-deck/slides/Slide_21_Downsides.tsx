@@ -18,7 +18,7 @@ export function Slide_21_Downsides() {
       background={
         <>
           <Spotlight className="-top-40 right-0 md:-top-20" fill="#FC5C02" />
-          <Spotlight className="bottom-0 left-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+          <Spotlight className="bottom-0 left-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
         </>
       }
     >
@@ -38,7 +38,7 @@ export function Slide_21_Downsides() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8vw, 56px)",
+          fontSize: "clamp(30px, 3.8cqw, 56px)",
         }}
       >
         А ЕСТЬ <span className="text-[#FC5C02]">МИНУСЫ?</span>

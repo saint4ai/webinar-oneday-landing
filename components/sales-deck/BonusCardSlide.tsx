@@ -28,7 +28,7 @@ export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30vw"
+      objectColumnSize="30cqw"
       contentMinWidth={480}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
@@ -40,7 +40,7 @@ export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel
           style={{ aspectRatio: "4 / 5", border: cardImage ? "1px solid rgba(182,255,0,0.3)" : "1px dashed rgba(182,255,0,0.32)", background: cardImage ? "#ffffff" : "rgba(182,255,0,0.03)", boxShadow: cardImage ? "0 30px 80px -30px rgba(0,0,0,0.55), 0 0 60px -26px rgba(182,255,0,0.3)" : "none" }}
         >
           {cardImage ? (
-            <Image src={cardImage} alt={title} fill sizes="34vw" className="object-cover" priority />
+            <Image src={cardImage} alt={title} fill sizes="34cqw" className="object-cover" priority />
           ) : (
             <>
               <Gift className="w-9 h-9 text-[#B6FF00]/60" strokeWidth={1.6} />
@@ -61,7 +61,7 @@ export function BonusCardSlide({ badge, title, sub, inside, limeBlock, slotLabel
           animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
           transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
           className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 44px)" }}
+          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 44px)" }}
         >
           {title}
         </motion.h1>

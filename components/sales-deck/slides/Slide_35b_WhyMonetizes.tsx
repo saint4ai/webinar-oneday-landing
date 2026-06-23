@@ -13,7 +13,7 @@ export function Slide_35b_WhyMonetizes() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       objectOverflow="visible"
       background={<Spotlight className="-top-40 left-0 md:-top-20" fill="#B6FF00" />}
       leftObject={<FlyingDollar />}
@@ -34,7 +34,7 @@ export function Slide_35b_WhyMonetizes() {
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(26px, 3vw, 48px)",
+          fontSize: "clamp(26px, 3cqw, 48px)",
           wordBreak: "keep-all",
           overflowWrap: "normal",
         }}
@@ -61,7 +61,7 @@ export function Slide_35b_WhyMonetizes() {
       >
         <span
           className="inline-block font-bold uppercase"
-          style={{ background: "#B6FF00", color: "#000", padding: "0.15em 0.5em", borderRadius: "0.15em", fontFamily: "var(--font-benzin)", fontSize: "clamp(20px,2.2vw,34px)" }}
+          style={{ background: "#B6FF00", color: "#000", padding: "0.15em 0.5em", borderRadius: "0.15em", fontFamily: "var(--font-benzin)", fontSize: "clamp(20px,2.2cqw,34px)" }}
         >
           Всё это = деньги
         </span>

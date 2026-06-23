@@ -16,7 +16,7 @@ export function Slide_158_MoneyPunchline() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4vw, 60px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 4cqw, 60px)" }}
       >
         ВОТ СТОЛЬКО <span className="text-[#B6FF00]">ДЕНЕГ</span>
       </motion.h1>
@@ -25,8 +25,8 @@ export function Slide_158_MoneyPunchline() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 1, 0.5, 1] }} className="flex items-baseline gap-3 mb-5">
-        <span className="font-bold leading-none tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(60px, 8vw, 150px)", color: "#B6FF00", textShadow: "0 0 70px rgba(182,255,0,0.35)" }}>500 000</span>
-        <span className="font-bold text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3vw,52px)" }}>₸</span>
+        <span className="font-bold leading-none tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(60px, 8cqw, 150px)", color: "#B6FF00", textShadow: "0 0 70px rgba(182,255,0,0.35)" }}>500 000</span>
+        <span className="font-bold text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(28px,3cqw,52px)" }}>₸</span>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.9 }} className="flex flex-col gap-1.5 text-white/75 text-sm md:text-lg max-w-2xl">

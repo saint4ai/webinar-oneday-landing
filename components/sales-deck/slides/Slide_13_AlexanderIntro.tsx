@@ -18,11 +18,11 @@ export function Slide_13_AlexanderIntro() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28vw"
+      objectColumnSize="28cqw"
       background={
         <>
           <Spotlight className="-top-40 left-0 md:-top-20" fill="#B6FF00" />
-          <Spotlight className="bottom-0 left-[10vw] md:bottom-[-20vh]" fill="#FC5C02" />
+          <Spotlight className="bottom-0 left-[10cqw] md:bottom-[-20cqh]" fill="#FC5C02" />
         </>
       }
       leftObject={
@@ -40,7 +40,7 @@ export function Slide_13_AlexanderIntro() {
             src="/handouts/alex/alex_portrait_story.png"
             alt="Александр — основатель onAI Academy"
             fill
-            sizes="(max-width: 1280px) 28vw, 420px"
+            sizes="(max-width: 1280px) 28cqw, 420px"
             className="object-cover"
             style={{ objectPosition: "center bottom" }}
             priority
@@ -72,7 +72,7 @@ export function Slide_13_AlexanderIntro() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(32px, 4vw, 56px)",
+          fontSize: "clamp(32px, 4cqw, 56px)",
         }}
       >
         МЕНЯ ЗОВУТ <span className="text-[#B6FF00]">АЛЕКСАНДР</span>

@@ -39,7 +39,7 @@ export function Slide_48_HRSolution() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(24px, 2.9vw, 44px)",
+          fontSize: "clamp(24px, 2.9cqw, 44px)",
         }}
       >
         AI ОЦЕНИВАЕТ 200 РЕЗЮМЕ ПО ТВОИМ КРИТЕРИЯМ ЗА{" "}

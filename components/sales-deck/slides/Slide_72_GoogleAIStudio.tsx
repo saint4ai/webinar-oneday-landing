@@ -25,7 +25,7 @@ export function Slide_72_GoogleAIStudio() {
       contentMinWidth={720}
       background={<SlideBg theme="dark" variant="aura-tr" />}
     >
-      <div className="flex flex-col h-full w-full justify-center" style={{ paddingTop: "clamp(32px,5vh,64px)", paddingBottom: "clamp(28px,4vh,52px)" }}>
+      <div className="flex flex-col h-full w-full justify-center" style={{ paddingTop: "clamp(32px,5cqh,64px)", paddingBottom: "clamp(28px,4cqh,52px)" }}>
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -41,7 +41,7 @@ export function Slide_72_GoogleAIStudio() {
           animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
           className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.4vw, 76px)" }}
+          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.4cqw, 76px)" }}
         >
           GOOGLE <span className="text-[#B6FF00]">AI STUDIO</span>
         </motion.h1>
@@ -101,7 +101,7 @@ export function Slide_72_GoogleAIStudio() {
                 alt="Google AI Studio"
                 fill
                 className="object-cover object-top"
-                sizes="50vw"
+                sizes="50cqw"
               />
             </div>
           </motion.div>

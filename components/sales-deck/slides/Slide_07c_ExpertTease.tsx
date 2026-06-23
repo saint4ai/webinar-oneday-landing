@@ -24,7 +24,7 @@ export function Slide_07c_ExpertTease() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.7vw, 58px)", paddingTop: "0.08em" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.7cqw, 58px)", paddingTop: "0.08em" }}
       >
         А В КОНЦЕ — НЕ ПРО ДЕНЬГИ.<br />ПРО ТВОЁ <span className="text-[#B6FF00]">ВРЕМЯ</span>
       </motion.h1>
@@ -36,7 +36,7 @@ export function Slide_07c_ExpertTease() {
       {/* −70% → время на себя */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.6, ease: [0.25, 1, 0.5, 1] }} className="flex items-center gap-4 flex-wrap mb-6">
         <div className="flex items-baseline gap-2.5 rounded-2xl px-5 py-3" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.42)", boxShadow: "0 0 50px -16px rgba(182,255,0,0.5)" }}>
-          <span className="font-bold leading-none tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(34px,4vw,60px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.45)" }}>−70%</span>
+          <span className="font-bold leading-none tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(34px,4cqw,60px)", color: "#B6FF00", textShadow: "0 0 50px rgba(182,255,0,0.45)" }}>−70%</span>
           <span className="text-white/70 text-sm md:text-base">рутины на ИИ → время на <span className="text-white">себя, семью и хотелки</span></span>
         </div>
       </motion.div>

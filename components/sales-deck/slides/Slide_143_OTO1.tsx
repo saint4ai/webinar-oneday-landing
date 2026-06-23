@@ -42,7 +42,7 @@ export function Slide_143_OTO1() {
           src="/cards-gifs-screenshots/bonus/bonus-album-ii-manager.png"
           alt="Главный бонус вечера — ИИ-менеджер для отдела продаж"
           fill
-          sizes="70vw"
+          sizes="70cqw"
           className="object-cover"
           priority
         />

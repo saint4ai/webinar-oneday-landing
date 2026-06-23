@@ -21,7 +21,7 @@ export function Slide_StoriesBonusHowTo() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="26vw"
+      objectColumnSize="26cqw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="lime-right" />}
       leftObject={
@@ -41,7 +41,7 @@ export function Slide_StoriesBonusHowTo() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 46px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 46px)" }}
       >
         ВИРУСНЫЙ КОНТЕНТ ЧЕРЕЗ AI — <span className="text-[#B6FF00]">В ПОДАРОК</span>
       </motion.h1>

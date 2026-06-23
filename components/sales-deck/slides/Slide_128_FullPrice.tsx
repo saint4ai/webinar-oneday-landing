@@ -17,12 +17,12 @@ export function Slide_128_FullPrice() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex items-baseline gap-3 mb-3">
-        <span className="text-white/40 line-through tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px,2.4vw,38px)" }}>770 000 ₸*</span>
+        <span className="text-white/40 line-through tabular-nums" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(22px,2.4cqw,38px)" }}>770 000 ₸*</span>
         <span className="font-mono text-xs uppercase tracking-[0.14em] text-white/45">ценность компонентов</span>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, scale: 0.9, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4, ease: [0.25, 1, 0.5, 1] }} className="mb-4">
-        <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8vw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}>
+        <div className="font-bold leading-[0.9] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 8cqw, 150px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.4)" }}>
           490 000 ₸
         </div>
         <div className="text-white/65 text-sm md:text-lg mt-1">цена обучения в каталоге · <span className="text-white">дешевле ценности почти в 2 раза</span></div>

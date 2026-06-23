@@ -37,7 +37,7 @@ export function Slide_60_MarketCIS() {
           className="font-bold leading-[1.0] tabular-nums"
           style={{
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(44px, 5.6vw, 104px)",
+            fontSize: "clamp(44px, 5.6cqw, 104px)",
             paddingTop: "0.08em",
             background: "linear-gradient(120deg, #B6FF00 30%, #FC5C02)",
             WebkitBackgroundClip: "text",
@@ -48,7 +48,7 @@ export function Slide_60_MarketCIS() {
         >
           {n.toLocaleString("ru-RU")}
         </span>
-        <span className="font-bold uppercase text-white leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.6vw,60px)" }}>В СНГ</span>
+        <span className="font-bold uppercase text-white leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.6cqw,60px)" }}>В СНГ</span>
       </motion.div>
 
       <motion.div

@@ -39,7 +39,7 @@ export function Slide_65_QualityChapter() {
         // ЧАСТЬ VI · ИНСТРУМЕНТЫ КАЧЕСТВА
       </motion.div>
 
-      <div className="font-bold uppercase text-white/90 leading-[1.05] tracking-[-0.02em]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.4vw, 40px)" }}>
+      <div className="font-bold uppercase text-white/90 leading-[1.05] tracking-[-0.02em]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.4cqw, 40px)" }}>
         ЧТО ОТЛИЧАЕТ ЛЮБИТЕЛЯ ОТ
       </div>
       <div className="sd-glitch-rgb sd-chapter-shake" style={{ maxWidth: "100%" }}>
@@ -51,7 +51,7 @@ export function Slide_65_QualityChapter() {
           perChar={90}
           startDelay={200}
           className="font-bold uppercase leading-[0.95] tracking-[-0.04em] block"
-          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(38px, 4.6vw, 80px)", color: "#B6FF00", wordBreak: "keep-all" }}
+          style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(38px, 4.6cqw, 80px)", color: "#B6FF00", wordBreak: "keep-all" }}
         />
       </div>
 

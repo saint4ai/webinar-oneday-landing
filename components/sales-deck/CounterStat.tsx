@@ -85,7 +85,7 @@ export function CounterStat({
           style={{
             color,
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(32px, 3.4vw, 52px)",
+            fontSize: "clamp(32px, 3.4cqw, 52px)",
             textShadow: `0 0 24px ${color}35`,
           }}
         >

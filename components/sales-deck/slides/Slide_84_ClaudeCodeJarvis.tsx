@@ -25,7 +25,7 @@ export function Slide_84_ClaudeCodeJarvis() {
       contentMinWidth={720}
       background={<SlideBg theme="dark" variant="lime-right" />}
     >
-      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(34px,6vh,68px)", paddingBottom: "clamp(28px,4vh,52px)" }}>
+      <div className="flex flex-col h-full w-full" style={{ paddingTop: "clamp(34px,6cqh,68px)", paddingBottom: "clamp(28px,4cqh,52px)" }}>
         <div className="shrink-0">
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
             // ГЛАВНЫЙ ИНСТРУМЕНТ
@@ -35,7 +35,7 @@ export function Slide_84_ClaudeCodeJarvis() {
             animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
             transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
             className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4vw, 52px)" }}
+            style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.4cqw, 52px)" }}
           >
             CLAUDE CODE — <span className="text-[#B6FF00]">ТВОЙ ДЖАРВИС</span>
           </motion.h1>

@@ -29,7 +29,7 @@ export function Slide_87_Pricing() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8vw, 58px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.8cqw, 58px)" }}
       >
         <span className="text-[#B6FF00]">20 ДОЛЛАРОВ</span> В МЕСЯЦ
       </motion.h1>
@@ -49,7 +49,7 @@ export function Slide_87_Pricing() {
           >
             <div className="text-white/50 font-mono text-xs uppercase tracking-[0.14em] mb-2">{p.name}{p.me && " · я"}</div>
             <div className="flex items-baseline gap-1 mb-3">
-              <span className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.2vw,48px)", color: p.start ? "#B6FF00" : "#FFFFFF" }}>{p.price}</span>
+              <span className="font-bold leading-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(30px,3.2cqw,48px)", color: p.start ? "#B6FF00" : "#FFFFFF" }}>{p.price}</span>
               <span className="text-white/40 text-sm">{p.per}</span>
             </div>
             <div className="text-white/55 text-xs md:text-sm leading-snug mb-2">{p.d}</div>

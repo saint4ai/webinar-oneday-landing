@@ -26,7 +26,7 @@ export function Slide_110_WhatYouNeed() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-7"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.4vw, 52px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(26px, 3.4cqw, 52px)" }}
       >
         ЧТО НУЖНО, ЧТОБЫ ДОЙТИ <span className="text-[#B6FF00]">ДО РЕЗУЛЬТАТА</span>
       </motion.h1>
@@ -41,7 +41,7 @@ export function Slide_110_WhatYouNeed() {
             className="relative pt-4"
             style={{ borderTop: "1px solid rgba(182,255,0,0.3)" }}
           >
-            <span className="font-bold leading-none select-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(26px,2.6vw,40px)", color: "transparent", WebkitTextStroke: "1.2px rgba(182,255,0,0.55)" }}>
+            <span className="font-bold leading-none select-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(26px,2.6cqw,40px)", color: "transparent", WebkitTextStroke: "1.2px rgba(182,255,0,0.55)" }}>
               {n.n}
             </span>
             <div className="text-white font-bold text-base md:text-xl leading-tight mt-2">{n.title}</div>

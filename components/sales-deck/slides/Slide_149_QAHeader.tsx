@@ -9,12 +9,12 @@ export function Slide_149_QAHeader() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="26vw"
+      objectColumnSize="26cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="aura-tl" />}
       leftObject={
         <motion.div initial={{ opacity: 0, scale: 0.6, rotate: -8 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} transition={{ duration: 0.7, delay: 0.3, ease: [0.34, 1.4, 0.64, 1] }} className="flex items-center justify-center w-full">
-          <span className="font-bold leading-none select-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(160px, 22vw, 380px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.35)" }}>?</span>
+          <span className="font-bold leading-none select-none" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(160px, 22cqw, 380px)", color: "#B6FF00", textShadow: "0 0 80px rgba(182,255,0,0.35)" }}>?</span>
         </motion.div>
       }
     >
@@ -26,7 +26,7 @@ export function Slide_149_QAHeader() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.6vw, 52px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.6cqw, 52px)" }}
       >
         ЧТО ОБЫЧНО <span className="text-[#B6FF00]">СПРАШИВАЮТ</span>
       </motion.h1>

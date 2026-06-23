@@ -31,8 +31,8 @@ export function ModuleSlide({ no, lessons, title, promise, items, variant = "aur
         <>
           <SlideBg theme="dark" variant={variant} />
           {bgImage && (
-            // Картинка ТОЛЬКО в контентной зоне — НЕ заходит в зону спикера (правые 30vw, там стоит Александр).
-            <div className="absolute top-0 bottom-0 left-0 overflow-hidden pointer-events-none" style={{ right: "var(--sd-speaker-zone, 30vw)" }}>
+            // Картинка ТОЛЬКО в контентной зоне — НЕ заходит в зону спикера (правые 30cqw, там стоит Александр).
+            <div className="absolute top-0 bottom-0 left-0 overflow-hidden pointer-events-none" style={{ right: "var(--sd-speaker-zone, 30cqw)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={bgImage} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "right center" }} />
               {/* Левые ~45% — чистый чёрный под текст (даже на пёстрой картинке), объекты справа остаются красочными */}
@@ -55,7 +55,7 @@ export function ModuleSlide({ no, lessons, title, promise, items, variant = "aur
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
           className="font-bold leading-[0.8] shrink-0 select-none"
-          style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 7vw, 116px)", color: "transparent", WebkitTextStroke: "2px rgba(182,255,0,0.5)" }}
+          style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(56px, 7cqw, 116px)", color: "transparent", WebkitTextStroke: "2px rgba(182,255,0,0.5)" }}
         >
           {no}
         </motion.span>
@@ -64,7 +64,7 @@ export function ModuleSlide({ no, lessons, title, promise, items, variant = "aur
             <span className="font-mono text-xs uppercase tracking-[0.18em] text-white/55">Модуль {no}</span>
             <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#B6FF00]" style={{ background: "rgba(182,255,0,0.1)", border: "1px solid rgba(182,255,0,0.3)" }}>{lessons}</span>
           </div>
-          <h1 className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3vw, 48px)" }}>
+          <h1 className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em]" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 3cqw, 48px)" }}>
             {title}
           </h1>
         </motion.div>

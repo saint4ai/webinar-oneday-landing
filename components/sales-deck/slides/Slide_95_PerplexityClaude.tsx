@@ -14,7 +14,7 @@ export function Slide_95_PerplexityClaude() {
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#B6FF00] mb-3">
         // ЛАЙФХАК · СВЯЗКА
       </motion.div>
-      <motion.h1 initial={{ opacity: 0, clipPath: "inset(-14% 100% 0 0)" }} animate={{ opacity: 1, clipPath: "inset(-14% 0% 0 0)" }} transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }} className="font-bold uppercase text-white leading-[1.06] tracking-[-0.02em] mb-2 pt-1" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9vw, 46px)" }}>
+      <motion.h1 initial={{ opacity: 0, clipPath: "inset(-14% 100% 0 0)" }} animate={{ opacity: 1, clipPath: "inset(-14% 0% 0 0)" }} transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }} className="font-bold uppercase text-white leading-[1.06] tracking-[-0.02em] mb-2 pt-1" style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 46px)" }}>
         PERPLEXITY ИЩЕТ — <span className="text-[#B6FF00]">CLAUDE ПРИМЕНЯЕТ</span>
       </motion.h1>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="text-white/65 text-sm md:text-base leading-snug max-w-3xl mb-3">
@@ -23,7 +23,7 @@ export function Slide_95_PerplexityClaude() {
 
       <div className="flex items-start gap-5 flex-wrap">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.55 }} className="relative inline-block rounded-xl overflow-hidden" style={{ border: "1px solid rgba(182,255,0,0.25)", maxWidth: "100%" }}>
-          <img src="/handouts/screens/perplexity_screen.png" alt="Perplexity Deep Research" className="block" style={{ maxWidth: "100%", maxHeight: "50vh" }} />
+          <img src="/handouts/screens/perplexity_screen.png" alt="Perplexity Deep Research" className="block" style={{ maxWidth: "100%", maxHeight: "50cqh" }} />
         </motion.div>
         <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.9 }} className="flex-1 min-w-[220px] flex flex-col gap-2 pt-2">
           {[

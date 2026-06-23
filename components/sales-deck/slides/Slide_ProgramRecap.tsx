@@ -33,7 +33,7 @@ export function Slide_ProgramRecap() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-5"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.7vw, 42px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.7cqw, 42px)" }}
       >
         10 МОДУЛЕЙ — ОТ УСТАНОВКИ <span className="text-[#B6FF00]">ДО ПЕРВОГО КЛИЕНТА</span>
       </motion.h1>
@@ -41,7 +41,7 @@ export function Slide_ProgramRecap() {
       <div className="grid grid-cols-2 gap-x-5 gap-y-2 max-w-4xl">
         {MODULES.map((m, i) => (
           <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.35 + i * 0.06 }} className="flex items-start gap-2.5 py-1.5">
-            <span className="font-bold text-[#B6FF00]/80 tabular-nums shrink-0 w-6" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(14px,1.3vw,18px)" }}>{i + 1}</span>
+            <span className="font-bold text-[#B6FF00]/80 tabular-nums shrink-0 w-6" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(14px,1.3cqw,18px)" }}>{i + 1}</span>
             <div className="min-w-0">
               <div className="font-mono text-[10px] tracking-wide uppercase text-[#B6FF00]/60 leading-tight">{m.t}</div>
               <div className="text-white font-semibold text-[15px] leading-tight">{m.r}</div>

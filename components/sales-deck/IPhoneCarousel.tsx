@@ -19,7 +19,7 @@ export function IPhoneCarousel({ images, interval = 1800 }: { images: string[]; 
     <div className="relative h-full w-full flex flex-col items-center justify-center gap-3">
       {/* Рамка iPhone */}
       <div
-        className="relative h-[78vh] aspect-[9/19.5] rounded-[3rem] p-[10px]"
+        className="relative h-[78cqh] aspect-[9/19.5] rounded-[3rem] p-[10px]"
         style={{ background: "linear-gradient(160deg,#1c1c1f,#0a0a0b)", boxShadow: "0 40px 90px -30px rgba(0,0,0,0.8), 0 0 0 2px rgba(255,255,255,0.06), inset 0 0 2px rgba(255,255,255,0.2)" }}
       >
         {/* Экран */}
@@ -33,7 +33,7 @@ export function IPhoneCarousel({ images, interval = 1800 }: { images: string[]; 
               transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
               className="absolute inset-0"
             >
-              <Image src={images[i]} alt={`Экран приложения ${i + 1}`} fill sizes="28vw" className="object-cover" priority={i === 0} />
+              <Image src={images[i]} alt={`Экран приложения ${i + 1}`} fill sizes="28cqw" className="object-cover" priority={i === 0} />
             </motion.div>
           </AnimatePresence>
           {/* Dynamic Island */}

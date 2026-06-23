@@ -19,7 +19,7 @@ interface ObjectionSlideProps {
  * лайм-таб «ВОЗРАЖЕНИЕ N / 4» → гигантский вопрос белым → ответ в лайм-рамке слева → body (children).
  * Зритель мгновенно считывает тип слайда; body варьируется под конкретное возражение.
  */
-export function ObjectionSlide({ n, question, answer, children, bg = "aura-tl", qSize = "clamp(30px, 4.2vw, 64px)" }: ObjectionSlideProps) {
+export function ObjectionSlide({ n, question, answer, children, bg = "aura-tl", qSize = "clamp(30px, 4.2cqw, 64px)" }: ObjectionSlideProps) {
   return (
     <SlideLayout speakerSide="right" contentMinWidth={780} background={<SlideBg theme="dark" variant={bg} />}>
       <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="inline-flex items-center gap-2 self-start mb-4">

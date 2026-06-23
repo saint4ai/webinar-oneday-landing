@@ -57,13 +57,13 @@ export function Slide_107_ThreeQuestions() {
           >
             <span
               className="font-bold leading-none shrink-0 select-none"
-              style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(46px, 6vw, 92px)", color: "transparent", WebkitTextStroke: "1.5px rgba(182,255,0,0.45)" }}
+              style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: "clamp(46px, 6cqw, 92px)", color: "transparent", WebkitTextStroke: "1.5px rgba(182,255,0,0.45)" }}
             >
               {item.n}
             </span>
             <span
               className="font-bold uppercase text-white leading-[0.98] tracking-[-0.02em]"
-              style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.8vw, 40px)" }}
+              style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(22px, 2.8cqw, 40px)" }}
             >
               {item.q} <span className="text-[#B6FF00]">{item.hl}</span>
             </span>
