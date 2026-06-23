@@ -115,8 +115,8 @@ export function Slide_14_AuthorityStats() {
       <div
         className="flex flex-col h-full w-full"
         style={{
-          paddingLeft: "clamp(40px, 5cqw, 90px)",
-          paddingRight: "2.5cqw",
+          paddingLeft: "clamp(18px, 2.2cqw, 40px)",
+          paddingRight: "2cqw",
           paddingTop: "clamp(36px, 5.5cqh, 64px)",
           paddingBottom: "clamp(28px, 4.5cqh, 52px)",
         }}
@@ -129,7 +129,7 @@ export function Slide_14_AuthorityStats() {
           className="font-bold uppercase shrink-0"
           style={{
             fontFamily: "var(--font-benzin)",
-            fontSize: "clamp(24px, 2.9cqw, 44px)",
+            fontSize: "clamp(20px, 2.3cqw, 36px)",
             letterSpacing: "-0.02em",
             whiteSpace: "nowrap",
           }}
@@ -156,7 +156,7 @@ export function Slide_14_AuthorityStats() {
               >
                 <div
                   className="font-bold leading-none mb-1.5"
-                  style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(28px, 3.2cqw, 48px)", color }}
+                  style={{ fontFamily: "var(--font-benzin)", fontSize: "clamp(22px, 2.5cqw, 38px)", color }}
                 >
                   <CountUp value={s.value} delay={i * 0.8} />
                   {s.suffix}

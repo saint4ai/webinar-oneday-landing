@@ -41,6 +41,7 @@ export function Slide_16_Definition() {
   return (
     <SlideLayout
       speakerSide="right"
+      objectColumnSize="24cqw"
       style={{ background: "var(--brand-cream)" }}
       background={
         <>
@@ -80,7 +81,7 @@ export function Slide_16_Definition() {
         className="font-bold uppercase leading-[0.95] tracking-[-0.04em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(30px, 3.8cqw, 60px)",
+          fontSize: "clamp(26px, 3.1cqw, 50px)",
         }}
       >
         <BinaryDecodeText

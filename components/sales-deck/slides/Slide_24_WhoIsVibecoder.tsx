@@ -35,7 +35,7 @@ export function Slide_24_WhoIsVibecoder() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="34cqw"
+      objectColumnSize="26cqw"
       style={{ background: "var(--brand-cream)" }}
       background={
         <>
@@ -75,7 +75,7 @@ export function Slide_24_WhoIsVibecoder() {
         className="font-bold uppercase leading-[1.0] tracking-[-0.03em]"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.6cqw, 54px)",
+          fontSize: "clamp(24px, 2.9cqw, 44px)",
         }}
       >
         <BinaryDecodeText

@@ -44,7 +44,7 @@ export function Slide_42_RealtorSolution() {
         className="font-bold uppercase text-white leading-[1.02] tracking-[-0.03em] mb-3"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(24px, 2.9cqw, 44px)",
+          fontSize: "clamp(21px, 2.5cqw, 38px)",
         }}
       >
         AI ПИШЕТ 4 ОБЪЯВЛЕНИЯ ИЗ 8 ФОТО ЗА <span className="text-[#B6FF00]">3 МИНУТЫ</span>

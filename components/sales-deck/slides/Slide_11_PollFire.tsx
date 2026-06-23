@@ -59,8 +59,8 @@ export function Slide_11_PollFire() {
           }}
           className="relative shrink-0"
           style={{
-            width: "clamp(90px, 12cqw, 180px)",
-            height: "clamp(90px, 12cqw, 180px)",
+            width: "clamp(56px, 6.5cqw, 104px)",
+            height: "clamp(56px, 6.5cqw, 104px)",
             filter: "drop-shadow(0 0 50px rgba(252,92,2,0.75)) drop-shadow(0 0 90px rgba(252,92,2,0.45))",
           }}
         >
@@ -83,7 +83,7 @@ export function Slide_11_PollFire() {
           style={{
             color: "#B6FF00",
             fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-            fontSize: "clamp(90px, 12cqw, 220px)",
+            fontSize: "clamp(60px, 8.5cqw, 150px)",
             textShadow:
               "0 0 60px rgba(182,255,0,0.55), 0 0 120px rgba(252,92,2,0.4)",
           }}

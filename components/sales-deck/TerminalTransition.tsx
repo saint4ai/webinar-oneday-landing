@@ -110,11 +110,9 @@ export function TerminalTransition({
           >
             {headline}
             <span
-              className="cream-caret inline-block align-baseline ml-1"
-              style={{ color: "#B6FF00", WebkitTextStroke: "0.5px #2A2520" }}
-            >
-              ▌
-            </span>
+              className="cream-caret inline-block ml-2"
+              style={{ width: "0.13em", height: "0.78em", background: "#B6FF00", verticalAlign: "-0.06em", borderRadius: "1px" }}
+            />
           </motion.div>
         )}
       </div>

@@ -35,7 +35,6 @@ import { Slide_27_Direction1 } from "./slides/Slide_27_Direction1";
 import { Slide_28_Direction2 } from "./slides/Slide_28_Direction2";
 import { Slide_29_Direction3 } from "./slides/Slide_29_Direction3";
 import { Slide_30_ThreeWaysSummary } from "./slides/Slide_30_ThreeWaysSummary";
-import { Slide_31_TodayShow } from "./slides/Slide_31_TodayShow";
 import { Slide_32_PollWhich } from "./slides/Slide_32_PollWhich";
 import { Slide_33_Transition } from "./slides/Slide_33_Transition";
 import { Slide_34_Chapter2 } from "./slides/Slide_34_Chapter2";
@@ -260,7 +259,6 @@ export function SalesDeck() {
     <Slide_28_Direction2 key="28" />,
     <Slide_29_Direction3 key="29" />,
     <Slide_30_ThreeWaysSummary key="30" />,
-    <Slide_31_TodayShow key="31" />,
     <Slide_32_PollWhich key="32" />,
     <Slide_33_Transition key="33" />,
 
