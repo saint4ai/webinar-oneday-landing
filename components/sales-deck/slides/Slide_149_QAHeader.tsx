@@ -22,9 +22,9 @@ export function Slide_149_QAHeader() {
         // Q&A · ВОЗРАЖЕНИЯ
       </motion.div>
       <motion.h1
-        initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
-        animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
-        transition={{ duration: 0.8, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
         style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.6cqw, 52px)" }}
       >

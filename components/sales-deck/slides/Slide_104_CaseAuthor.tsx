@@ -19,7 +19,7 @@ export function Slide_104_CaseAuthor() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="34cqw"
+      objectColumnSize="30cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
@@ -69,15 +69,15 @@ export function Slide_104_CaseAuthor() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.05] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(34px, 4.2cqw, 64px)", paddingTop: "0.1em" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(30px, 3.4cqw, 50px)", paddingTop: "0.1em" }}
       >
         И Я <span className="text-[#B6FF00]">ТАКОЙ ЖЕ</span>
       </motion.h1>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-base leading-snug max-w-xl mb-5">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.35 }} className="text-white/70 text-sm md:text-base leading-snug max-w-md mb-5">
         Свою школу onAI.academy собрал за 3 месяца. Один. То, что вы видите вокруг — собрано тем же методом.
       </motion.div>
 
-      <div className="flex flex-col gap-0 max-w-xl mb-4">
+      <div className="flex flex-col gap-0 max-w-md mb-4">
         <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.5 }} className="rounded-xl px-4 py-3" style={{ background: "rgba(252,92,2,0.07)", border: "1px solid rgba(252,92,2,0.28)" }}>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#FC5C02] mb-1">было</div>
           <div className="text-white/80 text-sm leading-snug">GetCourse + сторонние AI-сервисы — 200-300К ₸/мес. И всё равно нет нормальной аналитики и AI-наставника 24/7.</div>
@@ -88,7 +88,7 @@ export function Slide_104_CaseAuthor() {
         </motion.div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.0 }} className="flex flex-wrap gap-2 max-w-xl">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 1.0 }} className="flex flex-wrap gap-2 max-w-md">
         {STATS.map((s) => (
           <div key={s.l} className="rounded-lg px-3 py-1.5 flex items-baseline gap-1.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <span className="font-bold text-[#B6FF00]" style={{ fontFamily: "var(--font-benzin), system-ui", fontSize: 16 }}>{s.v}</span>

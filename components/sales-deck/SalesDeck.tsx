@@ -75,15 +75,14 @@ import { Slide_69_UIDesign } from "./slides/Slide_69_UIDesign";
 import { Slide_70_QualityPunchline } from "./slides/Slide_70_QualityPunchline";
 import { Slide_71_PracticeChapter } from "./slides/Slide_71_PracticeChapter";
 import { Slide_72_GoogleAIStudio } from "./slides/Slide_72_GoogleAIStudio";
-import { Slide_73_WhatBuild } from "./slides/Slide_73_WhatBuild";
+import { Slide_PracticeBuilds } from "./slides/Slide_PracticeBuilds";
+import { Slide_FamilyTrackerBrief } from "./slides/Slide_FamilyTrackerBrief";
 import { Slide_74_FiveSteps } from "./slides/Slide_74_FiveSteps";
 import { Slide_PracticeStart } from "./slides/Slide_PracticeStart";
-import { Slide_75_AppDone } from "./slides/Slide_75_AppDone";
 import { Slide_76_WhatNext } from "./slides/Slide_76_WhatNext";
 import { Slide_77_MarketPrice } from "./slides/Slide_77_MarketPrice";
 import { Slide_78_WebApps } from "./slides/Slide_78_WebApps";
 import { Slide_79_MainConclusion } from "./slides/Slide_79_MainConclusion";
-import { Slide_80_FeelEngagement } from "./slides/Slide_80_FeelEngagement";
 import { Slide_81_RoutineTransition } from "./slides/Slide_81_RoutineTransition";
 import { Slide_RoutineChapter } from "./slides/Slide_RoutineChapter";
 import { Slide_BonusReminder } from "./slides/Slide_BonusReminder";
@@ -115,7 +114,6 @@ import { Slide_105_CasesSummary } from "./slides/Slide_105_CasesSummary";
 import { Slide_106_CasesEngagement } from "./slides/Slide_106_CasesEngagement";
 import { Slide_107_ThreeQuestions } from "./slides/Slide_107_ThreeQuestions";
 import { Slide_108_CanIDoIt } from "./slides/Slide_108_CanIDoIt";
-import { Slide_109_Question2 } from "./slides/Slide_109_Question2";
 import { Slide_110_WhatYouNeed } from "./slides/Slide_110_WhatYouNeed";
 import { Slide_111_WhatIBuilt } from "./slides/Slide_111_WhatIBuilt";
 import { Slide_112_NotCourse } from "./slides/Slide_112_NotCourse";
@@ -293,11 +291,11 @@ export function SalesDeck() {
 
     /* === ПРАКТИКА (перенесена сюда: «вот как просто» — собрали приложение ПЕРЕД research) === */
     <Slide_71_PracticeChapter key="71" />,
+    <Slide_PracticeBuilds key="practice-builds" />,
     <Slide_72_GoogleAIStudio key="72" />,
-    <Slide_73_WhatBuild key="73" />,
+    <Slide_FamilyTrackerBrief key="family-tracker-brief" />,
     <Slide_74_FiveSteps key="74" />,
     <Slide_PracticeStart key="practice-start" />,
-    <Slide_75_AppDone key="75" />,
     <Slide_76_WhatNext key="76" />,
     <Slide_77_MarketPrice key="77" />,
     <Slide_78_WebApps key="78" />,
@@ -327,7 +325,6 @@ export function SalesDeck() {
     <Slide_70_QualityPunchline key="70" />,
 
     <Slide_BonusReminder key="bonus-reminder" />,
-    <Slide_80_FeelEngagement key="80" />,
 
     /* === ЧАСТЬ IX · КЕЙСЫ УЧЕНИКОВ (99-106) === */
     <Slide_99_CasesChapter key="99" />,
@@ -343,7 +340,6 @@ export function SalesDeck() {
     /* === ЧАСТЬ X · ПРИВИВКА ОТ ВОЗРАЖЕНИЙ (107-109) === */
     <Slide_107_ThreeQuestions key="107" />,
     <Slide_108_CanIDoIt key="108" />,
-    <Slide_109_Question2 key="109" />,
 
     /* === ЧАСТЬ XI · ПЕРЕХОД К ПРОДАЖЕ (110-111) === */
     <Slide_110_WhatYouNeed key="110" />,

@@ -33,9 +33,9 @@ export function Slide_ObjApply1_Trend() {
       {/* Аналогия 2000-е → сегодня */}
       <div className="flex items-stretch gap-3 md:gap-4 flex-wrap mb-6">
         <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.6 }} className="flex-1 min-w-[230px] rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
-          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/45 mb-2">2000-е · база для найма</div>
-          <div className="text-white font-bold text-lg md:text-2xl leading-tight" style={{ fontFamily: "var(--font-benzin), system-ui" }}>ПК · Word · Excel</div>
-          <div className="text-white/50 text-sm mt-1.5">Без этого не брали никуда.</div>
+          <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/45 mb-2">вчера · база для найма</div>
+          <div className="text-white font-bold text-lg md:text-2xl leading-tight" style={{ fontFamily: "var(--font-benzin), system-ui" }}>КОМПЬЮТЕР · WORD · EXCEL</div>
+          <div className="text-white/50 text-sm mt-1.5">Не умеешь работать за компьютером — на работу не брали. Без английского — та же история.</div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.9 }} className="self-center">
