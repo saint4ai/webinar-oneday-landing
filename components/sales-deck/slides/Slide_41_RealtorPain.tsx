@@ -22,7 +22,7 @@ export function Slide_41_RealtorPain() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28cqw"
+      objectColumnSize="22cqw"
       contentMinWidth={500}
       background={<SlideBg theme="dark" variant="orange-pain" />}
       leftObject={
@@ -48,7 +48,7 @@ export function Slide_41_RealtorPain() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.04] tracking-[-0.02em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(24px, 2.9cqw, 44px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(20px, 2.4cqw, 34px)" }}
       >
         РИЕЛТОР СПИСЫВАЕТ <span style={{ color: "#FC5C02" }}>30 ЧАСОВ В МЕСЯЦ</span> НА ОБЪЯВЛЕНИЯ
       </motion.h1>

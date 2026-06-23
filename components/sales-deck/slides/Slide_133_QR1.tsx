@@ -20,7 +20,7 @@ export function Slide_133_QR1() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30cqw"
+      objectColumnSize="24cqw"
       contentMinWidth={480}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
@@ -37,7 +37,7 @@ export function Slide_133_QR1() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-2"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6cqw, 54px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(23px, 2.9cqw, 42px)" }}
       >
         ВНЕСИ <span className="text-[#B6FF00] whitespace-nowrap">10 000 ₸</span> ПРЯМО СЕЙЧАС
       </motion.h1>

@@ -14,7 +14,7 @@ export function Slide_168_FinalQR() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="32cqw"
+      objectColumnSize="24cqw"
       contentMinWidth={460}
       background={<SlideBg theme="dark" variant="climax" />}
       leftObject={
@@ -31,7 +31,7 @@ export function Slide_168_FinalQR() {
         animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
         transition={{ duration: 0.7, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-3"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(28px, 3.6cqw, 54px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(23px, 2.9cqw, 42px)" }}
       >
         КАК ВНЕСТИ <span className="text-[#B6FF00]">ПРЕДОПЛАТУ</span>
       </motion.h1>

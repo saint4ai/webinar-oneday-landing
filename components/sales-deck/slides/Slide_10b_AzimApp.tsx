@@ -17,7 +17,7 @@ export function Slide_10b_AzimApp() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="28cqw"
+      objectColumnSize="22cqw"
       background={<Spotlight className="-top-40 right-0 md:-top-20" fill="#B6FF00" />}
       leftObject={
         <motion.div
@@ -49,7 +49,7 @@ export function Slide_10b_AzimApp() {
         className="font-bold uppercase text-white leading-[1.0] tracking-[-0.03em] mb-4"
         style={{
           fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif",
-          fontSize: "clamp(28px, 3.4cqw, 50px)",
+          fontSize: "clamp(22px, 2.7cqw, 40px)",
         }}
       >
         ВОТ ТАК ВЫГЛЯДИТ
