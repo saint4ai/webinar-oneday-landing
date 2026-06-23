@@ -57,7 +57,7 @@ export function Slide_06_PollBonus() {
   return (
     <SlideLayout
       speakerSide="right"
-      objectColumnSize="30cqw"
+      objectColumnSize="22cqw"
       objectOverflow="visible"
       background={
         <>
@@ -102,7 +102,7 @@ export function Slide_06_PollBonus() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 190, damping: 12, delay: 0.2 }}
         className="font-bold uppercase text-white leading-[0.95] tracking-[-0.03em] mb-6"
-        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(38px, 5.2cqw, 92px)" }}
+        style={{ fontFamily: "var(--font-benzin), 'Space Grotesk', system-ui, sans-serif", fontSize: "clamp(32px, 4.0cqw, 74px)" }}
       >
         КАК ВАМ
         <br />
