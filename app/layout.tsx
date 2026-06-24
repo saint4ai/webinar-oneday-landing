@@ -176,7 +176,7 @@ export default function RootLayout({
         <link
           rel="preload"
           as="image"
-          href="/workshop/alex-cutout.avif"
+          href="/alex-cutout.avif"
           type="image/avif"
           fetchPriority="high"
         />

@@ -28,7 +28,7 @@ export function Slide_FamilyTrackerBrief() {
         transition={{ duration: 0.4 }}
         className="font-mono text-[11px] tracking-[0.18em] uppercase font-semibold text-[#FC5C02] mb-4"
       >
-        // ПРАКТИКА · ТЗ ДЛЯ ПРИЛОЖЕНИЯ
+        // ПРАКТИКА · ТЗ ДЛЯ BLOOM
       </motion.div>
 
       <motion.h1
