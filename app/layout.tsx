@@ -176,7 +176,7 @@ export default function RootLayout({
         <link
           rel="preload"
           as="image"
-          href="/alex-cutout.avif"
+          href={`${process.env.VERCEL ? "" : process.env.NODE_ENV === "production" ? "/workshop" : ""}/alex-cutout.avif`}
           type="image/avif"
           fetchPriority="high"
         />
