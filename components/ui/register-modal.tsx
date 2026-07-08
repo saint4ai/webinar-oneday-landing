@@ -7,6 +7,7 @@ import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
 import { pushWorkshopLead } from "@/lib/gtm";
+import { buildStaticEasybotUrl } from "@/lib/easybot/redirect";
 
 type Props = {
   open: boolean;
@@ -14,7 +15,7 @@ type Props = {
 };
 
 // POST /api/lead создаёт лид в amoCRM воронке «Однодневник» с тегом «Однодневник»
-// и нотифицирует edbot для WhatsApp re-engagement.
+// и шлёт событие Lead в Meta CAPI; редирект формы — в WhatsApp/EasyBot.
 
 export const RegisterModal = ({ open, onClose }: Props) => {
   const [name, setName] = useState("");
@@ -25,17 +26,31 @@ export const RegisterModal = ({ open, onClose }: Props) => {
   const [botDest, setBotDest] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Esc закрывает
+  // Esc закрывает. Скролл-лок через position:fixed (overflow:hidden не лочит
+  // iOS Safari — фон уезжал под модалкой, юзер закрывал её в другом месте страницы).
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
-    document.body.style.overflow = "hidden";
+    const y = window.scrollY;
+    const b = document.body.style;
+    b.position = "fixed";
+    b.top = `-${y}px`;
+    b.left = "0";
+    b.right = "0";
+    b.width = "100%";
+    b.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", handler);
-      document.body.style.overflow = "";
+      b.position = "";
+      b.top = "";
+      b.left = "";
+      b.right = "";
+      b.width = "";
+      b.overflow = "";
+      window.scrollTo(0, y);
     };
   }, [open, onClose]);
 
@@ -85,8 +100,9 @@ export const RegisterModal = ({ open, onClose }: Props) => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Лид принят. Ведём на /thank-you → диплинк в закрытое WhatsApp-СООБЩЕСТВО.
-      const dest = withBase("/thank-you");
+      // Лид принят. Редирект в EasyBot (персональная ссылка с кодом → бот активирует скрипты).
+      const data = (await res.json().catch(() => ({}))) as { redirect?: string };
+      const dest = data.redirect || buildStaticEasybotUrl(meta.utm);
       setBotDest(dest);
       // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);

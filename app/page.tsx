@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { CountdownTimer } from "@/components/ui/countdown";
@@ -22,6 +22,23 @@ import { withBase } from "@/lib/api-url";
 export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   useScrollGoals();
+
+  // Мобильная фикс-кнопка прячется во время активного скролла: палец листает
+  // в её зоне, микро-тап засчитывался как клик → «сайт сам открыл форму».
+  const [ctaHidden, setCtaHidden] = useState(false);
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      setCtaHidden(true);
+      clearTimeout(t);
+      t = setTimeout(() => setCtaHidden(false), 500);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(t);
+    };
+  }, []);
 
   return (
     <main className="relative flex-1 od-root overflow-hidden min-h-[100dvh] pb-24 md:pb-0">
@@ -226,7 +243,9 @@ export default function Home() {
 
       {/* Мобильная фикс-кнопка регистрации — только на телефонах (md:hidden), липнет к низу экрана, открывает ту же модалку */}
       <div
-        className="md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pt-7"
+        className={`md:hidden fixed inset-x-0 bottom-0 z-40 px-4 pt-7 pointer-events-none transition-all duration-300 ${
+          ctaHidden ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"
+        }`}
         style={{
           paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
           background: "linear-gradient(to top, rgba(8,8,8,0.97) 55%, rgba(8,8,8,0))",
@@ -235,7 +254,7 @@ export default function Home() {
         <button
           onClick={() => { ymGoal("cta_click"); setModalOpen(true); }}
           aria-label="Зарегистрироваться на воркшоп"
-          className="w-full rounded-full py-4 uppercase text-black active:scale-[0.98] transition-transform"
+          className="w-full rounded-full py-4 uppercase text-black active:scale-[0.98] transition-transform pointer-events-auto"
           style={{
             fontFamily: "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
             fontWeight: 800,
