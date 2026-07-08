@@ -36,6 +36,7 @@ const UTM_FIELD_IDS: Record<string, number> = {
   utm_content: 2177188,
   utm_term: 2177196,
   utm_referrer: 2177198,
+  gclid: 2177220,
 };
 const FBCLID_FIELD_ID = 2177224;
 

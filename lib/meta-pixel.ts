@@ -16,6 +16,8 @@
 export const META_PIXEL_ID = "2241406289947143";
 
 // utm-метки, которые ловим из URL (campaign/adset/creative/placement).
+// gclid/gbraid/wbraid — клик-ID Google Ads для офлайн-конверсий (едут тем же
+// словарём: в amoCRM маппится только gclid, см. UTM_FIELD_IDS в amocrm/client).
 const UTM_KEYS = [
   "utm_source",
   "utm_medium",
@@ -23,6 +25,9 @@ const UTM_KEYS = [
   "utm_content",
   "utm_term",
   "utm_placement",
+  "gclid",
+  "gbraid",
+  "wbraid",
 ] as const;
 
 declare global {
