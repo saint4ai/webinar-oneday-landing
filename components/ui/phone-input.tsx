@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   PhoneInput as IntPhoneInput,
   type CountryIso2,
@@ -8,11 +8,12 @@ import {
 import "react-international-phone/style.css";
 
 /**
- * Phone input с автоматическим определением кода страны по IP.
+ * Phone input, дефолт — Казахстан.
  *
- * - При mount fetch ipapi.co/json → берёт `country_code` (например "KZ")
- * - Default fallback: "kz" (т.к. ЦА Александра — Казахстан)
- * - Стилизация под бренд (dark + orange focus)
+ * GeoIP-детект по ipapi.co УБРАН (2026-07-12): внешний fetch падал по CORS
+ * на КАЖДОЙ загрузке (лишний failed-request + шум в консоли), а ЦА и так 99%
+ * Казахстан → дефолт "kz" покрывает всё. Юзер может сменить страну руками.
+ * В in-app webview внешний fetch — лишний риск повиснуть на медленной сети.
  */
 
 type Props = {
@@ -24,39 +25,10 @@ type Props = {
 const DEFAULT_COUNTRY: CountryIso2 = "kz";
 
 export const BrandPhoneInput = ({ value, onChange, id }: Props) => {
-  const [country, setCountry] = useState<CountryIso2>(DEFAULT_COUNTRY);
-  const [detected, setDetected] = useState(false);
-
-  // GeoIP detection (1 раз при mount)
-  useEffect(() => {
-    if (detected) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("https://ipapi.co/json/", {
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error("ipapi failed");
-        const data = (await res.json()) as { country_code?: string };
-        if (cancelled) return;
-        if (data.country_code) {
-          setCountry(data.country_code.toLowerCase() as CountryIso2);
-        }
-      } catch {
-        // тихо fallback на DEFAULT_COUNTRY (kz)
-      } finally {
-        if (!cancelled) setDetected(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [detected]);
-
   return (
     <div className="brand-phone-wrapper">
       <IntPhoneInput
-        defaultCountry={country}
+        defaultCountry={DEFAULT_COUNTRY}
         value={value}
         onChange={onChange}
         inputProps={{ id, autoComplete: "tel" }}
