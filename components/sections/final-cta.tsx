@@ -10,6 +10,7 @@ import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
 import { pushWorkshopLead } from "@/lib/gtm";
+import { buildStaticEasybotUrl } from "@/lib/easybot/redirect";
 import { getNextWorkshop } from "@/lib/workshop-date";
 
 /**
@@ -62,10 +63,9 @@ const BONUSES: BonusCard[] = [
   },
 ];
 
-// TODO: настроить реальный endpoint для приёма формы.
-// edbot.me URL — это REDIRECT в WhatsApp (не webhook), используется только
-// на /thank-you как target кнопки «Перейти в WhatsApp-бот».
-// Lead создаётся в amoCRM на стороне edbot-бота когда юзер напишет в WhatsApp.
+// Форма POST /api/lead → лид в amoCRM + Meta CAPI, в ответе redirect.
+// Redirect воронки переключается через ENV FUNNEL_REDIRECT: easybot
+// (персональная ссылка EasyBot) либо WhatsApp-сообщество (по умолчанию).
 
 export const FinalCTA = () => {
   const [name, setName] = useState("");
@@ -112,8 +112,9 @@ export const FinalCTA = () => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Лид принят. Ведём на /thank-you → диплинк в закрытое WhatsApp-СООБЩЕСТВО.
-      const dest = withBase("/thank-you");
+      // Лид принят. Редирект в EasyBot (персональная ссылка с кодом → бот активирует скрипты).
+      const data = (await res.json().catch(() => ({}))) as { redirect?: string };
+      const dest = data.redirect || buildStaticEasybotUrl(meta.utm);
       setBotDest(dest);
       // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);
@@ -155,8 +156,10 @@ export const FinalCTA = () => {
       {/* Grain texture для глубины */}
       <div aria-hidden className="od-noise" />
 
+      {/* initial={false}: ФОРМА РЕГИСТРАЦИИ видна из SSR — критично, чтобы
+          при неотработавшем JS в webview конверсионный блок не был чёрным */}
       <motion.div
-        initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+        initial={false}
         whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.9, ease: "easeOut" }}
@@ -234,7 +237,7 @@ export const FinalCTA = () => {
               {TAKEAWAYS.map((item, idx) => (
                 <motion.li
                   key={item}
-                  initial={{ opacity: 0, x: -12 }}
+                  initial={false}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{
@@ -400,7 +403,7 @@ const BonusItem = ({ bonus, index }: { bonus: BonusCard; index: number }) => {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 16 }}
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}

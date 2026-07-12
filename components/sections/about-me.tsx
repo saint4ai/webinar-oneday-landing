@@ -79,8 +79,10 @@ export const AboutMe = () => {
       </div>
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
+      {/* initial={false}: секция видна из SSR — если JS в webview не отработал,
+          контент не остаётся чёрным (баг, уже пофикшенный на hero) */}
       <motion.div
-        initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+        initial={false}
         whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.9, ease: "easeOut" }}

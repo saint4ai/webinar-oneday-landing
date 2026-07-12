@@ -7,6 +7,9 @@ type AnimatedGroupProps = {
   children: React.ReactNode;
   variants?: { container?: Variants; item?: Variants };
   className?: string;
+  /** Рендерить сразу видимым (без SSR opacity:0) — для above-the-fold контента,
+   *  который должен быть виден до загрузки JS на медленных соединениях. */
+  instant?: boolean;
 };
 
 const defaultContainer: Variants = {
@@ -29,6 +32,7 @@ export const AnimatedGroup = ({
   children,
   variants,
   className,
+  instant = false,
 }: AnimatedGroupProps) => {
   const containerVariants = variants?.container ?? defaultContainer;
   const itemVariants = variants?.item ?? defaultItem;
@@ -37,7 +41,7 @@ export const AnimatedGroup = ({
 
   return (
     <motion.div
-      initial="hidden"
+      initial={instant ? false : "hidden"}
       animate="visible"
       variants={containerVariants}
       className={className}

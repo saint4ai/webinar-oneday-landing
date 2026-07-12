@@ -11,7 +11,7 @@ import { GlitchImage } from "./glitch-image";
 export const PortraitFrame = () => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      initial={false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.4, duration: 0.9, ease: "easeOut" }}
       className="relative rounded-3xl overflow-hidden"

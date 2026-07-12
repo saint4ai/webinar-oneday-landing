@@ -53,8 +53,10 @@ export default function Home() {
       <div className="od-vignette" />
 
       {/* HEADER */}
+      {/* initial={false}: above-the-fold виден сразу из SSR — на медленном
+          мобильном интернете JS грузится 10-30с, и юзер видел чёрный экран */}
       <motion.header
-        initial={{ opacity: 0, y: -10, filter: "blur(8px)" }}
+        initial={false}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="relative z-50 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6 flex items-center justify-between gap-3"
@@ -74,6 +76,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
             {/* LEFT — текст (на мобиле сверху) */}
             <AnimatedGroup
+              instant
               variants={{
                 container: {
                   visible: {
@@ -92,7 +95,7 @@ export default function Home() {
               {/* 2. H1 + Sub — с зелёным highlight на «AI-разработчиком» */}
               <div>
                 <motion.h1
-                  initial={{ opacity: 0, y: 14, filter: "blur(8px)" }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
                   className="display-hero-1 text-white"
@@ -104,7 +107,7 @@ export default function Home() {
                   приложений
                 </motion.h1>
                 <motion.p
-                  initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   transition={{ delay: 0.7, duration: 0.8, ease: "easeOut" }}
                   className="display-hero-2 text-white mt-2"
@@ -177,9 +180,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Section divider + proof — 3 пункта (без Almaty Hub) */}
+          {/* Section divider + proof — 3 пункта. initial={false}: proof-блок
+              (near-fold) виден из SSR, не мигает пустотой при медленном JS */}
           <motion.div
-            initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+            initial={false}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ delay: 1.5, duration: 1.2, ease: "easeOut" }}
             className="mt-12 lg:mt-16"
