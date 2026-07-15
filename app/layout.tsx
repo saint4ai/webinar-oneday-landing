@@ -13,11 +13,6 @@ import { getNextWorkshop } from "@/lib/workshop-date";
 // Yandex Metrika ID — тот же что на основном onai.academy
 const YM_ID = 109147153;
 
-// edbot.me chatbot ID — наш WhatsApp-бот платформы edbot.
-// Скрипт сам подцепит этот id и будет трекать визиты + re-engagement
-// тех, кто оставил форму, но не написал в WhatsApp.
-const EDBOT_CHATBOT_ID = "db343b5679ddf774530a60172b35bda8";
-
 // BENZIN — display шрифт для H1 (личный шрифт Александра)
 const benzin = localFont({
   src: [
@@ -172,11 +167,23 @@ export default function RootLayout({
       className={`${interTight.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} ${benzin.variable} h-full antialiased`}
     >
       <head>
+        {/* LITE-детект — ДО первой отрисовки (синхронный inline-скрипт).
+            In-app браузеры (Instagram/Facebook webview) и слабые устройства
+            убивают вкладку из-за GPU-тяжёлых слоёв (filter:blur, backdrop-filter,
+            mix-blend). Вешаем класс `lite` на <html> → CSS в globals срезает
+            эти эффекты. Симптом клиентов: «сайт слетает». Ресёрч: WKWebView
+            Jetsam-kill при росте IOSurface от blur/backdrop. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var u=navigator.userAgent||'';var inApp=/Instagram|FBAN|FBAV|FB_IAB/.test(u)||/(iPhone|iPod|iPad)(?!.*Safari)/.test(u)||/; wv\\)/.test(u);var m=navigator.deviceMemory;var c=navigator.hardwareConcurrency;var sd=navigator.connection&&navigator.connection.saveData;if(inApp||(m&&m<=1)||(c&&c<=2)||sd===true){document.documentElement.classList.add('lite');}}catch(e){}})();",
+          }}
+        />
         {/* Preload hero AVIF — критичный LCP-элемент (фото Александра в hero) */}
         <link
           rel="preload"
           as="image"
-          href={`${process.env.VERCEL ? "" : process.env.NODE_ENV === "production" ? "/workshop" : ""}/alex-cutout.avif`}
+          href={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/alex-cutout.avif`}
           type="image/avif"
           fetchPriority="high"
         />
@@ -230,17 +237,6 @@ export default function RootLayout({
           />
         </noscript>
         {children}
-
-        {/* edbot.me chatbot — трекинг визитов + re-engagement WhatsApp.
-            Скрипт сам подключает себя по id="chatbot_init" с data-chatbotid.
-            Загружаем с lazyOnload, чтобы не блокировать LCP. */}
-        <Script
-          id="chatbot_init"
-          src="https://cdn.platform.edbot.me/tilda_scrypt.min.js"
-          strategy="lazyOnload"
-          data-chatbotid={EDBOT_CHATBOT_ID}
-          data-regtype="whatsapp"
-        />
 
         {/* Google Tag Manager — конверсия Google Ads (новый чистый контейнер
             GTM-TLK5NPZF под воркшоп; старый GTM-5H7FFH9Q не используем).

@@ -196,6 +196,31 @@ body {
   background-size: 240px 240px;
 }
 
+/* ============ LITE-режим — in-app браузеры и слабые устройства ============
+ * Instagram/Facebook webview и телефоны с малой памятью убивают вкладку
+ * («сайт слетает») из-за GPU-тяжёлых слоёв: filter:blur на больших блобах,
+ * backdrop-filter и mix-blend-mode растят IOSurface до Jetsam-kill в WKWebView.
+ * Класс `lite` ставит инлайн-скрипт в <head> ДО отрисовки (детект по UA +
+ * deviceMemory). Здесь — обезвреживаем три главных killer-эффекта. */
+html.lite .od-blob-orange,
+html.lite .od-blob-lime {
+  /* убираем blur (главный источник больших IOSurface-слоёв); мягкий градиент
+     сам по себе даёт свечение без размытия */
+  filter: none;
+  opacity: 0.5;
+}
+html.lite .od-noise {
+  /* mix-blend-mode: overlay на весь экран = отдельный compositing-слой */
+  display: none;
+}
+html.lite *,
+html.lite *::before,
+html.lite *::after {
+  /* стеклянные карточки остаются читаемыми за счёт rgba-фона */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Soft section transition — плавный мягкий fade между блоками.
  * Высокая зона с radial-gradient в брендовом цвете для визуальной паузы
  * и устранения резких границ между разнотонными секциями.
