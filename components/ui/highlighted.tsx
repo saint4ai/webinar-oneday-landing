@@ -1,24 +1,18 @@
-"use client";
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Highlight под текстом — обычная solid плашка с мягким glow.
- * Без Liquid Glass — просто плотный цвет, чтобы не отвлекать от текста.
+ * Highlight под текстом — плотная плашка с мягким glow.
  *
- * Геометрия:
- *  - Wrapper padding по горизонтали: 0.16em (чтобы плашка была шире текста)
- *  - Плашка inset-y: -0.1em (выше и ниже текста на 10% font-size)
- *  - rounded-[0.22em] — мягкий радиус
- *  - НЕ заходит на соседние строки благодаря умеренному inset-y
+ * Раскатка и почернение текста сделаны на CSS (.hl-bar / .hl-ink в globals),
+ * а не на JS-анимации. Причина: в статической сборке Motion-анимация с delay
+ * не доигрывала — плашка оставалась scaleX(0), и акцент вообще не появлялся.
+ * CSS отрабатывает всегда, включая случай «JS не загрузился» — наш основной
+ * риск во встроенных браузерах Instagram/YouTube.
  *
- * Эффекты:
- *  - Сплошной color
- *  - Внешний outer glow (drop-shadow x2)
- *  - Inset top highlight 35% (мягкий блик сверху)
- *  - Inset bottom shadow 12% (глубина)
- * - Текст становится чёрным после раскатки.
+ * Геометрия плашки калибрована под cap-height BENZIN @800 uppercase:
+ * у кириллицы нет хвостов, поэтому line-box сильно ниже видимых букв —
+ * top 0.08em / bottom 0.30em компенсируют пустой descent.
  */
 export const Highlighted = ({
   children,
@@ -27,8 +21,7 @@ export const Highlighted = ({
   color = "#cdeb52",
   glowRgb = "205, 235, 82",
   className,
-  // wrap=true → плашка может переноситься (для длинных слов на узком mobile,
-  // например «WhatsApp-сообщество» которое не влезает в 320px без wrap)
+  // wrap=true → плашка может переноситься (для длинных слов на узком mobile)
   wrap = false,
 }: {
   children: React.ReactNode;
@@ -39,8 +32,6 @@ export const Highlighted = ({
   className?: string;
   wrap?: boolean;
 }) => {
-  const [filled, setFilled] = useState(false);
-
   return (
     <span
       className={cn(
@@ -49,57 +40,34 @@ export const Highlighted = ({
         className
       )}
       style={
-        wrap
-          ? { wordBreak: "break-word", overflowWrap: "anywhere" }
-          : { wordBreak: "keep-all", overflowWrap: "normal" }
+        {
+          "--hl-delay": `${delay}s`,
+          "--hl-dur": `${duration}s`,
+          ...(wrap
+            ? { wordBreak: "break-word", overflowWrap: "anywhere" }
+            : { wordBreak: "keep-all", overflowWrap: "normal" }),
+        } as React.CSSProperties
       }
     >
-      {/* Solid плашка — калибровка под cap-height (а не line-box).
-       * inline-span имеет line-box с большим descent ниже baseline,
-       * но у uppercase кириллицы нет хвостов — компенсируем top/bottom вручную,
-       * чтобы плашка симметрично обхватывала видимые буквы.
-       *
-       * BENZIN @800 на uppercase кириллицу — line-box центр сильно НИЖЕ
-       * cap-центра (descent space пустой). Компенсируем:
-       *  top    = 0.08em  → плашка чуть выше cap-top
-       *  bottom = 0.30em  → плашка ровно по baseline (не свисает в пустой descent)
-       *
-       * Центр плашки получается выше центра line-box ≈ на 0.07em →
-       * визуально совпадает с центром uppercase-текста.
-       */}
-      <motion.span
-        initial={{ scaleX: 0, opacity: 0 }}
-        animate={{ scaleX: 1, opacity: 1 }}
-        transition={{
-          scaleX: { delay, duration, ease: [0.65, 0, 0.35, 1] },
-          opacity: { delay, duration: 0.25, ease: "easeOut" },
-        }}
-        onAnimationComplete={() => setFilled(true)}
+      <span
+        className="hl-bar absolute z-0 rounded-[0.22em]"
         style={{
-          transformOrigin: "left center",
           background: color,
           top: "0.08em",
           bottom: "0.30em",
           left: 0,
           right: 0,
+          animationDuration: `${duration}s`,
           boxShadow: `
             0 12px 32px -8px rgba(${glowRgb}, 0.55),
             0 4px 16px -2px rgba(${glowRgb}, 0.4)
           `,
         }}
-        className="absolute z-0 rounded-[0.22em]"
         aria-hidden
       />
 
-      {/* Текст — белый сначала, чёрный когда плашка доехала */}
-      <span
-        className={cn(
-          "relative z-10 transition-colors duration-200",
-          filled ? "text-black" : "text-white"
-        )}
-      >
-        {children}
-      </span>
+      {/* Текст — белый, чернеет к концу раскатки плашки */}
+      <span className="hl-ink relative z-10">{children}</span>
     </span>
   );
 };

@@ -49,10 +49,13 @@ export const LiquidButton = ({
       {/* Основное тело кнопки */}
       <span
         className={cn(
-          "relative flex items-center justify-center gap-2.5 sm:gap-3 rounded-full px-5 py-4 sm:px-7 sm:py-5 lg:px-9 lg:py-5 z-10 ring-1 backdrop-blur-md transition-all duration-300",
+          // backdrop-blur только у полупрозрачного варианта: под сплошным
+          // оранжевым фоном он не виден, но остаётся GPU-слоем — лишний
+          // расход там, где встроенные браузеры и так на пределе.
+          "relative flex items-center justify-center gap-2.5 sm:gap-3 rounded-full px-5 py-4 sm:px-7 sm:py-5 lg:px-9 lg:py-5 z-10 ring-1 transition-all duration-300",
           isPrimary
             ? "bg-[#fc5c02] ring-white/15 group-hover:bg-[#ff6f1a]"
-            : "bg-black/70 ring-white/15 group-hover:ring-white/30"
+            : "bg-black/70 backdrop-blur-md ring-white/15 group-hover:ring-white/30"
         )}
       >
         <span

@@ -213,13 +213,7 @@ html.lite .od-noise {
   /* mix-blend-mode: overlay на весь экран = отдельный compositing-слой */
   display: none;
 }
-html.lite *,
-html.lite *::before,
-html.lite *::after {
-  /* стеклянные карточки остаются читаемыми за счёт rgba-фона */
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
+
 
 /* Soft section transition — плавный мягкий fade между блоками.
  * Высокая зона с radial-gradient в брендовом цвете для визуальной паузы
@@ -511,4 +505,47 @@ html.lite *::after {
   .sd-chapter-shake {
     animation: none;
   }
+}
+
+/* ============ ПОДСВЕТКА ЗАГОЛОВКОВ (Highlighted) ============
+ * Раскатка плашки — на CSS, а не на JS-анимации. Причина: в статической
+ * сборке Motion-анимация с delay не доигрывала, и акцент вообще не появлялся
+ * (плашка оставалась scaleX(0)). CSS работает всегда, в том числе когда JS
+ * не отработал — а это наш основной риск во встроенных браузерах.
+ */
+@keyframes hl-sweep {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+@keyframes hl-ink {
+  from { color: #fff; }
+  to   { color: #000; }
+}
+.hl-bar {
+  transform-origin: left center;
+  transform: scaleX(0);
+  opacity: 0;
+  animation: hl-sweep 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: var(--hl-delay, 1.2s);
+}
+.hl-ink {
+  color: #fff;
+  animation: hl-ink 0.2s linear forwards;
+  /* текст чернеет к концу раскатки плашки */
+  animation-delay: calc(var(--hl-delay, 1.2s) + 0.45s);
+}
+/* Уважаем системную настройку «меньше движения»: показываем результат сразу */
+@media (prefers-reduced-motion: reduce) {
+  .hl-bar { animation: none; transform: scaleX(1); opacity: 1; }
+  .hl-ink { animation: none; color: #000; }
+}
+
+/* Срез backdrop-filter в lite-режиме — в конце файла, чтобы
+ * правило шло после утилит Tailwind и гарантированно перебивало их. */
+html.lite *,
+html.lite *::before,
+html.lite *::after {
+  /* стеклянные карточки остаются читаемыми за счёт rgba-фона */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }

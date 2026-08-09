@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export const alt =
-  "Стань AI-разработчиком приложений — однодневный воркшоп на вайбкодинге";
+  "Собери приложение без программистов — бесплатный воркшоп на вайбкодинге";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // Картинка генерируется один раз на сборке — обязательно для output:'export'.
@@ -78,7 +78,7 @@ export default async function OpengraphImage() {
             textTransform: "uppercase",
           }}
         >
-          // однодневный воркшоп · бесплатно
+          // бесплатный воркшоп · 1 час
         </div>
 
         {/* H1 — single text per div, no nested flex needed */}
@@ -93,7 +93,7 @@ export default async function OpengraphImage() {
             letterSpacing: -2,
           }}
         >
-          <div style={{ display: "flex" }}>СТАНЬ</div>
+          <div style={{ display: "flex" }}>СОБЕРИ ПРИЛОЖЕНИЕ</div>
           <div
             style={{
               display: "flex",
@@ -105,16 +105,7 @@ export default async function OpengraphImage() {
               alignSelf: "flex-start",
             }}
           >
-            AI-РАЗРАБОТЧИКОМ
-          </div>
-          <div
-            style={{
-              display: "flex",
-              marginTop: 6,
-              color: "rgba(255,255,255,0.55)",
-            }}
-          >
-            ПРИЛОЖЕНИЙ
+            БЕЗ ПРОГРАММИСТОВ
           </div>
         </div>
 
@@ -137,7 +128,7 @@ export default async function OpengraphImage() {
             }}
           >
             <div style={{ display: "flex" }}>
-              За 1 день собери сайт, приложение или AI-агента
+              Час эфира: собираем презентацию, приложение и сайт
             </div>
             <div
               style={{
@@ -147,7 +138,7 @@ export default async function OpengraphImage() {
                 fontSize: 20,
               }}
             >
-              без программирования и команды
+              клиентам сделал две платформы — заплатили 6 млн тенге
             </div>
           </div>
 
