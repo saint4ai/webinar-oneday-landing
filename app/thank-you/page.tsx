@@ -13,7 +13,7 @@ import { apiUrl } from "@/lib/api-url";
  * До ответа показываем боевой фолбэк: страница не мигает и работает даже
  * если сервис недоступен.
  */
-const FALLBACK = "https://chat.whatsapp.com/JVdWLXG9L8jCTUp2W2vxeu";
+const FALLBACK = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
 
 export default function ThankYouPage() {
   const [communityHref, setCommunityHref] = useState(FALLBACK);

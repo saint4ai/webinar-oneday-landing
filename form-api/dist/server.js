@@ -541,7 +541,7 @@ async function sendOwnerAlert(lead, error) {
 var import_node_fs2 = require("node:fs");
 var import_node_path2 = require("node:path");
 var LINK_PATH = process.env.WHATSAPP_LINK_PATH || "/var/lib/workshop/whatsapp-link.json";
-var FALLBACK = process.env.WHATSAPP_COMMUNITY_FALLBACK || "https://chat.whatsapp.com/JVdWLXG9L8jCTUp2W2vxeu";
+var FALLBACK = process.env.WHATSAPP_COMMUNITY_FALLBACK || "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
 function isValidWhatsAppLink(raw) {
   let u;
   try {
@@ -705,7 +705,7 @@ async function handleLead(req, res) {
     console.log("[lead] name=%s phone=***%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), source, crmStatus, capiStatus);
   });
   const FUNNEL_REDIRECT = process.env.FUNNEL_REDIRECT === "easybot" ? "easybot" : "whatsapp";
-  const WHATSAPP_GROUP = "https://chat.whatsapp.com/JVdWLXG9L8jCTUp2W2vxeu";
+  const WHATSAPP_GROUP = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
   let redirect;
   if (FUNNEL_REDIRECT === "easybot") {
     const easybot = await registerEasybotLead({ name: cleanName, phone: cleanPhone, utm, location: siteUrl });

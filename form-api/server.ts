@@ -197,7 +197,7 @@ async function handleLead(req: IncomingMessage, res: ServerResponse) {
 
   // Редирект воронки — ПЕРЕКЛЮЧАТЕЛЬ через ENV (без пересборки).
   const FUNNEL_REDIRECT: "whatsapp" | "easybot" = process.env.FUNNEL_REDIRECT === "easybot" ? "easybot" : "whatsapp";
-  const WHATSAPP_GROUP = "https://chat.whatsapp.com/JVdWLXG9L8jCTUp2W2vxeu";
+  const WHATSAPP_GROUP = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
 
   let redirect: string;
   if (FUNNEL_REDIRECT === "easybot") {
