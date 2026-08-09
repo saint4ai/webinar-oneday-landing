@@ -9,10 +9,6 @@ import { AnimatedGroup, transitionVariants } from "@/components/ui/animated-grou
 import { TextEffect } from "@/components/ui/text-effect";
 import { Highlighted } from "@/components/ui/highlighted";
 import { RegisterModal } from "@/components/ui/register-modal";
-import { AboutMe } from "@/components/sections/about-me";
-import { CaseOnAIAcademy } from "@/components/sections/case-onai-academy";
-import { MyOtherProducts } from "@/components/sections/my-other-products";
-import { Testimonials } from "@/components/sections/testimonials";
 import { FinalCTA } from "@/components/sections/final-cta";
 import { MetaPixelBase } from "@/components/meta-pixel-base";
 import { ymGoal } from "@/lib/analytics/ym";
@@ -71,9 +67,9 @@ export default function Home() {
 
       {/* HERO */}
       <section className="relative z-10">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-4 sm:pt-6 lg:pt-10 pb-16 sm:pb-20">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-3 sm:pt-6 lg:pt-8 pb-8 sm:pb-14">
           {/* GRID: mobile = одна колонка (текст → фото), desktop = 2 колонки */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_460px] gap-8 lg:gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_460px] gap-5 lg:gap-14 items-center">
             {/* LEFT — текст (на мобиле сверху) */}
             <AnimatedGroup
               instant
@@ -85,11 +81,11 @@ export default function Home() {
                 },
                 ...transitionVariants,
               }}
-              className="flex flex-col gap-5 sm:gap-7 order-1"
+              className="flex flex-col gap-3.5 sm:gap-7 order-1"
             >
               {/* 1. Mono-метка */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="mono-label">однодневный воркшоп</span>
+                <span className="mono-label">бесплатный воркшоп · 1 час</span>
               </div>
 
               {/* 2. H1 + Sub — с зелёным highlight на «AI-разработчиком» */}
@@ -126,7 +122,7 @@ export default function Home() {
                   <span className="text-white font-bold">
                     сайты, приложения и AI-агентов
                   </span>{" "}
-                  для бизнеса через диалог с ИИ простым языком. За один день
+                  для бизнеса через диалог с ИИ простым языком. За 1 час
                   узнаешь, как делать IT-решения с чеком{" "}
                   <span className="od-gradient-text font-bold whitespace-nowrap">
                     500К – 10М&nbsp;₸
@@ -136,7 +132,7 @@ export default function Home() {
               </div>
 
               {/* 4. CTA + цена-якорь + таймер */}
-              <div className="flex flex-col items-start gap-3 mt-2 w-full">
+              <div className="flex flex-col items-start gap-2.5 mt-1 w-full">
                 <LiquidButton onClick={() => { ymGoal("cta_click"); setModalOpen(true); }} variant="primary">
                   Зарегистрироваться на воркшоп
                 </LiquidButton>
@@ -159,13 +155,13 @@ export default function Home() {
                   </span>
                 </div>
                 {/* Таймер до старта */}
-                <div className="mt-2">
+                <div className="mt-1">
                   <CountdownTimer />
                 </div>
                 {/* Подарок: 3 бонуса для участников */}
                 <a
                   href="#final-cta"
-                  className="mt-3 inline-flex items-center gap-2 font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.14em] text-[#fc5c02] hover:text-[#ff7424] transition-colors"
+                  className="mt-1 inline-flex items-center gap-2 font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.14em] text-[#fc5c02] hover:text-[#ff7424] transition-colors"
                 >
                   <span className="text-[#cdeb52]">+</span>
                   3 бонуса участникам в подарок
@@ -175,7 +171,7 @@ export default function Home() {
             </AnimatedGroup>
 
             {/* RIGHT — портрет: на мобиле снизу (компактнее) */}
-            <div className="order-2 lg:order-2 w-full max-w-[420px] mx-auto lg:max-w-none">
+            <div className="order-2 lg:order-2 w-full max-w-[250px] sm:max-w-[420px] mx-auto lg:max-w-none">
               <PortraitFrame />
             </div>
           </div>
@@ -186,7 +182,7 @@ export default function Home() {
             initial={false}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ delay: 1.5, duration: 1.2, ease: "easeOut" }}
-            className="mt-12 lg:mt-16"
+            className="mt-7 lg:mt-12"
           >
             <div className="section-divider">proof — что уже сделано</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 mt-2">
@@ -201,23 +197,55 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ════ КТО Я ════ */}
-      <AboutMe />
-
-      <div className="od-section-fade relative z-10" aria-hidden />
-
-      {/* ════ ФЛАГМАН — onAI.academy ════ */}
-      <CaseOnAIAcademy />
-
-      <div className="od-section-fade relative z-10" aria-hidden />
-
-      {/* ════ МОИ ДРУГИЕ SaaS — OmniDash + AI-Таргетолог ════ */}
-      <MyOtherProducts />
-
-      <div className="od-section-fade relative z-10" aria-hidden />
-
-      {/* ════ КЕЙСЫ УЧЕНИКОВ ════ */}
-      <Testimonials />
+      {/* ════ ПРОГРАММА — что узнаешь за 1 час ════ */}
+      <section className="relative z-10">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-14">
+          <div className="section-divider">программа — что узнаешь за 1 час</div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 mt-5">
+            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 sm:p-8">
+              <div
+                className="hl-orange uppercase"
+                style={{
+                  fontFamily:
+                    "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
+                  fontSize: "clamp(18px, 2.2vw, 30px)",
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                01
+              </div>
+              <h3 className="text-white font-bold text-[14px] sm:text-[19px] mt-3 leading-snug">
+                Кейсы и решения на вайбкодинге
+              </h3>
+              <p className="text-white/60 text-[12px] sm:text-[15px] mt-1.5 leading-relaxed">
+                Какие приложения и сервисы ты сможешь создавать —
+                на реальных кейсах с ценами рынка.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 sm:p-8">
+              <div
+                className="hl-lime uppercase"
+                style={{
+                  fontFamily:
+                    "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
+                  fontSize: "clamp(18px, 2.2vw, 30px)",
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                02
+              </div>
+              <h3 className="text-white font-bold text-[14px] sm:text-[19px] mt-3 leading-snug">
+                Практика в прямом эфире
+              </h3>
+              <p className="text-white/60 text-[12px] sm:text-[15px] mt-1.5 leading-relaxed">
+                Создаём вместе: презентацию, затем приложение и сайт.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="od-section-fade relative z-10" aria-hidden />
 
@@ -225,8 +253,8 @@ export default function Home() {
       <FinalCTA />
 
       {/* Footer */}
-      <footer className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-8 pb-32 md:pb-8 text-center">
-        <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap mb-3">
+      <footer className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-4 pb-24 md:pb-6 text-center">
+        <div className="flex items-center justify-center gap-x-5 gap-y-1.5 flex-wrap mb-2">
           <a
             href="https://onai.academy/offer"
             className="text-white/70 hover:text-[#B6FF00] underline underline-offset-4 text-sm font-medium transition-colors"

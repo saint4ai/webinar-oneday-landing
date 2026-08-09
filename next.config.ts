@@ -6,15 +6,30 @@ import type { NextConfig } from "next";
 // локальной разработке.
 // На Vercel (выгрузка презентации) — без префикса, чистый URL <project>.vercel.app/sales-deck.
 // На прод-сервере за nginx — /workshop. В dev — "".
-const BASE_PATH = process.env.VERCEL
-  ? ""
-  : process.env.NODE_ENV === "production"
-    ? "/workshop"
-    : "";
+// WEBINAR_LOCAL=1 — локальный prod-показ деки на вебинаре: basePath="" (отдаём
+// с корня, как dev), но сборка prod (предкомпилированная, лёгкая). Нужно, т.к.
+// сырые <img>/<video src="/..."> basePath НЕ получают и под /workshop отдают 404.
+// Реальный деплой onai.academy/workshop и Vercel этим флагом НЕ затрагиваются.
+const BASE_PATH =
+  process.env.VERCEL || process.env.WEBINAR_LOCAL
+    ? ""
+    : process.env.NODE_ENV === "production"
+      ? "/workshop"
+      : "";
+
+// STATIC_EXPORT=1 — прод-сборка лендинга в чистую статику (out/), которую
+// nginx раздаёт напрямую. Серверного рантайма нет вообще: падать нечему,
+// кэш не растёт, память не расходуется. Вся серверная логика (форма, дожим
+// лидов, вебхук ссылки) живёт в отдельном микросервисе form-api на :4010,
+// куда nginx проксирует /workshop/api/*.
+// Без флага сборка обычная (нужна для локального показа sales-deck).
+const STATIC_EXPORT = process.env.STATIC_EXPORT === "1";
 
 const nextConfig: NextConfig = {
   basePath: BASE_PATH,
   assetPrefix: BASE_PATH || undefined,
+  // output:'export' несовместим с redirects/headers/ISR — их берёт на себя nginx.
+  ...(STATIC_EXPORT ? { output: "export" as const } : {}),
   // trailingSlash=false (default). Канон Next.js = /workshop, без слэша.
   // nginx должен НЕ делать 301 /workshop→/workshop/, а проксировать
   // оба варианта напрямую — иначе ERR_TOO_MANY_REDIRECTS.
@@ -43,6 +58,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_BASE_PATH: BASE_PATH,
   },
   async redirects() {
+    if (STATIC_EXPORT) return []; // при export редиректы делает nginx
     return [
       // /oferta → /privacy: оферта не нужна на этапе бесплатной регистрации,
       // используем политику конфиденциальности (ЗРК «О персональных данных»).
@@ -58,7 +74,8 @@ const nextConfig: NextConfig = {
     // ломает Turbopack HMR: браузер кэширует dev-чанки на год и при пересборке
     // подсовывает старый чанк → "module factory is not available".
     // Next.js сам предупреждает об этом в dev-логе. Заголовки — ТОЛЬКО в prod.
-    if (process.env.NODE_ENV !== "production") {
+    // При export заголовки ставит nginx (Next не участвует в раздаче).
+    if (process.env.NODE_ENV !== "production" || STATIC_EXPORT) {
       return [];
     }
     return [

@@ -1,3 +1,6 @@
+// Генерится один раз на сборке — обязательно для output:'export'.
+export const dynamic = "force-static";
+
 import type { MetadataRoute } from "next";
 
 const SITE_URL = "https://onai.academy/workshop";

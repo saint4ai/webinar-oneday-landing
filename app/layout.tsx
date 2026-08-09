@@ -151,9 +151,8 @@ export const metadata: Metadata = {
   },
 };
 
-// Почасовой ISR: статическая страница перегенерируется раз в час, поэтому
-// дата эфира в Schema.org (startDate/endDate) остаётся актуальной без ручных правок.
-export const revalidate = 3600;
+// Статическая раздача (output:'export'): ISR недоступен. Дата эфира в Schema.org
+// фиксируется на момент сборки; таймер на странице клиентский и считает сам.
 
 export default function RootLayout({
   children,

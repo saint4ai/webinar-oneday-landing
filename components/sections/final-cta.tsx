@@ -25,12 +25,6 @@ import { getNextWorkshop } from "@/lib/workshop-date";
  * Subtle brand-gradient overlays + grain для отличия от других блоков.
  */
 
-const TAKEAWAYS = [
-  "Формулу, по которой собирают приложения",
-  "Список 6 продуктов с реальными ценами рынка",
-  "Понимание, с какой задачи начать",
-];
-
 type BonusCard = {
   number: string;
   image: string;
@@ -163,10 +157,10 @@ export const FinalCTA = () => {
         whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.9, ease: "easeOut" }}
-        className="relative z-[2] max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-12 pt-12 sm:pt-16 lg:pt-20 pb-16 sm:pb-20"
+        className="relative z-[2] max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-12 pt-8 sm:pt-14 lg:pt-16 pb-10 sm:pb-16"
       >
         {/* ═══ БОНУСЫ ДЛЯ УЧАСТНИКОВ ВОРКШОПА (выше H1) ═══ */}
-        <div className="mb-12 sm:mb-16">
+        <div className="mb-8 sm:mb-14">
           <div className="mono-label !text-[#fc5c02] mb-4 flex items-center gap-2">
             <Gift size={13} strokeWidth={2.5} />
             обещанные бонусы
@@ -177,7 +171,7 @@ export const FinalCTA = () => {
               fontFamily:
                 "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
               fontWeight: 800,
-              fontSize: "clamp(22px, 3vw, 38px)",
+              fontSize: "clamp(17px, 3vw, 34px)",
               lineHeight: 1.4,
               letterSpacing: "-0.01em",
             }}
@@ -192,7 +186,7 @@ export const FinalCTA = () => {
             придёт ссылка на живой эфир и напоминание за час до старта.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-6 mt-5 sm:mt-10">
             {BONUSES.map((b, idx) => (
               <BonusItem key={b.number} bonus={b} index={idx} />
             ))}
@@ -228,39 +222,10 @@ export const FinalCTA = () => {
           </Highlighted>
         </h2>
 
-        {/* 2-column: что заберёшь + форма */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-10 lg:gap-16 mt-8 sm:mt-12 items-start">
-          {/* LEFT — Что заберёшь */}
-          <div>
-            <div className="mono-label !text-white/55 mb-5">что заберёшь</div>
-            <ul className="flex flex-col gap-4">
-              {TAKEAWAYS.map((item, idx) => (
-                <motion.li
-                  key={item}
-                  initial={false}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.5,
-                    ease: "easeOut",
-                    delay: 0.2 + idx * 0.1,
-                  }}
-                  className="flex items-start gap-3 text-white/85 text-[15px] sm:text-[17px] leading-relaxed"
-                >
-                  <span className="mt-1 inline-flex w-6 h-6 shrink-0 rounded-full bg-[#cdeb52]/15 items-center justify-center border border-[#cdeb52]/30">
-                    <Check size={14} strokeWidth={2.5} className="text-[#cdeb52]" />
-                  </span>
-                  <span>{item}</span>
-                </motion.li>
-              ))}
-            </ul>
-
-            <p className="mt-10 text-white/40 text-[13px] sm:text-[14px] font-mono uppercase tracking-[0.14em]">
-              живой эфир, записи не будет.
-            </p>
-          </div>
-
-          {/* RIGHT — Inline-форма + бонусы под ней */}
+        {/* Форма — по центру. Список «что заберёшь» убран: его роль выполняет
+            блок «Программа» выше, дубль удлинял страницу без пользы. */}
+        <div className="max-w-[560px] mx-auto mt-6 sm:mt-8">
+          {/* Inline-форма + бонусы под ней */}
           <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm">
             {success ? (
               <div className="flex flex-col items-center text-center py-6">
@@ -408,7 +373,7 @@ const BonusItem = ({ bonus, index }: { bonus: BonusCard; index: number }) => {
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative rounded-[20px] overflow-hidden aspect-square shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]"
+      className="group relative rounded-[20px] overflow-hidden h-[96px] md:h-auto md:aspect-square shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]"
     >
       <Image
         src={image}
@@ -421,7 +386,7 @@ const BonusItem = ({ bonus, index }: { bonus: BonusCard; index: number }) => {
       {/* Gradient overlay внизу для гарантированной читаемости текста */}
       <div
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-[55%] pointer-events-none"
+        className="absolute inset-x-0 bottom-0 h-full md:h-[55%] pointer-events-none"
         style={{
           background: isDark
             ? "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.85) 100%)"
@@ -429,7 +394,7 @@ const BonusItem = ({ bonus, index }: { bonus: BonusCard; index: number }) => {
         }}
       />
 
-      <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-between pointer-events-none">
+      <div className="absolute inset-0 p-3 sm:p-5 flex flex-col justify-between pointer-events-none">
         <span
           className={`self-start inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md backdrop-blur-md font-mono text-[10px] uppercase tracking-[0.18em] border ${
             isDark
@@ -448,7 +413,7 @@ const BonusItem = ({ bonus, index }: { bonus: BonusCard; index: number }) => {
               fontFamily:
                 "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
               fontWeight: 800,
-              fontSize: "clamp(16px, 2vw, 22px)",
+              fontSize: "clamp(15px, 2vw, 22px)",
               lineHeight: 1.05,
               letterSpacing: "-0.01em",
               textShadow: !isDark ? "0 2px 12px rgba(0,0,0,0.7)" : "none",

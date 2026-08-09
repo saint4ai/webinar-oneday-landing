@@ -6,6 +6,8 @@ export const alt =
   "Стань AI-разработчиком приложений — однодневный воркшоп на вайбкодинге";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Картинка генерируется один раз на сборке — обязательно для output:'export'.
+export const dynamic = "force-static";
 
 /**
  * Dynamic OG-image (1200×630).
