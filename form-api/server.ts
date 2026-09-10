@@ -357,17 +357,31 @@ async function handleTgLink(req: IncomingMessage, res: ServerResponse) {
  */
 const ALMATY_OFFSET_MS = 5 * 60 * 60 * 1000; // UTC+5, без DST
 
+// Фиксированная дата эфира (YYYY-MM-DD по Алматы) — держим в паре с
+// FIXED_DATE в lib/workshop-date.ts, иначе календарь и таймер разъедутся.
+// null → прежнее поведение: ближайший ежедневный эфир.
+// 2026-09-10: ежедневный эфир 20:00 Алматы, дата считается сама (было 2026-08-17).
+const FIXED_WORKSHOP_DATE: string | null = null;
+
 function handleCalendar(res: ServerResponse) {
-  const nowAlmaty = new Date(Date.now() + ALMATY_OFFSET_MS);
+  let y: number, mNum: number, dNum: number;
 
-  // До 19:45 зовём на сегодняшний эфир, позже — на завтрашний.
-  const cutoff = nowAlmaty.getUTCHours() * 60 + nowAlmaty.getUTCMinutes();
-  const target = new Date(nowAlmaty);
-  if (cutoff >= 19 * 60 + 45) target.setUTCDate(target.getUTCDate() + 1);
+  if (FIXED_WORKSHOP_DATE) {
+    const [fy, fm, fd] = FIXED_WORKSHOP_DATE.split("-").map(Number);
+    y = fy; mNum = fm; dNum = fd;
+  } else {
+    const nowAlmaty = new Date(Date.now() + ALMATY_OFFSET_MS);
+    // До 19:45 зовём на сегодняшний эфир, позже — на завтрашний.
+    const cutoff = nowAlmaty.getUTCHours() * 60 + nowAlmaty.getUTCMinutes();
+    const target = new Date(nowAlmaty);
+    if (cutoff >= 19 * 60 + 45) target.setUTCDate(target.getUTCDate() + 1);
+    y = target.getUTCFullYear();
+    mNum = target.getUTCMonth() + 1;
+    dNum = target.getUTCDate();
+  }
 
-  const y = target.getUTCFullYear();
-  const m = String(target.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(target.getUTCDate()).padStart(2, "0");
+  const m = String(mNum).padStart(2, "0");
+  const d = String(dNum).padStart(2, "0");
 
   // Локальное время Алматы, без Z — часовой пояс передаём через ctz.
   const dates = `${y}${m}${d}T200000/${y}${m}${d}T220000`;

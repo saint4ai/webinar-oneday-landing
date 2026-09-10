@@ -38,21 +38,21 @@ const BONUSES: BonusCard[] = [
     number: "01",
     image: "/bonuses/bonus-1-v4.avif",
     title: "Автопилот\nрекламы Meta",
-    hook: "// экономия ~150 000 ₸ в месяц",
+    hook: "// −150К ₸/мес на таргетологе",
     textColor: "light",
   },
   {
     number: "02",
     image: "/bonuses/bonus-2.avif",
     title: "33 промта\nпо маркетингу",
-    hook: "// готовые запросы вместо пустого листа",
+    hook: "// копируй · вставляй · запускай",
     textColor: "dark",
   },
   {
     number: "03",
     image: "/bonuses/bonus-3-v4.avif",
-    title: "Гайд\nпо старту",
-    hook: "// с чего начать первое приложение",
+    title: "Гайд по старту\nв вайбкодинге",
+    hook: "// от идеи до своей платформы",
     textColor: "light",
   },
 ];
@@ -159,51 +159,51 @@ export const FinalCTA = () => {
         transition={{ duration: 0.9, ease: "easeOut" }}
         className="relative z-[2] max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-12 pt-8 sm:pt-14 lg:pt-16 pb-10 sm:pb-16"
       >
-        {/* ═══ БОНУСЫ — компактной строкой, без отдельного экрана ═══
-            Раньше блок занимал целый экран и уводил внимание от формы.
-            Теперь: три названия в ряд + одна кнопка к форме. Основной
-            «байт» бонусами всё равно происходит в сообществе. */}
-        <div className="mb-8 sm:mb-12">
+        {/* ═══ БОНУСЫ ДЛЯ УЧАСТНИКОВ ВОРКШОПА (выше H1) ═══ */}
+        <div className="mb-8 sm:mb-14">
           <div className="mono-label !text-[#fc5c02] mb-4 flex items-center gap-2">
             <Gift size={13} strokeWidth={2.5} />
-            три файла в подарок
+            обещанные бонусы
           </div>
+          <h3
+            className="uppercase text-white max-w-3xl"
+            style={{
+              fontFamily:
+                "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
+              fontWeight: 800,
+              fontSize: "clamp(17px, 3vw, 34px)",
+              lineHeight: 1.4,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Бонусы для{" "}
+            <Highlighted delay={0.5} duration={0.7}>
+              участников воркшопа
+            </Highlighted>
+          </h3>
+          <p className="mt-4 text-white/65 text-[14px] sm:text-[16px] leading-relaxed max-w-2xl">
+            Готовые материалы — в нашем закрытом WhatsApp-сообществе. Туда же
+            придёт ссылка на живой эфир и напоминание за час до старта.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-6 mt-5 sm:mt-10">
             {BONUSES.map((b, idx) => (
               <BonusItem key={b.number} bonus={b} index={idx} />
             ))}
           </div>
 
-          <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
-            <a
-              href="#reg-form"
-              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-black uppercase transition-transform active:scale-[0.98]"
-              style={{
-                fontFamily:
-                  "var(--font-benzin), var(--font-space-grotesk), system-ui, sans-serif",
-                fontWeight: 800,
-                fontSize: "15px",
-                letterSpacing: "0.02em",
-                background: "#cdeb52",
-              }}
-            >
-              Забери свои бонусы
-              <ArrowRight size={16} strokeWidth={2.5} />
-            </a>
-            <p className="text-white/45 font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.16em] flex items-center gap-2">
-              <Lock size={12} strokeWidth={2} className="text-[#cdeb52]" />
-              открою в закрытом WhatsApp после регистрации
-            </p>
-          </div>
+          <p className="mt-6 text-center text-white/45 font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.16em] flex items-center justify-center gap-2">
+            <Lock size={12} strokeWidth={2} className="text-[#cdeb52]" />
+            доступ после регистрации
+          </p>
         </div>
 
-        <div id="reg-form" className="section-divider">
+        <div className="section-divider">
           регистрация{dayMonth ? ` · ${dayMonth}` : ""}
         </div>
 
-        {/* H2 называет предметы эфира — конкретика вместо «места ограничены»
-            (оценка судей 91/100). */}
+        {/* H1 — на mobile: «Регистрируйся —» / [плашка «места ограничены»]
+            на 2 строки, чтобы плашка целиком влезла на 320px viewport. */}
         <h2
           className="uppercase text-white mt-6 sm:mt-8 max-w-3xl"
           style={{
@@ -215,10 +215,10 @@ export const FinalCTA = () => {
             letterSpacing: "-0.015em",
           }}
         >
-          Собираем презентацию,{" "}
+          Регистрируйся —{" "}
           <br className="sm:hidden" />
           <Highlighted delay={0.5} duration={0.7} color="#fc5c02" glowRgb="252, 92, 2">
-            приложение и сайт
+            места ограничены
           </Highlighted>
         </h2>
 
@@ -291,16 +291,15 @@ export const FinalCTA = () => {
                     <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/45">
                       whatsapp
                     </span>
-
+                    <span className="font-mono text-[10px] text-[#fc5c02]/80 normal-case tracking-normal">
+                      → доступ в сообщество
+                    </span>
                   </label>
                   <BrandPhoneInput
                     id="fcta-phone"
                     value={phone}
                     onChange={setPhone}
                   />
-                  <p className="mt-1.5 font-mono text-[10px] text-white/40 normal-case tracking-normal">
-                    Сюда пришлём ссылку на эфир
-                  </p>
                 </div>
 
                 <label className="mt-1 flex items-start gap-2.5 cursor-pointer select-none group">
@@ -338,7 +337,7 @@ export const FinalCTA = () => {
                     <Loader2 size={18} className="animate-spin" />
                   ) : (
                     <>
-                      Занять место
+                      Зарегистрироваться
                       <ArrowRight size={18} strokeWidth={2.5} />
                     </>
                   )}
@@ -351,7 +350,7 @@ export const FinalCTA = () => {
                 )}
 
                 <p className="text-white/35 text-[11px] sm:text-[12px] text-center mt-1">
-                  Бесплатно · 1 час · 20:00 по Алматы · без записи
+                  Бесплатно · онлайн · 1 день
                 </p>
               </form>
             )}

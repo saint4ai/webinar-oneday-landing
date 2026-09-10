@@ -81,20 +81,14 @@ export default function Home() {
                 },
                 ...transitionVariants,
               }}
-              className="flex flex-col gap-6 sm:gap-8 order-1"
+              className="flex flex-col gap-3.5 sm:gap-7 order-1"
             >
               {/* 1. Mono-метка */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="mono-label">
-                  бесплатно · 1 час · 20:00 по Алматы
-                </span>
+                <span className="mono-label">бесплатный воркшоп · 1 час</span>
               </div>
 
-              {/* 2. ОДИН заголовок в две строки. Подзаголовок и абзац-пруф
-                  убраны: на первом экране должен быть один фокус и воздух.
-                  ⚠️ Обёртка <div> обязательна: как прямой потомок AnimatedGroup
-                  заголовок наследует её варианты, и анимация подсветки внутри
-                  застревает в исходном состоянии (плашка нулевой ширины). */}
+              {/* 2. H1 + Sub — с зелёным highlight на «AI-разработчиком» */}
               <div>
                 <motion.h1
                   initial={false}
@@ -102,25 +96,43 @@ export default function Home() {
                   transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
                   className="display-hero-1 text-white"
                 >
-                  Собери приложение
-                  <br />
-                  <Highlighted delay={1.2} duration={0.7}>
-                    без программистов
-                  </Highlighted>
+                  Стань{" "}
+                  <Highlighted delay={1.4} duration={0.7}>
+                    AI-разработчиком
+                  </Highlighted>{" "}
+                  приложений
                 </motion.h1>
+                <motion.p
+                  initial={false}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{ delay: 0.7, duration: 0.8, ease: "easeOut" }}
+                  className="display-hero-2 text-white mt-2"
+                >
+                  без навыков программирования
+                </motion.p>
               </div>
 
-              {/* 3. Одна тихая строка доказательства — не абзац. */}
-              <p className="text-white/55 text-[14px] sm:text-[16px] leading-relaxed">
-                Клиентам сделал две платформы — заплатили{" "}
-                <span className="text-white font-semibold whitespace-nowrap">
-                  6 млн&nbsp;₸
-                </span>
-                .
-              </p>
+              {/* 3. H2 */}
+              <div
+                className="max-w-xl text-[14px] sm:text-[16px] lg:text-[17px] text-white/70 leading-relaxed"
+                style={{ letterSpacing: "-0.01em" }}
+              >
+                <p>
+                  Собирай{" "}
+                  <span className="text-white font-bold">
+                    сайты, приложения и AI-агентов
+                  </span>{" "}
+                  для бизнеса через диалог с ИИ простым языком. За 1 час
+                  узнаешь, как делать IT-решения с чеком{" "}
+                  <span className="od-gradient-text font-bold whitespace-nowrap">
+                    500К – 10М&nbsp;₸
+                  </span>{" "}
+                  — без программирования и команды.
+                </p>
+              </div>
 
               {/* 4. CTA + цена-якорь + таймер */}
-              <div className="flex flex-col items-start gap-4 mt-2 w-full">
+              <div className="flex flex-col items-start gap-2.5 mt-1 w-full">
                 <LiquidButton onClick={() => { ymGoal("cta_click"); setModalOpen(true); }} variant="primary">
                   Зарегистрироваться на воркшоп
                 </LiquidButton>
@@ -146,6 +158,15 @@ export default function Home() {
                 <div className="mt-1">
                   <CountdownTimer />
                 </div>
+                {/* Подарок: 3 бонуса для участников */}
+                <a
+                  href="#final-cta"
+                  className="mt-1 inline-flex items-center gap-2 font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.14em] text-[#fc5c02] hover:text-[#ff7424] transition-colors"
+                >
+                  <span className="text-[#cdeb52]">+</span>
+                  3 бонуса участникам в подарок
+                  <span aria-hidden>↓</span>
+                </a>
               </div>
             </AnimatedGroup>
 
@@ -161,18 +182,16 @@ export default function Home() {
             initial={false}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ delay: 1.5, duration: 1.2, ease: "easeOut" }}
-            className="mt-10 lg:mt-16"
+            className="mt-7 lg:mt-12"
           >
-            <div className="section-divider">факты</div>
-            {/* Три числа, не больше: четвёртое перестаёт быть доказательством
-                и становится шумом. Диапазон сжат до одной границы — две цифры
-                в строке заставляют считать вместо узнавания. «900+ выпускников»
-                снят с этого экрана: здесь человек решает «получится ли у меня»,
-                а выпускники школы отвечают на другой вопрос (они в подвале). */}
+            <div className="section-divider">proof — что уже сделано</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 mt-2">
-              <ProofItem num="6 млн ₸" label="заплатили за две платформы" />
-              <ProofItem num="от 600 000 ₸" label="чек решения для компании" />
-              <ProofItem num="год" label="в вайбкодинге" />
+              <ProofItem num="6" label="IT-решений в продакшене" />
+              <ProofItem
+                num="600К–10,5М ₸"
+                label="чек проектов для бизнеса"
+              />
+              <ProofItem num="900+" label="выпускников онлайн-школы" />
             </div>
           </motion.div>
         </div>
@@ -180,8 +199,8 @@ export default function Home() {
 
       {/* ════ ПРОГРАММА — что узнаешь за 1 час ════ */}
       <section className="relative z-10">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-12 sm:py-16">
-          <div className="section-divider">что успеем за час</div>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-14">
+          <div className="section-divider">программа — что узнаешь за 1 час</div>
           <div className="grid grid-cols-2 gap-3 sm:gap-6 mt-5">
             <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 sm:p-8">
               <div
@@ -197,11 +216,11 @@ export default function Home() {
                 01
               </div>
               <h3 className="text-white font-bold text-[14px] sm:text-[19px] mt-3 leading-snug">
-                Что я собрал
+                Кейсы и решения на вайбкодинге
               </h3>
               <p className="text-white/60 text-[12px] sm:text-[15px] mt-1.5 leading-relaxed">
-                Платформу обучения, дашборд аналитики, AI, который запускает
-                рекламу.
+                Какие приложения и сервисы ты сможешь создавать —
+                на реальных кейсах с ценами рынка.
               </p>
             </div>
             <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 sm:p-8">
@@ -218,10 +237,10 @@ export default function Home() {
                 02
               </div>
               <h3 className="text-white font-bold text-[14px] sm:text-[19px] mt-3 leading-snug">
-                Собираем в эфире
+                Практика в прямом эфире
               </h3>
               <p className="text-white/60 text-[12px] sm:text-[15px] mt-1.5 leading-relaxed">
-                Презентацию, приложение и сайт — шаг за шагом.
+                Создаём вместе: презентацию, затем приложение и сайт.
               </p>
             </div>
           </div>
