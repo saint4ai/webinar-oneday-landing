@@ -8,6 +8,8 @@ interface SlideDeckProps {
   slides: React.ReactNode[];
   /** Ключи слайдов на светлом (cream) фоне — для них счётчик красится тёмным, иначе сливается. */
   lightSlideKeys?: Set<string>;
+  /** Тема рамки деки. "dark" — как было (лайм); "cacao" — молоко и какао для «Контент-завода». */
+  theme?: "dark" | "cacao";
 }
 
 /**
@@ -21,7 +23,8 @@ interface SlideDeckProps {
  *   Home / End — в начало/конец
  *   Esc — выход из fullscreen
  */
-export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
+export function SlideDeck({ slides, lightSlideKeys, theme = "dark" }: SlideDeckProps) {
+  const cacao = theme === "cacao";
   const [idx, setIdx] = useState(0);
   const [speakerMode, setSpeakerMode] = useState<"live" | "preview">("live");
 
@@ -126,10 +129,10 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
 
   // Тема текущего слайда — для читаемости счётчика на cream-фоне.
   const currentKey = (slides[idx] as React.ReactElement | null)?.key ?? null;
-  const counterLight = currentKey != null && !!lightSlideKeys?.has(String(currentKey));
+  const counterLight = cacao || (currentKey != null && !!lightSlideKeys?.has(String(currentKey)));
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden flex items-center justify-center">
+    <div className="fixed inset-0 overflow-hidden flex items-center justify-center" style={{ background: cacao ? "#EFE6DA" : "#000" }}>
       {/* 16:9 рамка — лочим формат 1920×1080; на широких экранах чёрные поля по бокам.
           container-type: size → cqw/cqh внутри считаются от РАМКИ, а не от вьюпорта. */}
       <div
@@ -141,7 +144,7 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
         <div
           className="pointer-events-none absolute inset-0 z-[1]"
           style={{
-            background: `radial-gradient(450px circle at ${cursor.x}px ${cursor.y}px, rgba(182,255,0,0.18), transparent 65%)`,
+            background: `radial-gradient(450px circle at ${cursor.x}px ${cursor.y}px, ${cacao ? "rgba(201,160,90,0.16)" : "rgba(182,255,0,0.18)"}, transparent 65%)`,
           }}
         />
       )}
@@ -168,7 +171,9 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
         style={{
           right: "var(--sd-speaker-zone)",
           background:
-            "linear-gradient(to bottom, transparent 0%, rgba(182,255,0,0.15) 30%, rgba(182,255,0,0.25) 50%, rgba(182,255,0,0.15) 70%, transparent 100%)",
+            cacao
+              ? "linear-gradient(to bottom, transparent 0%, rgba(139,94,60,0.15) 30%, rgba(139,94,60,0.28) 50%, rgba(139,94,60,0.15) 70%, transparent 100%)"
+              : "linear-gradient(to bottom, transparent 0%, rgba(182,255,0,0.15) 30%, rgba(182,255,0,0.25) 50%, rgba(182,255,0,0.15) 70%, transparent 100%)",
         }}
       />
 
@@ -177,7 +182,7 @@ export function SlideDeck({ slides, lightSlideKeys }: SlideDeckProps) {
         className="pointer-events-none absolute bottom-4 right-5 z-30 font-mono text-[11px] tracking-[0.2em]"
         style={{
           fontFamily: "var(--font-jetbrains-mono), monospace",
-          color: counterLight ? "rgba(42,37,32,0.55)" : "rgba(255,255,255,0.35)",
+          color: cacao ? "rgba(201,160,90,0.85)" : counterLight ? "rgba(42,37,32,0.55)" : "rgba(255,255,255,0.35)",
         }}
       >
         {String(idx + 1).padStart(2, "0")}{" "}
