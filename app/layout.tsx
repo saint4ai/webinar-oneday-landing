@@ -160,6 +160,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const nextWs = getNextWorkshop();
+  const trackers = !process.env.WEBINAR_LOCAL;
   return (
     <html
       lang="ru"
@@ -226,7 +227,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-black text-white">
         {/* Google Tag Manager (noscript) — конверсия Google Ads/YouTube */}
-        <noscript>
+        {trackers && <noscript>
           <iframe
             src="https://www.googletagmanager.com/ns.html?id=GTM-TLK5NPZF"
             height="0"
@@ -234,9 +235,12 @@ export default function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
             title="gtm"
           />
-        </noscript>
+        </noscript>}
         {children}
 
+        {/* Локальный показ деки на эфире (WEBINAR_LOCAL=1): счётчики не грузим — листание слайдов
+            не должно попадать в статистику рекламы и тянуть сеть во время трансляции */}
+        {trackers && <>
         {/* Google Tag Manager — конверсия Google Ads (новый чистый контейнер
             GTM-TLK5NPZF под воркшоп; старый GTM-5H7FFH9Q не используем).
             Конверсия фаятся по событию `workshop_lead` на сабмит формы. */}
@@ -274,6 +278,7 @@ export default function RootLayout({
             />
           </div>
         </noscript>
+        </>}
       </body>
     </html>
   );
