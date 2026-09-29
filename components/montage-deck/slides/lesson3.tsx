@@ -23,7 +23,7 @@ export function M_ViewsNoLeads() {
             {i < 2 ? (
               <Stagger i={i * 2} style={{ ...card, borderRadius: 999, padding: "0.8cqw 1.6cqw", ...txt, fontSize: "1.15cqw" }}>{p}</Stagger>
             ) : (
-              <motion.div initial={{ opacity: 0, x: "0cqw" }} animate={{ opacity: [0, 1, 1, 0.4], x: ["0cqw", "0cqw", "0cqw", "2.4cqw"] }}
+              <motion.div initial={{ opacity: 0, x: "0cqw" }} animate={{ opacity: [0, 1, 1, 0.55], x: ["0cqw", "0cqw", "0cqw", "2.4cqw"] }}
                 transition={{ delay: at(4, 0.28), duration: 1.6, times: [0, 0.2, 0.55, 1], ease: EASE }}
                 style={{ borderRadius: 999, padding: "0.8cqw 1.6cqw", ...txt, fontSize: "1.15cqw", color: T.muted, border: `1.5px dashed ${T.brownLt}` }}>{p}</motion.div>
             )}
@@ -80,7 +80,7 @@ const Typing = () => (
 );
 
 /** Директ в телефоне: сообщения появляются по одному, перед ответом бота — «печатает…». */
-function DirectPhone({ msgs, step = 0.9 }: { msgs: { me?: boolean; t: string }[]; step?: number }) {
+function DirectPhone({ msgs, step = 0.7 }: { msgs: { me?: boolean; t: string }[]; step?: number }) {
   const [n, setN] = useState(0);
   useEffect(() => {
     const ids = msgs.map((_, i) => setTimeout(() => setN(i + 1), 350 + i * step * 1000));
@@ -262,7 +262,7 @@ export function M_Thanks() {
     <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><ReelTunnel3D reels={TUNNEL_REELS} /></MontageBg>}>
       <div style={{ maxWidth: "31cqw" }}>
         <Rise><BrandLogo night height="1.8cqw" style={{ marginBottom: "3cqw" }} /></Rise>
-        <Rise delay={STEP}><H size="4.2cqw" color={T.nightText} style={{ lineHeight: 1.05 }}>Спасибо, <Em night>что пришли</Em></H></Rise>
+        <Rise delay={STEP}><H size="4.2cqw" color={T.nightText} style={{ lineHeight: 1.05 }}>Спасибо,<br /><Em night><span style={{ whiteSpace: "nowrap" }}>что пришли</span></Em></H></Rise>
         <Rise delay={STEP * 2}><Lead color={T.nightMuted} style={{ marginTop: "1.6cqw", fontSize: "1.5cqw" }}>Увидимся в следующих эфирах.</Lead></Rise>
       </div>
     </SlideLayout>

@@ -30,7 +30,7 @@ function Path({ steps, t0 = 0.35, dt = 0.22 }: { steps: Step[]; t0?: number; dt?
       <div className="absolute" style={{ left: "0.75cqw", top: "0.9cqw", bottom: "0.9cqw", width: "0.2cqw", borderRadius: 4, background: `${T.brown}26` }} />
       <motion.div className="absolute" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ delay: t0, duration: dt * (steps.length - 1), ease: "linear" }}
         style={{ left: "0.75cqw", top: "0.9cqw", bottom: "0.9cqw", width: "0.2cqw", borderRadius: 4, background: `linear-gradient(180deg, ${T.gold}, ${T.gold2})`, transformOrigin: "top" }} />
-      <div className="grid gap-[0.9cqw]">
+      <div className="grid gap-[1.1cqw]">
         {steps.map((s, i) => (
           <div key={i} className="relative">
             <motion.span className="absolute" initial={{ scale: 0.5, backgroundColor: T.card }} animate={{ scale: [0.5, 1.3, 1], backgroundColor: T.gold }}
@@ -38,8 +38,8 @@ function Path({ steps, t0 = 0.35, dt = 0.22 }: { steps: Step[]; t0?: number; dt?
               style={{ left: "-2.35cqw", top: "0.35cqw", width: "1.2cqw", height: "1.2cqw", borderRadius: 99, border: `1.5px solid ${T.gold2}`, boxShadow: s.now ? `0 0 0 0.45cqw ${T.gold}40` : "none" }} />
             <motion.div initial={{ opacity: 0, x: "-1cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ delay: t0 + i * dt, duration: 0.4, ease: EASE }}>
               <div style={{ ...txt, fontSize: "0.8cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: s.now ? T.brown : T.accent }}>{s.when}</div>
-              <div style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw", marginTop: "0.15cqw", color: s.now ? T.brown : T.ink }}>{s.what}</div>
-              {s.text && <div style={{ ...txt, fontWeight: 500, fontSize: "0.95cqw", color: T.muted, marginTop: "0.15cqw" }}>{s.text}</div>}
+              <div style={{ ...txt, fontWeight: 700, fontSize: "1.35cqw", marginTop: "0.15cqw", color: s.now ? T.brown : T.ink }}>{s.what}</div>
+              {s.text && <div style={{ ...txt, fontWeight: 500, fontSize: "1.05cqw", color: T.muted, marginTop: "0.15cqw" }}>{s.text}</div>}
             </motion.div>
           </div>
         ))}

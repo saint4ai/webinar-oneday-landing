@@ -186,8 +186,8 @@ export function M_Installments() {
       </div>
       <Rise delay={1.6} className="flex flex-wrap items-center gap-[0.6cqw]" style={{ marginTop: "1.6cqw" }}>
         {BANKS.map((b) => (
-          <span key={b.name} className="flex items-center justify-center" style={{ height: "2.6cqw", minWidth: "6cqw", padding: "0 1cqw", borderRadius: 12, background: T.paper, border: `1px solid ${T.line}`, boxShadow: T.shadowSm }}>
-            <img src={`/payment/banks/${b.logo}.png`} alt={b.name} style={{ maxHeight: "1.5cqw", width: "auto" }} />
+          <span key={b.name} className="flex items-center justify-center" style={{ height: "3.2cqw", minWidth: "7.5cqw", padding: "0 1.1cqw", borderRadius: 12, background: T.paper, border: `1px solid ${T.line}`, boxShadow: T.shadowSm }}>
+            <img src={`/payment/banks/${b.logo}.png`} alt={b.name} style={{ maxHeight: "2.1cqw", maxWidth: "6.5cqw", width: "auto" }} />
           </span>
         ))}
         <span style={{ ...txt, fontWeight: 500, fontSize: "0.85cqw", color: T.muted, marginLeft: "0.4cqw", maxWidth: "24cqw" }}>Россия, Узбекистан, Беларусь, Кыргызстан: рассрочку подберёт менеджер</span>

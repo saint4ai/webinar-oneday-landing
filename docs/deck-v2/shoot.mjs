@@ -29,7 +29,7 @@ const only = opt("--only")?.split(",").map((s) => s.trim());
 const fxMode = args.includes("--fx");
 const WAIT = Number(opt("--wait") ?? 2500);
 // Слайды с длинным «вау»: снимаем конечное состояние, а не середину анимации
-const SLOW = { "09": 4200 };
+const SLOW = { "09": 4200, "38": 3200, "39a": 3000 };
 
 // Порядок слайдов берём из MontageDeck.tsx: ключи идут в том же порядке, что и в массиве slides
 const deckSrc = readFileSync(join(root, "components/montage-deck/MontageDeck.tsx"), "utf8");
