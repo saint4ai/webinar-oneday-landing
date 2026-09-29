@@ -2,26 +2,26 @@
 
 import { ReactNode } from "react";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
-import { MontageBg } from "./MontageBg";
+import { MontageBg, type Tone } from "./MontageBg";
 import { T } from "./theme";
-import { H, Kicker, Lead, Px, Rise } from "./ui";
+import { H, Kicker, Lead, Px, Rise, STEP } from "./ui";
 
 /**
- * Базовый слайд деки: кикер, заголовок, подводка и блок ниже.
- * tone="ink" — тёмный слайд с золотом (цена, решение).
+ * Базовый слайд деки: кикер, заголовок, подводка и блок ниже — всё в левых 60%, правые 40% — фон под камеру.
+ * tone="night" — ночной слайд сайта (#14100E, текст #FBF3E4, акцент золотом); "ink" — старое имя того же.
  */
 export function Statement({ kicker, title, lead, children, tone = "paper", size = "2.9cqw", left, leftSize = "24cqw", leftOverflow = "visible", obj, objSize = "9cqw" }: {
-  obj?: string; objSize?: string; kicker?: ReactNode; title: ReactNode; lead?: ReactNode; children?: ReactNode; tone?: "paper" | "soft" | "ink"; size?: string;
+  obj?: string; objSize?: string; kicker?: ReactNode; title: ReactNode; lead?: ReactNode; children?: ReactNode; tone?: Tone | "ink"; size?: string;
   left?: ReactNode; leftSize?: string; leftOverflow?: "hidden" | "visible";
 }) {
-  const dark = tone === "ink";
+  const night = tone === "night" || tone === "ink";
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg tone={tone} />} leftObject={left} objectColumnSize={leftSize} objectOverflow={leftOverflow}>
       {obj && <Px name={obj} size={objSize} style={{ marginBottom: "0.4cqw", marginLeft: "-0.9cqw" }} />}
-      {kicker && <Rise><Kicker color={dark ? T.gold : T.accent}>{kicker}</Kicker></Rise>}
-      <Rise delay={0.08}><H size={size} color={dark ? T.paper : T.ink}>{title}</H></Rise>
-      {lead && <Rise delay={0.16}><Lead color={dark ? "rgba(251,248,243,.72)" : T.muted} style={{ marginTop: "1.3cqw", maxWidth: "46cqw" }}>{lead}</Lead></Rise>}
-      {children && <Rise delay={0.26} style={{ marginTop: "2cqw" }}>{children}</Rise>}
+      {kicker && <Rise><Kicker color={night ? T.gold : T.accent}>{kicker}</Kicker></Rise>}
+      <Rise delay={STEP}><H size={size} color={night ? T.nightText : T.brown}>{title}</H></Rise>
+      {lead && <Rise delay={STEP * 2}><Lead color={night ? T.nightMuted : T.muted} style={{ marginTop: "1.3cqw", maxWidth: "46cqw" }}>{lead}</Lead></Rise>}
+      {children && <Rise delay={STEP * 3} style={{ marginTop: "2cqw" }}>{children}</Rise>}
     </SlideLayout>
   );
 }

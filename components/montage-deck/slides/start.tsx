@@ -148,7 +148,7 @@ export function M_About() {
 /** 9 ✦ · Было 300 000 ₸, стало около 50 000 ₸: старая цена зачёркивается. */
 export function M_CostStory() {
   const after = useCountUp(50000, 1.1, 1.5);
-  const sub: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontSize: "1cqw", lineHeight: 1.4, color: "rgba(251,248,243,.7)", marginTop: "0.9cqw" };
+  const sub: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontSize: "1cqw", lineHeight: 1.4, color: "rgba(251,243,228,.7)", marginTop: "0.9cqw" };
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg tone="ink" />}>
       <Px name="lg-s09-coins" size="10cqw" style={{ marginBottom: "0.6cqw", marginLeft: "-0.6cqw" }} />
@@ -156,9 +156,9 @@ export function M_CostStory() {
       <Rise delay={0.08}><H size="2.6cqw" color={T.paper}>Сколько мне стоит монтаж 30 роликов в месяц</H></Rise>
       <div className="flex items-end gap-[2.4cqw]" style={{ marginTop: "3cqw" }}>
         <Rise delay={0.2}>
-          <div style={{ ...sub, marginTop: 0, fontWeight: 700, color: "rgba(251,248,243,.85)" }}>Было: монтажёр</div>
+          <div style={{ ...sub, marginTop: 0, fontWeight: 700, color: "rgba(251,243,228,.85)" }}>Было: монтажёр</div>
           <div className="relative inline-block" style={{ marginTop: "0.8cqw" }}>
-            <Num size="3.6cqw" color="rgba(251,248,243,.55)">{nb("300 000 ₸")}</Num>
+            <Num size="3.6cqw" color="rgba(251,243,228,.55)">{nb("300 000 ₸")}</Num>
             <motion.div className="absolute left-[-3%] right-[-3%] top-1/2" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 1, duration: 0.45, ease: EASE }}
               style={{ height: "0.32cqw", marginTop: "-0.16cqw", background: T.gold2, borderRadius: 4, transformOrigin: "left", rotate: "-4deg" }} />
           </div>

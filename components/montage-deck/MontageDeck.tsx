@@ -2,7 +2,8 @@
 
 /**
  * MontageDeck — эфир Vibe Production («Контент-завод на ИИ» до 27.09), 1 октября 2026, 20:00.
- * Тема «молоко и какао» — одна с сайтом продукта (projects/ai_montage_landing/BRAND.md).
+ * Бренд-код сайтов onai.academy (theme.ts ← fx/brand.ts). Правые 40% кадра — зона камеры: только фон слайда.
+ * Режиссура v2: docs/deck-v2/РЕЖИССУРА.md.
  * Раскадровка v3, 60 слайдов (39а — скидка по слову с сайта): ~/Downloads/Раскадровка_эфира_01-10_слайд_за_слайдом.md
  * Слайд 56: клавиши 0–5 — сколько мест из пяти уже занято.
  */
@@ -95,7 +96,10 @@ export function MontageDeck() {
     <M_Thanks key="59" />,
   ];
   return (
-    <div className={`${unbounded.variable} ${manrope.variable}`}>
+    <div className={`montage-deck ${unbounded.variable} ${manrope.variable}`}>
+      {/* Номер слайда общего SlideDeck стоит в правом нижнем углу — это зона камеры, там только фон.
+          Прячем его только в этой деке; номер остаётся в адресной строке (#N). */}
+      <style>{`.montage-deck .bottom-4.right-5.z-30 { display: none; }`}</style>
       <SlideDeck slides={slides} theme="cacao" />
     </div>
   );

@@ -5,6 +5,7 @@ import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
+import { Logo } from "../Logo";
 import { T } from "../theme";
 import { H, Kicker, Lead, Chip, Rise, thousands } from "../ui";
 
@@ -21,7 +22,7 @@ export function M_Cover() {
           <div style={{ fontFamily: "var(--font-manrope)", fontSize: "0.72cqw", color: T.muted }}>просмотров на 26 сентября</div>
         </motion.div>
       }>
-      <Rise><img src="/montage/onai-logo-cacao.svg" alt="onAI Academy" style={{ height: "1.9cqw", width: "auto", marginBottom: "2.6cqw" }} /></Rise>
+      <Rise><Logo style={{ marginBottom: "2.6cqw" }} /></Rise>
       <Rise delay={0.1}><Kicker>Эфир · Vibe Production</Kicker></Rise>
       <Rise delay={0.18}><H size="2.75cqw">Рилсы без знаний монтажа</H></Rise>
       <Rise delay={0.26}><Lead style={{ marginTop: "1.6cqw", maxWidth: "30cqw" }}>Монтирует ИИ-агент по вашему голосу. Заявки с рилсов обрабатывает ИИ-менеджер.</Lead></Rise>
