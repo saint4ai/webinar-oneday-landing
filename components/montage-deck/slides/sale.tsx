@@ -11,7 +11,7 @@ import { T, glass, goldButton } from "../theme";
 import { Arrow, Card, EASE, H, Kicker, Lead, Note, Num, Px, Rise, nb, thousands } from "../ui";
 
 const txt: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.4, color: T.ink };
-const light = "rgba(251,248,243,.72)";
+const light = "rgba(251,243,228,.72)";
 const Stagger = ({ i, children, style, className }: { i: number; children: React.ReactNode; style?: React.CSSProperties; className?: string }) => (
   <motion.div className={className} style={style} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + i * 0.08, duration: 0.45, ease: EASE }}>{children}</motion.div>
 );
@@ -116,7 +116,7 @@ export function M_Anchor() {
       <Rise delay={0.08}><H size="2.8cqw" color={T.paper}>Месяц монтажёра или свой контент-завод</H></Rise>
       <div className="grid grid-cols-2 gap-[1.2cqw]" style={{ marginTop: "2.2cqw", maxWidth: "52cqw" }}>
         <Stagger i={0} style={card}>
-          <div style={{ ...small, marginTop: 0, color: "rgba(251,248,243,.85)", fontWeight: 700 }}>Монтажёр</div>
+          <div style={{ ...small, marginTop: 0, color: "rgba(251,243,228,.85)", fontWeight: 700 }}>Монтажёр</div>
           <div style={{ marginTop: "0.8cqw" }}><Num size="2.6cqw" color={T.paper}>{`от ${thousands(a)} ₸`}</Num></div>
           <div style={small}>Каждый месяц. Вакансия на hh.kz, Алматы, 26.09.2026</div>
         </Stagger>
@@ -150,7 +150,7 @@ export function M_Installments() {
       </div>
       <Rise delay={1.8} className="flex flex-wrap items-center gap-[0.6cqw]" style={{ marginTop: "1.6cqw" }}>
         {["Kaspi", "Home Credit", "Halyk"].map((b) => (
-          <span key={b} style={{ borderRadius: 999, padding: "0.5cqw 1.1cqw", border: "1px solid rgba(251,248,243,.25)", fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.9cqw", color: T.paper }}>{b}</span>
+          <span key={b} style={{ borderRadius: 999, padding: "0.5cqw 1.1cqw", border: "1px solid rgba(251,243,228,.25)", fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.9cqw", color: T.paper }}>{b}</span>
         ))}
         <span style={{ fontFamily: "var(--font-manrope)", fontSize: "0.85cqw", color: light, marginLeft: "0.4cqw" }}>Россия, Узбекистан, Беларусь, Кыргызстан: рассрочку подберёт менеджер</span>
       </Rise>
@@ -312,9 +312,9 @@ export function M_Slots() {
           return (
             <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0, scale: isTaken ? 0.92 : 1 }} transition={{ delay: 0.3 + i * 0.08, duration: 0.45, ease: EASE }}
               className="flex flex-col items-center justify-center" style={{ width: "7.5cqw", height: "9cqw", borderRadius: 20, transition: "background .4s, border-color .4s",
-                border: `1.5px solid ${isTaken ? "rgba(251,248,243,.15)" : T.gold2}`, background: isTaken ? "rgba(251,248,243,.04)" : "rgba(227,192,123,.14)" }}>
-              <Num size="2.6cqw" color={isTaken ? "rgba(251,248,243,.25)" : T.gold}>{i + 1}</Num>
-              <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.8cqw", marginTop: "0.6cqw", color: isTaken ? "rgba(251,248,243,.35)" : T.gold }}>{isTaken ? "занято" : "свободно"}</div>
+                border: `1.5px solid ${isTaken ? "rgba(251,243,228,.15)" : T.gold2}`, background: isTaken ? "rgba(251,243,228,.04)" : "rgba(227,192,123,.14)" }}>
+              <Num size="2.6cqw" color={isTaken ? "rgba(251,243,228,.25)" : T.gold}>{i + 1}</Num>
+              <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.8cqw", marginTop: "0.6cqw", color: isTaken ? "rgba(251,243,228,.35)" : T.gold }}>{isTaken ? "занято" : "свободно"}</div>
             </motion.div>
           );
         })}

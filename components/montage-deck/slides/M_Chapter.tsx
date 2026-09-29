@@ -2,50 +2,48 @@
 
 import { motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
+import { VoxelField } from "../fx";
 import { MontageBg } from "../MontageBg";
-import { T } from "../theme";
-import { EASE, H, Kicker, Lead, Px } from "../ui";
+import { T, goldText } from "../theme";
+import { EASE, H, Kicker, Lead, Px, RISE_DUR, STEP } from "../ui";
 
-const BANDS = 6;
-
-/** Экран урока или главы: большой знак собирается из золотых полос, въезжающих с чередующихся сторон. */
-export function M_Chapter({ big, kicker, title, sub, bigSize = "13cqw", obj }: { big: string; kicker?: string; title: string; sub?: string; bigSize?: string; obj?: string }) {
+/**
+ * Экран урока или главы, ночной: фоном поле столбиков (гаснет к зоне камеры), огромная золотая цифра
+ * поднимается из глубины, по ней один раз проходит блик, заголовок въезжает следом. Без глитча.
+ */
+export function M_Chapter({ big, kicker, title, sub, bigSize = "16cqw", obj }: { big: string; kicker?: string; title: string; sub?: string; bigSize?: string; obj?: string }) {
   const text: React.CSSProperties = {
     fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: bigSize, lineHeight: 0.9, letterSpacing: "-.05em", whiteSpace: "nowrap",
-    background: `linear-gradient(180deg, ${T.gold}, ${T.gold2})`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
   };
+  const after = 0.45; // заголовок — сразу за цифрой
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />}>
-      <div className="flex items-end gap-[2cqw]">
-      <div className="relative" style={{ height: `calc(${bigSize} * 0.95)` }}>
-        <span style={{ ...text, visibility: "hidden" }}>{big}</span>
-        {Array.from({ length: BANDS }, (_, i) => {
-          const top = (i * 100) / BANDS;
-          const bottom = 100 - ((i + 1) * 100) / BANDS;
-          return (
-            <motion.span
-              key={i}
-              aria-hidden
-              className="absolute left-0 top-0"
-              style={{ ...text, clipPath: `inset(${top}% 0 ${bottom}% 0)` }}
-              initial={{ x: i % 2 ? "18cqw" : "-18cqw", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.1 + i * 0.07, ease: EASE }}
-            >
-              {big}
-            </motion.span>
-          );
-        })}
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /></MontageBg>}>
+      <style>{`@keyframes ch-shine { from { background-position: 160% 0; } to { background-position: -60% 0; } }`}</style>
+      <div className="flex items-end gap-[1.6cqw]">
+        <motion.div className="relative" initial={{ opacity: 0, y: "3cqw", scale: 0.9 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
+          transition={{ duration: 0.6, ease: EASE }} style={{ transformOrigin: "left bottom" }}>
+          <div style={{ ...text, ...goldText, filter: `drop-shadow(0 1.2cqw 2.4cqw rgba(20,16,14,.6))` }}>{big}</div>
+          {/* Блик по золоту — один проход */}
+          <div aria-hidden className="absolute inset-0" style={{
+            ...text, color: "transparent",
+            backgroundImage: `linear-gradient(100deg, transparent 38%, ${T.card}B3 50%, transparent 62%)`,
+            backgroundSize: "250% 100%", backgroundRepeat: "no-repeat", WebkitBackgroundClip: "text", backgroundClip: "text",
+            animation: "ch-shine 1.4s ease-out 0.5s both",
+          }}>{big}</div>
+        </motion.div>
+        {obj && <Px name={obj} size="11cqw" delay={0.3} style={{ marginBottom: "0.4cqw" }} />}
       </div>
-      {obj && <Px name={obj} size="14cqw" delay={0.55} style={{ marginBottom: "-0.5cqw" }} />}
-      </div>
-      <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.5, delay: 0.7, ease: EASE }}
-        style={{ width: "6cqw", height: 3, background: T.accent, margin: "2cqw 0 1.6cqw", borderRadius: 2, transformOrigin: "left" }} />
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.85, ease: EASE }}>
-        {kicker && <Kicker>{kicker}</Kicker>}
-        <H size="3.4cqw">{title}</H>
-        {sub && <Lead style={{ marginTop: "1.2cqw", maxWidth: "46cqw" }}>{sub}</Lead>}
+      <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.4, delay: after - STEP, ease: EASE }}
+        style={{ width: "6cqw", height: "0.2cqw", background: T.gold2, margin: "2.2cqw 0 1.6cqw", borderRadius: 2, transformOrigin: "left" }} />
+      <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after, ease: EASE }}>
+        {kicker && <Kicker color={T.gold}>{kicker}</Kicker>}
+        <H size="3.4cqw" color={T.nightText} style={{ maxWidth: "50cqw" }}>{title}</H>
       </motion.div>
+      {sub && (
+        <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after + STEP, ease: EASE }}>
+          <Lead color={T.nightMuted} style={{ marginTop: "1.2cqw", maxWidth: "46cqw" }}>{sub}</Lead>
+        </motion.div>
+      )}
     </SlideLayout>
   );
 }

@@ -1,34 +1,32 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
-import { useCountUp } from "@/components/sales-deck/useCountUp";
+import { ReelTunnel3D } from "../fx";
+import { Logo } from "../Logo";
 import { MontageBg } from "../MontageBg";
-import { Phone } from "../Phone";
 import { T } from "../theme";
-import { H, Kicker, Lead, Chip, Rise, thousands } from "../ui";
+import { Chip, Em, H, Kicker, Lead, Rise, STEP } from "../ui";
 
-/** 1 ✦ Заставка: телефон с MCP-рилсом въезжает, счётчик докручивается до 107 237. */
+/** Постеры тоннеля: рилсы, смонтированные агентом, и девять стилей монтажа. */
+export const TUNNEL_REELS = ["mcp", "papka", "google10", "podarok", "zashita"].map((r) => ({ poster: `/montage/reels/${r}.jpg` }))
+  .concat(["prism", "orbit", "trace", "pulse", "glass", "portrait", "apple", "podcast", "expert"].map((s) => ({ poster: `/montage/styles/${s}.jpg` })));
+
+/**
+ * 1 ✦ Обложка, ночная: фоном тоннель из рилсов (сам гаснет к зоне камеры), слева на тёмном поле —
+ * крупный заголовок, строка про агента и менеджера и чипы даты. Счётчик 107 237 живёт на слайде 30.
+ */
 export function M_Cover() {
-  const views = useCountUp(107237, 2.2, 0.7);
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg />} objectColumnSize="21cqw" objectOverflow="visible"
-      leftObject={
-        <motion.div className="flex flex-col items-center gap-[1cqw]"
-          initial={{ opacity: 0, y: "10cqw", rotate: -7 }} animate={{ opacity: 1, y: 0, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 70, damping: 16, delay: 0.15 }}>
-          <Phone video="/montage/reels/mcp.mp4" src="/montage/reels/mcp.jpg" views={thousands(views)} caption="Четыре подключения для Claude" width="14.5cqw" showTop={false} />
-          <div style={{ fontFamily: "var(--font-manrope)", fontSize: "0.72cqw", color: T.muted }}>просмотров на 26 сентября</div>
-        </motion.div>
-      }>
-      <Rise><img src="/montage/onai-logo-cacao.svg" alt="onAI Academy" style={{ height: "1.9cqw", width: "auto", marginBottom: "2.6cqw" }} /></Rise>
-      <Rise delay={0.1}><Kicker>Эфир · Vibe Production</Kicker></Rise>
-      <Rise delay={0.18}><H size="2.75cqw">Рилсы без знаний монтажа</H></Rise>
-      <Rise delay={0.26}><Lead style={{ marginTop: "1.6cqw", maxWidth: "30cqw" }}>Монтирует ИИ-агент по вашему голосу. Заявки с рилсов обрабатывает ИИ-менеджер.</Lead></Rise>
-      <Rise delay={0.34} className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2.4cqw" }}>
-        <Chip>Четверг, 1 октября</Chip><Chip>20:00</Chip><Chip>3 урока за вечер</Chip>
-      </Rise>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><ReelTunnel3D reels={TUNNEL_REELS} /></MontageBg>}>
+      <div style={{ maxWidth: "31cqw" }}>
+        <Rise><Logo night height="1.8cqw" style={{ marginBottom: "3cqw" }} /></Rise>
+        <Rise delay={STEP}><Kicker color={T.gold}>Эфир · Vibe Production</Kicker></Rise>
+        <Rise delay={STEP * 2}><H size="4.6cqw" color={T.nightText} style={{ lineHeight: 1.04 }}>Рилсы без знаний <Em night>монтажа</Em></H></Rise>
+        <Rise delay={STEP * 3}><Lead color={T.nightMuted} style={{ marginTop: "1.8cqw", fontSize: "1.35cqw" }}>Монтирует ИИ-агент по вашему голосу. Заявки с рилсов обрабатывает ИИ-менеджер.</Lead></Rise>
+        <Rise delay={STEP * 4} className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2.4cqw" }}>
+          <Chip night>Четверг, 1 октября</Chip><Chip gold>20:00</Chip><Chip night>3 урока за вечер</Chip>
+        </Rise>
+      </div>
     </SlideLayout>
   );
 }
-

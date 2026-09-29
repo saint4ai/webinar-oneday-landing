@@ -2,16 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { B, MANROPE, UNBOUNDED } from "./brand";
 
 /**
- * Урок 3: объёмная воронка из колец. Сверху сыплются просмотры-частицы и крутятся по спирали вниз;
- * на каждом кольце часть отваливается наружу и гаснет, до нижнего кольца доходит горстка — заявки.
- * Кольца и частицы — Canvas 2D, подписи ступеней — обычный текст справа от колец (чёткий шрифт).
- * Занимает весь родитель.
+ * Урок 3: объёмная воронка из колец для ночного слайда. Сверху сыплются просмотры-частицы (#FBF3E4)
+ * и крутятся по спирали вниз; на каждом кольце часть отваливается наружу и гаснет, до нижнего кольца
+ * доходит горстка — заявки, они золотые. Кольца золотом, Canvas 2D; подписи ступеней — обычный текст
+ * справа от колец: цифры Unbounded, подписи Manrope. Занимает весь родитель.
  */
 export type FunnelStage = { label: string; value: string };
 
-const ACCENT = "182, 255, 0";
+const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return `${n >> 16}, ${(n >> 8) & 255}, ${n & 255}`; };
+const ACCENT = rgb(B.gold);
+const DOT = rgb(B.nightText);
 const KEEP = [0.5, 0.42, 0.34]; // доля частиц, прошедших кольцо 2, 3, 4
 const TOP = 0.1, BOTTOM = 0.84, CX = 0.34, R0 = 0.28, TILT = 0.26;
 
@@ -66,7 +69,7 @@ export function LeadFunnel3D({ stages }: { stages: FunnelStage[] }) {
       const fade = 1 - p.out;
       const last = p.stage >= n - 1;
       const size = (last ? 2.6 : 1.7) * (0.75 + 0.25 * (depth + 1)) * (w / 900);
-      ctx.fillStyle = last ? `rgba(${ACCENT}, ${0.95 * fade})` : `rgba(255, 255, 255, ${(0.35 + 0.45 * (depth + 1) / 2) * fade})`;
+      ctx.fillStyle = last ? `rgba(${ACCENT}, ${0.95 * fade})` : `rgba(${DOT}, ${(0.35 + 0.45 * (depth + 1) / 2) * fade})`;
       ctx.beginPath(); ctx.arc(x, y, Math.max(size, 1), 0, Math.PI * 2); ctx.fill();
     };
 
@@ -128,8 +131,8 @@ export function LeadFunnel3D({ stages }: { stages: FunnelStage[] }) {
             initial={reduce ? false : { opacity: 0, x: "1.5cqw", y: "-50%" }} animate={{ opacity: 1, x: "0cqw", y: "-50%" }}
             transition={{ delay: 0.3 + k * 0.25, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
             style={{ left: `${(CX + ringR(k, n) + 0.04) * 100}%`, top: `${ringY(k, n) * 100}%`, lineHeight: 1.1 }}>
-            <div style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontWeight: 700, fontSize: lastStage ? "2.6cqw" : "1.9cqw", color: lastStage ? "#B6FF00" : "#FFFFFF", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.value}</div>
-            <div style={{ fontFamily: "var(--font-inter-tight), system-ui, sans-serif", fontSize: "0.95cqw", color: "#A1A1AA", marginTop: "0.3cqw", whiteSpace: "nowrap" }}>{s.label}</div>
+            <div style={{ fontFamily: UNBOUNDED, fontWeight: 700, letterSpacing: "-.03em", fontSize: lastStage ? "2.6cqw" : "1.8cqw", color: lastStage ? B.gold : B.nightText, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.value}</div>
+            <div style={{ fontFamily: MANROPE, fontWeight: 600, fontSize: "0.95cqw", color: B.nightMuted, marginTop: "0.35cqw", whiteSpace: "nowrap" }}>{s.label}</div>
           </motion.div>
         );
       })}

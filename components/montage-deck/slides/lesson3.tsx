@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { MontageBg } from "../MontageBg";
 import { Statement } from "../Statement";
+import { Logo as BrandLogo } from "../Logo";
 import { T, glass } from "../theme";
 import { Arrow, Card, EASE, H, Lead, Note, Px, Rise, nb } from "../ui";
 
@@ -183,7 +184,7 @@ export function M_Plan30() {
 export function M_Thanks() {
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />}>
-      <Rise><img src="/montage/onai-logo-cacao.svg" alt="onAI Academy" style={{ height: "1.9cqw", width: "auto", marginBottom: "2.6cqw" }} /></Rise>
+      <Rise><BrandLogo style={{ marginBottom: "2.6cqw" }} /></Rise>
       <Rise delay={0.12}><H size="3.6cqw">Спасибо, что пришли</H></Rise>
       <Rise delay={0.24}><Lead style={{ marginTop: "1.2cqw", fontSize: "1.5cqw" }}>Увидимся в следующих эфирах.</Lead></Rise>
       <motion.img src="/montage/lego/lg-s59-desk.webp" alt="" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.9, ease: EASE }}
