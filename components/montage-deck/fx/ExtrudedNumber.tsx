@@ -2,23 +2,24 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { useReducedMotion } from "framer-motion";
+import { B, MANROPE, UNBOUNDED } from "./brand";
 
 /**
- * Огромная объёмная цифра: грань лаймом, толщина из 18 слоёв тени уходит в глубину,
- * по грани один раз проходит блик. Цифра докручивается от нуля.
+ * Огромная объёмная цифра в бренде сайта: грань коричневая (Unbounded 700), толщина из 18 слоёв
+ * уходит в глубину тёплыми тёмными тонами, по грани один раз проходит блик. Цифра докручивается от нуля.
  * value — готовая строка: «107 237», «+2 340», «—». Нечисловое показывается как есть.
  */
 const DEPTH = 18;
-const STEP = 0.013; // em на слой: толщина ≈ 0,23 высоты цифры
+const STEP = 0.011; // em на слой: толщина ≈ 0,2 высоты цифры
 
 function split(value: string) {
-  const m = value.match(/^(\D*?)([\d\s ]*\d)(.*)$/);
+  const m = value.match(/^(\D*?)([\d\s ]*\d)(.*)$/);
   if (!m) return null;
-  return { pre: m[1], num: Number(m[2].replace(/[\s ]/g, "")), post: m[3] };
+  return { pre: m[1], num: Number(m[2].replace(/[\s ]/g, "")), post: m[3] };
 }
 const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-export function ExtrudedNumber({ value, label, accent = "#B6FF00", size = "9cqw" }: { value: string; label?: string; accent?: string; size?: string }) {
+export function ExtrudedNumber({ value, label, accent = B.brown, size = "9cqw" }: { value: string; label?: string; accent?: string; size?: string }) {
   const reduce = useReducedMotion();
   const parts = split(value);
   const [n, setN] = useState(reduce || !parts ? parts?.num ?? 0 : 0);
@@ -38,17 +39,17 @@ export function ExtrudedNumber({ value, label, accent = "#B6FF00", size = "9cqw"
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
   }, [parts?.num, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const text = parts ? `${parts.pre}${fmt(n)}${parts.post}` : value;
-  // Толщина: слои тени от тёмного акцента к почти чёрному, шаг STEP от размера шрифта
+  const text = parts ? `${parts.pre}${fmt(n)}${parts.post}`.replace(/ /g, " ") : value;
+  // Толщина: слои тени от тёмного акцента к тёплому почти-чёрному (#2A211C), шаг STEP от размера шрифта
   const extrude = Array.from({ length: DEPTH }, (_, i) => {
     const k = i + 1;
     const mix = 1 - k / DEPTH;
-    return `${(k * STEP).toFixed(3)}em ${(k * STEP).toFixed(3)}em 0 color-mix(in srgb, ${accent} ${Math.round(8 + mix * 30)}%, #050505)`;
-  }).join(", ") + `, ${(DEPTH * STEP + 0.1).toFixed(2)}em ${(DEPTH * STEP + 0.25).toFixed(2)}em 0.35em rgba(0,0,0,.6)`;
+    return `${(k * STEP).toFixed(3)}em ${(k * STEP).toFixed(3)}em 0 color-mix(in srgb, ${accent} ${Math.round(34 + mix * 36)}%, ${B.ink})`;
+  }).join(", ") + `, ${(DEPTH * STEP + 0.08).toFixed(2)}em ${(DEPTH * STEP + 0.22).toFixed(2)}em 0.32em rgba(42,33,28,.34)`;
 
   const face: CSSProperties = {
-    fontFamily: "var(--font-inter-tight), system-ui, sans-serif", fontWeight: 800, fontSize: size,
-    letterSpacing: "-0.04em", lineHeight: 0.92, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+    fontFamily: UNBOUNDED, fontWeight: 700, fontSize: size,
+    letterSpacing: "-0.04em", lineHeight: 0.95, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
   };
 
   return (
@@ -65,7 +66,7 @@ export function ExtrudedNumber({ value, label, accent = "#B6FF00", size = "9cqw"
         {!reduce && (
           <div className="absolute inset-0" aria-hidden style={{
             ...face, color: "transparent",
-            backgroundImage: "linear-gradient(100deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%)",
+            backgroundImage: `linear-gradient(100deg, transparent 35%, ${B.card}CC 50%, transparent 65%)`,
             backgroundSize: "250% 100%", backgroundRepeat: "no-repeat",
             WebkitBackgroundClip: "text", backgroundClip: "text",
             animation: "en-shine 1.6s ease-out 1.9s both",
@@ -73,7 +74,7 @@ export function ExtrudedNumber({ value, label, accent = "#B6FF00", size = "9cqw"
         )}
       </div>
       {label && (
-        <div style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: "0.95cqw", letterSpacing: ".08em", textTransform: "uppercase", color: "#A1A1AA", marginTop: "2.2cqw" }}>{label}</div>
+        <div style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: "0.9cqw", letterSpacing: ".14em", textTransform: "uppercase", color: B.accent, marginTop: "2cqw" }}>{label}</div>
       )}
     </div>
   );
