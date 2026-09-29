@@ -102,3 +102,19 @@ export const MaskIcon = ({ name, color = T.accent, size = "1.4cqw" }: { name: st
     WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center",
   }} />
 );
+
+/** Въезд i-го элемента в ритме деки: после заголовка (0,28 с), шаг 70 мс, сдвиг в cqw. Общий для всех блоков. */
+export const Stagger = ({ i, children, style, className, base = 0.28 }: { i: number; children: ReactNode; style?: CSSProperties; className?: string; base?: number }) => (
+  <motion.div className={className} style={style} initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: at(i, base), duration: RISE_DUR, ease: EASE }}>{children}</motion.div>
+);
+
+/** Текст карточек и строк: Manrope 600, 1,05cqw. */
+export const txt: CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.4, color: T.ink };
+
+/** Линия-связка, прорисовывается слева направо за delay. */
+export const DrawLine = ({ delay = 0, width = "2.4cqw", dur = 0.35 }: { delay?: number; width?: string; dur?: number }) => (
+  <div className="relative" style={{ width, height: "0.18cqw", borderRadius: 4, background: `${T.brown}26`, flexShrink: 0 }}>
+    <motion.div className="absolute inset-0" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay, duration: dur, ease: EASE }}
+      style={{ borderRadius: 4, background: `linear-gradient(90deg, ${T.gold}, ${T.gold2})`, transformOrigin: "left" }} />
+  </div>
+);
