@@ -93,3 +93,12 @@ export const Card = ({ no, title, text, accent, style, icon, night }: { no?: str
 export const Arrow = ({ color = T.accent, size = "1.4cqw" }: { color?: string; size?: string }) => (
   <svg viewBox="0 0 24 24" style={{ width: size, height: size, flexShrink: 0 }} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
 );
+
+/** Значок сервиса (public/montage/logos/*.svg) одноцветной маской: у файлов свои фирменные цвета, в деке — цвет бренда. */
+export const MaskIcon = ({ name, color = T.accent, size = "1.4cqw" }: { name: string; color?: string; size?: string }) => (
+  <span aria-hidden style={{
+    display: "inline-block", flexShrink: 0, width: size, height: size, backgroundColor: color,
+    WebkitMaskImage: `url(/montage/logos/${name}.svg)`, maskImage: `url(/montage/logos/${name}.svg)`,
+    WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center",
+  }} />
+);
