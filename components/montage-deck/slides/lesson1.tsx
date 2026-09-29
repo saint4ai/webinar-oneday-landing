@@ -145,7 +145,7 @@ export function M_OneOf14() {
 }
 
 /** Строки промпта печатаются по буквам: одна строка за другой, мигает золотой курсор. */
-function Typed({ lines, start = 0.5, cps = 70 }: { lines: string[]; start?: number; cps?: number }) {
+function Typed({ lines, start = 0.4, cps = 110 }: { lines: string[]; start?: number; cps?: number }) {
   const total = lines.reduce((n, l) => n + l.length, 0);
   const [n, setN] = useState(0);
   useEffect(() => {
