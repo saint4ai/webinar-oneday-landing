@@ -30,7 +30,7 @@ export function ExtrudedNumber({ value, label, accent = B.brown, size = "9cqw" }
     const id = setTimeout(() => {
       const tick = (now: number) => {
         if (!start) start = now;
-        const p = Math.min((now - start) / 1800, 1);
+        const p = Math.min((now - start) / 1500, 1);
         setN(Math.round(parts.num * (1 - Math.pow(1 - p, 4))));
         if (p < 1) raf = requestAnimationFrame(tick);
       };
@@ -69,7 +69,7 @@ export function ExtrudedNumber({ value, label, accent = B.brown, size = "9cqw" }
             backgroundImage: `linear-gradient(100deg, transparent 35%, ${B.card}CC 50%, transparent 65%)`,
             backgroundSize: "250% 100%", backgroundRepeat: "no-repeat",
             WebkitBackgroundClip: "text", backgroundClip: "text",
-            animation: "en-shine 1.6s ease-out 1.9s both",
+            animation: "en-shine 1.4s ease-out 1.6s both",
           }}>{text}</div>
         )}
       </div>

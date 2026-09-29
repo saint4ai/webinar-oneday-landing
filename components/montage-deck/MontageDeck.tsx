@@ -6,6 +6,7 @@
  * Режиссура v2: docs/deck-v2/РЕЖИССУРА.md.
  * Раскадровка v3, 60 слайдов (39а — скидка по слову с сайта): ~/Downloads/Раскадровка_эфира_01-10_слайд_за_слайдом.md
  * Слайд 56: клавиши 0–5 — сколько мест из пяти уже занято.
+ * 22r, 46r, 47r — результаты за месяц: цифры в results.ts, скрины в public/montage/results/ (shots — какие файлы уже лежат).
  */
 import { SlideDeck } from "@/components/sales-deck/SlideDeck";
 import { unbounded, manrope } from "./fonts";
@@ -15,9 +16,10 @@ import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, 
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
 import { M_NoShoot, M_TwoFrames, M_TwoVariants, M_VoiceClone, M_AdResult } from "./slides/lesson2";
 import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Module, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA } from "./slides/sale";
+import { M_ResultMontage, M_ResultBot, M_ResultBlog } from "./slides/results";
 import { M_ViewsNoLeads, M_CodeWordFlow, M_BotGuide, M_AIManager, M_TelegramReport, M_Builds, M_FactoryChain, M_Plan30, M_Thanks } from "./slides/lesson3";
 
-export function MontageDeck() {
+export function MontageDeck({ shots = {} }: { shots?: { bot?: string; blog?: string } }) {
   const slides = [
     // Старт · 7 мин
     <M_Cover key="01" />,
@@ -47,6 +49,7 @@ export function MontageDeck() {
     <M_Styles key="20" />,
     <M_StepAssemble key="21" />,
     <M_ReadyReel key="22" />,
+    <M_ResultMontage key="22r" />,
     <M_NoFace key="23" />,
     // Урок 2 · AI-креатор · 6 мин
     <M_Chapter key="24" big="2" obj="lg-ch2-studio" kicker="Урок 2 из 3" title="Реклама товара из фотографий" sub="Без съёмки, оператора и студии" />,
@@ -79,7 +82,9 @@ export function MontageDeck() {
     <M_CodeWordFlow key="44" />,
     <M_BotGuide key="45" />,
     <M_AIManager key="46" />,
+    <M_ResultBot key="46r" shot={shots.bot} />,
     <M_TelegramReport key="47" />,
+    <M_ResultBlog key="47r" shot={shots.blog} />,
     <M_Builds key="48" />,
     <M_FactoryChain key="49" />,
     <M_Plan30 key="50" />,
