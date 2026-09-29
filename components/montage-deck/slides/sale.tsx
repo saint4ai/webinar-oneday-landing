@@ -12,12 +12,12 @@ import { T, card, goldButton, goldText, pricePlate } from "../theme";
 import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
 
 /** Чип-условие: золотая рамка на светлом золоте. */
-const GoldChip = ({ children, size = "0.95cqw" }: { children: React.ReactNode; size?: string }) => (
+export const GoldChip = ({ children, size = "0.95cqw" }: { children: React.ReactNode; size?: string }) => (
   <span style={{ display: "inline-block", borderRadius: 999, padding: "0.65cqw 1.2cqw", border: `1px solid ${T.gold2}`, background: `${T.gold}24`, ...txt, fontSize: size }}>{children}</span>
 );
 
 /** Большое слово в золоте: ХОЧУ, МОНТАЖ. Собирается из разрядки, по золоту один раз проходит блик. */
-const BigWord = ({ word, size = "9cqw" }: { word: string; size?: string }) => {
+export const BigWord = ({ word, size = "9cqw" }: { word: string; size?: string }) => {
   const face: React.CSSProperties = { fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: size, lineHeight: 1, whiteSpace: "nowrap" };
   return (
     <motion.div className="relative" initial={{ opacity: 0, scale: 0.85, letterSpacing: "0.2em" }} animate={{ opacity: 1, scale: 1, letterSpacing: "-0.03em" }}
@@ -33,7 +33,7 @@ const BigWord = ({ word, size = "9cqw" }: { word: string; size?: string }) => {
 };
 
 /** Цена на тёмной плашке сайта: #2A211C, сумма золотом. */
-const PricePlate = ({ label, value, sub, delay = 0 }: { label: string; value: string; sub?: string; delay?: number }) => (
+export const PricePlate = ({ label, value, sub, delay = 0 }: { label: string; value: string; sub?: string; delay?: number }) => (
   <motion.div initial={{ opacity: 0, x: "3cqw", scale: 0.96 }} animate={{ opacity: 1, x: "0cqw", scale: 1 }} transition={{ delay, duration: 0.55, ease: EASE }}
     style={{ ...pricePlate, padding: "1.6cqw 1.8cqw", border: `1.5px solid ${T.gold2}` }}>
     <div style={{ ...txt, fontSize: "0.95cqw", fontWeight: 700, color: T.gold }}>{label}</div>
@@ -43,7 +43,7 @@ const PricePlate = ({ label, value, sub, delay = 0 }: { label: string; value: st
 );
 
 /** Сумма, которую перечёркивает линия: зачёркивание прорисовывается в delay. */
-const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { children: React.ReactNode; delay: number; size?: string; color?: string }) => (
+export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { children: React.ReactNode; delay: number; size?: string; color?: string }) => (
   <div className="relative inline-block">
     <Num size={size} color={color}>{children}</Num>
     <motion.div className="absolute left-[-3%] right-[-3%] top-1/2" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay, duration: 0.4, ease: EASE }}

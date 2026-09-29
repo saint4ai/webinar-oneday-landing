@@ -21,10 +21,10 @@ export const Fill = ({ children }: { children: ReactNode }) => (
 );
 
 /** Шаг пути: год или этап, что делал. Точка загорается, когда до неё дошла золотая линия. */
-type Step = { when: ReactNode; what: ReactNode; text?: ReactNode; now?: boolean };
+export type Step = { when: ReactNode; what: ReactNode; text?: ReactNode; now?: boolean };
 
 /** Вертикальный путь: золотая линия бежит сверху вниз, этапы загораются по очереди, последний — золотой. */
-function Path({ steps, t0 = 0.35, dt = 0.22 }: { steps: Step[]; t0?: number; dt?: number }) {
+export function Path({ steps, t0 = 0.35, dt = 0.22 }: { steps: Step[]; t0?: number; dt?: number }) {
   return (
     <div className="relative" style={{ maxWidth: "46cqw", paddingLeft: "2.6cqw" }}>
       <div className="absolute" style={{ left: "0.75cqw", top: "0.9cqw", bottom: "0.9cqw", width: "0.2cqw", borderRadius: 4, background: `${T.brown}26` }} />
@@ -49,9 +49,9 @@ function Path({ steps, t0 = 0.35, dt = 0.22 }: { steps: Step[]; t0?: number; dt?
 }
 
 /** Задача → как решает агент → результат. Результат — крупно коричневым или пропуск в скобках. */
-type Task = { title: ReactNode; how: ReactNode; result: ReactNode };
+export type Task = { title: ReactNode; how: ReactNode; result: ReactNode };
 
-function Tasks({ items }: { items: Task[] }) {
+export function Tasks({ items }: { items: Task[] }) {
   return (
     <div className="grid grid-cols-2 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
       {items.map((t, i) => (
@@ -66,7 +66,7 @@ function Tasks({ items }: { items: Task[] }) {
 }
 
 /** Строка «насколько мощно»: золотая рамка, въезжает последней. */
-const Power = ({ i, children }: { i: number; children: ReactNode }) => (
+export const Power = ({ i, children }: { i: number; children: ReactNode }) => (
   <Stagger i={i} style={{ marginTop: "1.2cqw", maxWidth: "54cqw", borderRadius: 18, padding: "0.9cqw 1.3cqw", border: `1.5px solid ${T.gold2}`, background: `${T.gold}1F`, ...txt, fontWeight: 700, fontSize: "1.05cqw" }}>
     {children}
   </Stagger>
