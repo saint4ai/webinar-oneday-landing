@@ -1,11 +1,80 @@
 "use client";
 
-/** Огромная объёмная цифра с докруткой — для результатов и доказательств. value — уже отформатированная строка («107 237»). ЗАГЛУШКА — настоящую версию делает Claude, API не менять. */
+import { useEffect, useState, type CSSProperties } from "react";
+import { useReducedMotion } from "framer-motion";
+
+/**
+ * Огромная объёмная цифра: грань лаймом, толщина из 18 слоёв тени уходит в глубину,
+ * по грани один раз проходит блик. Цифра докручивается от нуля.
+ * value — готовая строка: «107 237», «+2 340», «—». Нечисловое показывается как есть.
+ */
+const DEPTH = 18;
+const STEP = 0.013; // em на слой: толщина ≈ 0,23 высоты цифры
+
+function split(value: string) {
+  const m = value.match(/^(\D*?)([\d\s ]*\d)(.*)$/);
+  if (!m) return null;
+  return { pre: m[1], num: Number(m[2].replace(/[\s ]/g, "")), post: m[3] };
+}
+const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
 export function ExtrudedNumber({ value, label, accent = "#B6FF00", size = "9cqw" }: { value: string; label?: string; accent?: string; size?: string }) {
+  const reduce = useReducedMotion();
+  const parts = split(value);
+  const [n, setN] = useState(reduce || !parts ? parts?.num ?? 0 : 0);
+
+  useEffect(() => {
+    if (!parts || reduce) return;
+    let raf = 0; let start = 0;
+    const id = setTimeout(() => {
+      const tick = (now: number) => {
+        if (!start) start = now;
+        const p = Math.min((now - start) / 1800, 1);
+        setN(Math.round(parts.num * (1 - Math.pow(1 - p, 4))));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, 350);
+    return () => { clearTimeout(id); cancelAnimationFrame(raf); };
+  }, [parts?.num, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const text = parts ? `${parts.pre}${fmt(n)}${parts.post}` : value;
+  // Толщина: слои тени от тёмного акцента к почти чёрному, шаг STEP от размера шрифта
+  const extrude = Array.from({ length: DEPTH }, (_, i) => {
+    const k = i + 1;
+    const mix = 1 - k / DEPTH;
+    return `${(k * STEP).toFixed(3)}em ${(k * STEP).toFixed(3)}em 0 color-mix(in srgb, ${accent} ${Math.round(8 + mix * 30)}%, #050505)`;
+  }).join(", ") + `, ${(DEPTH * STEP + 0.1).toFixed(2)}em ${(DEPTH * STEP + 0.25).toFixed(2)}em 0.35em rgba(0,0,0,.6)`;
+
+  const face: CSSProperties = {
+    fontFamily: "var(--font-inter-tight), system-ui, sans-serif", fontWeight: 800, fontSize: size,
+    letterSpacing: "-0.04em", lineHeight: 0.92, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+  };
+
   return (
-    <div className="flex flex-col">
-      <b style={{ fontSize: size, lineHeight: 0.9, color: accent, fontVariantNumeric: "tabular-nums" }}>{value}</b>
-      {label && <span style={{ fontSize: "1cqw", opacity: 0.7, marginTop: "0.8cqw" }}>{label}</span>}
+    <div className="flex flex-col items-start" style={{ perspective: "60cqw" }}>
+      <style>{`
+        @keyframes en-in { from { transform: rotateX(38deg) rotateY(-26deg) translateZ(-8cqw); opacity: 0; } to { transform: rotateX(10deg) rotateY(-14deg); opacity: 1; } }
+        @keyframes en-shine { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+      `}</style>
+      <div className="relative" style={{
+        transformOrigin: "20% 60%", transform: "rotateX(10deg) rotateY(-14deg)",
+        animation: reduce ? undefined : "en-in 1.1s cubic-bezier(0.23, 1, 0.32, 1) both",
+      }}>
+        <div style={{ ...face, color: accent, textShadow: extrude }}>{text}</div>
+        {!reduce && (
+          <div className="absolute inset-0" aria-hidden style={{
+            ...face, color: "transparent",
+            backgroundImage: "linear-gradient(100deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%)",
+            backgroundSize: "250% 100%", backgroundRepeat: "no-repeat",
+            WebkitBackgroundClip: "text", backgroundClip: "text",
+            animation: "en-shine 1.6s ease-out 1.9s both",
+          }}>{text}</div>
+        )}
+      </div>
+      {label && (
+        <div style={{ fontFamily: "var(--font-jetbrains-mono), monospace", fontSize: "0.95cqw", letterSpacing: ".08em", textTransform: "uppercase", color: "#A1A1AA", marginTop: "2.2cqw" }}>{label}</div>
+      )}
     </div>
   );
 }
