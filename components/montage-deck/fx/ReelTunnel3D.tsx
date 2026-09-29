@@ -7,13 +7,15 @@ import { B, CAMERA_SAFE_MASK } from "./brand";
  * Обложка и финал: рилсы летят на зрителя из глубины по спирали — тоннель из вертикальных роликов.
  * Только CSS-3D и одна анимация на карточку (transform + opacity), без канваса и без видео:
  * 34 карточки держат 60 кадров на ноутбуке ведущего.
- * Ось тоннеля — на 36% ширины; всё гаснет к 59%: правые 40% кадра — зона камеры, там только ночной фон.
+ * Ось тоннеля — на 44% ширины: слева остаётся спокойное тёмное поле под заголовок обложки.
+ * Всё гаснет к 59%: правые 40% кадра — зона камеры, там только ночной фон.
  */
 export type Reel = { poster: string; video?: string };
 
 const CARDS = 34;
 const LOOP = 18; // секунд на пролёт одной карточки
 const RINGS = [8, 12, 16, 20]; // радиусы орбит, cqw — облако помещается в левые 60%
+const AXIS = "44%"; // ось тоннеля по ширине кадра
 
 export function ReelTunnel3D({ reels }: { reels: Reel[] }) {
   const reduce = useReducedMotion();
@@ -47,14 +49,14 @@ export function ReelTunnel3D({ reels }: { reels: Reel[] }) {
 
       {/* Свет в конце тоннеля */}
       <div className="absolute" style={{
-        left: "36%", top: "50%", width: "40cqw", height: "40cqw", transform: "translate(-50%, -50%)",
+        left: AXIS, top: "50%", width: "40cqw", height: "40cqw", transform: "translate(-50%, -50%)",
         background: "radial-gradient(closest-side, rgba(227,192,123,.30), rgba(227,192,123,.07) 55%, transparent 75%)",
         animation: reduce ? undefined : "rt-pulse 5s ease-in-out infinite",
       }} />
 
-      <div className="absolute inset-0" style={{ perspective: "70cqw", perspectiveOrigin: "36% 50%" }}>
+      <div className="absolute inset-0" style={{ perspective: "70cqw", perspectiveOrigin: `${AXIS} 50%` }}>
         <div className="absolute" style={{
-          left: "36%", top: "50%", transformStyle: "preserve-3d",
+          left: AXIS, top: "50%", transformStyle: "preserve-3d",
           animation: reduce ? undefined : "rt-spin 90s linear infinite",
         }}>
           {cards.map((c, i) => (
@@ -75,9 +77,9 @@ export function ReelTunnel3D({ reels }: { reels: Reel[] }) {
         </div>
       </div>
 
-      {/* Затемнение слева под заголовок и по краям — текст на обложке читается */}
+      {/* Затемнение слева под заголовок и по краям — текст на обложке стоит на спокойном тёмном поле */}
       <div className="absolute inset-0" style={{
-        background: `linear-gradient(90deg, ${B.night}EB 0%, ${B.night}8C 26%, transparent 46%), radial-gradient(90% 90% at 36% 50%, transparent 50%, ${B.night}D9 100%)`,
+        background: `linear-gradient(90deg, ${B.night} 0%, ${B.night}F2 20%, ${B.night}B3 30%, ${B.night}40 38%, transparent 44%), radial-gradient(90% 90% at ${AXIS} 50%, transparent 50%, ${B.night}D9 100%)`,
       }} />
       </div>
     </div>
