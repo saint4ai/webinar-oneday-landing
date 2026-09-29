@@ -7,7 +7,7 @@
  *   node docs/deck-v2/shoot.mjs --only 01,11,22r    # только эти ключи
  *   node docs/deck-v2/shoot.mjs --fx                # стенд эффектов /montage-fx
  *
- * Кадр 1920×1080, листание — keydown ArrowRight на document, 2,5 с после листания.
+ * Кадр 1920×1080, листание — keydown ArrowRight на document, 2,5 с после листания (09 — 4,2 с: стопка плит досыпается).
  * Результат: docs/deck-v2/shots/<ключ слайда>.jpg шириной 960.
  * Заодно проверка зоны камеры: всё, что рисуется правее 60% кадра вне фона слайда ([data-deck-bg]), печатается списком.
  */
@@ -28,6 +28,8 @@ const BASE = opt("--base") ?? "http://localhost:3001";
 const only = opt("--only")?.split(",").map((s) => s.trim());
 const fxMode = args.includes("--fx");
 const WAIT = Number(opt("--wait") ?? 2500);
+// Слайды с длинным «вау»: снимаем конечное состояние, а не середину анимации
+const SLOW = { "09": 4200 };
 
 // Порядок слайдов берём из MontageDeck.tsx: ключи идут в том же порядке, что и в массиве slides
 const deckSrc = readFileSync(join(root, "components/montage-deck/MontageDeck.tsx"), "utf8");
@@ -97,7 +99,7 @@ if (fxMode) {
   for (let i = 0; i <= last; i++) {
     if (i > 0) {
       await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-      await page.waitForTimeout(only && !only.includes(keys[i]) ? 450 : WAIT);
+      await page.waitForTimeout(only && !only.includes(keys[i]) ? 450 : SLOW[keys[i]] ?? WAIT);
     }
     if (only && !only.includes(keys[i])) continue;
     await save(page, keys[i]);
