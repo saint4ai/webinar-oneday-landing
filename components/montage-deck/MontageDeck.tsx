@@ -6,6 +6,7 @@
  * Режиссура v2: docs/deck-v2/РЕЖИССУРА.md.
  * Раскадровка v3, 60 слайдов (39а — скидка по слову с сайта): ~/Downloads/Раскадровка_эфира_01-10_слайд_за_слайдом.md
  * Слайд 56: клавиши 0–5 — сколько мест из пяти уже занято.
+ * 08w, 23w, 41w — прогрев перед уроками 1–3 (slides/warmup.tsx). [Скобки] на них — пропуски, их дописывает Александр до эфира.
  * 22r, 46r, 47r — результаты за месяц: цифры в results.ts, скрины в public/montage/results/ (shots — какие файлы уже лежат).
  */
 import { SlideDeck } from "@/components/sales-deck/SlideDeck";
@@ -16,6 +17,7 @@ import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, 
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
 import { M_NoShoot, M_TwoFrames, M_TwoVariants, M_VoiceClone, M_AdResult } from "./slides/lesson2";
 import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Module, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA } from "./slides/sale";
+import { M_MyPath, M_MyMontage, M_MyAutomation } from "./slides/warmup";
 import { M_ResultMontage, M_ResultBot, M_ResultBlog } from "./slides/results";
 import { M_ViewsNoLeads, M_CodeWordFlow, M_BotGuide, M_AIManager, M_TelegramReport, M_Builds, M_FactoryChain, M_Plan30, M_Thanks } from "./slides/lesson3";
 
@@ -34,6 +36,7 @@ export function MontageDeck({ shots = {} }: { shots?: { bot?: string; blog?: str
     <M_Guides key="07" kicker="Бонус за досмотр" title={"Досмотрите до конца: три\u00A0гайда"} lead="Выдам в конце эфира по слову МОНТАЖ." />,
     // Кто я · 3 мин
     <M_About key="08" />,
+    <M_MyPath key="08w" />,
     <M_CostStory key="09" />,
     <M_Proof15 key="10" />,
     // Урок 1 · AI-монтаж · 20 мин
@@ -51,6 +54,8 @@ export function MontageDeck({ shots = {} }: { shots?: { bot?: string; blog?: str
     <M_ReadyReel key="22" />,
     <M_ResultMontage key="22r" />,
     <M_NoFace key="23" />,
+    // Прогрев перед уроком 2
+    <M_MyMontage key="23w" />,
     // Урок 2 · AI-креатор · 6 мин
     <M_Chapter key="24" big="2" obj="lg-ch2-studio" kicker="Урок 2 из 3" title="Реклама товара из фотографий" sub="Без съёмки, оператора и студии" />,
     <M_NoShoot key="25" />,
@@ -76,6 +81,8 @@ export function MontageDeck({ shots = {} }: { shots?: { bot?: string; blog?: str
     <M_Discount key="39a" />,
     <M_SixMonths key="40" />,
     <M_HowToBook key="41" />,
+    // Прогрев перед уроком 3
+    <M_MyAutomation key="41w" />,
     // Урок 3 · AI-автоматизация и приложения · 11 мин
     <M_Chapter key="42" big="3" obj="lg-ch3-leads" kicker="Урок 3 из 3" title="Как просмотр становится заявкой" sub="Кодовое слово, бот, ИИ-менеджер и отчёт в Telegram" />,
     <M_ViewsNoLeads key="43" />,

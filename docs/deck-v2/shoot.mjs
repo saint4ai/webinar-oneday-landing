@@ -6,6 +6,7 @@
  *   node docs/deck-v2/shoot.mjs                     # все слайды
  *   node docs/deck-v2/shoot.mjs --only 01,11,22r    # только эти ключи
  *   node docs/deck-v2/shoot.mjs --fx                # стенд эффектов /montage-fx
+ *   node docs/deck-v2/shoot.mjs --templates         # витрина шаблонов /montage/templates → shots/tpl-<ключ>.jpg
  *
  * Кадр 1920×1080, листание — keydown ArrowRight на document, 2,5 с после листания (09 — 4,2 с: стопка плит досыпается).
  * Результат: docs/deck-v2/shots/<ключ слайда>.jpg шириной 960.
@@ -27,12 +28,15 @@ const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1
 const BASE = opt("--base") ?? "http://localhost:3001";
 const only = opt("--only")?.split(",").map((s) => s.trim());
 const fxMode = args.includes("--fx");
+const tplMode = args.includes("--templates");
 const WAIT = Number(opt("--wait") ?? 2500);
 // Слайды с длинным «вау»: снимаем конечное состояние, а не середину анимации
-const SLOW = { "09": 4200 };
+const SLOW = { "09": 4200, "38": 3200, "39a": 3000, price: 3200 };
 
 // Порядок слайдов берём из MontageDeck.tsx: ключи идут в том же порядке, что и в массиве slides
-const deckSrc = readFileSync(join(root, "components/montage-deck/MontageDeck.tsx"), "utf8");
+const deckSrc = readFileSync(join(root, tplMode ? "components/montage-deck/TemplatesDeck.tsx" : "components/montage-deck/MontageDeck.tsx"), "utf8");
+const PATH = tplMode ? "/montage/templates" : "/montage";
+const PREFIX = tplMode ? "tpl-" : "";
 const keys = [...deckSrc.slice(deckSrc.indexOf("const slides")).matchAll(/key="([^"]+)"/g)].map((m) => m[1]);
 
 // Значок Next в dev-режиме не должен попадать в кадр
@@ -92,7 +96,7 @@ if (fxMode) {
   }
 } else {
   await page.addInitScript(() => { try { localStorage.setItem("sd-speaker", "live"); } catch {} });
-  await page.goto(`${BASE}/montage`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}${PATH}`, { waitUntil: "networkidle" });
   await page.addStyleTag({ content: HIDE_DEV });
   await page.waitForTimeout(WAIT);
   const last = only ? Math.max(...only.map((k) => keys.indexOf(k))) : keys.length - 1;
@@ -102,9 +106,9 @@ if (fxMode) {
       await page.waitForTimeout(only && !only.includes(keys[i]) ? 450 : SLOW[keys[i]] ?? WAIT);
     }
     if (only && !only.includes(keys[i])) continue;
-    await save(page, keys[i]);
+    await save(page, PREFIX + keys[i]);
     const bad = await page.evaluate(zoneCheck);
-    console.log(`✓ ${keys[i]}${bad.length ? `  ⚠ зона камеры:\n    ${bad.join("\n    ")}` : ""}`);
+    console.log(`✓ ${PREFIX}${keys[i]}${bad.length ? `  ⚠ зона камеры:\n    ${bad.join("\n    ")}` : ""}`);
   }
 }
 await browser.close();
