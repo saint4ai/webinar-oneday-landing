@@ -9,7 +9,7 @@ import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
 import { T, card, goldButton, goldText, pricePlate } from "../theme";
-import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
+import { Card, DrawLine, EASE, Em, Fill, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
 
 /** Чип-условие: золотая рамка на светлом золоте. */
 export const GoldChip = ({ children, size = "0.95cqw" }: { children: React.ReactNode; size?: string }) => (
@@ -56,7 +56,7 @@ export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { 
 /** 30 ✦ · Один рилс: 107 237 просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом. */
 export function M_Case107() {
   return (
-    <Statement kicker="Точка Б" title="Один рилс" size="2.8cqw"
+    <Statement kicker="Тот самый 1 из 14" title="Один рилс" size="2.8cqw"
       leftSize="18cqw" left={
         <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.15 }}>
           <Phone video="/montage/reels/mcp.mp4" src="/montage/reels/mcp.jpg" views={nb("107 237")} caption="Четыре подключения для Claude" width="13.5cqw" showTop={false} />
@@ -84,7 +84,7 @@ export function M_Want() {
 export function M_WhoFirst() {
   return (
     <Statement obj="lg-s32-hand" kicker="Честно" title={<>Кто выпустит первый ролик <Em>на этой неделе</Em>?</>} size="3cqw"
-      lead="Большинство досмотрит и ничего не сделает. Сейчас покажу обучение, а потом урок 3: как просмотр сам становится заявкой." />
+      lead="Первый ролик на этой неделе отличает тех, у кого получится. Напишите +, если готовы. Дальше покажу обучение, а потом урок 3: как просмотр сам становится заявкой." />
   );
 }
 
@@ -161,8 +161,9 @@ export function M_Anchor() {
           <div style={{ marginTop: "0.8cqw" }}><Struck delay={1.1} size="2.5cqw" color={T.brown}>{`от ${thousands(a)} ₸`}</Struck></div>
           <div style={{ ...txt, fontWeight: 500, fontSize: "0.95cqw", color: T.muted, marginTop: "0.8cqw" }}>Каждый месяц. Вакансия на hh.kz, Алматы, 26.09.2026</div>
         </motion.div>
-        <PricePlate delay={1.2} label="Vibe Production" value={`${thousands(b)} ₸`} sub="Один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
+        <PricePlate delay={1.2} label="Vibe Production" value={`${thousands(b)} ₸`} sub="Оплата один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
       </div>
+      <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц, для 30 роликов нужен Claude Max, около {nb("50 000 ₸")} в месяц. Список покажу дальше</Note></Stagger>
     </Statement>
   );
 }
@@ -201,7 +202,7 @@ export function M_Discount() {
   const after = useCountUp(120000, 1, 1.3);
   return (
     <Statement kicker="Для тех, кто нашёл слово" title={<>Вписали кодовое слово на сайте? <Em>Скидка 20%</Em></>} size="2.6cqw"
-      lead="Напишите это слово в чат эфира. Менеджер видит отметку в вашей заявке и закрепит цену."
+      lead={<>Само слово в чат не пишите, его увидят все. Напишите <Fill>слово для скидки, например СКИДКА</Fill>: менеджер сверит отметку в вашей заявке и закрепит цену.</>}
       leftSize="19cqw" left={
         <motion.div initial={{ opacity: 0, y: "2cqw", rotate: -3 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ duration: 0.7, ease: EASE }}
           style={{ ...card, borderRadius: 26, padding: "0.6cqw", width: "17cqw" }}>
@@ -274,6 +275,7 @@ export function M_HowToBook() {
         <motion.div className="inline-flex" animate={{ boxShadow: [`0 0 0 0cqw ${T.gold}66`, `0 0 0 1cqw ${T.gold}00`] }} transition={{ delay: 1.2, duration: 1.6, repeat: Infinity, ease: "easeOut" }}
           style={{ ...goldButton, borderRadius: 999, padding: "1cqw 2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.2cqw" }}>МОНТАЖ в чат</motion.div>
       </Stagger>
+      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {nb("10 000 ₸")} входит в цену обучения <Fill>подтвердить</Fill>. Остаток до <Fill>дата доплаты</Fill>. После эфира писать <Fill>куда</Fill></Note></Stagger>
     </Statement>
   );
 }
@@ -283,7 +285,7 @@ export function M_HowToBook() {
 /** 52 · Цена бездействия: один тезис, под ним год из 52 недель, недели без роликов гаснут. */
 export function M_Inaction() {
   return (
-    <Statement kicker="Посчитайте" title={<>Сколько роликов вы <Em>не выпустили</Em> за этот год?</>} size="3.2cqw" lead="И сколько заявок с них не пришло.">
+    <Statement kicker="Посчитайте" title={<>Сколько роликов вы <Em>не выпустили</Em> за этот год?</>} size="3.2cqw" lead="Вспомните ответ на опрос в начале. От 0 до 3 роликов в месяц — это до 36 за год. При 30 в месяц было бы 360. И сколько заявок с них не пришло.">
       <div className="grid gap-[0.35cqw]" style={{ gridTemplateColumns: "repeat(13, 1.6cqw)" }}>
         {Array.from({ length: 52 }, (_, i) => (
           <motion.div key={i} initial={{ opacity: 0, scale: 0.4, backgroundColor: T.gold }} animate={{ opacity: [0, 1, 1], scale: [0.4, 1, 1], backgroundColor: [T.gold, T.gold, T.card] }}
@@ -304,9 +306,10 @@ export function M_OneScreen() {
         {mods.map(([no, t, d, ic], i) => <Stagger key={no} i={i}><Card icon={ic} no={no} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
       </div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
-        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} или от ${nb("6 250 ₸")} в месяц`].map((c, i) => (
+        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} или от ${nb("6 250 ₸")} в месяц`, `со словом с сайта ${nb("120 000 ₸")}`, "первым 5 броням — 6 месяцев доступа"].map((c, i) => (
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
+        <Stagger i={8}><GoldChip><Fill>поддержка: формат и кто отвечает</Fill></GoldChip></Stagger>
       </div>
     </Statement>
   );
@@ -395,10 +398,10 @@ export function M_FinalCTA() {
       <Rise><Kicker>Напишите в чат до 23:59</Kicker></Rise>
       <div className="flex items-center gap-[1.6cqw]"><BigWord word="МОНТАЖ" size="8cqw" /><Px name="lg-i-hourglass" size="9cqw" delay={0.7} /></div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2cqw", maxWidth: "52cqw" }}>
-        {[nb("150 000 ₸"), `со словом с сайта ${nb("120 000 ₸")}`, `или от ${nb("6 250 ₸")} в месяц`, `бронь ${nb("10 000 ₸")}`].map((c, i) => (
+        {[nb("150 000 ₸"), `со словом с сайта ${nb("120 000 ₸")}`, `или от ${nb("6 250 ₸")} в месяц`, `со словом — от ${nb("5 000 ₸")} в месяц`, `бронь ${nb("10 000 ₸")}`].map((c, i) => (
           <Stagger key={c} i={i} base={0.55}>
             <span style={{ display: "inline-block", ...card, borderRadius: 999, padding: "0.8cqw 1.4cqw", ...txt, fontSize: "1.1cqw",
-              ...(i === 1 || i === 3 ? { ...goldButton, border: `1px solid ${T.gold2}` } : null) }}>{c}</span>
+              ...(i === 1 || i === 4 ? { ...goldButton, border: `1px solid ${T.gold2}` } : null) }}>{c}</span>
           </Stagger>
         ))}
       </div>

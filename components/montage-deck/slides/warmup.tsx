@@ -4,21 +4,17 @@ import { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Statement } from "../Statement";
 import { T, card } from "../theme";
-import { EASE, Em, Note, Stagger, nb, txt } from "../ui";
+import { Arrow, EASE, Em, Fill, Note, Stagger, txt } from "../ui";
 
 /**
- * Прогрев перед каждым уроком: 08w — мой путь к монтажу (перед уроком 1), 23w — что вайбкодинг решает у меня
- * в монтаже (перед уроком 2), 41w — что он автоматизирует у меня (перед уроком 3).
+ * Прогрев перед каждым уроком: 08w — как я пришёл к ИИ-монтажу (перед уроком 1), 23w — реклама товара у меня
+ * (перед уроком 2), 41w — заявки из директа у меня (перед уроком 3). Каждый заканчивается мостом к уроку.
  * Факты — из деки и базы onai-workspace (about_me/alexander.md, projects/webinar_oneday/raspakovka_eksperta.md,
- * projects/content_pipeline.md). Чего там нет — в квадратных скобках <Fill>: это дописывает Александр до эфира.
+ * прошлый однодневник references/webinars_reference/01_odnodnevnik__SLIDE_BY_SLIDE.md). Чего там нет или что ждёт
+ * подтверждения — в квадратных скобках <Fill>: это дописывает Александр до эфира.
  */
 
-/** Пропуск, который дописывает Александр: пунктирная плашка «[…]». На эфир не выходит, пока не заменён текстом. */
-export const Fill = ({ children }: { children: ReactNode }) => (
-  <span style={{ display: "inline", color: T.brownLt, background: `${T.gold}1F`, border: `1px dashed ${T.brownLt}`, borderRadius: 8, padding: "0 0.35cqw", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}>
-    [{children}]
-  </span>
-);
+export { Fill };
 
 /** Шаг пути: год или этап, что делал. Точка загорается, когда до неё дошла золотая линия. */
 export type Step = { when: ReactNode; what: ReactNode; text?: ReactNode; now?: boolean };
@@ -51,9 +47,9 @@ export function Path({ steps, t0 = 0.35, dt = 0.22 }: { steps: Step[]; t0?: numb
 /** Задача → как решает агент → результат. Результат — крупно коричневым или пропуск в скобках. */
 export type Task = { title: ReactNode; how: ReactNode; result: ReactNode };
 
-export function Tasks({ items }: { items: Task[] }) {
+export function Tasks({ items, cols = 2 }: { items: Task[]; cols?: 2 | 3 }) {
   return (
-    <div className="grid grid-cols-2 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
+    <div className="grid gap-[0.9cqw]" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, maxWidth: "54cqw" }}>
       {items.map((t, i) => (
         <Stagger key={i} i={i} style={{ ...card, padding: "1.2cqw 1.4cqw", display: "flex", flexDirection: "column" }}>
           <div style={{ ...txt, fontWeight: 700, fontSize: "1.15cqw" }}>{t.title}</div>
@@ -72,49 +68,56 @@ export const Power = ({ i, children }: { i: number; children: ReactNode }) => (
   </Stagger>
 );
 
-/** 08w · Прогрев перед уроком 1: как я пришёл к монтажу. Путь сверху вниз, последний шаг — сегодня. */
+/** Мост к уроку: стрелка и фраза «сейчас покажу…», въезжает последней. */
+export const Bridge = ({ i, children }: { i: number; children: ReactNode }) => (
+  <Stagger i={i} className="flex items-center gap-[0.6cqw]" style={{ marginTop: "1.1cqw", ...txt, fontWeight: 700, fontSize: "1.15cqw", color: T.brown }}>
+    <Arrow color={T.brown} size="1.5cqw" />{children}
+  </Stagger>
+);
+
+/** 08w · Прогрев перед уроком 1: как я пришёл к ИИ-монтажу. Путь без денег (деньги — на 09), последний шаг — сегодня, в конце мост к уроку. */
 export function M_MyPath() {
   return (
-    <Statement kicker="Мой путь" title={<>Как я пришёл <Em>к монтажу</Em></>} size="3cqw">
+    <Statement kicker="Перед уроком 1 · мой путь" title={<>Как я пришёл <Em>к ИИ-монтажу</Em></>} size="3cqw">
       <Path steps={[
         { when: "Начинал", what: "Таргетолог", text: "Запускал рекламу клиентам" },
-        { when: "3 года", what: "No-code: N8N и Make", text: "ИИ-менеджеры для отделов продаж в WhatsApp, Instagram и Telegram" },
-        { when: "Вайбкодинг", what: "Свои продукты на Claude", text: "AI-Таргетолог и OmniDash без штатных программистов" },
-        { when: "Апрель 2026", what: "Вернулся в Instagram", text: <Fill>почему монтаж стал узким местом: сколько времени и денег уходило</Fill> },
-        { when: "Сейчас", what: "Рилсы монтирует ИИ-агент по моему голосу", text: <Fill>когда и как пришла идея отдать монтаж агенту</Fill>, now: true },
+        { when: "3 года", what: "No-code и вайбкодинг", text: "ИИ-менеджеры для бизнеса, потом свои продукты на Claude без штатных программистов" },
+        { when: "Апрель 2026", what: "Вернулся в Instagram", text: <Fill>сколько часов уходило на монтаж одного ролика до агента</Fill> },
+        { when: "Сейчас", what: "Рилсы монтирует ИИ-агент по моему голосу", text: <Fill>момент, когда решил отдать монтаж агенту</Fill>, now: true },
       ]} />
-      <Note style={{ marginTop: "1.4cqw" }}>Делаю инструменты для себя. Потом оказывается, что они нужны другим</Note>
+      <Note style={{ marginTop: "1.2cqw" }}>Делаю инструменты для себя. Потом оказывается, что они нужны другим</Note>
+      <Bridge i={6}>Сейчас покажу, как агент монтирует по голосу</Bridge>
     </Statement>
   );
 }
 
-/** 23w · Прогрев перед уроком 2: что вайбкодинг уже решает у меня в монтаже и насколько мощно. */
+/** 23w · Прогрев перед уроком 2: реклама товара у меня. Все цифры — пропуски: их нет ни в деке, ни в базе. В конце мост к уроку. */
 export function M_MyMontage() {
   return (
-    <Statement kicker="Перед уроком 2 · у меня так" title={<>Что вайбкодинг решает <Em>у меня в монтаже</Em></>} size="2.8cqw">
+    <Statement kicker="Перед уроком 2 · у меня так" title={<>Реклама товара <Em>без съёмки</Em></>} size="2.9cqw">
       <Tasks items={[
-        { title: "Монтаж рилсов", how: "Агент собирает графику, субтитры и звук по моему голосу", result: <>15 рилсов · {nb("140 689")} просмотров</> },
-        { title: "Правки словами", how: "Пишу, что поменять, агент пересобирает черновик", result: <Fill>сколько минут уходит на правку</Fill> },
-        { title: "Реклама товара из фото", how: <Fill>где применяю: свой продукт или клиенты</Fill>, result: <Fill>результат: ролики, заявки, продажи</Fill> },
-        { title: "Озвучка копией голоса", how: <Fill>где применяю</Fill>, result: <Fill>результат</Fill> },
+        { title: "Где применяю", how: "Ролики из фото товара, без оператора и студии", result: <Fill>свой продукт или клиенты, какие товары</Fill> },
+        { title: "Сколько роликов сделал", how: "Фото → ролик 9:16 с озвучкой", result: <Fill>сколько роликов и какой результат</Fill> },
+        { title: "Съёмка у продакшна", how: "Оператор, студия, монтаж", result: <Fill>цена в ₸ и источник</Fill> },
+        { title: "Моё время на ролик", how: "От фото до готового ролика", result: <Fill>было → стало</Fill> },
       ]} />
-      <Power i={4}>Около {nb("50 000 ₸")} в месяц вместо {nb("300 000 ₸")} на монтажёра · <Fill>время на ролик: было → стало</Fill></Power>
+      <Power i={4}>Насколько мощно: <Fill>сколько денег и дней экономит ролик из фото вместо съёмки</Fill></Power>
+      <Bridge i={5}>Сейчас покажу, как собрать такой ролик из фото</Bridge>
     </Statement>
   );
 }
 
-/** 41w · Прогрев перед уроком 3: что вайбкодинг автоматизирует у меня и насколько мощно. */
+/** 41w · Прогрев перед уроком 3: заявки из директа у меня. Цифры из базы, которые ждут подтверждения, — в скобках. В конце мост к уроку. */
 export function M_MyAutomation() {
   return (
-    <Statement kicker="Перед уроком 3 · у меня так" title={<>Что вайбкодинг <Em>автоматизирует у меня</Em></>} size="2.8cqw">
-      <Tasks items={[
-        { title: "ИИ-менеджеры в продажах", how: "3 года собирал их бизнесам в WhatsApp, Instagram и Telegram", result: <Fill>сколько бизнесов, подтвердить цифру</Fill> },
-        { title: "Бот по кодовому слову", how: "Выдаёт гайд в директе и передаёт контакт мне", result: <Fill>с какого месяца работает и сколько контактов собрал</Fill> },
-        { title: "Контент в Telegram", how: "ИИ переписывает посты под мой голос, я только одобряю", result: "30–50 секунд от поста до черновика" },
-        { title: "Свои продукты", how: "AI-Таргетолог и OmniDash на Claude, без штатных программистов", result: <Fill>сроки сборки, подтвердить</Fill> },
+    <Statement kicker="Перед уроком 3 · у меня так" title={<>Заявки из директа <Em>у меня</Em></>} size="2.9cqw">
+      <Tasks cols={3} items={[
+        { title: "ИИ-менеджеры бизнесам", how: "3 года собирал их в WhatsApp, Instagram и Telegram", result: <Fill>около 30 бизнесов, подтвердить</Fill> },
+        { title: "GPT-бот в директе", how: "Отвечает на сообщения и собирает заявки", result: <Fill>3 500 заявок с начала 2024, актуально?</Fill> },
+        { title: "Бот по кодовому слову", how: "Выдаёт гайд в директе и передаёт контакт мне", result: <Fill>с какого месяца работает и сколько контактов</Fill> },
       ]} />
-      <Power i={4}><Fill>насколько мощно: сколько часов в неделю экономит автоматизация</Fill></Power>
+      <Power i={3}>Насколько мощно: <Fill>сколько часов в неделю экономит автоматизация</Fill></Power>
+      <Bridge i={4}>Урок 3: как собрать это у себя</Bridge>
     </Statement>
   );
 }
-

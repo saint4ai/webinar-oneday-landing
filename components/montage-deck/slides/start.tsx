@@ -8,7 +8,7 @@ import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
 import { T, card, glass, goldButton } from "../theme";
-import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
+import { Arrow, EASE, Em, Fill, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
 
 const label: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.35, color: T.ink };
 const inUp = (i: number, base = 0.28) => ({ initial: { opacity: 0, y: "1cqw" }, animate: { opacity: 1, y: "0cqw" }, transition: { delay: at(i, base), duration: RISE_DUR, ease: EASE } });
@@ -181,7 +181,7 @@ export function M_About() {
         </motion.div>
         <Rise delay={at(4, 0.2)} style={{ paddingBottom: "0.6cqw" }}>
           <Num size="3cqw" color={T.brown}>1000+</Num>
-          <div style={{ ...label, fontSize: "0.95cqw", color: T.muted, fontWeight: 500, maxWidth: "15cqw", marginTop: "0.6cqw" }}>выпускников за два года по внедрению ИИ в бизнес</div>
+          <div style={{ ...label, fontSize: "0.95cqw", color: T.muted, fontWeight: 500, maxWidth: "15cqw", marginTop: "0.6cqw" }}>выпускников за два года по внедрению ИИ в бизнес <Fill>1000+ или 900+, как в базе</Fill></div>
           <Note style={{ marginTop: "1.2cqw", maxWidth: "15cqw" }}>Профиль Instagram на 26 сентября 2026</Note>
         </Rise>
       </div>
@@ -207,7 +207,7 @@ export function M_Proof15() {
   const n15 = useCountUp(15, 0.9, 0.3);
   const views = useCountUp(140689, 1.3, 0.35);
   return (
-    <Statement kicker="Статистика Instagram" title={<>15 рилсов: {nb("140 689")} просмотров</>} lead="Все смонтированы с ИИ-агентом. Всё, что покажу сегодня, работает у меня прямо сейчас." size="2.8cqw">
+    <Statement kicker="Статистика Instagram" title={<>15 рилсов: {nb("140 689")} просмотров</>} lead="Все смонтированы с ИИ-агентом. Рилсы и бот в директе работают у меня прямо сейчас." size="2.8cqw">
       <div className="flex items-stretch gap-[1cqw]">
         {[[String(n15), "рилсов"], [thousands(views), "просмотров"]].map(([v, l], i) => (
           <motion.div key={l} {...inUp(i, 0.22)} style={{ ...card, padding: "1cqw 1.6cqw" }}>
@@ -223,7 +223,7 @@ export function M_Proof15() {
           </motion.div>
         ))}
       </div>
-      <Note>Данные на 19 сентября 2026</Note>
+      <Note>Данные на 19 сентября 2026 <Fill>15 или 14 рилсов: на слайдах 14 и 16 стоит 14</Fill></Note>
     </Statement>
   );
 }

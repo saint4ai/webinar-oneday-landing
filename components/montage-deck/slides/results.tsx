@@ -103,7 +103,7 @@ export function M_ResultBot({ shot }: { shot?: string }) {
 export function M_ResultBlog({ shot }: { shot?: string }) {
   const r = RESULTS.blog;
   return (
-    <Statement kicker="Результаты за месяц · заявки" title="Заявки с блога за месяц" size="2.5cqw">
+    <Statement kicker="Результаты за месяц · заявки" title={`${RESULTS.month}: заявки с блога`} size="2.5cqw">
       <div className="grid items-center gap-[2.6cqw]" style={{ gridTemplateColumns: "22cqw minmax(0, 1fr)", maxWidth: "52cqw" }}>
         <div style={{ height: "26cqw" }}>
           <ScreenStage3D src={shot} alt="Заявки с блога в CRM" empty={`Сюда скрин заявок из CRM за месяц: public/montage/results/${r.screenshot}`} />

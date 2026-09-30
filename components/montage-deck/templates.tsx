@@ -20,7 +20,7 @@ import { T, card, goldButton, goldText } from "./theme";
 import { Card, Chip, DrawLine, EASE, H, Kicker, Lead, Note, Rise, STEP, Stagger, at, thousands, txt } from "./ui";
 import { TUNNEL_REELS } from "./slides/M_Cover";
 import { BigWord, GoldChip, PricePlate, Struck } from "./slides/sale";
-import { Path, Power, Tasks, type Step, type Task } from "./slides/warmup";
+import { Bridge, Path, Power, Tasks, type Step, type Task } from "./slides/warmup";
 
 export { M_Chapter as TplChapter } from "./slides/M_Chapter";
 export { M_Poll as TplPoll, M_Guides as TplGuides } from "./slides/start";
@@ -81,21 +81,23 @@ export function TplChain({ kicker, title, lead, obj, steps }: Base & { steps: { 
 }
 
 /** Путь (прогрев «как я пришёл»): линия сверху вниз, этапы загораются по очереди, последний — «сейчас». */
-export function TplPath({ kicker, title, steps, note }: Base & { steps: Step[]; note?: ReactNode }) {
+export function TplPath({ kicker, title, steps, note, bridge }: Base & { steps: Step[]; note?: ReactNode; bridge?: ReactNode }) {
   return (
     <Statement kicker={kicker} title={title} size="3cqw">
       <Path steps={steps} />
-      {note && <Note style={{ marginTop: "1.4cqw" }}>{note}</Note>}
+      {note && <Note style={{ marginTop: "1.2cqw" }}>{note}</Note>}
+      {bridge && <Bridge i={6}>{bridge}</Bridge>}
     </Statement>
   );
 }
 
-/** Задачи (прогрев «что это решает у меня»): 4 карточки задача → как → результат, внизу строка «насколько мощно». */
-export function TplTasks({ kicker, title, tasks, power }: Base & { tasks: Task[]; power?: ReactNode }) {
+/** Задачи (прогрев «что это решает у меня»): 3–4 карточки задача → как → результат, строка «насколько мощно», мост к уроку. */
+export function TplTasks({ kicker, title, tasks, power, bridge }: Base & { tasks: Task[]; power?: ReactNode; bridge?: ReactNode }) {
   return (
     <Statement kicker={kicker} title={title} size="2.8cqw">
-      <Tasks items={tasks} />
+      <Tasks items={tasks} cols={tasks.length === 3 ? 3 : 2} />
       {power && <Power i={tasks.length}>{power}</Power>}
+      {bridge && <Bridge i={tasks.length + 1}>{bridge}</Bridge>}
     </Statement>
   );
 }

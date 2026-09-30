@@ -68,7 +68,7 @@ export function M_NoShoot() {
 export function M_TwoFrames() {
   const side = (from: string, delay: number) => ({ initial: { opacity: 0, x: from, rotateY: from.startsWith("-") ? 18 : -18 }, animate: { opacity: 1, x: "0cqw", rotateY: 0 }, transition: { delay, duration: 0.55, ease: EASE } });
   return (
-    <Statement kicker="Главный приём модуля" title={<>Два кадра и <Em>движение</Em> между ними</>} size="3cqw">
+    <Statement kicker="Главный приём урока" title={<>Два кадра и <Em>движение</Em> между ними</>} size="3cqw">
       <div className="flex items-center gap-[0.8cqw]" style={{ perspective: "60cqw" }}>
         <motion.div {...side("6cqw", 0.45)}><Frame label="Кадр 1: до"><Cup stage={0} /></Frame></motion.div>
         <DrawLine delay={0.8} width="2.2cqw" />
@@ -124,7 +124,7 @@ export function M_VoiceClone() {
     </div>
   );
   return (
-    <Statement kicker="Урок 2 · Финал" title={<>Озвучка <Em>копией своего голоса</Em></>} size="3cqw" lead="Даёте образец своего голоса. ИИ озвучивает ролик вашим тембром, а вы проверяете, насколько похоже.">
+    <Statement kicker="Урок 2 · Финал" title={<>Озвучка <Em>копией своего голоса</Em></>} size="3cqw" lead="Даёте образец своего голоса один раз. Дальше ИИ озвучивает ролики вашим тембром, даже когда нет времени записывать. Вы проверяете, насколько похоже.">
       <Stagger i={0} className="grid gap-[1cqw]" style={{ ...card, borderRadius: 22, padding: "1.4cqw 1.6cqw", maxWidth: "42cqw" }}>
         <div><div style={{ ...txt, fontSize: "0.9cqw", color: T.muted, marginBottom: "0.4cqw" }}>Ваш голос</div><Wave delay={0.4} /></div>
         <div><div style={{ ...txt, fontSize: "0.9cqw", color: T.accent, marginBottom: "0.4cqw" }}>Копия в ElevenLabs</div><Wave gold delay={0.9} /></div>
@@ -136,7 +136,7 @@ export function M_VoiceClone() {
 /** 29 · Готовый рекламный ролик: телефон пружиной поднимается снизу, чипы следом. */
 export function M_AdResult() {
   return (
-    <Statement kicker="Результат модуля 2" title={<>Готовый <Em>рекламный ролик</Em></>} size="3.1cqw" lead="От фотографий до ролика 9:16 с озвучкой вашим голосом. Весь модуль 2 про это."
+    <Statement kicker="Результат урока 2" title={<>Готовый <Em>рекламный ролик</Em></>} size="3.1cqw" lead="От фотографий до ролика 9:16 с озвучкой вашим голосом. Весь модуль 2 про это."
       leftSize="20cqw"
       left={
         <motion.div initial={{ opacity: 0, y: "4cqw", rotate: -5 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.2 }}>

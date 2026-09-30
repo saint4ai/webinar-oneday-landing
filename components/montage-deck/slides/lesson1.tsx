@@ -89,7 +89,7 @@ export function M_ThreeSeconds() {
         <Row i={0} label="Пролистали меньше 46%" value={nb("4 816")} pct={100} strong />
         <Row i={1} label="Пролистали больше 46%" value={nb("1 098")} pct={23} />
       </div>
-      <Note>Данные на 19 сентября 2026. Связь доли пролистываний с охватом: −0,84</Note>
+      <Note>Мои 14 рилсов на 19 сентября 2026. Разница в охвате — в 4 раза</Note>
     </Statement>
   );
 }
@@ -207,7 +207,7 @@ export function M_AgentOnPC() {
 
 /** 18 ✦ · 5 шагов: горизонтальная линия, золото бежит по ней, шаги загораются по очереди. */
 export function M_FiveSteps() {
-  const steps = ["Сценарий", "Формат и стиль", "Сборка", "Проверка кадров", "Публикация"];
+  const steps = ["Голос и расшифровка", "Формат и стиль", "Сборка", "Проверка кадров", "Публикация"];
   const T0 = 0.35, DT = 0.32; // когда загорается первый шаг и шаг между ними
   return (
     <Statement kicker="Урок 1 · Порядок работы" title={<>От голоса до ролика: <Em>5 шагов</Em></>} size="3.2cqw">
@@ -363,7 +363,7 @@ export function M_NoFace() {
   }, []);
   const cur = FORMATS[k];
   return (
-    <Statement obj="lg-s23-noface" kicker="Второй вариант" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.9cqw" leftSize="19cqw"
+    <Statement obj="lg-s23-noface" kicker="Урок 1 · Формат без лица" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.9cqw" leftSize="19cqw"
       left={
         <div className="relative" style={{ width: "13.5cqw", aspectRatio: "9/19" }}>
           <AnimatePresence mode="popLayout">

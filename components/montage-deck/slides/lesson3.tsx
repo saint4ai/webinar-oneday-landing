@@ -9,14 +9,14 @@ import { Statement } from "../Statement";
 import { Logo as BrandLogo } from "../Logo";
 import { RESULTS, fmtStat } from "../results";
 import { T, card, goldButton, nightCard } from "../theme";
-import { Card, DrawLine, EASE, Em, H, Lead, MaskIcon, Note, Rise, STEP, Stagger, at, nb, txt } from "../ui";
+import { Card, DrawLine, EASE, Em, Fill, H, Lead, MaskIcon, Note, Rise, STEP, Stagger, at, nb, txt } from "../ui";
 import { TUNNEL_REELS } from "./M_Cover";
 
 /** 43 · Просмотры есть, заявок нет: путь зрителя, на последнем шаге он уходит из кадра. */
 export function M_ViewsNoLeads() {
   const path = ["Посмотрел", "Лайкнул", "Ушёл"];
   return (
-    <Statement obj="lg-s43-leaving" kicker="Урок 3 · Проблема" title={<>Просмотры есть. <Em>Заявок нет</Em></>} size="3.2cqw" lead="Человек посмотрел ролик, поставил лайк и ушёл. Здесь теряется больше всего.">
+    <Statement obj="lg-s43-leaving" kicker="Урок 3 · Проблема" title={<>Просмотры есть. <Em>Заявок нет</Em></>} size="3.2cqw" lead={<>Человек посмотрел ролик, поставил лайк и ушёл. На моём рилсе {nb("1 773")} просмотра и только 68 кодовых слов.</>}>
       <div className="flex items-center gap-[0.8cqw]">
         {path.map((p, i) => (
           <div key={p} className="flex items-center gap-[0.8cqw]">
@@ -35,15 +35,16 @@ export function M_ViewsNoLeads() {
   );
 }
 
-/** 44 ✦ · Ночной: объёмная воронка просмотры → кодовое слово → диалог с ботом → заявка (цифры из results.ts), справа цепочка комментарий → директ → Telegram. */
+/** 44 ✦ · Ночной: объёмная воронка одного рилса просмотры → кодовое слово → диалог с ботом → заявка (RESULTS.funnel), справа цепочка комментарий → директ → Telegram. */
 export function M_CodeWordFlow() {
-  const r = RESULTS;
+  const f = RESULTS.funnel;
   const stages = [
-    { label: "просмотры", value: fmtStat(r.funnelViews) },
-    { label: "кодовое слово", value: fmtStat(r.bot.codeWords) },
-    { label: "диалог с ботом", value: fmtStat(r.bot.dialogs) },
-    { label: "заявка", value: fmtStat(r.bot.leads) },
+    { label: "просмотры", value: fmtStat(f.views) },
+    { label: "кодовое слово", value: fmtStat(f.codeWords) },
+    { label: "диалог с ботом", value: fmtStat(f.dialogs) },
+    { label: "заявка", value: fmtStat(f.leads) },
   ];
+  const missing = [f.dialogs == null && "диалогов", f.leads == null && "заявок"].filter(Boolean).join(" и ");
   const nodes = [
     { logo: "instagram", head: "Комментарий", body: "МОНТАЖ" },
     { logo: "instagram", head: "Директ от бота", body: "Держите гайд, ловите ссылку" },
@@ -62,7 +63,8 @@ export function M_CodeWordFlow() {
         ))}
       </div>
       <Stagger i={6} base={1.2} style={{ marginTop: "1.2cqw", maxWidth: "27cqw" }}>
-        <div style={{ ...txt, fontSize: "1.05cqw", color: T.nightText }}>Рилс про агента: <span style={{ color: T.gold, fontWeight: 700 }}>68 комментариев</span> с кодовым словом на {nb("1 773")} просмотра</div>
+        <div style={{ ...txt, fontSize: "1.05cqw", color: T.nightText }}>Рилс {f.reel ? `«${f.reel}»` : <Fill>название рилса</Fill>}: <span style={{ color: T.gold, fontWeight: 700 }}>{fmtStat(f.codeWords)} комментариев</span> с кодовым словом на {fmtStat(f.views)} просмотра</div>
+        {missing && <div style={{ ...txt, fontSize: "0.95cqw", color: T.nightText, marginTop: "0.4cqw" }}><Fill>сколько {missing} по этому рилсу</Fill></div>}
       </Stagger>
       <Note color={T.nightMuted} style={{ marginTop: "0.8cqw" }}>Статистика Instagram, сентябрь 2026</Note>
     </Statement>
@@ -196,7 +198,7 @@ export function M_Builds() {
 
 /** 49 ✦ · Контент-завод целиком: шесть узлов, золотая линия соединяет их слева направо, узел загорается, когда линия дошла. */
 export function M_FactoryChain() {
-  const chain = ["Рилс", "Кодовое слово", "Бот выдаёт гайд", "ИИ-менеджер", "Заявка в CRM", "Отчёт в Telegram"];
+  const chain = ["Рилс или реклама товара", "Кодовое слово", "Бот выдаёт гайд", "ИИ-менеджер", "Заявка в CRM", "Отчёт в Telegram"];
   const T0 = 0.4, DT = 0.28;
   const Node = ({ c, i }: { c: string; i: number }) => (
     <motion.div initial={{ opacity: 0.35, scale: 0.94, borderColor: T.line }} animate={{ opacity: 1, scale: 1, borderColor: i === 0 || i === 5 ? T.gold2 : T.line }}

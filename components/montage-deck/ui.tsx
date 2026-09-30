@@ -118,3 +118,10 @@ export const DrawLine = ({ delay = 0, width = "2.4cqw", dur = 0.35 }: { delay?: 
       style={{ borderRadius: 4, background: `linear-gradient(90deg, ${T.gold}, ${T.gold2})`, transformOrigin: "left" }} />
   </div>
 );
+
+/** Пропуск, который дописывает Александр: пунктирная плашка «[…]». На эфир не выходит, пока не заменён текстом. */
+export const Fill = ({ children }: { children: ReactNode }) => (
+  <span style={{ display: "inline", color: T.brownLt, background: `${T.gold}1F`, border: `1px dashed ${T.brownLt}`, borderRadius: 8, padding: "0 0.35cqw", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}>
+    [{children}]
+  </span>
+);
