@@ -2,7 +2,7 @@ import { Unbounded, Manrope } from "next/font/google";
 
 export const unbounded = Unbounded({
   subsets: ["latin", "cyrillic"],
-  weight: ["600", "700"],
+  weight: ["600", "700", "800"],
   variable: "--font-unbounded",
   display: "swap",
 });

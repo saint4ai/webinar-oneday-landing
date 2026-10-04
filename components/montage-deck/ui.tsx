@@ -18,9 +18,9 @@ export const RISE_DUR = 0.42;
 /** Задержка i-го элемента слайда; после шестого шаг не растёт, чтобы въезд не затягивался. */
 export const at = (i: number, base = 0) => base + Math.min(i, 6) * STEP;
 
-/** Заголовок сайта: Unbounded 700, коричневый; на ночи — #FBF3E4. Слово-акцент — <Em>. */
+/** Заголовок сайта: Unbounded 800, коричневый; на ночи — #FBF3E4. Слово-акцент — <Em>. */
 export const H = ({ children, size = "3.2cqw", color = T.brown, style }: { children: ReactNode; size?: string; color?: string; style?: CSSProperties }) => (
-  <h2 style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, letterSpacing: "-.025em", lineHeight: 1.1, fontSize: size, color, ...style }}>{children}</h2>
+  <h2 style={{ fontFamily: "var(--font-unbounded)", fontWeight: 800, letterSpacing: "-.025em", lineHeight: 1.1, fontSize: size, color, ...style }}>{children}</h2>
 );
 
 /** Слово-акцент в заголовке: #C08552 на светлом, золото на ночи. */
