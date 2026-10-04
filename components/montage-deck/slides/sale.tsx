@@ -164,7 +164,7 @@ export function M_Anchor() {
         {/* Полная цена 250 000 ₸; цена участникам эфира 150 000 ₸ — следующим слайдом 39а (Александр, 04.10) */}
         <PricePlate delay={1.2} label="Vibe Production · полная цена" value={`${thousands(b)} ₸`} sub="Оплата один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
       </div>
-      <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц, для 30 роликов нужен Claude Max, около {nb("50 000 ₸")} в месяц. Список покажу дальше</Note></Stagger>
+      <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц, Claude Max за $200 в месяц — хватает на 150 роликов. Список покажу дальше</Note></Stagger>
     </Statement>
   );
 }
@@ -349,7 +349,7 @@ export function M_Subscriptions() {
           <span style={{ marginLeft: "auto" }}><Num size="1.8cqw" color={T.brown}>около $51 в месяц</Num></span>
         </motion.div>
       </Stagger>
-      <Note>Для 30 роликов в месяц нужен тариф Claude Max: я плачу около {nb("50 000 ₸")}. Цены на 26 сентября 2026</Note>
+      <Note>Claude Max за $200 в месяц — хватает на 150 роликов. Цены на 26 сентября 2026</Note>
     </Statement>
   );
 }
