@@ -189,13 +189,13 @@ export function M_About() {
   );
 }
 
-/** 9 ✦ · Моя история: стопка плит «300 000 ₸ на монтажёра» рушится до «≈ 50 000 ₸ на Claude». */
+/** 9 ✦ · Моя история: стопка плит «1 500 000 ₸ у монтажёра» рушится до «$200 за Claude Max». */
 export function M_CostStory() {
   return (
-    <Statement kicker="Моя история" title={<>Сколько мне стоит <Em>монтаж 30 роликов</Em> в месяц</>} size="2.7cqw">
+    <Statement kicker="Моя история" title={<>Сколько мне стоит <Em>монтаж в месяц</Em></>} size="2.7cqw">
       <div style={{ marginTop: "0.4cqw" }}>
-        <CostDrop3D from={{ value: nb("300 000 ₸"), label: `Было: монтажёр · 30 роликов по ${nb("10 000 ₸")}` }}
-          to={{ value: `≈\u00A0${nb("50 000 ₸")}`, label: `Стало: агент на Claude · около ${nb("50 000 ₸")} за те же 30 роликов` }} />
+        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Было бы: монтажёр · 150 роликов по 10 000 ₸ [ставку подтвердить]" }}
+          to={{ value: "$200", label: "Стало: подписка Claude Max · 150 роликов в месяц" }} />
       </div>
     </Statement>
   );
