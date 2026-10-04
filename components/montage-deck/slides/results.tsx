@@ -5,7 +5,7 @@ import { ExtrudedNumber, ScreenStage3D } from "../fx";
 import { RESULTS, fmtStat, type Stat } from "../results";
 import { Statement } from "../Statement";
 import { T, card } from "../theme";
-import { EASE, Note, Num, STEP } from "../ui";
+import { EASE, Em, Fill, Note, Num, STEP } from "../ui";
 
 /**
  * Три слайда «результаты за месяц»: 22r (монтаж), 46r (ИИ-бот), 47r (заявки с блога).
@@ -72,6 +72,82 @@ export function M_ResultMontage() {
         ))}
       </div>
       <Note style={{ marginTop: "1cqw" }}>{r.source}</Note>
+    </Statement>
+  );
+}
+
+/** Скрин рилса в рамке 9:16. Нет файла — пунктирное место с номером и путём, куда положить скрин. */
+const ReelShot = ({ src, n, file }: { src?: string; n: number; file: string }) => (
+  <div style={{ width: "100%", aspectRatio: "9 / 16", borderRadius: "0.9cqw", overflow: "hidden", background: src ? T.card : `${T.card}99`,
+    boxShadow: src ? `0 0 0 1px ${T.line}, ${T.shadowSm}` : "none", border: src ? "none" : `1.5px dashed ${T.brownLt}`,
+    display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+    {src ? <img src={src} alt={`Рилс ${n}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (
+      <div style={{ padding: "0.6cqw" }}>
+        <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.6cqw", color: T.brownLt }}>{n}</div>
+        <div style={{ ...lbl, fontSize: "0.68cqw", marginTop: "0.4cqw" }}>скрин рилса<br />с просмотрами</div>
+        <div style={{ ...lbl, fontSize: "0.58cqw", marginTop: "0.4cqw", color: T.brownLt, wordBreak: "break-all" }}>results/{file}.png</div>
+      </div>
+    )}
+  </div>
+);
+
+/** 10v · Рилсы, которые залетели: шесть скринов волной, под каждым — просмотры. Цифры и файлы — RESULTS.viral. */
+export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] }) {
+  return (
+    <Statement kicker="Результаты · рилсы" title="Рилсы, которые залетели" size="2.6cqw"
+      lead={RESULTS.viralSource ?? <>Скрины из Instagram, просмотры на <Fill>дата скринов</Fill></>}>
+      <div className="grid grid-cols-6 gap-[0.9cqw]" style={{ maxWidth: "52cqw" }}>
+        {RESULTS.viral.map((r, i) => (
+          <motion.div key={r.file} initial={{ opacity: 0, y: "3cqw", rotate: i % 2 ? 3 : -3 }} animate={{ opacity: 1, y: i % 2 ? "1.2cqw" : "0cqw", rotate: 0 }}
+            transition={{ delay: 0.35 + i * 0.09, type: "spring", stiffness: 160, damping: 16 }}>
+            <ReelShot src={shots[i]} n={i + 1} file={r.file} />
+            <div style={{ marginTop: "0.6cqw" }}>
+              {r.views == null ? <Waiting /> : <>
+                <Num size="1.35cqw" color={T.brown}>{fmtStat(r.views)}</Num>
+                <div style={{ ...lbl, fontSize: "0.75cqw" }}>просмотров</div>
+              </>}
+              {r.title && <div style={{ ...lbl, fontSize: "0.72cqw", marginTop: "0.3cqw", color: T.ink }}>{r.title}</div>}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </Statement>
+  );
+}
+
+/** 10g · 30 дней: охваты и подписчики. Два скрина статистики на плитах, справа три цифры. */
+export function M_Growth30({ reach, followers }: { reach?: string; followers?: string }) {
+  const g = RESULTS.growth;
+  return (
+    <Statement kicker="Результаты · 30 дней" title={<>30 дней: <Em>охваты и подписчики</Em></>} size="2.6cqw">
+      <div className="grid items-center gap-[1.4cqw]" style={{ gridTemplateColumns: "15cqw 15cqw minmax(0, 1fr)", maxWidth: "54cqw" }}>
+        <div style={{ height: "25cqw" }}>
+          <ScreenStage3D src={reach} alt="Охват за 30 дней" empty={`Сюда скрин охвата за 30 дней: results/${g.reachShot}.png`} />
+        </div>
+        <div style={{ height: "25cqw" }}>
+          <ScreenStage3D src={followers} alt="Рост подписчиков за 30 дней" empty={`Сюда скрин роста подписчиков: results/${g.followersShot}.png`} />
+        </div>
+        <div className="grid gap-[0.7cqw]">
+          <SmallStat i={1} value={g.followers} label="подписчиков сейчас" />
+          <SmallStat i={2} value={g.gained} label="новых за 30 дней" />
+          <SmallStat i={3} value={g.reach} label="охват за 30 дней" />
+        </div>
+      </div>
+      <Note style={{ marginTop: "1cqw" }}>{g.source ?? <>Источник: <Fill>статистика Instagram, даты периода</Fill></>}</Note>
+    </Statement>
+  );
+}
+
+/** 10i · Обращения за 30 дней: две объёмные цифры — по услугам и по обучению. */
+export function M_Inquiries() {
+  const q = RESULTS.inquiries;
+  return (
+    <Statement kicker="Результаты · заявки" title={<>Обращения за 30 дней: <Em>контент приводит клиентов</Em></>} size="2.6cqw">
+      <div className="grid grid-cols-2 gap-[2.6cqw]" style={{ maxWidth: "50cqw" }}>
+        <MainStat value={q.services} label="по моим услугам" size="6.2cqw" />
+        <MainStat value={q.training} label="по обучению" size="6.2cqw" />
+      </div>
+      <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source ?? <>Откуда цифры: <Fill>CRM или директ, даты периода</Fill></>}</Note></In>
     </Statement>
   );
 }

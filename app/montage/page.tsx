@@ -5,16 +5,28 @@ import { RESULTS } from "@/components/montage-deck/results";
 
 export const metadata = {
   title: "Vibe Production · эфир",
-  description: "Рилсы без знаний монтажа: эфир 1 октября, 20:00 по Алматы.",
+  description: "Рилсы без знаний монтажа: эфир 6 октября, 20:00 по Алматы.",
   robots: { index: false, follow: false },
   // Своя карточка ссылки вместо обложки воркшопа из корневого layout
-  openGraph: { title: "Vibe Production · эфир 1 октября", description: "Рилсы без знаний монтажа.", images: [{ url: "/montage/og.jpg", width: 1200, height: 630 }] },
+  openGraph: { title: "Vibe Production · эфир 6 октября", description: "Рилсы без знаний монтажа.", images: [{ url: "/montage/og.jpg", width: 1200, height: 630 }] },
 };
 
-/** Скриншот результатов показываем, только если файл уже лежит в public/montage/results/ — иначе на слайде пунктирное место. */
-const resultShot = (file: string) => (existsSync(join(process.cwd(), "public/montage/results", file)) ? `/montage/results/${file}` : undefined);
+/** Скриншот результатов показываем, только если файл уже лежит в public/montage/results/ — иначе на слайде пунктирное место. Расширение любое из списка. */
+const resultShot = (name: string) => {
+  const ext = [".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG"].find((e) => existsSync(join(process.cwd(), "public/montage/results", name + e)));
+  return ext ? `/montage/results/${name}${ext}` : undefined;
+};
 
-/** /montage — эфир Vibe Production. Управление: ← → / SPACE, F — во весь экран, S — зона спикера. */
+/** /montage — эфир Vibe Production. Управление: ← → / SPACE, F — во весь экран, S — зона спикера, Enter на слайде 00 — интро-ролик. */
 export default function MontagePage() {
-  return <MontageDeck shots={{ bot: resultShot(RESULTS.bot.screenshot), blog: resultShot(RESULTS.blog.screenshot) }} />;
+  const intro = existsSync(join(process.cwd(), "public/montage/intro.mp4")) ? "/montage/intro.mp4" : undefined;
+  return (
+    <MontageDeck shots={{
+      intro,
+      doc: resultShot("doc-example"),
+      reach: resultShot(RESULTS.growth.reachShot),
+      followers: resultShot(RESULTS.growth.followersShot),
+      viral: RESULTS.viral.map((r) => resultShot(r.file)),
+    }} />
+  );
 }

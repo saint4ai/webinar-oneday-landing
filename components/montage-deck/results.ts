@@ -1,5 +1,5 @@
 /**
- * Результаты за месяц для слайдов 22r, 46r, 47r и воронки 44.
+ * Результаты за месяц для слайдов 10v, 10g, 10i (рилсы, охваты, обращения), 22r, 46r, 47r и воронки 44.
  * Владелец вписывает сюда цифры — вёрстку трогать не нужно.
  *
  * Как заполнять:
@@ -40,6 +40,39 @@ export const RESULTS = {
     leads: null as Stat, // заявок с блога за месяц
     source: null as string | null, // откуда цифра — подпись под ней, например «amoCRM, сентябрь 2026»
     screenshot: "blog-leads.png", // public/montage/results/blog-leads.png — скрин заявок из CRM
+  },
+
+  /**
+   * 10v · «Рилсы, которые залетели» — до шести скринов рилсов с просмотрами.
+   * Скрин кладётся в public/montage/results/ под именем из file: viral-1.png (подходят .png, .jpg, .jpeg, .webp).
+   * views — просмотры на скрине, title — тема рилса строкой (подпись под скрином). null — пропуск.
+   */
+  viral: [
+    { file: "viral-1", views: null as Stat, title: null as string | null },
+    { file: "viral-2", views: null as Stat, title: null as string | null },
+    { file: "viral-3", views: null as Stat, title: null as string | null },
+    { file: "viral-4", views: null as Stat, title: null as string | null },
+    { file: "viral-5", views: null as Stat, title: null as string | null },
+    { file: "viral-6", views: null as Stat, title: null as string | null },
+  ],
+  /** Когда сняты скрины рилсов — подпись под стеной, например «Instagram, 5 октября 2026». */
+  viralSource: null as string | null,
+
+  /** 10g · «30 дней: охваты и подписчики». Скрины — public/montage/results/growth-reach.* и growth-followers.* */
+  growth: {
+    reachShot: "growth-reach", // скрин статистики охвата за 30 дней
+    followersShot: "growth-followers", // скрин роста подписчиков за 30 дней
+    followers: null as Stat, // подписчиков сейчас
+    gained: null as Stat, // новых подписчиков за 30 дней
+    reach: null as Stat, // охват за 30 дней (аккаунтов)
+    source: null as string | null, // например «Статистика Instagram, 5 сентября — 4 октября 2026»
+  },
+
+  /** 10i · «Обращения за 30 дней»: сколько людей написали по услугам и по обучению. */
+  inquiries: {
+    services: null as Stat, // обращений по моим услугам: разработка, автоматизация, монтаж
+    training: null as Stat, // обращений по обучению
+    source: null as string | null, // откуда цифры, например «amoCRM, 5 сентября — 4 октября 2026»
   },
 
   /**

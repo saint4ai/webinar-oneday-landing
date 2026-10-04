@@ -51,12 +51,12 @@ export function M_Poll({ kicker, title, lead, options, icons }: { kicker: string
 /** 5 · Программа эфира: три высокие карточки уроков в ряд, пункт «в конце» держит до конца. */
 export function M_Program() {
   const lessons = [
-    ["Урок 1", "Монтирую рилс вживую, без знаний монтажа", "lg-i-clapper"],
-    ["Урок 2", "Реклама товара из фотографий, без съёмки", "lg-i-box"],
-    ["Урок 3", "Как просмотр сам становится заявкой", "lg-i-chatkey"],
+    ["Практика 1", "Монтирую рилс вживую, без знаний монтажа", "lg-i-clapper"],
+    ["Практика 2", "Договор и презентация по брифу из чата", "lg-i-cards"],
+    ["Практика 3", "Приложение и сайт из одного описания", "lg-i-phones"],
   ];
   return (
-    <Statement kicker="Программа эфира" title="Три урока за вечер" size="3.2cqw">
+    <Statement kicker="Программа эфира" title="Три практики за вечер" size="3.2cqw">
       <div className="grid grid-cols-3 gap-[1cqw]" style={{ maxWidth: "54cqw" }}>
         {lessons.map(([no, t, ic], i) => (
           <motion.div key={no} {...inUp(i)} className="flex flex-col" style={{ ...card, minHeight: "20cqw", padding: "1.4cqw 1.5cqw" }}>
@@ -69,7 +69,7 @@ export function M_Program() {
       <motion.div {...inUp(3)} className="flex items-center gap-[1.2cqw]"
         style={{ maxWidth: "54cqw", marginTop: "1cqw", borderRadius: 20, padding: "0.8cqw 1.4cqw", border: `1.5px dashed ${T.gold2}`, background: `${T.gold}1F` }}>
         <Px name="lg-i-calendar" size="3.2cqw" bob={false} delay={0.5} />
-        <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.95cqw", color: T.gold2, whiteSpace: "nowrap" }}>В конце</span>
+        <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.95cqw", color: T.gold2, whiteSpace: "nowrap" }}>После практики 1</span>
         <span style={{ ...label, fontWeight: 700, fontSize: "1.2cqw" }}>Схема на 30 роликов в месяц</span>
       </motion.div>
     </Statement>
@@ -78,10 +78,10 @@ export function M_Program() {
 
 /** 6 · Большое обещание: ролик → реклама → заявка, связки прорисовываются по очереди. */
 export function M_Promise() {
-  const chain = ["Ролик", "Реклама", "Заявка"];
-  const icons = ["lg-i-cards", "lg-i-box", "lg-i-chatkey"];
+  const chain = ["Ролик", "Договор", "Приложение"];
+  const icons = ["lg-i-clapper", "lg-i-cards", "lg-i-phones"];
   return (
-    <Statement kicker="Что увидите сегодня" title={<>Покажу контент-завод целиком: ролик, реклама и <Em>заявка</Em></>} lead="Без монтажёра, без съёмки, без знаний кода." size="2.8cqw">
+    <Statement kicker="Что увидите сегодня" title={<>Покажу, как ИИ забирает монтаж, документы и <Em>разработку</Em></>} lead="Без монтажёра, без дизайнера презентаций, без программиста." size="2.8cqw">
       <div className="flex items-end gap-[1.2cqw]">
         {chain.map((c, i) => (
           <div key={c} className="flex items-center gap-[1.2cqw]">

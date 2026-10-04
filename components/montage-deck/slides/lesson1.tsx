@@ -22,7 +22,7 @@ export function M_Bottleneck() {
     ["Не выкладываю", "Снял, а монтировать некогда", "lg-i-calendar"],
   ];
   return (
-    <Statement kicker="Урок 1 · Проблема" title={<>Рилсы нужны. Монтаж стал <Em>узким местом</Em></>} size="3.3cqw">
+    <Statement kicker="Практика 1 · Проблема" title={<>Рилсы нужны. Монтаж стал <Em>узким местом</Em></>} size="3.3cqw">
       <div className="grid grid-cols-3 gap-[1cqw]" style={{ maxWidth: "54cqw" }}>
         {ways.map(([t, d, ic], i) => <Stagger key={t} i={i}><Card icon={ic} no={`Путь ${i + 1}`} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
       </div>
@@ -210,7 +210,7 @@ export function M_FiveSteps() {
   const steps = ["Голос и расшифровка", "Формат и стиль", "Сборка", "Проверка кадров", "Публикация"];
   const T0 = 0.35, DT = 0.32; // когда загорается первый шаг и шаг между ними
   return (
-    <Statement kicker="Урок 1 · Порядок работы" title={<>От голоса до ролика: <Em>5 шагов</Em></>} size="3.2cqw">
+    <Statement kicker="Практика 1 · Порядок работы" title={<>От голоса до ролика: <Em>5 шагов</Em></>} size="3.2cqw">
       <div className="relative" style={{ width: "52cqw", paddingTop: "1.2cqw" }}>
         {/* Линия: подложка и золотое заполнение слева направо */}
         <div className="absolute" style={{ left: "5.2cqw", right: "5.2cqw", top: "3.2cqw", height: "0.3cqw", borderRadius: 4, background: `${T.brown}26` }} />
@@ -363,7 +363,7 @@ export function M_NoFace() {
   }, []);
   const cur = FORMATS[k];
   return (
-    <Statement obj="lg-s23-noface" kicker="Урок 1 · Формат без лица" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.9cqw" leftSize="19cqw"
+    <Statement obj="lg-s23-noface" kicker="Практика 1 · Формат без лица" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.9cqw" leftSize="19cqw"
       left={
         <div className="relative" style={{ width: "13.5cqw", aspectRatio: "9/19" }}>
           <AnimatePresence mode="popLayout">

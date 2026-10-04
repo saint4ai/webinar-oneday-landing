@@ -24,12 +24,14 @@ export function ReelTunnel3D({ reels }: { reels: Reel[] }) {
     const angle = (i * 137.5) % 360; // золотой угол — карточки не выстраиваются в столбы
     const r = RINGS[i % RINGS.length];
     const rad = (angle * Math.PI) / 180;
+    // Округление: сервер и браузер расходятся в последнем знаке Math.sin/cos → ошибка гидрации на обложке
+    const r3 = (v: number) => Math.round(v * 1000) / 1000;
     return {
       reel: reels[i % reels.length],
-      x: Math.cos(rad) * r,
-      y: Math.sin(rad) * r * 0.62, // эллипс: кадр шире, чем выше
-      ry: -Math.cos(rad) * 28, // карточка чуть развёрнута к оси — видна толщина тоннеля
-      delay: -(i * LOOP) / CARDS,
+      x: r3(Math.cos(rad) * r),
+      y: r3(Math.sin(rad) * r * 0.62), // эллипс: кадр шире, чем выше
+      ry: r3(-Math.cos(rad) * 28), // карточка чуть развёрнута к оси — видна толщина тоннеля
+      delay: r3(-(i * LOOP) / CARDS),
     };
   });
 
