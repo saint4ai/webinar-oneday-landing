@@ -16,7 +16,7 @@ import { M_Cover } from "./slides/M_Cover";
 import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
-import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Module, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA } from "./slides/sale";
+import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Module, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
 import { M_MyPath } from "./slides/warmup";
 import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides/results";
 import { M_CodeWordFlow, M_Plan30, M_Thanks } from "./slides/lesson3";
@@ -108,6 +108,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_Subscriptions key="55" />,
     <M_Slots key="56" />,
     <M_FinalCTA key="57" />,
+    <M_GameBonus key="57g" />,
     // Финал · 2 мин
     <M_Guides key="58" kicker="Обещанное" title="Забирайте три гайда" lead="Напишите МОНТАЖ в чат." />,
     <M_Thanks key="59" />,

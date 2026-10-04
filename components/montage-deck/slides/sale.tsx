@@ -403,3 +403,18 @@ export function M_FinalCTA() {
     </SlideLayout>
   );
 }
+
+/** 57g ✦ · Бонус за игру: QR на Token Runner, код из игры снимает ещё 10 000 ₸. */
+export function M_GameBonus() {
+  return (
+    <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру — ещё <Em>−10 000 ₸</Em></>} size="3cqw"
+      lead="Игра Token Runner в Telegram. Пройди 3 испытания — получишь код: Vibe Production за 140 000 ₸ вместо 150 000 ₸.">
+      <Stagger i={0}>
+        <div style={{ ...card, borderRadius: 22, padding: "1cqw", width: "13cqw" }}>
+          <img src="/montage/qr-game.svg" alt="QR-код: игра Token Runner в Telegram" style={{ display: "block", width: "100%", height: "auto" }} />
+        </div>
+        <div style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", color: T.brown, marginTop: "1cqw", whiteSpace: "nowrap" }}>t.me/tokenrunner_bot</div>
+      </Stagger>
+    </Statement>
+  );
+}
