@@ -219,7 +219,7 @@ export function M_Proof15() {
       <div className="flex gap-[0.9cqw]" style={{ marginTop: "1.4cqw" }}>
         {reels.map((r, i) => (
           <motion.div key={r} {...inUp(2 + i, 0.22)}>
-            <Phone video={`/montage/reels/${r}.mp4`} src={`/montage/reels/${r}.jpg`} width="7.6cqw" chrome={false} />
+            <Phone video={`/montage/reels/${r}.mp4`} src={`/montage/reels/${r}.jpg`} width="8.6cqw" chrome={false} />
           </motion.div>
         ))}
       </div>

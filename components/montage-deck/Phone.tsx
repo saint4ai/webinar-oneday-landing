@@ -1,12 +1,13 @@
 import { T } from "./theme";
 
-/** Айфон с рилсом: корпус цвета ночи сайта #14100E, радиус 46, экран 38, поверх — интерфейс Instagram. src — картинка, video — ролик в цикле без звука. */
-export function Phone({ src, video, views, author = "saint4ai", caption, width = "19cqw", showTop = true, chrome = true }: {
-  src?: string; video?: string; views?: string; author?: string; caption?: string; width?: string; showTop?: boolean; chrome?: boolean;
+/** Айфон с рилсом 9:16: корпус цвета ночи сайта #14100E, экран — интерфейс Instagram. src — картинка, video — ролик в цикле без звука.
+ *  ratio="9/19" — для скринов профиля: телефон выше, видео без обрезки не влезает. */
+export function Phone({ src, video, views, author = "saint4ai", caption, width = "19cqw", ratio = "9/16", showTop = true, chrome = true }: {
+  src?: string; video?: string; views?: string; author?: string; caption?: string; width?: string; ratio?: string; showTop?: boolean; chrome?: boolean;
 }) {
   return (
-    <div style={{ width, aspectRatio: "9/19", background: T.night, borderRadius: "2.4cqw", padding: "0.52cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
-      <div className="relative w-full h-full overflow-hidden" style={{ borderRadius: "1.98cqw", background: T.night2 }}>
+    <div style={{ width, aspectRatio: ratio, background: T.night, borderRadius: "1.8cqw", padding: "0.25cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
+      <div className="relative w-full h-full overflow-hidden" style={{ borderRadius: "1.55cqw", background: T.night2 }}>
         {video ? (
           <video key={video} src={video} poster={src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
         ) : src ? (
