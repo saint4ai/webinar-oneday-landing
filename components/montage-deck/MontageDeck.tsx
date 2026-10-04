@@ -116,9 +116,9 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
   // 23w M_MyMontage, 24–29 урок «AI-креатор» (lesson2.tsx), 41w M_MyAutomation, 42 глава урока 3, 43, 45–49 (lesson3.tsx), 46r M_ResultBot, 47r M_ResultBlog.
   return (
     <div className={`montage-deck ${unbounded.variable} ${manrope.variable}`}>
-      {/* Номер слайда общего SlideDeck стоит в правом нижнем углу — это зона камеры, там только фон.
-          Прячем его только в этой деке; номер остаётся в адресной строке (#N). */}
-      <style>{`.montage-deck .bottom-4.right-5.z-30 { display: none; }`}</style>
+      {/* Номер слайда общего SlideDeck перенесён из правого нижнего угла в левый:
+          справа зона камеры, там только фон. Номер совпадает с #N в адресной строке. */}
+      <style>{`.montage-deck .bottom-4.right-5.z-30 { right: auto; left: 1.25rem; }`}</style>
       <SlideDeck slides={slides} theme="cacao" />
     </div>
   );
