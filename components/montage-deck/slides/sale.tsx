@@ -161,7 +161,7 @@ export function M_Anchor() {
           <div style={{ marginTop: "0.8cqw" }}><Struck delay={1.1} size="2.5cqw" color={T.brown}>{`от ${thousands(a)} ₸`}</Struck></div>
           <div style={{ ...txt, fontWeight: 500, fontSize: "0.95cqw", color: T.muted, marginTop: "0.8cqw" }}>Каждый месяц. Вакансия на hh.kz, Алматы, 26.09.2026</div>
         </motion.div>
-        {/* Полная цена 250 000 ₸; цена участникам эфира 105 000 ₸ — следующим слайдом 39а (Александр, 04.10) */}
+        {/* Полная цена 250 000 ₸; цена участникам эфира 150 000 ₸ — следующим слайдом 39а (Александр, 04.10) */}
         <PricePlate delay={1.2} label="Vibe Production · полная цена" value={`${thousands(b)} ₸`} sub="Оплата один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
       </div>
       <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц, для 30 роликов нужен Claude Max, около {nb("50 000 ₸")} в месяц. Список покажу дальше</Note></Stagger>
@@ -171,18 +171,18 @@ export function M_Anchor() {
 
 const BANKS = [{ name: "Kaspi", logo: "kaspi" }, { name: "Home Credit", logo: "homecredit" }, { name: "Halyk", logo: "halyk" }];
 
-/** 39 ✦ · 105 000 ₸ рассыпается на 24 ячейки по 4 375 ₸, ниже банки рассрочки. */
+/** 39 ✦ · 150 000 ₸ рассыпается на 24 ячейки по 6 250 ₸, ниже банки рассрочки. */
 export function M_Installments() {
   return (
-    <Statement obj="lg-s39-calendar" objSize="7cqw" kicker="Рассрочка до 24 месяцев без переплаты" title={<>Или от <Em>{nb("4 375 ₸")}</Em> в месяц</>} size="3cqw"
-      lead={<>Меньше {nb("150 ₸")} в день. Платите ровно {nb("105 000 ₸")}, частями.</>}>
+    <Statement obj="lg-s39-calendar" objSize="7cqw" kicker="Рассрочка до 24 месяцев без переплаты" title={<>Или от <Em>{nb("6 250 ₸")}</Em> в месяц</>} size="3cqw"
+      lead={<>Меньше {nb("210 ₸")} в день. Платите ровно {nb("150 000 ₸")}, частями.</>}>
       <div className="grid gap-[0.45cqw]" style={{ gridTemplateColumns: "repeat(12, 1fr)", maxWidth: "50cqw" }}>
         {Array.from({ length: 24 }, (_, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: "-1.2cqw", scale: 0.6 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
             transition={{ delay: 0.5 + i * 0.04, type: "spring", stiffness: 300, damping: 20 }}
             className="flex items-center justify-center" style={{ height: "3cqw", borderRadius: 10, border: `1px solid ${T.gold2}`, background: `${T.gold}24`,
               fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.72cqw", color: T.brown, fontVariantNumeric: "tabular-nums" }}>
-            {nb("4 375")}
+            {nb("6 250")}
           </motion.div>
         ))}
       </div>
@@ -198,11 +198,11 @@ export function M_Installments() {
   );
 }
 
-/** 39а ✦ · Цена для участников эфира: 250 000 ₸ перечёркивается, 105 000 ₸ въезжает на тёмной плашке. Процент скидки не пишем (Александр, 04.10). */
+/** 39а ✦ · Цена для участников эфира: 250 000 ₸ перечёркивается, 150 000 ₸ въезжает на тёмной плашке. Процент скидки не пишем (Александр, 04.10). */
 export function M_Discount() {
-  const after = useCountUp(105000, 1, 1.3);
+  const after = useCountUp(150000, 1, 1.3);
   return (
-    <Statement kicker="Только для участников эфира" title={<>Ваша цена — <Em>{nb("105 000 ₸")}</Em></>} size="3cqw"
+    <Statement kicker="Только для участников эфира" title={<>Ваша цена — <Em>{nb("150 000 ₸")}</Em></>} size="3cqw"
       lead="Вы здесь, вы смотрите практику вживую — для вас цена ниже. Напишите МОНТАЖ в чат, менеджер закрепит её за вами.">
       <div className="flex items-center gap-[1.2cqw]">
         <Stagger i={0}>
@@ -217,7 +217,7 @@ export function M_Discount() {
         </motion.div>
       </div>
       <Stagger i={6} base={1.2} style={{ marginTop: "1.4cqw" }}>
-        <GoldChip>или от {nb("4 375 ₸")} в месяц в рассрочку на 24 месяца</GoldChip>
+        <GoldChip>или от {nb("6 250 ₸")} в месяц в рассрочку на 24 месяца</GoldChip>
       </Stagger>
     </Statement>
   );
@@ -301,7 +301,7 @@ export function M_OneScreen() {
         {mods.map(([no, t, d, ic], i) => <Stagger key={no} i={i}><Card icon={ic} no={no} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
       </div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
-        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("105 000 ₸")} вместо ${nb("250 000 ₸")} — участникам эфира`, `или от ${nb("4 375 ₸")} в месяц`, "первым 5 броням — 6 месяцев доступа"].map((c, i) => (
+        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} вместо ${nb("250 000 ₸")} — участникам эфира`, `или от ${nb("6 250 ₸")} в месяц`, "первым 5 броням — 6 месяцев доступа"].map((c, i) => (
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
         <Stagger i={8}><GoldChip><Fill>поддержка: формат и кто отвечает</Fill></GoldChip></Stagger>
@@ -393,7 +393,7 @@ export function M_FinalCTA() {
       <Rise><Kicker>Напишите в чат до 23:59</Kicker></Rise>
       <div className="flex items-center gap-[1.6cqw]"><BigWord word="МОНТАЖ" size="8cqw" /><Px name="lg-i-hourglass" size="9cqw" delay={0.7} /></div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2cqw", maxWidth: "52cqw" }}>
-        {[`${nb("105 000 ₸")} вместо ${nb("250 000 ₸")}`, `или от ${nb("4 375 ₸")} в месяц`, `бронь ${nb("10 000 ₸")}`].map((c, i) => (
+        {[`${nb("150 000 ₸")} вместо ${nb("250 000 ₸")}`, `или от ${nb("6 250 ₸")} в месяц`, `бронь ${nb("10 000 ₸")}`].map((c, i) => (
           <Stagger key={c} i={i} base={0.55}>
             <span style={{ display: "inline-block", ...card, borderRadius: 999, padding: "0.8cqw 1.4cqw", ...txt, fontSize: "1.1cqw",
               ...(i === 0 || i === 2 ? { ...goldButton, border: `1px solid ${T.gold2}` } : null) }}>{c}</span>
