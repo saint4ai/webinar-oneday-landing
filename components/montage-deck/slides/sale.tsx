@@ -270,7 +270,7 @@ export function M_HowToBook() {
         <motion.div className="inline-flex" animate={{ boxShadow: [`0 0 0 0cqw ${T.gold}66`, `0 0 0 1cqw ${T.gold}00`] }} transition={{ delay: 1.2, duration: 1.6, repeat: Infinity, ease: "easeOut" }}
           style={{ ...goldButton, borderRadius: 999, padding: "1cqw 2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.2cqw" }}>МОНТАЖ в чат</motion.div>
       </Stagger>
-      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {nb("10 000 ₸")} входит в цену обучения <Fill>подтвердить</Fill>. Остаток до <Fill>дата доплаты</Fill>. После эфира писать <Fill>куда</Fill></Note></Stagger>
+      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {nb("10 000 ₸")} входит в цену обучения. Остаток до <Fill>дата доплаты</Fill>. После эфира писать <Fill>куда</Fill></Note></Stagger>
     </Statement>
   );
 }
