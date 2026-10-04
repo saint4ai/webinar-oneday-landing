@@ -56,7 +56,7 @@ def serve() -> tuple[socketserver.TCPServer, int]:
             pass
 
     handler = functools.partial(Quiet, directory=str(OUT))
-    srv = socketserver.TCPServer(("127.0.0.1", 0), handler)
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv, srv.server_address[1]
 
