@@ -309,7 +309,7 @@ export function M_OneScreen() {
         {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} вместо ${nb("250 000 ₸")} — участникам эфира`, `или от ${nb("6 250 ₸")} в месяц`, "первым 5 броням — 6 месяцев доступа"].map((c, i) => (
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
-        <Stagger i={8}><GoldChip><Fill>поддержка: формат и кто отвечает</Fill></GoldChip></Stagger>
+        <Stagger i={8}><GoldChip>Разбор работ в общем чате потока</GoldChip></Stagger>
       </div>
     </Statement>
   );

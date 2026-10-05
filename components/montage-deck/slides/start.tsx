@@ -8,7 +8,7 @@ import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
 import { T, card, glass, goldButton } from "../theme";
-import { Arrow, EASE, Em, Fill, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
+import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
 
 const label: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.35, color: T.ink };
 const inUp = (i: number, base = 0.28) => ({ initial: { opacity: 0, y: "1cqw" }, animate: { opacity: 1, y: "0cqw" }, transition: { delay: at(i, base), duration: RISE_DUR, ease: EASE } });
@@ -181,7 +181,7 @@ export function M_About() {
         </motion.div>
         <Rise delay={at(4, 0.2)} style={{ paddingBottom: "0.6cqw" }}>
           <Num size="3cqw" color={T.brown}>1000+</Num>
-          <div style={{ ...label, fontSize: "0.95cqw", color: T.muted, fontWeight: 500, maxWidth: "15cqw", marginTop: "0.6cqw" }}>выпускников за два года по внедрению ИИ в бизнес <Fill>1000+ или 900+, как в базе</Fill></div>
+          <div style={{ ...label, fontSize: "0.95cqw", color: T.muted, fontWeight: 500, maxWidth: "15cqw", marginTop: "0.6cqw" }}>выпускников за два года по внедрению ИИ в бизнес</div>
           <Note style={{ marginTop: "1.2cqw", maxWidth: "15cqw" }}>Профиль Instagram на 26 сентября 2026</Note>
         </Rise>
       </div>
@@ -194,7 +194,7 @@ export function M_CostStory() {
   return (
     <Statement kicker="Моя история" title={<>Сколько мне стоит <Em>монтаж в месяц</Em></>} size="2.7cqw">
       <div style={{ marginTop: "0.4cqw" }}>
-        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Было бы: монтажёр · 150 роликов по 10 000 ₸ [ставку подтвердить]" }}
+        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Было бы: монтажёр · 150 роликов по 10 000 ₸, мой темп 5 роликов в день" }}
           to={{ value: "$200", label: "Стало: подписка Claude Max · 150 роликов в месяц" }} />
       </div>
     </Statement>

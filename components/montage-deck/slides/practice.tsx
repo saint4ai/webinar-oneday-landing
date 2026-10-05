@@ -273,6 +273,9 @@ export function M_MainConclusion() {
 export function M_DeckByAgent() {
   return (
     <Statement tone="night" kicker="И последнее" title={<>Эту презентацию тоже <Em night>собрали агенты</Em></>} size="3cqw"
-      lead="Тексты, вёрстку, анимации и графику — по моим словам. Как и ролик, которым мы открыли эфир. Я правил и утверждал." />
+      lead="Тексты, вёрстку, анимации и графику — по моим словам. Как и ролик, которым мы открыли эфир. Я правил и утверждал.">
+      {/* Мост к продаже 2 (волна 3): приложение из практики 3 — это модуль 3 Vibe Production */}
+      <Note color={T.nightMuted} style={{ marginTop: 0, fontSize: "1.1cqw", maxWidth: "44cqw" }}>Приложения и документы под свои задачи: модуль 3 Vibe Production, автоматизации на вайбкодинге.</Note>
+    </Statement>
   );
 }
