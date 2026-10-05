@@ -5,7 +5,8 @@ import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { CostDrop3D } from "../fx";
 import { MontageBg } from "../MontageBg";
-import { Phone } from "../Phone";
+import { ReelRail } from "../ReelRail";
+import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { T, card, glass, goldButton } from "../theme";
 import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
@@ -188,11 +189,11 @@ export function M_CostStory() {
 }
 
 /**
- * 10 · 30 дней: 825 701 просмотр на трёх площадках, по 5 рилсов в день. Четыре телефона с залетевшими рилсами (петли hit-*, раздатки 05.10).
+ * 10 · 30 дней: 825 701 просмотр на трёх площадках, по 5 рилсов в день. Под цифрами бесконечная лента обложек рилсов
+ * со счётчиком просмотров из приложения Instagram (RESULTS.appCovers, раздатки 05.10, папка 04).
  * Цифры из docs/tasks/deck_wave2.json, срез 4 октября. 825 701 — сумма просмотров трёх площадок, не число людей.
  */
 export function M_Proof15() {
-  const reels = ["hit-connectors", "hit-gitingest", "hit-artemis", "hit-semrush"];
   const perDay = useCountUp(5, 0.9, 0.3);
   const views = useCountUp(825701, 1.3, 0.35);
   return (
@@ -205,14 +206,20 @@ export function M_Proof15() {
           </motion.div>
         ))}
       </div>
-      <div className="flex gap-[0.9cqw]" style={{ marginTop: "1.2cqw" }}>
-        {reels.map((r, i) => (
-          <motion.div key={r} {...inUp(2 + i, 0.22)}>
-            <Phone video={`/montage/reels/${r}.mp4`} src={`/montage/reels/${r}.jpg`} width="11cqw" chrome={false} />
-          </motion.div>
-        ))}
-      </div>
-      <Note style={{ marginTop: "0.9cqw" }}>4 сентября — 3 октября 2026, срез 4 октября. Просмотры трёх соцсетей сложены — это не число людей.</Note>
+      <motion.div {...inUp(2, 0.22)} style={{ marginTop: "1.2cqw", maxWidth: "54cqw" }}>
+        <ReelRail items={[...RESULTS.appCovers]} itemWidth="8.4cqw" speed={0.3} render={(r) => (
+          <div>
+            <img src={`/montage/reels/${r.file}.jpg`} alt={`${r.title}: ${r.views} просмотров`} draggable={false}
+              style={{ display: "block", width: "100%", aspectRatio: "9 / 16", objectFit: "cover", borderRadius: "1cqw", border: `1px solid ${T.line}`, boxShadow: T.shadowSm }} />
+            {/* цифра с обложки крупно: на самой обложке счётчик слишком мелкий для эфира */}
+            <div style={{ marginTop: "0.5cqw" }}>
+              <Num size="1.35cqw" color={T.brown}>{r.views.replace(/\s*тыс\.$/, "")}</Num>
+              <div style={{ ...label, fontSize: "0.72cqw", color: T.muted, whiteSpace: "nowrap" }}>тыс. просмотров</div>
+            </div>
+          </div>
+        )} />
+      </motion.div>
+      <Note style={{ marginTop: "0.9cqw" }}>{RESULTS.appCoversSource}. 825 701: 4 сентября — 3 октября, срез 4 октября, просмотры трёх соцсетей сложены, это не число людей.</Note>
     </Statement>
   );
 }

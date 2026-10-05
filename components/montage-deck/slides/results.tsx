@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ExtrudedNumber, ScreenStage3D } from "../fx";
+import { ReelRail } from "../ReelRail";
 import { RESULTS, fmtStat, type Stat } from "../results";
 import { Statement } from "../Statement";
 import { T, card } from "../theme";
@@ -95,17 +96,19 @@ const splitViews = (v: string): [string, string] => {
   return m ? [m[1], `${m[2]} просмотров`] : [v, "просмотров"];
 };
 
-/** 10v · Рилсы, которые залетели: пять плиток панели Instagram волной, под каждой — просмотры, тема и дата. Цифры и файлы — RESULTS.viral. */
+/**
+ * 10v · Рилсы, которые залетели: плитки панели Instagram бесконечной змейкой (ReelRail с амплитудой): соседние плитки
+ * одна выше, другая ниже и по ходу движения меняются местами. Под каждой — просмотры, тема и дата. Цифры и файлы — RESULTS.viral.
+ */
 export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] }) {
   return (
     <Statement kicker="Результаты · рилсы" title="Рилсы, которые залетели" size="2.6cqw"
       lead={RESULTS.viralSource ?? <>Скрины из Instagram, просмотры на <Fill>дата скринов</Fill></>}>
-      <div className="grid grid-cols-5 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
-        {RESULTS.viral.map((r, i) => {
+      <motion.div initial={{ opacity: 0, y: "2cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }} style={{ maxWidth: "54cqw" }}>
+        <ReelRail items={[...RESULTS.viral]} itemWidth="9.2cqw" gap={0.16} amp="1.7cqw" speed={0.28} tilt={3} render={(r, i) => {
           const [num, unit] = r.views == null ? ["", ""] : splitViews(r.views);
           return (
-            <motion.div key={r.file} initial={{ opacity: 0, y: "3cqw", rotate: i % 2 ? 3 : -3 }} animate={{ opacity: 1, y: i % 2 ? "1.2cqw" : "0cqw", rotate: 0 }}
-              transition={{ delay: 0.35 + i * 0.09, type: "spring", stiffness: 160, damping: 16 }}>
+            <div>
               <ReelShot src={shots[i]} n={i + 1} file={r.file} ratio="232 / 324" />
               <div style={{ marginTop: "0.6cqw" }}>
                 {r.views == null ? <Waiting /> : <>
@@ -115,10 +118,10 @@ export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] })
                 {r.title && <div style={{ ...lbl, fontSize: "0.78cqw", marginTop: "0.3cqw", color: T.ink }}>{r.title}</div>}
                 {r.date && <div style={{ ...lbl, fontSize: "0.7cqw", marginTop: "0.2cqw" }}>{r.date}</div>}
               </div>
-            </motion.div>
+            </div>
           );
-        })}
-      </div>
+        }} />
+      </motion.div>
     </Statement>
   );
 }

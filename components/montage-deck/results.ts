@@ -65,6 +65,25 @@ export const RESULTS = {
     { file: "viral-4", views: "29,8 тыс." as string | null, title: "Открытая замена Semrush" as string | null, date: "28 сентября" as string | null },
     { file: "viral-5", views: "21,6 тыс." as string | null, title: "Четыре подключения" as string | null, date: "25 сентября" as string | null },
   ],
+  /**
+   * 10 · лента обложек со счётчиком просмотров из приложения Instagram: скрины Александра 05.10 (раздатки, папка 04, IMG_8083–8092),
+   * файлы public/montage/reels/app-1..10.jpg по убыванию просмотров. Цифра нарисована на самой обложке; views — она же, для подписи.
+   * Счётчик приложения у «Одно слово» 135 тыс., в панели 90 тыс.: у Instagram это разные счётчики.
+   */
+  appCovers: [
+    { file: "app-1", views: "135 тыс.", title: "Одно слово в ссылке GitHub" },
+    { file: "app-2", views: "118 тыс.", title: "4 умных коннектора для Claude" },
+    { file: "app-3", views: "63,8 тыс.", title: "Claude Code и реклама в Facebook" },
+    { file: "app-4", views: "62,2 тыс.", title: "Claude тестирует на Android" },
+    { file: "app-5", views: "23,6 тыс.", title: "Четыре подключения" },
+    { file: "app-6", views: "21,2 тыс.", title: "Правки сайта кликом" },
+    { file: "app-7", views: "15,9 тыс.", title: "Защита проекта" },
+    { file: "app-8", views: "14,7 тыс.", title: "Три года внедряю ИИ в бизнес" },
+    { file: "app-9", views: "10,1 тыс.", title: "Скилл Карпатого" },
+    { file: "app-10", views: "10,1 тыс.", title: "Если ты только начал вайбкодить" },
+  ],
+  appCoversSource: "Счётчики на обложках из приложения Instagram, 5 октября 2026",
+
   /** Откуда плитки — подпись под заголовком. */
   viralSource: "Instagram · профессиональная панель, топ контента по просмотрам · 5 октября 2026" as string | null,
 
