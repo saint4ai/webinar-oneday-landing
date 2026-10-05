@@ -185,10 +185,10 @@ export function M_AgentOnPC() {
   return (
     <Statement kicker="Как это устроено" title={<>Монтажёр теперь живёт <Em>на вашем компьютере</Em></>} size="3cqw"
       lead="Программировать не нужно. Агент сам ставит всё нужное и ведёт по шагам.">
-      <div className="flex items-end gap-[1.4cqw]">
+      <div className="flex items-end gap-[1.2cqw]">
         <motion.img src="/montage/obj/s17-laptop.webp" alt="Монтажёр внутри ноутбука" initial={{ opacity: 0, y: "2cqw", scale: 0.94 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.25, ease: EASE }} style={{ width: "17cqw", height: "auto", filter: "drop-shadow(0 20px 30px rgba(42,33,28,.22))" }} />
-        <Stagger i={1} style={{ width: "35cqw", borderRadius: 22, overflow: "hidden", background: T.night2, border: `1px solid ${T.nightLine}`, boxShadow: T.shadow }}>
+          transition={{ duration: 0.6, delay: 0.25, ease: EASE }} style={{ width: "10cqw", height: "auto", filter: "drop-shadow(0 20px 30px rgba(42,33,28,.22))" }} />
+        <Stagger i={1} style={{ width: "30cqw", borderRadius: 22, overflow: "hidden", background: T.night2, border: `1px solid ${T.nightLine}`, boxShadow: T.shadow }}>
           <div className="flex items-center gap-[0.5cqw]" style={{ padding: "0.8cqw 1.1cqw", borderBottom: `1px solid ${T.nightLine}`, background: T.night }}>
             {[T.gold, T.brownLt, T.nightMuted].map((c) => <span key={c} style={{ width: "0.6cqw", height: "0.6cqw", borderRadius: 99, background: c }} />)}
             <span style={{ width: "0.6cqw" }} />
@@ -200,6 +200,8 @@ export function M_AgentOnPC() {
             <Typed lines={["Прочитай навык монтажа и работай только по нему.", "Проведи со мной интервью.", "Финал не собирай, пока я не одобрю кадры и черновик."]} />
           </div>
         </Stagger>
+        {/* Мой ролик «Система, на которой Claude монтирует мои ролики» (раздатки 05.10, папка 06): шаги записи, расшифровки и проверки кадров */}
+        <Stagger i={2}><Phone video="/montage/reels/ai-system.mp4" src="/montage/reels/ai-system.jpg" width="11cqw" chrome={false} /></Stagger>
       </div>
     </Statement>
   );
@@ -305,18 +307,24 @@ export function M_Styles() {
 export function M_StepAssemble() {
   return (
     <Statement obj="lg-s21-robot" kicker="Шаг 3" title={<>Агент собирает. Правку просим <Em>словами</Em></>} size="3cqw">
-      <div className="grid grid-cols-3 gap-[0.8cqw]" style={{ maxWidth: "52cqw" }}>
-        {[["Сцены", "По карте монтажа: что на экране в каждую секунду"], ["Субтитры", "По словам, точно под голос"], ["Звук", "Музыка, эффекты и ровная громкость"]].map(([t, d], i) => (
-          <Stagger key={t} i={i}><Card title={t} text={d} style={{ height: "100%" }} /></Stagger>
-        ))}
-      </div>
-      <div className="grid gap-[0.6cqw]" style={{ marginTop: "1.4cqw", maxWidth: "44cqw" }}>
-        <Stagger i={3} style={{ justifySelf: "end", maxWidth: "80%", borderRadius: "18px 18px 4px 18px", padding: "0.9cqw 1.2cqw", background: T.ink, ...txt, fontWeight: 500, color: T.nightText }}>
-          Сделай первую фразу крупнее и убери мелкие подписи
-        </Stagger>
-        <Stagger i={5} style={{ justifySelf: "start", maxWidth: "80%", borderRadius: "18px 18px 18px 4px", padding: "0.9cqw 1.2cqw", ...card, ...txt, fontWeight: 500 }}>
-          Готово. Собрал новый черновик, проверь кадры
-        </Stagger>
+      <div className="flex items-start gap-[1.6cqw]">
+        <div style={{ width: "40cqw" }}>
+          <div className="grid grid-cols-3 gap-[0.8cqw]">
+            {[["Сцены", "По карте монтажа: что на экране в каждую секунду"], ["Субтитры", "По словам, точно под голос"], ["Звук", "Музыка, эффекты и ровная громкость"]].map(([t, d], i) => (
+              <Stagger key={t} i={i}><Card title={t} text={d} style={{ height: "100%" }} /></Stagger>
+            ))}
+          </div>
+          <div className="grid gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
+            <Stagger i={3} style={{ justifySelf: "end", maxWidth: "80%", borderRadius: "18px 18px 4px 18px", padding: "0.9cqw 1.2cqw", background: T.ink, ...txt, fontWeight: 500, color: T.nightText }}>
+              Сделай первую фразу крупнее и убери мелкие подписи
+            </Stagger>
+            <Stagger i={5} style={{ justifySelf: "start", maxWidth: "80%", borderRadius: "18px 18px 18px 4px", padding: "0.9cqw 1.2cqw", ...card, ...txt, fontWeight: 500 }}>
+              Готово. Собрал новый черновик, проверь кадры
+            </Stagger>
+          </div>
+        </div>
+        {/* Мой ролик «Palmier: монтаж обычными командами» (раздатки 05.10, папка 06) */}
+        <Stagger i={2}><Phone video="/montage/reels/ai-palmier.mp4" src="/montage/reels/ai-palmier.jpg" width="11cqw" chrome={false} /></Stagger>
       </div>
     </Statement>
   );
@@ -333,7 +341,8 @@ export function M_ReadyReel() {
           <p style={{ ...txt, fontWeight: 500, fontSize: "1.15cqw", color: T.muted, lineHeight: 1.45 }}>Графика, субтитры и звук собраны агентом по голосу. Сначала черновик на одобрение, потом финал в 4K.</p>
         </Stagger>
         <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.2 }}>
-          <Phone video="/montage/reels/podarok.mp4" src="/montage/reels/podarok.jpg" width="13.4cqw" showTop={false} />
+          {/* Мой ролик «Этот рилс смонтировал не человек» (раздатки 05.10, папка 06) */}
+          <Phone video="/montage/reels/ai-notman.mp4" src="/montage/reels/ai-notman.jpg" width="13.4cqw" showTop={false} />
         </motion.div>
         <div className="flex flex-col items-start gap-[0.6cqw]" style={{ width: "15cqw" }}>
           {["Premiere не открывал", "CapCut не открывал", "Правки словами"].map((c, i) => (
