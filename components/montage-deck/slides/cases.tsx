@@ -1,19 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CASES, type BizCase } from "../cases";
 import { Statement } from "../Statement";
 import { T, card } from "../theme";
-import { EASE, Em, Note, txt } from "../ui";
+import { EASE, Em, Note, Px, txt } from "../ui";
 
 /**
  * 08c · Что я собрал для бизнеса: автокарусель кейсов. Окно браузера с экраном решения сменяется каждые 3,4 с,
  * за ним выглядывает следующий кейс, сверху полоса «историй» показывает, сколько решений и какое сейчас.
+ * Когда кадра нет, в окне карточка клиента (логотип) или продукта (иконка и цепочка), как на сайте /saint.
  * Данные — components/montage-deck/cases.ts. Всё в левых 60% кадра.
  */
 
 const HOLD = 3.4; // секунд на кейс
+const LABELS_MAX = 6; // до стольких кейсов под сегментами подписи, дальше только счётчик
+
+const plural = (n: number) => {
+  const a = n % 10, b = n % 100;
+  return a === 1 && b !== 11 ? "решение" : a >= 2 && a <= 4 && (b < 10 || b >= 20) ? "решения" : "решений";
+};
+const pad = (n: number) => String(n).padStart(2, "0");
+
+function Tags({ tags, dark }: { tags: string[]; dark: boolean }) {
+  return (
+    <div className="flex flex-wrap justify-center" style={{ gap: "0.35cqw", maxWidth: "90%" }}>
+      {tags.map((t) => (
+        <span key={t} style={{ ...txt, fontSize: "0.7cqw", fontWeight: 700, padding: "0.25cqw 0.6cqw", borderRadius: 99, whiteSpace: "nowrap",
+          border: `1px solid ${dark ? T.nightLine : T.line}`, color: dark ? T.nightMuted : T.muted }}>{t}</span>
+      ))}
+    </div>
+  );
+}
+
+/** Экран 16:10 под адресной строкой: скриншот, логотип клиента или карточка продукта. */
+function Screen({ c }: { c: BizCase }) {
+  const v = c.visual;
+  const box: CSSProperties = { position: "relative", width: "100%", aspectRatio: "16 / 10", overflow: "hidden" };
+  if (v.kind === "shot") {
+    return (
+      <div style={box}>
+        <img src={v.src} alt={`Экран решения: ${c.title}`} draggable={false} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+        {v.demo && (
+          <span style={{ position: "absolute", right: "0.7cqw", bottom: "0.7cqw", ...txt, fontSize: "0.7cqw", fontWeight: 700, padding: "0.25cqw 0.65cqw", borderRadius: 99, background: "rgba(20,16,14,.78)", color: T.nightText }}>
+            демо-данные
+          </span>
+        )}
+      </div>
+    );
+  }
+  const dark = v.kind === "card" || !!v.dark;
+  return (
+    <div className="flex flex-col items-center justify-center" style={{ ...box, gap: "0.9cqw",
+      background: dark ? `radial-gradient(120% 90% at 50% 0%, ${T.night2}, ${T.night})` : `radial-gradient(120% 90% at 50% 0%, ${T.paper}, ${T.card})` }}>
+      {v.kind === "logo" ? (
+        <>
+          <img src={v.src} alt={`Логотип клиента: ${c.title}`} draggable={false} style={{ display: "block", height: "4.4cqw", maxWidth: "60%", objectFit: "contain" }} />
+          <div style={{ ...txt, fontSize: "0.72cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: dark ? T.gold : T.accent }}>Клиент</div>
+        </>
+      ) : (
+        <>
+          <Px name={v.icon} size="6cqw" />
+          <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.3cqw", color: T.nightText, textAlign: "center", lineHeight: 1.2 }}>{v.label}</div>
+        </>
+      )}
+      <Tags tags={v.tags} dark={dark} />
+    </div>
+  );
+}
 
 /** Окно браузера: полоса с тремя точками и адресом страницы кейса, под ней экран решения. */
 function Window({ c }: { c: BizCase }) {
@@ -23,13 +78,14 @@ function Window({ c }: { c: BizCase }) {
         {[T.gold, T.brownLt, T.line].map((col, k) => <span key={k} style={{ width: "0.55cqw", height: "0.55cqw", borderRadius: 99, background: col }} />)}
         <span style={{ ...txt, fontSize: "0.72cqw", color: T.muted, marginLeft: "0.6cqw", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.url}</span>
       </div>
-      <img src={c.shot} alt={`Экран решения: ${c.title}`} draggable={false} style={{ display: "block", width: "100%", aspectRatio: "16 / 10", objectFit: "cover", objectPosition: "top" }} />
+      <Screen c={c} />
     </div>
   );
 }
 
 export function M_Cases() {
   const n = CASES.length;
+  const labels = n <= LABELS_MAX;
   const [i, setI] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setI((v) => (v + 1) % n), HOLD * 1000);
@@ -39,9 +95,12 @@ export function M_Cases() {
   const next = CASES[(i + 1) % n];
 
   return (
-    <Statement kicker="Вайбкодинг · решения для бизнеса" title={<>Что я собрал для бизнеса <Em>без программистов</Em></>} size="2.7cqw">
+    <Statement kicker={`Вайбкодинг · ${n} ${plural(n)} для бизнеса`} title={<>Что я собрал для бизнеса <Em>без программистов</Em></>} size="2.7cqw">
+      {/* Кадры всех кейсов грузятся заранее, чтобы смена окна не мигала пустым экраном */}
+      <div hidden>{CASES.map((x) => x.visual.kind !== "card" && <img key={x.slug} src={x.visual.src} alt="" />)}</div>
+
       {/* Полоса «историй»: сколько решений и какое на экране */}
-      <div className="grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gap: "0.6cqw", maxWidth: "54cqw", marginBottom: "1.2cqw" }}>
+      <div className="grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gap: labels ? "0.6cqw" : "0.3cqw", maxWidth: "54cqw" }}>
         {CASES.map((x, k) => (
           <div key={x.slug} className="min-w-0">
             <div style={{ height: "0.35cqw", borderRadius: 99, background: `${T.brown}1F`, overflow: "hidden" }}>
@@ -49,12 +108,17 @@ export function M_Cases() {
               {k === i && <motion.div key={`fill-${i}`} initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: HOLD, ease: "linear" }}
                 style={{ height: "100%", background: `linear-gradient(90deg, ${T.gold}, ${T.gold2})` }} />}
             </div>
-            <div style={{ ...txt, fontSize: "0.8cqw", fontWeight: 700, marginTop: "0.45cqw", color: k === i ? T.brown : T.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", transition: "color .3s" }}>{x.title}</div>
+            {labels && <div style={{ ...txt, fontSize: "0.8cqw", fontWeight: 700, marginTop: "0.45cqw", color: k === i ? T.brown : T.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", transition: "color .3s" }}>{x.title}</div>}
           </div>
         ))}
       </div>
+      {!labels && (
+        <div style={{ ...txt, fontSize: "0.8cqw", fontWeight: 700, marginTop: "0.45cqw", color: T.muted, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ color: T.brown }}>{pad(i + 1)}</span> / {pad(n)}
+        </div>
+      )}
 
-      <div className="grid items-center" style={{ gridTemplateColumns: "32cqw minmax(0, 1fr)", gap: "2cqw", maxWidth: "54cqw" }}>
+      <div className="grid items-center" style={{ gridTemplateColumns: "32cqw minmax(0, 1fr)", gap: "2cqw", maxWidth: "54cqw", marginTop: "1.2cqw" }}>
         <div className="relative" style={{ aspectRatio: "16 / 11.3", perspective: "90cqw" }}>
           {/* Следующий кейс выглядывает сзади снизу справа: видно, что решений больше одного, а его адресная строка спрятана за передним окном */}
           {n > 1 && (
