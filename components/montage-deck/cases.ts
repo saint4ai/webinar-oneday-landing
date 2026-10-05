@@ -63,13 +63,14 @@ export const CASES: BizCase[] = [
     url: "onai.academy/saint/cases/ai-assistant",
   },
   {
-    // site-texts/iqra.md: цифр результата нет, школа их не подтвердила; логотип logos/iqra.svg
+    // site-texts/iqra.md: цифр результата нет, школа их не подтвердила; логотип logos/iqra.svg.
+    // Дашборд: Александр 06.10.2026 «по CRM мы делали dashboard, был репозиторий»; IQRA — первый клиент в коде iqra-dashboard (cases/diskurs-whatsapp-analytics/FACTS.md)
     slug: "iqra",
     title: "IQRA",
     niche: "Школа казахского языка",
-    oneLiner: "Запись на пробный урок прямо в чате",
-    metric: "WhatsApp и Instagram · запись в AmoCRM и календарь",
-    visual: { kind: "logo", src: "/montage/cases/iqra-logo.svg", tags: ["AI-консультант", "WhatsApp", "AmoCRM"] },
+    oneLiner: "AI-консультант в чате и дашборд по заявкам из CRM",
+    metric: "Запись на пробный урок в чате · дашборд на данных AmoCRM",
+    visual: { kind: "logo", src: "/montage/cases/iqra-logo.svg", tags: ["AI-консультант", "Дашборд", "AmoCRM"] },
     url: "onai.academy/saint/cases/iqra",
   },
   {
@@ -83,12 +84,12 @@ export const CASES: BizCase[] = [
     url: "onai.academy/saint/cases/diskurs",
   },
   {
-    // site-texts/whatsapp-analytics.md: 7% → 55% из внутреннего аудита одного клиента (июнь и первая неделя июля 2026), клиент не назван
+    // site-texts/whatsapp-analytics.md. Цифры 7% → 55% и 141 из 141 не ставить: по FACTS.md это аудит клиента AT Academy, без его согласия нельзя
     slug: "whatsapp-analytics",
     title: "Сквозная аналитика",
     niche: "Клиенты агентства Diskurs",
     oneLiner: "Видно, какое объявление привело клиента из WhatsApp",
-    metric: "7% → 55% квал-лидов с источником · аудит одного клиента",
+    metric: "Реклама, WhatsApp и CRM в одном отчёте · в Telegram в 8:00",
     visual: { kind: "card", icon: "lg-i-laptopcoins", label: "Клик → диалог → сделка", tags: ["Реклама", "WhatsApp", "CRM", "Отчёт в 8:00"] },
     url: "onai.academy/saint/cases/whatsapp-analytics",
   },
