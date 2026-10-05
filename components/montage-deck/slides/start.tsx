@@ -201,29 +201,32 @@ export function M_CostStory() {
   );
 }
 
-/** 10 · 15 рилсов, 140 689 просмотров: строка докручивающихся цифр и превью роликов, смонтированных агентом. */
+/**
+ * 10 · 30 дней: 825 701 просмотр на трёх площадках, по 5 рилсов в день. Четыре телефона с залетевшими рилсами (петли hit-*, раздатки 05.10).
+ * Цифры из docs/tasks/deck_wave2.json, срез 4 октября. 825 701 — сумма просмотров трёх площадок, не число людей.
+ */
 export function M_Proof15() {
-  const reels = ["mcp", "zashita", "google10", "papka"];
-  const n15 = useCountUp(15, 0.9, 0.3);
-  const views = useCountUp(140689, 1.3, 0.35);
+  const reels = ["hit-connectors", "hit-gitingest", "hit-artemis", "hit-semrush"];
+  const perDay = useCountUp(5, 0.9, 0.3);
+  const views = useCountUp(825701, 1.3, 0.35);
   return (
-    <Statement kicker="Статистика Instagram" title={<>15 рилсов: {nb("140 689")} просмотров</>} lead="Все смонтированы с ИИ-агентом. Рилсы и бот в директе работают у меня прямо сейчас." size="2.8cqw">
+    <Statement kicker="Моя статистика" title={<>30 дней: {nb("825 701")} просмотр</>} lead="Рилсы собирает ИИ-агент — каждый сразу выходит в Instagram, TikTok и YouTube." size="2.8cqw">
       <div className="flex items-stretch gap-[1cqw]">
-        {[[String(n15), "рилсов"], [thousands(views), "просмотров"]].map(([v, l], i) => (
+        {[[String(perDay), "рилсов в день — сейчас"], [thousands(views), "просмотр в Instagram, TikTok и YouTube"]].map(([v, l], i) => (
           <motion.div key={l} {...inUp(i, 0.22)} style={{ ...card, padding: "1cqw 1.6cqw" }}>
             <Num size="3.4cqw" color={T.brown}>{v}</Num>
             <div style={{ ...label, color: T.muted, marginTop: "0.4cqw" }}>{l}</div>
           </motion.div>
         ))}
       </div>
-      <div className="flex gap-[0.9cqw]" style={{ marginTop: "1.4cqw" }}>
+      <div className="flex gap-[0.9cqw]" style={{ marginTop: "1.2cqw" }}>
         {reels.map((r, i) => (
           <motion.div key={r} {...inUp(2 + i, 0.22)}>
-            <Phone video={`/montage/reels/${r}.mp4`} src={`/montage/reels/${r}.jpg`} width="8.6cqw" chrome={false} />
+            <Phone video={`/montage/reels/${r}.mp4`} src={`/montage/reels/${r}.jpg`} width="11cqw" chrome={false} />
           </motion.div>
         ))}
       </div>
-      <Note>Данные на 19 сентября 2026 <Fill>15 или 14 рилсов: на слайдах 14 и 16 стоит 14</Fill></Note>
+      <Note style={{ marginTop: "0.9cqw" }}>4 сентября — 3 октября 2026, срез 4 октября. Просмотры трёх соцсетей сложены — это не число людей.</Note>
     </Statement>
   );
 }
