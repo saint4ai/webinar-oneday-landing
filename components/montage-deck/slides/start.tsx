@@ -144,26 +144,10 @@ export function M_Guides({ kicker, title, lead }: { kicker: string; title: strin
   );
 }
 
-/** Телефон с профилем Instagram: шапка профиля — скрин, ниже сетка рилсов, смонтированных агентом. */
-function ProfilePhone({ width = "12.4cqw" }: { width?: string }) {
-  // Рилсы агента и кадры настоящих роликов из форматов (слайд 23)
-  const grid = ["reels/mcp", "reels/zashita", "reels/google10", "reels/papka", "reels/podarok", "formats/01-polovina-ekrana", "formats/02-polovina-okno", "formats/03-kartochka-spikera", "formats/04-spiker-vnizu"];
-  return (
-    <div style={{ width, aspectRatio: "9/19", background: T.night, borderRadius: "1.9cqw", padding: "0.42cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
-      <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: "1.55cqw", background: T.paper }}>
-        <img src="/montage/profile.jpg" alt="Профиль saint4ai в Instagram: 15,6 тыс. подписчиков" style={{ display: "block", width: "100%", height: "auto", marginTop: "12%" }} />
-        <div className="grid grid-cols-3" style={{ gap: 1, marginTop: "4%" }}>
-          {grid.map((r) => <img key={r} src={`/montage/${r}.jpg`} alt="" style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover", display: "block" }} />)}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** 8 · Кто я: фото на свету, рядом скрин профиля в телефоне. alex-cacao.webp — alex.webp, где салатовый логотип на футболке перекрашен в золото бренда. */
+/** 8 · Кто я: фото на свету, рядом скрин профиля Instagram со скруглёнными углами. alex-cacao.webp — alex.webp, где салатовый логотип на футболке перекрашен в золото бренда. */
 export function M_About() {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />} objectColumnSize="25cqw" objectOverflow="visible"
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />} objectColumnSize="25cqw" objectOverflow="visible" contentMinWidth={0}
       leftObject={
         <motion.div className="relative w-full h-full" initial={{ opacity: 0, y: "2cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ duration: 0.6, ease: EASE }}>
           {/* Свет: белый блик сверху и золотое пятно за спиной, без жёстких краёв */}
@@ -174,17 +158,19 @@ export function M_About() {
       }>
       <Rise><Kicker>Кто ведёт</Kicker></Rise>
       <Rise delay={STEP}><H size="3.4cqw">Александр</H></Rise>
-      <Rise delay={STEP * 2}><Lead style={{ marginTop: "0.8cqw", maxWidth: "31cqw" }}>Основатель onAI Academy. Собираю платформы обучения и сервисы для бизнеса с ИИ-агентами, без штатных программистов.</Lead></Rise>
-      <div className="flex items-end gap-[1.6cqw]" style={{ marginTop: "1.6cqw" }}>
-        <motion.div initial={{ opacity: 0, y: "2cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ delay: at(3, 0.2), duration: 0.55, ease: EASE }}>
-          <ProfilePhone />
-        </motion.div>
-        <Rise delay={at(4, 0.2)} style={{ paddingBottom: "0.6cqw" }}>
-          <Num size="3cqw" color={T.brown}>1000+</Num>
-          <div style={{ ...label, fontSize: "0.95cqw", color: T.muted, fontWeight: 500, maxWidth: "15cqw", marginTop: "0.6cqw" }}>выпускников за два года по внедрению ИИ в бизнес</div>
-          <Note style={{ marginTop: "1.2cqw", maxWidth: "15cqw" }}>Профиль Instagram на 26 сентября 2026</Note>
-        </Rise>
-      </div>
+      {/* Позиционирование — слова Александра 05.10: «разработчик без знаний программирования, разрабатываю IT-решения для бизнеса» */}
+      <Rise delay={STEP * 2}><Lead style={{ marginTop: "0.8cqw", maxWidth: "29cqw" }}>Разработчик без знаний программирования: собираю IT-решения для бизнеса с <span style={{ whiteSpace: "nowrap" }}>ИИ-агентами</span>. Основатель onAI Academy.</Lead></Rise>
+      {/* Скрин профиля Instagram без рамки телефона, со скруглёнными углами (правка Александра 05.10) */}
+      <motion.div initial={{ opacity: 0, y: "1.6cqw", scale: 0.97 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }} transition={{ delay: at(3, 0.2), duration: 0.55, ease: EASE }}
+        style={{ marginTop: "1.6cqw", maxWidth: "29cqw" }}>
+        <img src="/montage/profile.jpg" alt="Профиль saint4ai в Instagram" draggable={false}
+          style={{ display: "block", width: "100%", height: "auto", borderRadius: "1.2cqw", border: `1px solid ${T.line}`, boxShadow: T.shadow, background: T.paper }} />
+      </motion.div>
+      <Rise delay={at(4, 0.2)} className="flex items-center" style={{ gap: "1.1cqw", marginTop: "1.4cqw", maxWidth: "29cqw" }}>
+        <Num size="3cqw" color={T.brown}>1000+</Num>
+        <div style={{ ...label, fontSize: "1cqw", color: T.muted, fontWeight: 500 }}>выпускников за два года по внедрению ИИ в бизнес</div>
+      </Rise>
+      <Note style={{ marginTop: "0.9cqw" }}>Профиль Instagram на 26 сентября 2026</Note>
     </SlideLayout>
   );
 }

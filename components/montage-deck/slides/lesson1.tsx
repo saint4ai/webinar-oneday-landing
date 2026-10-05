@@ -333,7 +333,7 @@ export function M_StepAssemble() {
 /** 22 · Готовый ролик: телефон по центру левой зоны; слева подпись, справа чипы. */
 export function M_ReadyReel() {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg />} contentClassName="items-center text-center">
+    <SlideLayout className="bg-transparent" background={<MontageBg />} contentClassName="items-center text-center" contentMinWidth={0}>
       <Rise><Kicker>Результат</Kicker></Rise>
       <Rise delay={STEP}><H size="3.4cqw">Готовый ролик</H></Rise>
       <div className="flex items-center justify-center gap-[2cqw]" style={{ marginTop: "2cqw", width: "100%" }}>

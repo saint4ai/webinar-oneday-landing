@@ -19,6 +19,7 @@ import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_Agen
 import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
 import { M_ShopReel, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
 import { M_MyPath } from "./slides/warmup";
+import { M_Cases } from "./slides/cases";
 import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides/results";
 import { M_CodeWordFlow, M_Plan30, M_Thanks } from "./slides/lesson3";
 import { M_IntroVideo } from "./slides/intro";
@@ -38,13 +39,14 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
       options={["Эксперт, у меня свой продукт", "Не хочу сниматься сам", "SMM, делаю рилсы для клиентов", "Хочу брать заказы на монтаж"]}
       icons={["lg-i-stall", "lg-i-camera", "lg-i-phones", "lg-i-laptopcoins"]} />,
     <M_Poll key="04" kicker="Ещё вопрос" title="Сколько роликов вы выпустили за последний месяц?" lead="Ответ цифрой в чат."
-      options={["Ни одного", "От 1 до 3", "От 4 до 10", "Больше 10"]} />,
+      options={["Ни одного", "От 1 до 3", "От 4 до 10", "Больше 10"]} icons={["lg-i-hourglass", "lg-i-clapper", "lg-i-calfilm", "lg-i-rocket"]} />,
     <M_Program key="05" />,
     <M_Promise key="06" />,
     <M_Guides key="07" kicker="Бонус за досмотр" title={"Досмотрите до конца: три\u00A0гайда"} lead="Выдам в конце эфира по слову МОНТАЖ." />,
     // Кто я, хронология и результаты · 7 мин
     <M_About key="08" />,
     <M_MyPath key="08w" />,
+    <M_Cases key="08c" />,
     <M_CostStory key="09" />,
     <M_Proof15 key="10" />,
     <M_ViralReels key="10v" shots={shots.viral} />,

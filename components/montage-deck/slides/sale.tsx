@@ -77,7 +77,7 @@ export function M_Case107() {
 /** 31 · Хотите так же? ХОЧУ. */
 export function M_Want() {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />} contentMinWidth={0}>
       <Rise><Kicker>Напишите в чат</Kicker></Rise>
       <BigWord word="ХОЧУ" size="10cqw" />
       <Rise delay={0.5}><H size="2.4cqw" style={{ marginTop: "1.6cqw" }}>если хотите монтировать <Em>так же</Em></H></Rise>
@@ -394,7 +394,7 @@ export function M_Slots() {
 /** 57 · Финальный призыв: МОНТАЖ золотом, пульс золотой кнопки, условия чипами. */
 export function M_FinalCTA() {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />} contentMinWidth={0}>
       <Rise><Kicker>Напишите в чат до 23:59</Kicker></Rise>
       <div className="flex items-center gap-[1.6cqw]"><BigWord word="МОНТАЖ" size="8cqw" /><Px name="lg-i-hourglass" size="9cqw" delay={0.7} /></div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2cqw", maxWidth: "52cqw" }}>

@@ -17,7 +17,7 @@ export function M_Chapter({ big, kicker, title, sub, bigSize = "16cqw", obj }: {
   };
   const after = 0.45; // заголовок — сразу за цифрой
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /></MontageBg>}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /></MontageBg>} contentMinWidth={0}>
       <style>{`@keyframes ch-shine { from { background-position: 160% 0; } to { background-position: -60% 0; } }`}</style>
       <div className="flex items-end gap-[1.6cqw]">
         <motion.div className="relative" initial={{ opacity: 0, y: "3cqw", scale: 0.9 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}

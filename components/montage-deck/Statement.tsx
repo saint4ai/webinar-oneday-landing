@@ -16,7 +16,8 @@ export function Statement({ kicker, title, lead, children, tone = "paper", size 
 }) {
   const night = tone === "night" || tone === "ink";
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone={tone} />} leftObject={left} objectColumnSize={leftSize} objectOverflow={leftOverflow}>
+    // contentMinWidth 0: текстовая колонка всегда ровно до границы зоны камеры (60%), в узком окне не вылезает за линию
+    <SlideLayout className="bg-transparent" background={<MontageBg tone={tone} />} leftObject={left} objectColumnSize={leftSize} objectOverflow={leftOverflow} contentMinWidth={0}>
       {obj && <Px name={obj} size={objSize} style={{ marginBottom: "0.4cqw", marginLeft: "-0.9cqw" }} />}
       {kicker && <Rise><Kicker color={night ? T.gold : T.accent}>{kicker}</Kicker></Rise>}
       <Rise delay={STEP}><H size={size} color={night ? T.nightText : T.brown}>{title}</H></Rise>

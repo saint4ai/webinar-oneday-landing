@@ -121,7 +121,7 @@ function Shop({ active, kicker, title, visual, side, lessons, conveyorStart }: {
   active: number; kicker: string; title: ReactNode; visual: ReactNode; side: ReactNode; lessons: string[]; conveyorStart: number;
 }) {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg />}>
+    <SlideLayout className="bg-transparent" background={<MontageBg />} contentMinWidth={0}>
       <ChainHeader active={active} />
       <Rise><Kicker color={T.accent}>{kicker}</Kicker></Rise>
       <Rise delay={STEP}><H size="2.7cqw" color={T.brown}>{title}</H></Rise>

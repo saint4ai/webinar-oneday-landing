@@ -8,7 +8,7 @@
  *   node docs/deck-v2/shoot-offline.mjs                   # все слайды → docs/deck-v2/shots/<ключ>.jpg
  *   node docs/deck-v2/shoot-offline.mjs --only "10v,30"   # только эти ключи (в PowerShell список в кавычках)
  *   node docs/deck-v2/shoot-offline.mjs --film "01,38"    # кадры въезда: 150, 500, 1000, 2500 мс → film-<ключ>-<мс>.jpg
- *   node docs/deck-v2/shoot-offline.mjs --out <папка>
+ *   node docs/deck-v2/shoot-offline.mjs --out <папка> --w 1920 --q 80   # полноразмерные кадры, например для партнёров
  *
  * Проверки на каждом слайде: зона камеры (правые 40%), текст и картинки за краем кадра, обрезанный текст, ошибки в консоли.
  * Браузер: CHROMIUM_PATH или Chrome по стандартному пути Windows, иначе Chromium из Playwright.
@@ -24,6 +24,8 @@ const ROOT = join(here, "..", "..");
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 const OUT = opt("--out") ?? join(here, "shots");
+const WIDTH = Number(opt("--w") ?? 960); // ширина снимка: 960 для проверки, 1920 для выгрузки партнёрам
+const QUALITY = Number(opt("--q") ?? 82);
 const only = opt("--only")?.split(",").map((s) => s.trim());
 const film = opt("--film")?.split(",").map((s) => s.trim()) ?? [];
 mkdirSync(OUT, { recursive: true });
@@ -111,7 +113,7 @@ function checks() {
 
 async function shot(name) {
   const png = await page.screenshot({ type: "png" });
-  await sharp(png).resize({ width: 960 }).jpeg({ quality: 82, mozjpeg: true }).toFile(join(OUT, `${name}.jpg`));
+  await sharp(png).resize({ width: WIDTH }).jpeg({ quality: QUALITY, mozjpeg: true }).toFile(join(OUT, `${name}.jpg`));
 }
 
 const SLOW = { "09": 4200, "38": 3200, "39a": 3000 };

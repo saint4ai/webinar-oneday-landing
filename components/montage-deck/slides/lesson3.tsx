@@ -262,7 +262,7 @@ export function M_Plan30() {
 /** 59 ✦ · Спасибо. Ночной, фоном тот же тоннель свежих скринов и видео рилсов, что на обложке (CoverTunnel, карточки COVER_CARDS). Без контактов. */
 export function M_Thanks() {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><CoverTunnel cards={COVER_CARDS} /></MontageBg>}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><CoverTunnel cards={COVER_CARDS} /></MontageBg>} contentMinWidth={0}>
       <div style={{ maxWidth: "31cqw" }}>
         <Rise><BrandLogo night height="1.8cqw" style={{ marginBottom: "3cqw" }} /></Rise>
         <Rise delay={STEP}><H size="4.2cqw" color={T.nightText} style={{ lineHeight: 1.05 }}>Спасибо,<br /><Em night><span style={{ whiteSpace: "nowrap" }}>что пришли</span></Em></H></Rise>
