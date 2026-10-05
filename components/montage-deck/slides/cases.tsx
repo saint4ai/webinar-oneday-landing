@@ -118,7 +118,7 @@ export function M_Cases() {
   const next = CASES[(i + 1) % n];
 
   return (
-    <Statement tone="night" kicker={`Вайбкодинг · ${n} ${plural(n)} для бизнеса`} title={<>Что я собрал для бизнеса <Em night>без программистов</Em></>} size="2.7cqw">
+    <Statement tone="night" kicker={`Вайбкодинг · ${n} ${plural(n)} для бизнеса`} title="Что я собрал для бизнеса" lead={<Em night>Без программистов</Em>} size="2.7cqw">
       {/* Кадры всех кейсов грузятся заранее, чтобы смена окна не мигала пустым экраном */}
       <div hidden>{CASES.map((x) => x.visual.kind !== "card" && <img key={x.slug} src={x.visual.src} alt="" />)}</div>
 
