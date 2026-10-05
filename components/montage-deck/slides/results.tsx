@@ -51,18 +51,16 @@ const MainStat = ({ value, label, size }: { value: Stat; label: string; size: st
     <div style={{ marginTop: "1.4cqw" }}><ExtrudedNumber value={fmtStat(value)} label={label} size={size} /></div>
   );
 
-/** 22r · Сентябрь: что смонтировал агент. */
+/** 22r · 30 дней: что смонтировал агент. Цифры и подписи — RESULTS.montage (срез 4 октября, три площадки). */
 export function M_ResultMontage() {
   const r = RESULTS.montage;
   return (
-    <Statement kicker="Результаты за месяц · монтаж" title={`${RESULTS.month}: что смонтировал агент`} size="2.5cqw">
+    <Statement kicker="Результаты за месяц · монтаж" title={r.title} size="2.5cqw">
       <div className="flex items-end gap-[2.4cqw]">
-        <MainStat value={r.views} label="просмотров" size="6.6cqw" />
+        <MainStat value={r.views} label={r.viewsLabel} size="6.6cqw" />
       </div>
       <div className="grid grid-cols-3 gap-[0.8cqw]" style={{ marginTop: "1.8cqw", maxWidth: "44cqw" }}>
-        <SmallStat i={1} value={r.reels} label="роликов" />
-        <SmallStat i={2} value={r.saves} label="сохранений" />
-        <SmallStat i={3} value={r.followers} label="новых подписчиков" />
+        {r.small.map((s, i) => <SmallStat key={s.label} i={i + 1} value={s.value} label={s.label} />)}
       </div>
       <div className="flex gap-[0.7cqw]" style={{ marginTop: "1.4cqw" }}>
         {r.covers.map((c, i) => (
@@ -91,46 +89,53 @@ const ReelShot = ({ src, n, file }: { src?: string; n: number; file: string }) =
   </div>
 );
 
-/** 10v · Рилсы, которые залетели: шесть скринов волной, под каждым — просмотры. Цифры и файлы — RESULTS.viral. */
+/** «135 тыс.» → число «135» крупно и «тыс. просмотров» мелко: в узкой плитке одна строка из Unbounded не помещается. */
+const splitViews = (v: string): [string, string] => {
+  const m = /^(.+?)\s+(тыс\.|млн)$/.exec(v);
+  return m ? [m[1], `${m[2]} просмотров`] : [v, "просмотров"];
+};
+
+/** 10v · Рилсы, которые залетели: шесть скринов волной, под каждым — просмотры и тема. Цифры и файлы — RESULTS.viral. */
 export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] }) {
   return (
     <Statement kicker="Результаты · рилсы" title="Рилсы, которые залетели" size="2.6cqw"
       lead={RESULTS.viralSource ?? <>Скрины из Instagram, просмотры на <Fill>дата скринов</Fill></>}>
-      <div className="grid grid-cols-6 gap-[0.9cqw]" style={{ maxWidth: "52cqw" }}>
-        {RESULTS.viral.map((r, i) => (
-          <motion.div key={r.file} initial={{ opacity: 0, y: "3cqw", rotate: i % 2 ? 3 : -3 }} animate={{ opacity: 1, y: i % 2 ? "1.2cqw" : "0cqw", rotate: 0 }}
-            transition={{ delay: 0.35 + i * 0.09, type: "spring", stiffness: 160, damping: 16 }}>
-            <ReelShot src={shots[i]} n={i + 1} file={r.file} />
-            <div style={{ marginTop: "0.6cqw" }}>
-              {r.views == null ? <Waiting /> : <>
-                <Num size="1.35cqw" color={T.brown}>{fmtStat(r.views)}</Num>
-                <div style={{ ...lbl, fontSize: "0.75cqw" }}>просмотров</div>
-              </>}
-              {r.title && <div style={{ ...lbl, fontSize: "0.72cqw", marginTop: "0.3cqw", color: T.ink }}>{r.title}</div>}
-            </div>
-          </motion.div>
-        ))}
+      <div className="grid grid-cols-6 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
+        {RESULTS.viral.map((r, i) => {
+          const [num, unit] = r.views == null ? ["", ""] : splitViews(r.views);
+          return (
+            <motion.div key={r.file} initial={{ opacity: 0, y: "3cqw", rotate: i % 2 ? 3 : -3 }} animate={{ opacity: 1, y: i % 2 ? "1.2cqw" : "0cqw", rotate: 0 }}
+              transition={{ delay: 0.35 + i * 0.09, type: "spring", stiffness: 160, damping: 16 }}>
+              <ReelShot src={shots[i]} n={i + 1} file={r.file} />
+              <div style={{ marginTop: "0.6cqw" }}>
+                {r.views == null ? <Waiting /> : <>
+                  <Num size="1.5cqw" color={T.brown}>{num}</Num>
+                  <div style={{ ...lbl, fontSize: "0.75cqw" }}>{unit}</div>
+                </>}
+                {r.title && <div style={{ ...lbl, fontSize: "0.75cqw", marginTop: "0.3cqw", color: T.ink }}>{r.title}</div>}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </Statement>
   );
 }
 
-/** 10g · 30 дней: охваты и подписчики. Два скрина статистики на плитах, справа три цифры. */
+/** 10g · 30 дней: охваты и подписчики. Два скрина панели Instagram на плитах, справа три цифры ровно с этих скринов (RESULTS.growth). */
 export function M_Growth30({ reach, followers }: { reach?: string; followers?: string }) {
   const g = RESULTS.growth;
   return (
     <Statement kicker="Результаты · 30 дней" title={<>30 дней: <Em>охваты и подписчики</Em></>} size="2.6cqw">
       <div className="grid items-center gap-[1.4cqw]" style={{ gridTemplateColumns: "15cqw 15cqw minmax(0, 1fr)", maxWidth: "54cqw" }}>
         <div style={{ height: "25cqw" }}>
-          <ScreenStage3D src={reach} alt="Охват за 30 дней" empty={`Сюда скрин охвата за 30 дней: results/${g.reachShot}.png`} />
+          <ScreenStage3D src={reach} alt="Просмотры, подписчики и неподписчики за 30 дней" empty={`Сюда скрин просмотров за 30 дней: results/${g.reachShot}.png`} />
         </div>
         <div style={{ height: "25cqw" }}>
-          <ScreenStage3D src={followers} alt="Рост подписчиков за 30 дней" empty={`Сюда скрин роста подписчиков: results/${g.followersShot}.png`} />
+          <ScreenStage3D src={followers} alt="Подписчики и часы наибольшей активности" empty={`Сюда скрин подписчиков: results/${g.followersShot}.png`} />
         </div>
         <div className="grid gap-[0.7cqw]">
-          <SmallStat i={1} value={g.followers} label="подписчиков сейчас" />
-          <SmallStat i={2} value={g.gained} label="новых за 30 дней" />
-          <SmallStat i={3} value={g.reach} label="охват за 30 дней" />
+          {g.stats.map((s, i) => <SmallStat key={s.label} i={i + 1} value={s.value} label={s.label} />)}
         </div>
       </div>
       <Note style={{ marginTop: "1cqw" }}>{g.source ?? <>Источник: <Fill>статистика Instagram, даты периода</Fill></>}</Note>
@@ -138,15 +143,12 @@ export function M_Growth30({ reach, followers }: { reach?: string; followers?: s
   );
 }
 
-/** 10i · Обращения за 30 дней: две объёмные цифры — по услугам и по обучению. */
+/** 10i · Обращения за 30 дней: одна объёмная цифра (RESULTS.inquiries), без разбивки по услугам и обучению. */
 export function M_Inquiries() {
   const q = RESULTS.inquiries;
   return (
     <Statement kicker="Результаты · заявки" title={<>Обращения за 30 дней: <Em>контент приводит клиентов</Em></>} size="2.6cqw">
-      <div className="grid grid-cols-2 gap-[2.6cqw]" style={{ maxWidth: "50cqw" }}>
-        <MainStat value={q.services} label="по моим услугам" size="6.2cqw" />
-        <MainStat value={q.training} label="по обучению" size="6.2cqw" />
-      </div>
+      <MainStat value={q.total} label={q.label} size="9cqw" />
       <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source ?? <>Откуда цифры: <Fill>CRM или директ, даты периода</Fill></>}</Note></In>
     </Statement>
   );

@@ -9,20 +9,29 @@
  *   Файл подхватывается сам при следующем запуске ./webinar.sh (сборка начисто).
  */
 export type Stat = number | null;
+/** Цифра с подписью для карточек. Строка («91,7%») показывается как есть. */
+export type StatItem = { value: Stat | string; label: string };
 
 export const RESULTS = {
-  /** Месяц в заголовках слайдов результатов. */
+  /** Месяц в заголовках слайдов результатов 46r и 47r (вне показа 6 октября). */
   month: "Сентябрь",
 
-  /** 22r · «Сентябрь: что смонтировал агент» — статистика Instagram за месяц. */
+  /**
+   * 22r · «30 дней: что смонтировал агент». Срез 4 октября 2026, три площадки (docs/tasks/deck_wave2.json).
+   * 825 701 — сумма просмотров Instagram, TikTok и YouTube: не число людей, не охват.
+   */
   montage: {
-    views: null as Stat, // главная цифра: просмотры роликов, смонтированных агентом
-    reels: null as Stat, // роликов
-    saves: null as Stat, // сохранений
-    followers: null as Stat, // новых подписчиков
-    /** Полоса из 4 обложек рилсов месяца: имена файлов в public/montage/reels/ (без .jpg). */
-    covers: ["mcp", "zashita", "google10", "papka"],
-    source: "Статистика Instagram за сентябрь 2026",
+    title: "30 дней: что смонтировал агент",
+    views: 825701 as Stat, // главная цифра
+    viewsLabel: "просмотр в Instagram, TikTok и YouTube",
+    small: [
+      { value: 852, label: "подписчика с одного рилса" }, // без «за 30 дней»: в карточке рилса нет периода
+      { value: 45561, label: "взаимодействие в Instagram" },
+      { value: 1714, label: "чистый прирост подписчиков" }, // 2 321 новых минус 607 отписок, Instagram API
+    ] as StatItem[],
+    /** Полоса из 4 обложек залетевших рилсов: имена файлов в public/montage/reels/ (без .jpg), собирает docs/deck-v2/build-handout-assets.mjs. */
+    covers: ["hit-connectors", "hit-gitingest", "hit-artemis", "hit-semrush"],
+    source: "Instagram, TikTok, YouTube · 4 сентября — 3 октября 2026 · срез 4 октября",
   },
 
   /** 46r · «Сентябрь: ИИ-бот в директе». Статистика бота за весь месяц. */
@@ -43,41 +52,47 @@ export const RESULTS = {
   },
 
   /**
-   * 10v · «Рилсы, которые залетели» — до шести скринов рилсов с просмотрами.
-   * Скрин кладётся в public/montage/results/ под именем из file: viral-1.png (подходят .png, .jpg, .jpeg, .webp).
-   * views — просмотры на скрине, title — тема рилса строкой (подпись под скрином). null — пропуск.
+   * 10v · «Рилсы, которые залетели» — шесть скринов рилсов из приложения Instagram, раздатки 05.10 (папка 04, собирает build-handout-assets.mjs).
+   * Скрин лежит в public/montage/results/ под именем из file (подходят .png, .jpg, .jpeg, .webp).
+   * views — строка ровно с того счётчика, что виден на самом скрине («135 тыс.»); title — тема рилса (подпись под скрином). null — пропуск.
+   * Счётчик в приложении у Instagram свой: у «Одно слово» там 135 тыс., а в профессиональной панели 90,1 тыс.
    */
   viral: [
-    { file: "viral-1", views: null as Stat, title: null as string | null },
-    { file: "viral-2", views: null as Stat, title: null as string | null },
-    { file: "viral-3", views: null as Stat, title: null as string | null },
-    { file: "viral-4", views: null as Stat, title: null as string | null },
-    { file: "viral-5", views: null as Stat, title: null as string | null },
-    { file: "viral-6", views: null as Stat, title: null as string | null },
+    { file: "viral-1", views: "135 тыс." as string | null, title: "Одно слово в ссылке GitHub" as string | null },
+    { file: "viral-2", views: "118 тыс." as string | null, title: "$20 за калькулятор" as string | null },
+    { file: "viral-3", views: "63,8 тыс." as string | null, title: "Claude Code и Facebook-реклама" as string | null },
+    { file: "viral-4", views: "62,2 тыс." as string | null, title: "Тестировщики, сорри" as string | null },
+    { file: "viral-5", views: "23,6 тыс." as string | null, title: "Калькулятор без коннекторов" as string | null },
+    { file: "viral-6", views: "21,2 тыс." as string | null, title: "Правки сайта кликом" as string | null },
   ],
-  /** Когда сняты скрины рилсов — подпись под стеной, например «Instagram, 5 октября 2026». */
-  viralSource: null as string | null,
+  /** Когда сняты скрины рилсов — подпись под стеной. */
+  viralSource: "Instagram · скрины рилсов из приложения · 5 октября 2026" as string | null,
 
-  /** 10g · «30 дней: охваты и подписчики». Скрины — public/montage/results/growth-reach.* и growth-followers.* */
+  /**
+   * 10g · «30 дней: охваты и подписчики». Instagram, профессиональная панель, срез 5 октября 2026 (скрины раздаток, 16:50).
+   * Скрины — public/montage/results/growth-reach.* и growth-followers.*; цифры в карточках ровно с этих скринов.
+   */
   growth: {
-    reachShot: "growth-reach", // скрин статистики охвата за 30 дней
-    followersShot: "growth-followers", // скрин роста подписчиков за 30 дней
-    followers: null as Stat, // подписчиков сейчас
-    gained: null as Stat, // новых подписчиков за 30 дней
-    reach: null as Stat, // охват за 30 дней (аккаунтов)
-    source: null as string | null, // например «Статистика Instagram, 5 сентября — 4 октября 2026»
+    reachShot: "growth-reach", // просмотры 784 840, 8,3% / 91,7%, зрители 342 807
+    followersShot: "growth-followers", // подписчики 16 402 и часы наибольшей активности
+    stats: [
+      { value: 16402, label: "подписчиков сейчас" },
+      { value: 342807, label: "зрителей за 30 дней" },
+      { value: "91,7%", label: "просмотров от неподписчиков" },
+    ] as StatItem[],
+    source: "Instagram, последние 30 дней · срез 5 октября 2026 · профессиональная панель" as string | null,
   },
 
-  /** 10i · «Обращения за 30 дней»: сколько людей написали по услугам и по обучению. */
+  /** 10i · «Обращения за 30 дней»: одна цифра. 101 человек дошёл до раздела с предложениями в директ-боте AI-РОП, без разбивки по услугам и обучению. */
   inquiries: {
-    services: null as Stat, // обращений по моим услугам: разработка, автоматизация, монтаж
-    training: null as Stat, // обращений по обучению
-    source: null as string | null, // откуда цифры, например «amoCRM, 5 сентября — 4 октября 2026»
+    total: 101 as Stat,
+    label: "обращение: услуги, консультации, онлайн-обучение",
+    source: "Директ-бот AI-РОП: дошли до раздела с предложениями, 4 сентября — 3 октября 2026" as string | null,
   },
 
   /**
    * 44 · воронка одного рилса: все четыре ступени из одного источника, чтобы цифры не спорили между собой.
-   * Просмотры и кодовые слова уже стояли на слайде 44 (статистика Instagram, сентябрь 2026). Это не рилс слайда 30 (107 237).
+   * Просмотры и кодовые слова уже стояли на слайде 44 (статистика Instagram, сентябрь 2026). Это не рилс слайда 30 (117 178).
    */
   funnel: {
     reel: null as string | null, // название рилса, строкой: подпись под воронкой. null — на слайде пропуск [название рилса]
