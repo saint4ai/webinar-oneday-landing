@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ExtrudedNumber, ScreenStage3D } from "../fx";
-import { ReelRail } from "../ReelRail";
+import { ReelRail, Views } from "../ReelRail";
 import { RESULTS, fmtStat, type Stat } from "../results";
 import { Statement } from "../Statement";
 import { T, card } from "../theme";
@@ -63,13 +63,15 @@ export function M_ResultMontage() {
       <div className="grid grid-cols-3 gap-[0.8cqw]" style={{ marginTop: "1.8cqw", maxWidth: "44cqw" }}>
         {r.small.map((s, i) => <SmallStat key={s.label} i={i + 1} value={s.value} label={s.label} />)}
       </div>
-      <div className="flex gap-[0.7cqw]" style={{ marginTop: "1.4cqw" }}>
-        {r.covers.map((c, i) => (
-          <In key={c} i={4 + i} style={{ width: "5.2cqw", aspectRatio: "9 / 16", borderRadius: "0.7cqw", overflow: "hidden", boxShadow: `0 0 0 1px ${T.line}, ${T.shadowSm}`, background: T.card }}>
-            <img src={`/montage/reels/${c}.jpg`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          </In>
-        ))}
-      </div>
+      {/* мои рилсы с охватом: обложки со счётчиком приложения Instagram бесконечной лентой, плашка просмотров поверх */}
+      <In i={4} style={{ marginTop: "1.4cqw", maxWidth: "44cqw" }}>
+        <ReelRail items={[...RESULTS.appCovers]} itemWidth="5.6cqw" gap={0.14} speed={0.35} render={(c) => (
+          <div className="relative" style={{ width: "100%", aspectRatio: "9 / 16", borderRadius: "0.7cqw", overflow: "hidden", boxShadow: `0 0 0 1px ${T.line}, ${T.shadowSm}`, background: T.card }}>
+            <img src={`/montage/reels/${c.file}.jpg`} alt={`${c.title}: ${c.views} просмотров`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <div className="absolute inset-x-0 bottom-0" style={{ padding: "0.3cqw", background: "linear-gradient(transparent, rgba(10,8,7,.55))" }}><Views value={c.views} size="0.62cqw" /></div>
+          </div>
+        )} />
+      </In>
       <Note style={{ marginTop: "1cqw" }}>{r.source}</Note>
     </Statement>
   );

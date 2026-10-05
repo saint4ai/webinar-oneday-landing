@@ -84,6 +84,19 @@ export const RESULTS = {
   ],
   appCoversSource: "Счётчики на обложках из приложения Instagram, 5 октября 2026",
 
+  /**
+   * Мои опубликованные рилсы видеопетлями (раздатки, папка 05; петли 540×960 без звука в public/montage/reels/<video>.mp4|jpg).
+   * views — счётчик приложения Instagram с обложек папки 04 (тот же, что в appCovers), 5 октября 2026.
+   */
+  postedReels: [
+    { video: "hit-gitingest", views: "135 тыс.", title: "Одно слово в ссылке GitHub" },
+    { video: "hit-connectors", views: "118 тыс.", title: "4 умных коннектора для Claude" },
+    { video: "hit-artemis", views: "62,2 тыс.", title: "Claude тестирует на Android" },
+    { video: "hit-podkl", views: "23,6 тыс.", title: "Четыре подключения" },
+    { video: "hit-agentation", views: "21,2 тыс.", title: "Правки сайта кликом" },
+    { video: "hit-zashita", views: "15,9 тыс.", title: "Защита проекта" },
+  ],
+
   /** Откуда плитки — подпись под заголовком. */
   viralSource: "Instagram · профессиональная панель, топ контента по просмотрам · 5 октября 2026" as string | null,
 

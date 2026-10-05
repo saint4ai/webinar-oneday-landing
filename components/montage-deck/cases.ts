@@ -56,10 +56,10 @@ export const CASES: BizCase[] = [
     // site-texts/ai-assistant.md, cases/instagram-bot-saint4ai/FACTS.md: срез базы ассистента на 04.10.2026, работает с 06.09.2026
     slug: "ai-assistant",
     title: "AI-ассистент",
-    niche: "Свой продукт · Instagram и TikTok",
+    niche: "Свой продукт · Instagram",
     oneLiner: "Комментарий под роликом превращается в заявку",
     metric: "2 117 человек получили материал · 66 кодовых слов",
-    visual: { kind: "card", icon: "lg-i-chatkey", label: "Слово → директ → заявка", tags: ["Кодовые слова", "Ответы в директе", "Заявки в продажи"] },
+    visual: { kind: "card", icon: "lg-i-chatkey", label: "Слово → директ → заявка", tags: ["Кодовые слова", "Ответы в директе", "Заявки в Telegram"] },
     url: "onai.academy/saint/cases/ai-assistant",
   },
   {
@@ -86,7 +86,7 @@ export const CASES: BizCase[] = [
   {
     // site-texts/whatsapp-analytics.md. Цифры 7% → 55% и 141 из 141 не ставить: по FACTS.md это аудит клиента AT Academy, без его согласия нельзя
     slug: "whatsapp-analytics",
-    title: "Сквозная аналитика",
+    title: "Сквозная аналитика WhatsApp",
     niche: "Клиенты агентства Diskurs",
     oneLiner: "Видно, какое объявление привело клиента из WhatsApp",
     metric: "Реклама, WhatsApp и CRM в одном отчёте · в Telegram в 8:00",
@@ -110,7 +110,7 @@ export const CASES: BizCase[] = [
     title: "OmniDash",
     niche: "Свой продукт · сквозная аналитика",
     oneLiner: "Реклама и продажи на одном экране",
-    metric: "9 подключений · 5 моделей атрибуции",
+    metric: "9 подключений · 5 моделей атрибуции · пилот",
     visual: { kind: "shot", src: "/montage/cases/omnidash.webp" },
     url: "onai.academy/saint/cases/omnidash",
   },
@@ -125,12 +125,12 @@ export const CASES: BizCase[] = [
     url: "onai.academy/saint/cases/callvision",
   },
   {
-    // site-texts/voiceseller.md: число звонков и дозвонов не выгружено, 7 минут — настройка по умолчанию
+    // site-texts/voiceseller.md и фактчек сайта 06.10: собран, чтобы позвонить, проверен на тестовой заявке без телефонии; звонков как факта нет
     slug: "voiceseller",
     title: "VoiceSeller",
     niche: "Свой продукт · звонки лидам",
-    oneLiner: "Звонобот говорит по-казахски и по-русски",
-    metric: "2 языка · звонок через 7 минут после заявки",
+    oneLiner: "Голосовой менеджер на казахском и русском",
+    metric: "2 языка · проверен на тестовой заявке",
     visual: { kind: "card", icon: "lg-i-phonearrow", label: "Заявка → звонок → запись", tags: ["Казахский", "Русский", "AmoCRM"] },
     url: "onai.academy/saint/cases/voiceseller",
   },

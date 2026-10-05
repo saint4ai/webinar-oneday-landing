@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
+import { ReelRail, Views } from "../ReelRail";
+import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { T, card, goldButton } from "../theme";
 import { Card, EASE, Em, H, Kicker, MaskIcon, Note, Num, RISE_DUR, Rise, STEP, at, nb } from "../ui";
@@ -52,8 +54,6 @@ export function M_Vacancy() {
 
 /** 14 ✦ · Охват решают первые 3 секунды: лента листается сама, полосы растут. */
 export function M_ThreeSeconds() {
-  const posters = ["mcp", "zashita", "google10", "papka"];
-  const feed = [...posters, ...posters];
   const Row = ({ label, value, pct, strong, i }: { label: string; value: string; pct: number; strong?: boolean; i: number }) => (
     <Stagger i={i} style={{ ...card, borderRadius: 20, padding: "1.3cqw 1.6cqw" }}>
       <div className="flex items-baseline justify-between gap-[1cqw]">
@@ -71,19 +71,15 @@ export function M_ThreeSeconds() {
       lead="Медиана охвата рилса в зависимости от того, сколько людей пролистали его сразу."
       leftSize="15cqw" leftOverflow="hidden"
       left={
-        <div className="relative h-full w-full overflow-hidden" style={{ maskImage: "linear-gradient(transparent, #000 18%, #000 82%, transparent)", WebkitMaskImage: "linear-gradient(transparent, #000 18%, #000 82%, transparent)" }}>
-          <motion.div className="flex flex-col items-center gap-[1cqw]" style={{ paddingTop: "1cqw" }}
-            animate={{ y: ["0%", "-50%"] }} transition={{ duration: 14, ease: "linear", repeat: Infinity }}>
-            {feed.map((p, i) => (
-              <div key={i} className="relative" style={{ width: "9.5cqw", aspectRatio: "9/16", borderRadius: "1cqw", overflow: "hidden", boxShadow: T.shadowSm, background: T.night2 }}>
-                <img src={`/montage/reels/${p}.jpg`} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                <div className="absolute inset-x-[6%] top-[4%] h-[3px] overflow-hidden rounded-full" style={{ background: `${T.paper}59` }}>
-                  <motion.div className="h-full" style={{ background: T.gold }} initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 3, repeat: Infinity, ease: "linear", delay: i * 0.4 }} />
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
+        // мои рилсы с охватом: обложки со счётчиком из приложения Instagram летят вниз бесконечной колонкой, цифра крупно поверх
+        <ReelRail vertical items={[...RESULTS.appCovers]} itemWidth="9.5cqw" gap={0.1} speed={0.22} style={{ height: "100%", width: "100%" }} render={(r) => (
+          <div className="relative" style={{ width: "100%", aspectRatio: "9/16", borderRadius: "1cqw", overflow: "hidden", boxShadow: T.shadowSm, background: T.night2 }}>
+            <img src={`/montage/reels/${r.file}.jpg`} alt={`${r.title}: ${r.views} просмотров`} className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-x-0 bottom-0 flex justify-start" style={{ padding: "0.5cqw", background: "linear-gradient(transparent, rgba(10,8,7,.55))" }}>
+              <Views value={r.views} size="0.85cqw" />
+            </div>
+          </div>
+        )} />
       }>
       <div className="grid gap-[0.9cqw]" style={{ maxWidth: "40cqw" }}>
         <Row i={0} label="Пролистали меньше 46%" value={nb("4 816")} pct={100} strong />
@@ -265,26 +261,31 @@ export function M_StepVoice() {
   );
 }
 
-const STYLES = ["prism", "orbit", "trace", "pulse", "glass", "portrait", "apple", "podcast", "expert"];
 
-/** 20 ✦ · Шаг 2: стена из девяти живых клипов в левой части, золотая рамка переходит со стиля на стиль. */
+/**
+ * 20 ✦ · Шаг 2: стена из шести моих опубликованных рилсов, смонтированных агентом (видео играют, RESULTS.postedReels),
+ * на каждом плашка просмотров. Золотая рамка переходит с ролика на ролик, справа его тема и охват.
+ * Раньше здесь были демо-клипы стилей с ножницами: Александр 06.10 попросил живые ролики.
+ */
 export function M_Styles() {
-  const n = STYLES.length;
+  const reels = RESULTS.postedReels;
+  const n = reels.length;
   const [a, setA] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setA((v) => (v + 1) % n), 1600);
+    const id = setInterval(() => setA((v) => (v + 1) % n), 2200);
     return () => clearInterval(id);
   }, [n]);
   return (
-    <Statement kicker="Шаг 2 · Формат и стиль" title={<>6 форматов и <Em>9 стилей</Em></>} size="2.9cqw" lead="Выбираете по живым примерам, а не по описанию."
+    <Statement kicker="Шаг 2 · Формат и стиль" title={<>6 форматов и <Em>9 стилей</Em></>} size="2.9cqw" lead="Выбираете по живым примерам, а не по описанию. Это мои ролики, их смонтировал агент."
       leftSize="31cqw" leftOverflow="visible"
       left={
         <div className="grid grid-cols-3" style={{ gap: "0.6cqw", width: "28.8cqw" }}>
-          {STYLES.map((s, i) => (
-            <motion.div key={s} className="relative overflow-hidden" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+          {reels.map((r, i) => (
+            <motion.div key={r.video} className="relative overflow-hidden" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.15 + (i % 3) * 0.06 + Math.floor(i / 3) * 0.06, duration: 0.4, ease: EASE }}
-              style={{ aspectRatio: "3 / 4", borderRadius: "0.8cqw", background: T.night2, boxShadow: T.shadowSm }}>
-              <video src={`/montage/styles/${s}.mp4`} poster={`/montage/styles/${s}.jpg`} autoPlay muted loop playsInline className="absolute inset-0 h-full w-full object-cover" />
+              style={{ aspectRatio: "9 / 16", borderRadius: "0.8cqw", background: T.night2, boxShadow: T.shadowSm }}>
+              <video src={`/montage/reels/${r.video}.mp4`} poster={`/montage/reels/${r.video}.jpg`} autoPlay muted loop playsInline className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-x-0 bottom-0" style={{ padding: "0.45cqw", background: "linear-gradient(transparent, rgba(10,8,7,.55))" }}><Views value={r.views} size="0.78cqw" /></div>
               <div className="absolute inset-0" style={{ borderRadius: "0.8cqw", transition: "box-shadow .35s", boxShadow: i === a ? `inset 0 0 0 0.25cqw ${T.gold}` : `inset 0 0 0 1px ${T.nightLine}` }} />
             </motion.div>
           ))}
@@ -294,11 +295,12 @@ export function M_Styles() {
         <AnimatePresence mode="wait">
           <motion.div key={a} initial={{ opacity: 0, y: "0.4cqw" }} animate={{ opacity: 1, y: "0cqw" }} exit={{ opacity: 0, y: "-0.4cqw" }} transition={{ duration: 0.22 }}
             className="inline-flex items-center gap-[0.8cqw]" style={{ ...goldButton, borderRadius: 999, padding: "0.6cqw 1.3cqw" }}>
-            <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.05cqw", letterSpacing: ".1em" }}>{STYLES[a].toUpperCase()}</span>
-            <span style={{ ...txt, fontWeight: 700, fontSize: "0.9cqw" }}>{a + 1} из {n}</span>
+            <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.05cqw" }}>{reels[a].views}</span>
+            <span style={{ ...txt, fontWeight: 700, fontSize: "0.9cqw" }}>{reels[a].title}</span>
           </motion.div>
         </AnimatePresence>
       </div>
+      <Note>Просмотры: счётчик в приложении Instagram, 5 октября 2026</Note>
     </Statement>
   );
 }

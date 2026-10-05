@@ -6,6 +6,7 @@ import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
+import { Views } from "../ReelRail";
 import { Statement } from "../Statement";
 import { T, card, goldButton, nightCard } from "../theme";
 import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, nb, thousands, txt } from "../ui";
@@ -152,7 +153,11 @@ export function M_ShopReel() {
           </motion.div>
           <motion.div className="absolute" style={{ right: 0, top: 0 }} initial={{ opacity: 0, y: "3cqw", scale: 0.92 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
             transition={{ delay: 0.85, type: "spring", stiffness: 120, damping: 16 }}>
-            <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" width="10.8cqw" chrome={false} />
+            <div className="relative">
+              <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" width="10.8cqw" chrome={false} />
+              {/* охват этого рилса: счётчик приложения Instagram, 5 октября 2026 (RESULTS.appCovers) */}
+              <Views value="118 тыс." size="0.75cqw" style={{ position: "absolute", left: "0.7cqw", bottom: "0.9cqw" }} />
+            </div>
           </motion.div>
           {["графика", "субтитры", "звук"].map((t, i) => (
             <motion.span key={t} className="absolute" style={{ right: "9.9cqw", top: `${8.4 + i * 3.6}cqw` }}
