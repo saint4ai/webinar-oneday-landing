@@ -40,7 +40,7 @@ const SmallStat = ({ value, label, i }: { value: Stat | string; label: string; i
 };
 
 /** Главная цифра: объёмная, коричневая. Пустая — спокойное «—» с подписью и пометкой, без объёма. */
-const MainStat = ({ value, label, size }: { value: Stat; label: string; size: string }) =>
+const MainStat = ({ value, label, size }: { value: Stat | string; label: string; size: string }) =>
   value == null ? (
     <In i={0}>
       <Num size={size} color={T.line}>—</Num>
@@ -50,7 +50,7 @@ const MainStat = ({ value, label, size }: { value: Stat; label: string; size: st
       </div>
     </In>
   ) : (
-    <div style={{ marginTop: "1.4cqw" }}><ExtrudedNumber value={fmtStat(value)} label={label} size={size} /></div>
+    <div style={{ marginTop: "1.4cqw" }}><ExtrudedNumber value={typeof value === "string" ? value : fmtStat(value)} label={label} size={size} /></div>
   );
 
 /** 22r · 30 дней: что смонтировал агент. Цифры и подписи — RESULTS.montage (срез 4 октября, три площадки). */
@@ -129,26 +129,39 @@ export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] })
   );
 }
 
-/** 10g · 30 дней: охваты и подписчики. Два скрина панели Instagram на плитах, справа три цифры ровно с этих скринов (RESULTS.growth). */
-export function M_Growth30({ reach, followers }: { reach?: string; followers?: string }) {
+/**
+ * 10g · 30 дней: просмотры на трёх площадках. Три скрина (Instagram, TikTok, YouTube Studio) на плитах, под каждым его цифра
+ * и период, справа сумма и две цифры Instagram. Всё ровно со скринов 6 октября (RESULTS.growth, RESULTS.totalViews).
+ */
+export function M_Growth30({ shots = [] }: { shots?: (string | undefined)[] }) {
   const g = RESULTS.growth;
   return (
-    <Statement kicker="Результаты · 30 дней" title={<>30 дней: <Em>охваты и подписчики</Em></>} size="2.6cqw">
-      <div className="grid items-center gap-[1.4cqw]" style={{ gridTemplateColumns: "15cqw 15cqw minmax(0, 1fr)", maxWidth: "54cqw" }}>
-        <div style={{ height: "25cqw" }}>
-          <ScreenStage3D src={reach} alt="Просмотры, подписчики и неподписчики за 30 дней" empty={`Сюда скрин просмотров за 30 дней: results/${g.reachShot}.png`} />
-        </div>
-        <div style={{ height: "25cqw" }}>
-          <ScreenStage3D src={followers} alt="Подписчики и часы наибольшей активности" empty={`Сюда скрин подписчиков: results/${g.followersShot}.png`} />
-        </div>
+    <Statement kicker="Результаты · 30 дней" title={<>{nbsp(RESULTS.totalViews)} просмотров <Em>на трёх площадках</Em></>} size="2.6cqw">
+      <div className="grid items-center gap-[1.4cqw]" style={{ gridTemplateColumns: "repeat(3, 10.4cqw) minmax(0, 1fr)", maxWidth: "54cqw" }}>
+        {g.platforms.map((p, i) => (
+          <In key={p.file} i={i}>
+            <div style={{ height: "17cqw" }}>
+              <ScreenStage3D src={shots[i]} alt={`${p.name}: ${p.views} просмотров, ${p.period}`} empty={`Сюда скрин ${p.name}: results/${p.file}.jpg`} />
+            </div>
+            <div style={{ marginTop: "0.9cqw" }}>
+              <div style={{ ...lbl, fontSize: "0.72cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.accent }}>{p.name}</div>
+              <Num size="1.5cqw" color={T.brown}>{p.views}</Num>
+              <div style={{ ...lbl, fontSize: "0.7cqw" }}>{p.period}</div>
+            </div>
+          </In>
+        ))}
         <div className="grid gap-[0.7cqw]">
-          {g.stats.map((s, i) => <SmallStat key={s.label} i={i + 1} value={s.value} label={s.label} />)}
+          <SmallStat i={3} value={RESULTS.totalViews} label="просмотров всего" />
+          {g.stats.map((s, i) => <SmallStat key={s.label} i={i + 4} value={s.value} label={s.label} />)}
         </div>
       </div>
-      <Note style={{ marginTop: "1cqw" }}>{g.source ?? <>Источник: <Fill>статистика Instagram, даты периода</Fill></>}</Note>
+      <Note style={{ marginTop: "1cqw" }}>{g.source ?? <>Источник: <Fill>статистика площадок, даты периода</Fill></>}</Note>
     </Statement>
   );
 }
+
+/** Неразрывные пробелы внутри цифры: «927 тыс.» не рвётся на две строки. */
+const nbsp = (s: string) => s.replace(/ /g, " ");
 
 /**
  * 10i · Обращения за 30 дней: объёмная цифра (RESULTS.inquiries) и справа макет Instagram Direct с типичными запросами

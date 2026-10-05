@@ -16,22 +16,22 @@ export const RESULTS = {
   /** Месяц в заголовках слайдов результатов 46r и 47r (вне показа 6 октября). */
   month: "Сентябрь",
 
-  /**
-   * 22r · «30 дней: что смонтировал агент». Срез 4 октября 2026, три площадки (docs/tasks/deck_wave2.json).
-   * 825 701 — сумма просмотров Instagram, TikTok и YouTube: не число людей, не охват.
-   */
+  /** Сумма просмотров трёх площадок со скринов 6 октября (RESULTS.growth.platforms): 784 967 + 98 418 + 44,4 тыс. ≈ 927 800.
+   * YouTube Studio округляет до сотен, поэтому на слайдах «927 тыс.». Не число людей, не охват. */
+  totalViews: "927 тыс.",
+  totalViewsNum: 927, // для счётчика, тысячи
+
+  /** 22r · «30 дней: что смонтировал агент». Главная цифра — сумма трёх площадок (totalViews). */
   montage: {
     title: "30 дней: что смонтировал агент",
-    views: 825701 as Stat, // главная цифра
-    viewsLabel: "просмотр в Instagram, TikTok и YouTube",
+    views: "927 тыс." as Stat | string, // главная цифра, как totalViews
+    viewsLabel: "просмотров в Instagram, TikTok и YouTube",
     small: [
       { value: 852, label: "подписчика с одного рилса" }, // без «за 30 дней»: в карточке рилса нет периода
-      { value: 45561, label: "взаимодействие в Instagram" },
-      { value: 1714, label: "чистый прирост подписчиков" }, // 2 321 новых минус 607 отписок, Instagram API
+      { value: 59047, label: "взаимодействий в Instagram" }, // Meta API 05.10, раздатки «00 Аналитика на 05.10»
+      { value: "+1 935", label: "чистый прирост подписчиков" }, // панель Instagram, скрин 06.10 (Telegram Desktop, IMG_8103)
     ] as StatItem[],
-    /** Полоса из 4 обложек залетевших рилсов: имена файлов в public/montage/reels/ (без .jpg), собирает docs/deck-v2/build-handout-assets.mjs. */
-    covers: ["hit-connectors", "hit-gitingest", "hit-artemis", "hit-semrush"],
-    source: "Instagram, TikTok, YouTube · 4 сентября — 3 октября 2026 · срез 4 октября",
+    source: "Instagram и YouTube за 30 и 28 дней, TikTok 30 августа – 26 сентября · скрины 6 октября 2026",
   },
 
   /** 46r · «Сентябрь: ИИ-бот в директе». Статистика бота за весь месяц. */
@@ -101,18 +101,20 @@ export const RESULTS = {
   viralSource: "Instagram · профессиональная панель, топ контента по просмотрам · 5 октября 2026" as string | null,
 
   /**
-   * 10g · «30 дней: охваты и подписчики». Instagram, профессиональная панель, срез 5 октября 2026 (скрины раздаток, 16:50).
-   * Скрины — public/montage/results/growth-reach.* и growth-followers.*; цифры в карточках ровно с этих скринов.
+   * 10g · «30 дней: просмотры на трёх площадках». Скрины Александра 6 октября 2026, 00:49–00:50 (Telegram Desktop, IMG_8101–8103),
+   * обрезаны без статус-бара: public/montage/results/<file>.jpg. Цифры под скринами ровно с них, периоды как в приложениях.
    */
   growth: {
-    reachShot: "growth-reach", // просмотры 784 840, 8,3% / 91,7%, зрители 342 807
-    followersShot: "growth-followers", // подписчики 16 402 и часы наибольшей активности
+    platforms: [
+      { file: "growth-ig", name: "Instagram", views: "784 967", period: "30 дней" },
+      { file: "growth-tiktok", name: "TikTok", views: "98 418", period: "30 авг – 26 сен" },
+      { file: "growth-youtube", name: "YouTube", views: "44,4 тыс.", period: "28 дней" },
+    ],
     stats: [
-      { value: 16402, label: "подписчиков сейчас" },
-      { value: 342807, label: "зрителей за 30 дней" },
-      { value: "91,7%", label: "просмотров от неподписчиков" },
+      { value: "+1 935", label: "чистый прирост подписчиков в Instagram" },
+      { value: "91,7%", label: "просмотров Instagram от неподписчиков" },
     ] as StatItem[],
-    source: "Instagram, последние 30 дней · срез 5 октября 2026 · профессиональная панель" as string | null,
+    source: "Скрины Instagram, TikTok и YouTube Studio, 6 октября 2026. Просмотры сложены, это не число людей" as string | null,
   },
 
   /** 10i · «Обращения за 30 дней»: одна цифра. 101 человек дошёл до раздела с предложениями в директ-боте AI-РОП, без разбивки по услугам и обучению. */

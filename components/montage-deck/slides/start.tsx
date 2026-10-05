@@ -189,17 +189,17 @@ export function M_CostStory() {
 }
 
 /**
- * 10 · 30 дней: 825 701 просмотр на трёх площадках, по 5 рилсов в день. Под цифрами бесконечная лента обложек рилсов
+ * 10 · 30 дней: 927 тыс. просмотров на трёх площадках, по 5 рилсов в день. Под цифрами бесконечная лента обложек рилсов
  * со счётчиком просмотров из приложения Instagram (RESULTS.appCovers, раздатки 05.10, папка 04).
- * Цифры из docs/tasks/deck_wave2.json, срез 4 октября. 825 701 — сумма просмотров трёх площадок, не число людей.
+ * 927 тыс. — сумма трёх площадок со скринов 6 октября (RESULTS.totalViews, разбивка на слайде 10g), не число людей.
  */
 export function M_Proof15() {
   const perDay = useCountUp(5, 0.9, 0.3);
-  const views = useCountUp(825701, 1.3, 0.35);
+  const views = useCountUp(RESULTS.totalViewsNum, 1.3, 0.35);
   return (
-    <Statement kicker="Моя статистика" title={<>30 дней: {nb("825 701")} просмотр</>} lead="Рилсы собирает ИИ-агент — каждый сразу выходит в Instagram, TikTok и YouTube." size="2.8cqw">
+    <Statement kicker="Моя статистика" title={<>30 дней: {nb(RESULTS.totalViews)} просмотров</>} lead="Рилсы собирает ИИ-агент — каждый сразу выходит в Instagram, TikTok и YouTube." size="2.8cqw">
       <div className="flex items-stretch gap-[1cqw]">
-        {[[String(perDay), "рилсов в день — сейчас"], [thousands(views), "просмотр в Instagram, TikTok и YouTube"]].map(([v, l], i) => (
+        {[[String(perDay), "рилсов в день — сейчас"], [nb(`${views} тыс.`), "просмотров в Instagram, TikTok и YouTube"]].map(([v, l], i) => (
           <motion.div key={l} {...inUp(i, 0.22)} style={{ ...card, padding: "1cqw 1.6cqw" }}>
             <Num size="3.4cqw" color={T.brown}>{v}</Num>
             <div style={{ ...label, color: T.muted, marginTop: "0.4cqw" }}>{l}</div>
@@ -219,7 +219,7 @@ export function M_Proof15() {
           </div>
         )} />
       </motion.div>
-      <Note style={{ marginTop: "0.9cqw" }}>{RESULTS.appCoversSource}. 825 701: 4 сентября — 3 октября, срез 4 октября, просмотры трёх соцсетей сложены, это не число людей.</Note>
+      <Note style={{ marginTop: "0.9cqw" }}>{RESULTS.appCoversSource}. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены по скринам 6 октября, это не число людей.</Note>
     </Statement>
   );
 }

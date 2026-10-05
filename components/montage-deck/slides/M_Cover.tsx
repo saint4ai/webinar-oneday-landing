@@ -35,7 +35,8 @@ export function M_Cover() {
         <Rise delay={STEP * 2}><H size="4.6cqw" color={T.nightText} style={{ lineHeight: 1.04 }}>Рилсы без знаний <Em night>монтажа</Em></H></Rise>
         <Rise delay={STEP * 3}><Lead color={T.nightMuted} style={{ marginTop: "1.8cqw", fontSize: "1.35cqw" }}>Монтирует ИИ-агент по вашему голосу. Презентации и сайты — тоже ИИ.</Lead></Rise>
         <Rise delay={STEP * 4} className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2.4cqw" }}>
-          <Chip night>Вторник, 6 октября</Chip><Chip gold>20:00</Chip><Chip night>3 практики за вечер</Chip>
+          {/* без конкретной даты: Александр 06.10 «просто сегодня в 20:00» */}
+          <Chip gold>Сегодня в 20:00</Chip><Chip night>3 практики за вечер</Chip>
         </Rise>
       </div>
     </SlideLayout>

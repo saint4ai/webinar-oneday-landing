@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * MontageDeck — эфир Vibe Production. Показ 6 октября 2026, 20:00 (до этого — 1 октября).
+ * MontageDeck — эфир Vibe Production. Показ 6 октября 2026, 20:00 (до этого — 1 октября). На слайдах дату не пишем: «сегодня в 20:00».
  * Бренд-код сайтов onai.academy (theme.ts ← fx/brand.ts). Правые 40% кадра — зона камеры: только фон слайда.
  * Режиссура v3 (04.10): интро-ролик → старт → хронология и результаты → практика 1 монтаж → продажа 1 →
  * практика 2 презентация по брифу → практика 3 приложения и сайты → продажа 2 → финал.
@@ -26,7 +26,7 @@ import { M_IntroVideo } from "./slides/intro";
 import { M_DocsHow, M_DocsExample, M_DocsLive, M_AppsBuilds, M_AIStudio, M_AppBrief, M_AppStart, M_AppNext, M_MarketPrice, M_WebApps, M_MainConclusion, M_DeckByAgent } from "./slides/practice";
 
 /** Файлы из public/montage/, которые page.tsx нашёл на диске. Нет файла — на слайде пунктирное место. */
-export type Shots = { intro?: string; doc?: string; reach?: string; followers?: string; viral?: (string | undefined)[] };
+export type Shots = { intro?: string; doc?: string; growth?: (string | undefined)[]; viral?: (string | undefined)[] };
 
 export function MontageDeck({ shots = {} }: { shots?: Shots }) {
   const slides = [
@@ -50,7 +50,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_CostStory key="09" />,
     <M_Proof15 key="10" />,
     <M_ViralReels key="10v" shots={shots.viral} />,
-    <M_Growth30 key="10g" reach={shots.reach} followers={shots.followers} />,
+    <M_Growth30 key="10g" shots={shots.growth} />,
     <M_Inquiries key="10i" />,
     // Практика 1 · AI-монтаж · 20 мин
     <M_Chapter key="11" big="1" obj="lg-ch1-clapper" kicker="Практика 1 из 3" title="Рилс без знаний монтажа" sub="Проблема, первые 3 секунды и монтаж вживую в настроенном чате" />,

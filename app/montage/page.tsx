@@ -5,10 +5,10 @@ import { RESULTS } from "@/components/montage-deck/results";
 
 export const metadata = {
   title: "Vibe Production · эфир",
-  description: "Рилсы без знаний монтажа: эфир 6 октября, 20:00 по Алматы.",
+  description: "Рилсы без знаний монтажа: эфир сегодня в 20:00 по Алматы.",
   robots: { index: false, follow: false },
-  // Своя карточка ссылки вместо обложки воркшопа из корневого layout
-  openGraph: { title: "Vibe Production · эфир 6 октября", description: "Рилсы без знаний монтажа.", images: [{ url: "/montage/og.jpg", width: 1200, height: 630 }] },
+  // Своя карточка ссылки вместо обложки воркшопа из корневого layout; без конкретной даты (Александр 06.10)
+  openGraph: { title: "Vibe Production · эфир сегодня в 20:00", description: "Рилсы без знаний монтажа.", images: [{ url: "/montage/og.jpg", width: 1200, height: 630 }] },
 };
 
 /** Скриншот результатов показываем, только если файл уже лежит в public/montage/results/ — иначе на слайде пунктирное место. Расширение любое из списка. */
@@ -24,8 +24,7 @@ export default function MontagePage() {
     <MontageDeck shots={{
       intro,
       doc: resultShot("doc-example"),
-      reach: resultShot(RESULTS.growth.reachShot),
-      followers: resultShot(RESULTS.growth.followersShot),
+      growth: RESULTS.growth.platforms.map((p) => resultShot(p.file)),
       viral: RESULTS.viral.map((r) => resultShot(r.file)),
     }} />
   );

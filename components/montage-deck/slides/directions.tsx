@@ -7,6 +7,7 @@ import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Views } from "../ReelRail";
+import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { T, card, goldButton, nightCard } from "../theme";
 import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, nb, thousands, txt } from "../ui";
@@ -138,7 +139,7 @@ function Shop({ active, kicker, title, visual, side, lessons, conveyorStart }: {
 /* ───────────── 35 · Цех «Ролик»: голос → ролик ───────────── */
 
 export function M_ShopReel() {
-  const views = useCountUp(825701, 1.1, 0.8);
+  const views = useCountUp(RESULTS.totalViewsNum, 1.1, 0.8);
   return (
     <Shop active={0} kicker="Модуль 1 · AI-монтаж · 5 уроков" title={<>30 роликов в месяц <Em>без монтажёра</Em></>} conveyorStart={1.5}
       lessons={["Рабочее место", "Сценарий и 3 секунды", "Выбор стиля", "Сборка ролика", "Серия роликов"]}
@@ -170,7 +171,7 @@ export function M_ShopReel() {
       side={
         <>
           <motion.div initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.9, duration: 0.4, ease: EASE }}>
-            <Num size="3.4cqw" color={T.brown}>{thousands(views)}</Num>
+            <Num size="3.4cqw" color={T.brown}>{nb(`${views} тыс.`)}</Num>
             <div style={{ ...txt, fontSize: "1cqw", color: T.muted, marginTop: "0.5cqw" }}>просмотров за 30 дней у роликов, собранных так же</div>
           </motion.div>
           <ResultLine delay={1.6}>Результат: первые ролики и план выпуска на месяц</ResultLine>
