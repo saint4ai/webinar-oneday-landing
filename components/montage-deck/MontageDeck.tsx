@@ -16,7 +16,9 @@ import { M_Cover } from "./slides/M_Cover";
 import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
-import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Module, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
+import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
+import { M_Direction, M_ForYou } from "./slides/directions";
+import { Em, nb } from "./ui";
 import { M_MyPath } from "./slides/warmup";
 import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides/results";
 import { M_CodeWordFlow, M_Plan30, M_Thanks } from "./slides/lesson3";
@@ -73,12 +75,22 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     // Окно продаж 1 · 10 мин
     <M_Chapter key="33" big="Обучение" bigSize="9cqw" kicker="Vibe Production" title={"3 модуля, 15 уроков, 1\u00A0месяц"} sub="Доступ к урокам 3 месяца" />,
     <M_NotCourse key="34" />,
-    <M_Module key="35" no={1} title="AI-монтаж" result="Первые смонтированные рилсы и план выпуска"
-      lessons={["Рабочее место и первый запуск", "Сценарий и первые 3 секунды", "Выбор стиля", "Сборка ролика", "Без лица и с лицом. Серия роликов"]} />,
-    <M_Module key="36" no={2} title="AI-креатор" result="Реклама товара 9:16 из фотографий"
-      lessons={["Инструменты: сценарий и два кадра", "Движение между кадрами", "Повседневная реклама по шаблону", "Предметная Motion-реклама", "Сборка и копия своего голоса"]} />,
-    <M_Module key="37" no={3} title="Ассистенты и автоматизация" result="Воронка от ролика до заявки"
-      lessons={["Вайбкодинг в личных делах", "ИИ-менеджер в WhatsApp и Instagram", "Автоматизация процессов бизнеса", "Документы и презентации", "Контент-завод целиком"]} />,
+    // 35–37 · Направления обучения с продающими смыслами (волна 3, docs/tasks/deck_wave3.md). Прежние списки уроков — M_Module в sale.tsx
+    <M_Direction key="35" no={1} kicker="Направление 1 из 3 · AI-монтаж · 5 уроков" title={<>30 роликов в месяц <Em>без монтажёра</Em></>}
+      was={`Вечер на ролик в CapCut или ${nb("10 000 ₸")} монтажёру за каждый`} now="Наговорили мысль на телефон. Агент собрал ролик: графика, субтитры, звук"
+      take={["Движок монтажа: 9 стилей и 6 форматов кадра", "Ролики с лицом и без лица", "План выпуска на месяц"]}
+      proof={`Так собраны мои рилсы: ${nb("825 701")} просмотр за 30 дней в Instagram, TikTok и YouTube`}
+      inside="Внутри: рабочее место, сценарий и первые 3 секунды, выбор стиля, сборка ролика, серия роликов" />,
+    <M_Direction key="36" no={2} kicker="Направление 2 из 3 · AI-креатор · 5 уроков" title={<>Рекламный ролик товара <Em>из фотографий</Em></>}
+      was="Съёмка: студия, свет, оператор и монтаж" now="Фото товара оживают в ролик 9:16, озвучка вашим голосом"
+      take={["Реклама на свои товары", "Ролики на заказ для клиентов", "Копия вашего голоса для озвучки без микрофона"]}
+      inside="Внутри: инструменты, движение между кадрами, реклама по шаблону, предметная motion-реклама, сборка и копия голоса" />,
+    <M_Direction key="37" no={3} kicker="Направление 3 из 3 · Автоматизация · 5 уроков" title={<>Ролик приводит заявку, <Em>агент отвечает в директе</Em></>}
+      was="Директ и комментарии разбираете руками" now="Кодовое слово в комментарии, бот присылает материал, ИИ-менеджер ведёт диалог"
+      take={["ИИ-менеджер в WhatsApp и Instagram", "Документы и презентации по брифу", "Свои агенты под рутину"]}
+      proof="Мой директ-бот: 101 обращение за 30 дней"
+      inside="Внутри: вайбкодинг в личных делах, ИИ-менеджер, автоматизация процессов бизнеса, документы и презентации, контент-завод целиком" />,
+    <M_ForYou key="37w" />,
     <M_Anchor key="38" />,
     <M_Discount key="39a" />,
     <M_Installments key="39" />,
