@@ -7,7 +7,7 @@
  *   WEBINAR_LOCAL=1 npx next build                        # сначала сборка (без сервера)
  *   node docs/deck-v2/shoot-offline.mjs                   # все слайды → docs/deck-v2/shots/<ключ>.jpg
  *   node docs/deck-v2/shoot-offline.mjs --only "10v,30"   # только эти ключи (в PowerShell список в кавычках)
- *   node docs/deck-v2/shoot-offline.mjs --film "01,38"    # кадры въезда: 150, 500, 1000, 2500 мс → film-<ключ>-<мс>.jpg
+ *   node docs/deck-v2/shoot-offline.mjs --film "01,38"    # кадры въезда: 150, 500, 1000, 2500 мс → film-<ключ>-<мс>.jpg (свои моменты: --film-ms "500,4000")
  *   node docs/deck-v2/shoot-offline.mjs --out <папка> --w 1920 --q 80   # полноразмерные кадры, например для партнёров
  *
  * Проверки на каждом слайде: зона камеры (правые 40%), текст и картинки за краем кадра, обрезанный текст, ошибки в консоли.
@@ -28,6 +28,8 @@ const WIDTH = Number(opt("--w") ?? 960); // ширина снимка: 960 дл�
 const QUALITY = Number(opt("--q") ?? 82);
 const only = opt("--only")?.split(",").map((s) => s.trim());
 const film = opt("--film")?.split(",").map((s) => s.trim()) ?? [];
+// моменты кадров для --film, мс от входа на слайд; по умолчанию въезд, для карусели можно дальше: --film-ms "500,4000,7400,10800"
+const FILM_MS = (opt("--film-ms") ?? "150,500,1000,2500").split(",").map(Number).sort((a, b) => a - b);
 mkdirSync(OUT, { recursive: true });
 
 if (!existsSync(join(ROOT, ".next/server/app/montage.html"))) {
@@ -124,7 +126,8 @@ for (let i = 0; i <= last; i++) {
   errors.length = 0;
   if (i > 0) await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
   if (wanted && film.includes(k)) {
-    for (const [t, prev] of [[150, 0], [500, 150], [1000, 500], [2500, 1000]]) { await page.waitForTimeout(t - prev); await shot(`film-${k}-${t}`); }
+    let prev = 0;
+    for (const t of FILM_MS) { await page.waitForTimeout(t - prev); prev = t; await shot(`film-${k}-${t}`); }
   } else {
     await page.waitForTimeout(wanted ? (SLOW[k] ?? 2500) : 450);
   }

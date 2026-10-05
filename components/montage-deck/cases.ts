@@ -1,7 +1,7 @@
 /**
  * Кейсы для карусели 08c «Что я собрал для бизнеса».
- * Сейчас три кейса, уже упакованные для сайта onai.academy/saint: факты из CASE_SOURCES.md и пакетов кейсов (срез 04.10.2026),
- * кадры — обезличенные скриншоты из projects/saint_landing/public/assets/cases (уменьшены до 1600×1000).
+ * Три кейса уже упакованы для сайта onai.academy/saint: факты из CASE_SOURCES.md и пакетов кейсов (срез 04.10.2026),
+ * кадры — обезличенные скриншоты из projects/saint_landing/public/assets/cases (уменьшены до 1600×1000). Четвёртый — из облачного аудита.
  * Новые кейсы добавляет агент-сборщик (docs/tasks/cases_harvest_prompt.md): из cases.json сюда переносятся title, niche, oneLiner, metric, shot, url.
  */
 export type BizCase = {
@@ -41,5 +41,16 @@ export const CASES: BizCase[] = [
     metric: "318 учеников · 113 уроков · 595 вопросов наставнику",
     shot: "/montage/cases/onai-academy.webp",
     url: "onai.academy/saint/cases/onai-academy",
+  },
+  {
+    // факты: business-cases/cases/ai-targetolog/FACTS.md (облачный аудит 05.10.2026, ветка claude/quirky-carson-ei234s в onai-workspace),
+    // только строки «да»; цифры клиентов и «60+ клиентов» без выгрузки не ставить. Кадр — публичный лендинг app.aoneagency.kz, блок «Как работает»
+    slug: "ai-targetolog",
+    title: "AI-Таргетолог",
+    niche: "Свой продукт · реклама FB и IG",
+    oneLiner: "Видно, какая реклама приносит продажи",
+    metric: "Собрал за 3 месяца · отчёт в Telegram каждое утро · от 49 990 ₸ в месяц",
+    shot: "/montage/cases/ai-targetolog.webp",
+    url: "onai.academy/saint/cases/ai-targetolog",
   },
 ];
