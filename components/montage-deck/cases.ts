@@ -38,7 +38,8 @@ export const CASES: BizCase[] = [
     title: "onAI Academy",
     niche: "Моя онлайн-школа",
     oneLiner: "AI-наставник отвечает ученикам по каждому уроку",
-    metric: "318 учеников · 113 уроков · 595 вопросов наставнику",
+    // 900+ на платформе со слов Александра 05.10.2026 (318 в FACTS — только с действующим доступом); всего выпускников 1000+ вместе с Discord, это на слайде 08
+    metric: "900+ учеников · 113 уроков · 595 вопросов наставнику",
     shot: "/montage/cases/onai-academy.webp",
     url: "onai.academy/saint/cases/onai-academy",
   },
