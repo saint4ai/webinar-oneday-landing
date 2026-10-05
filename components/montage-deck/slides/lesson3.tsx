@@ -82,8 +82,8 @@ const Typing = () => (
   </div>
 );
 
-/** Директ в телефоне: сообщения появляются по одному, перед ответом бота — «печатает…». */
-function DirectPhone({ msgs, step = 0.7 }: { msgs: { me?: boolean; t: string }[]; step?: number }) {
+/** Директ в телефоне: сообщения появляются по одному, перед ответом бота — «печатает…». Используется и в цехе «Заявка» (directions.tsx). */
+export function DirectPhone({ msgs, step = 0.7, width = "17cqw" }: { msgs: { me?: boolean; t: string }[]; step?: number; width?: string }) {
   const [n, setN] = useState(0);
   useEffect(() => {
     const ids = msgs.map((_, i) => setTimeout(() => setN(i + 1), 350 + i * step * 1000));
@@ -91,7 +91,7 @@ function DirectPhone({ msgs, step = 0.7 }: { msgs: { me?: boolean; t: string }[]
   }, [msgs, step]);
   const typing = n < msgs.length && n > 0 && !msgs[n].me;
   return (
-    <div style={{ width: "17cqw", aspectRatio: "9/17", background: T.night, borderRadius: "2.4cqw", padding: "0.52cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
+    <div style={{ width, aspectRatio: "9/17", background: T.night, borderRadius: "2.4cqw", padding: "0.52cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
       <div className="flex h-full w-full flex-col overflow-hidden" style={{ borderRadius: "1.98cqw", background: T.paper }}>
         <div className="flex items-center gap-[0.5cqw]" style={{ padding: "1.4cqw 1cqw 0.7cqw", borderBottom: `1px solid ${T.line}` }}>
           <span className="flex items-center justify-center" style={{ width: "1.8cqw", height: "1.8cqw", borderRadius: 99, background: `linear-gradient(180deg, ${T.gold}, ${T.gold2})` }}>
