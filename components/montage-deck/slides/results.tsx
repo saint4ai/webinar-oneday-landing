@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ExtrudedNumber, ScreenStage3D } from "../fx";
+import { DirectStack } from "../DirectMock";
 import { ReelRail, Views } from "../ReelRail";
 import { RESULTS, fmtStat, type Stat } from "../results";
 import { Statement } from "../Statement";
@@ -149,13 +150,24 @@ export function M_Growth30({ reach, followers }: { reach?: string; followers?: s
   );
 }
 
-/** 10i · Обращения за 30 дней: одна объёмная цифра (RESULTS.inquiries), без разбивки по услугам и обучению. */
+/**
+ * 10i · Обращения за 30 дней: объёмная цифра (RESULTS.inquiries) и справа макет Instagram Direct с типичными запросами
+ * в 3D-стопке (DirectStack). Переписки в макете — обобщённые примеры, имена размыты, под ним подпись «пример».
+ */
 export function M_Inquiries() {
   const q = RESULTS.inquiries;
   return (
     <Statement kicker="Результаты · заявки" title={<>Обращения за 30 дней: <Em>контент приводит клиентов</Em></>} size="2.6cqw">
-      <MainStat value={q.total} label={q.label} size="9cqw" />
-      <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source ?? <>Откуда цифры: <Fill>CRM или директ, даты периода</Fill></>}</Note></In>
+      <div className="grid items-center" style={{ gridTemplateColumns: "minmax(0, 1fr) 19cqw", gap: "2.4cqw", maxWidth: "50cqw" }}>
+        <div>
+          <MainStat value={q.total} label={q.label} size="9cqw" />
+          <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source ?? <>Откуда цифры: <Fill>CRM или директ, даты периода</Fill></>}</Note></In>
+        </div>
+        <In i={2}>
+          <DirectStack width="19cqw" />
+          <Note style={{ marginTop: "1.4cqw", fontSize: "0.75cqw" }}>Пример: так выглядят запросы в директ. Имена скрыты, тексты обобщены</Note>
+        </In>
+      </div>
     </Statement>
   );
 }

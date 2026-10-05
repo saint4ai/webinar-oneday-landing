@@ -30,6 +30,14 @@ const only = opt("--only")?.split(",").map((s) => s.trim());
 const film = opt("--film")?.split(",").map((s) => s.trim()) ?? [];
 // моменты кадров для --film, мс от входа на слайд; по умолчанию въезд, для карусели можно дальше: --film-ms "500,4000,7400,10800"
 const FILM_MS = (opt("--film-ms") ?? "150,500,1000,2500").split(",").map(Number).sort((a, b) => a - b);
+// --clips "10,20": видео этих слайдов для страницы партнёров (ролики и карусели в движении) → <out>/clips/<ключ>.mp4, длина --clip-ms
+const clips = opt("--clips")?.split(",").map((s) => s.trim()) ?? [];
+const CLIP_MS = Number(opt("--clip-ms") ?? 8000);
+const RAW = join(OUT, "clips", "_raw");
+if (clips.length) mkdirSync(RAW, { recursive: true });
+const marks = []; // [ключ, начало в мс от старта записи, длина]
+// слайды, где полный цикл длиннее обычного клипа: карусель кейсов 12 × 3,4 с, три переписки Direct по 4,2 с
+const CLIP_LONG = { "08c": 41500, "10i": 13300 };
 mkdirSync(OUT, { recursive: true });
 
 if (!existsSync(join(ROOT, ".next/server/app/montage.html"))) {
@@ -54,7 +62,8 @@ function fileFor(pathname) {
 const winChrome = "C:/Program Files/Google/Chrome/Application/chrome.exe";
 const exe = process.env.CHROMIUM_PATH || (existsSync(winChrome) ? winChrome : undefined);
 const browser = await chromium.launch({ headless: true, executablePath: exe });
-const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
+const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1,
+  ...(clips.length ? { recordVideo: { dir: RAW, size: { width: 1920, height: 1080 } } } : {}) });
 await ctx.route("**/*", async (route) => {
   const url = new URL(route.request().url());
   if (url.host !== "deck.offline") return route.abort();
@@ -73,6 +82,7 @@ await ctx.route("**/*", async (route) => {
 });
 
 const page = await ctx.newPage();
+const t0 = Date.now(); // запись видео идёт с создания страницы
 const errors = [];
 page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
 page.on("console", (m) => { if (m.type() === "error") errors.push(`console: ${m.text().slice(0, 160)}`); });
@@ -125,7 +135,11 @@ for (let i = 0; i <= last; i++) {
   const wanted = !only || only.includes(k);
   errors.length = 0;
   if (i > 0) await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-  if (wanted && film.includes(k)) {
+  if (wanted && clips.includes(k)) {
+    const len = CLIP_LONG[k] ?? CLIP_MS;
+    marks.push([k, Date.now() - t0, len]);
+    await page.waitForTimeout(len);
+  } else if (wanted && film.includes(k)) {
     let prev = 0;
     for (const t of FILM_MS) { await page.waitForTimeout(t - prev); prev = t; await shot(`film-${k}-${t}`); }
   } else {
@@ -140,4 +154,19 @@ for (let i = 0; i <= last; i++) {
 // /icon.svg и /favicon.ico в сборке отдаёт маршрут Next, здесь их нет: это не ошибка деки
 const real = [...missing].filter((p) => !["/icon.svg", "/favicon.ico"].includes(p));
 if (real.length) console.log("404 (нет файла):", real.join(", "));
+const video = clips.length ? page.video() : null;
+await ctx.close(); // файл записи дописывается при закрытии контекста
 await browser.close();
+
+// нарезка записи по слайдам: H.264 без звука, первый кадр — постер; полсекунды после перехода пропускаем, там въезд со сдвигом таймингов записи
+if (video) {
+  const { spawnSync } = await import("node:child_process");
+  const raw = await video.path();
+  const W = Math.min(WIDTH, 1920);
+  for (const [k, ms, len] of marks) {
+    const out = join(OUT, "clips", `${k}.mp4`);
+    const r = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-ss", String((ms + 500) / 1000), "-t", String((len - 700) / 1000), "-i", raw,
+      "-vf", `scale=${W}:-2:flags=lanczos,fps=30,format=yuv420p`, "-c:v", "libx264", "-preset", "slow", "-crf", "26", "-movflags", "+faststart", "-an", out], { stdio: "inherit" });
+    console.log(r.status === 0 ? `▶ clips/${k}.mp4  ${(statSync(out).size / 1048576).toFixed(2)} МБ` : `✗ clips/${k}.mp4 не нарезан`);
+  }
+}
