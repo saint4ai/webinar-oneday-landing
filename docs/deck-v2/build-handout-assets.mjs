@@ -9,7 +9,7 @@
  * Что получается:
  *   public/montage/reels/hit-*.mp4|jpg   слайд 10 и полоса на 22r: залетевшие рилсы (папка 05), петля 20 с, 540×960, без звука
  *   public/montage/reels/ai-*.mp4|jpg    слайды 17, 21, 22: ролики про ИИ-монтаж (папка 06), петля 24–26 с
- *   public/montage/results/viral-1..6.jpg    слайд 10v: скрины рилсов со счётчиками (папка 04)
+ *   public/montage/results/viral-1..5.jpg    слайд 10v: плитки из «Топ контента по просмотрам», панель Instagram (папка 01)
  *   public/montage/results/growth-*.png      слайд 10g: кропы панели Instagram на 05.10 (папка 01)
  * Обложка (01) собрана раньше: public/montage/cover/s01–s10 и v01–v07, те же материалы.
  */
@@ -74,13 +74,15 @@ if (want("ai")) {
 }
 
 if (want("viral")) {
-  // Скрины рилсов из приложения (счётчик на самом скрине). Порядок — по убыванию просмотров.
-  const dir = join(SRC, "04 Новые скриншоты (добавь сюда)");
-  const order = ["8084", "8085", "8091", "8087", "8086", "8083"]; // 135, 118, 63,8, 62,2, 23,6, 21,2 тыс.
-  for (let i = 0; i < order.length; i++) {
-    const f = readdirSync(dir).find((n) => n.toUpperCase() === `IMG_${order[i]}.PNG`);
-    await sharp(join(dir, f)).jpeg({ quality: 90, mozjpeg: true }).toFile(join(RESULTS, `viral-${i + 1}.jpg`)); // файлы .PNG на деле JPEG
-    console.log(`✓ results/viral-${i + 1}.jpg ← IMG_${order[i]}`);
+  // Стена 10v: пять плиток из блока «Топ контента по просмотрам» профессиональной панели Instagram (срез 5 октября).
+  // Счётчик панели виден на самих плитках: 116, 90, 61,7, 29,8, 21,6 тыс. (решение Александра 05.10: на слайдах цифры панели, не приложения).
+  // Скрины рилсов из приложения (IMG_8083–8092, у «Одно слово» там 135 тыс.) остались только в тоннеле обложки.
+  const panel = join(SRC, "01 Скриншоты статистики", "Instagram - топ контента по просмотрам.png");
+  const centers = [125, 383, 640, 897, 1153]; // середины плиток по ширине (границы найдены по не белым колонкам), плитка 232×324
+  for (let i = 0; i < centers.length; i++) {
+    await sharp(panel).extract({ left: centers[i] - 116, top: 186, width: 232, height: 324 })
+      .jpeg({ quality: 92, chromaSubsampling: "4:4:4", mozjpeg: true }).toFile(join(RESULTS, `viral-${i + 1}.jpg`));
+    console.log(`✓ results/viral-${i + 1}.jpg ← панель, плитка ${i + 1}`);
   }
 }
 

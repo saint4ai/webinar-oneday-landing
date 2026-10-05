@@ -74,9 +74,9 @@ export function M_ResultMontage() {
   );
 }
 
-/** Скрин рилса в рамке 9:16. Нет файла — пунктирное место с номером и путём, куда положить скрин. */
-const ReelShot = ({ src, n, file }: { src?: string; n: number; file: string }) => (
-  <div style={{ width: "100%", aspectRatio: "9 / 16", borderRadius: "0.9cqw", overflow: "hidden", background: src ? T.card : `${T.card}99`,
+/** Плитка рилса в рамке (по умолчанию 9:16, плитки панели 232×324). Нет файла — пунктирное место с номером и путём, куда положить скрин. */
+const ReelShot = ({ src, n, file, ratio = "9 / 16" }: { src?: string; n: number; file: string; ratio?: string }) => (
+  <div style={{ width: "100%", aspectRatio: ratio, borderRadius: "0.9cqw", overflow: "hidden", background: src ? T.card : `${T.card}99`,
     boxShadow: src ? `0 0 0 1px ${T.line}, ${T.shadowSm}` : "none", border: src ? "none" : `1.5px dashed ${T.brownLt}`,
     display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
     {src ? <img src={src} alt={`Рилс ${n}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (
@@ -95,24 +95,25 @@ const splitViews = (v: string): [string, string] => {
   return m ? [m[1], `${m[2]} просмотров`] : [v, "просмотров"];
 };
 
-/** 10v · Рилсы, которые залетели: шесть скринов волной, под каждым — просмотры и тема. Цифры и файлы — RESULTS.viral. */
+/** 10v · Рилсы, которые залетели: пять плиток панели Instagram волной, под каждой — просмотры, тема и дата. Цифры и файлы — RESULTS.viral. */
 export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] }) {
   return (
     <Statement kicker="Результаты · рилсы" title="Рилсы, которые залетели" size="2.6cqw"
       lead={RESULTS.viralSource ?? <>Скрины из Instagram, просмотры на <Fill>дата скринов</Fill></>}>
-      <div className="grid grid-cols-6 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
+      <div className="grid grid-cols-5 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
         {RESULTS.viral.map((r, i) => {
           const [num, unit] = r.views == null ? ["", ""] : splitViews(r.views);
           return (
             <motion.div key={r.file} initial={{ opacity: 0, y: "3cqw", rotate: i % 2 ? 3 : -3 }} animate={{ opacity: 1, y: i % 2 ? "1.2cqw" : "0cqw", rotate: 0 }}
               transition={{ delay: 0.35 + i * 0.09, type: "spring", stiffness: 160, damping: 16 }}>
-              <ReelShot src={shots[i]} n={i + 1} file={r.file} />
+              <ReelShot src={shots[i]} n={i + 1} file={r.file} ratio="232 / 324" />
               <div style={{ marginTop: "0.6cqw" }}>
                 {r.views == null ? <Waiting /> : <>
                   <Num size="1.5cqw" color={T.brown}>{num}</Num>
                   <div style={{ ...lbl, fontSize: "0.75cqw" }}>{unit}</div>
                 </>}
-                {r.title && <div style={{ ...lbl, fontSize: "0.75cqw", marginTop: "0.3cqw", color: T.ink }}>{r.title}</div>}
+                {r.title && <div style={{ ...lbl, fontSize: "0.78cqw", marginTop: "0.3cqw", color: T.ink }}>{r.title}</div>}
+                {r.date && <div style={{ ...lbl, fontSize: "0.7cqw", marginTop: "0.2cqw" }}>{r.date}</div>}
               </div>
             </motion.div>
           );

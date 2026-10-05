@@ -54,8 +54,9 @@ export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { 
 /* ─────────────── Переход к продаже ─────────────── */
 
 /**
- * 30 ✦ · Один рилс: 118 тыс. просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом.
- * Рилс «4 умных коннектора для Claude» (06.09): счётчик из приложения, как на скрине 10v. Раньше на телефоне крутился другой рилс,
+ * 30 ✦ · Один рилс: 116 тыс. просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом.
+ * Рилс «4 умных коннектора для Claude» (06.09): счётчик профессиональной панели Instagram на 5 октября, как на плитке 10v
+ * (Александр 05.10: на слайдах цифры панели; в приложении 118 тыс., по API 117 178). Раньше на телефоне крутился другой рилс,
  * «Четыре подключения» от 25.09 (около 24 тыс.), а число 107 237 (на 26 сентября) по величине принадлежит этому, 06.09 (проверить по источнику).
  */
 export function M_Case107() {
@@ -63,10 +64,10 @@ export function M_Case107() {
     <Statement kicker="Тот самый 1 из 14" title="Один рилс" size="2.8cqw"
       leftSize="18cqw" left={
         <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.15 }}>
-          <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" views={nb("118 тыс.")} caption="4 умных коннектора для Claude" width="13.5cqw" showTop={false} />
+          <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" views={nb("116 тыс.")} caption="4 умных коннектора для Claude" width="13.5cqw" showTop={false} />
         </motion.div>
       }>
-      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("118 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" /></div>
+      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("116 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" /></div>
       <Stagger i={4} base={0.6}><Lead style={{ marginTop: "2cqw", maxWidth: "34cqw" }}>Я записал видео, агент собрал графику, анимацию, субтитры и звук по моим правкам.</Lead></Stagger>
       <Note>Статистика Instagram на 5 октября 2026</Note>
     </Statement>

@@ -52,21 +52,21 @@ export const RESULTS = {
   },
 
   /**
-   * 10v · «Рилсы, которые залетели» — шесть скринов рилсов из приложения Instagram, раздатки 05.10 (папка 04, собирает build-handout-assets.mjs).
-   * Скрин лежит в public/montage/results/ под именем из file (подходят .png, .jpg, .jpeg, .webp).
-   * views — строка ровно с того счётчика, что виден на самом скрине («135 тыс.»); title — тема рилса (подпись под скрином). null — пропуск.
-   * Счётчик в приложении у Instagram свой: у «Одно слово» там 135 тыс., а в профессиональной панели 90,1 тыс.
+   * 10v · «Рилсы, которые залетели» — пять плиток из блока «Топ контента по просмотрам» профессиональной панели Instagram, срез 5 октября
+   * (раздатки, папка 01; плитки вырезает docs/deck-v2/build-handout-assets.mjs). Решение Александра 05.10: на слайдах цифры панели,
+   * потому что Meta и панель их подтверждают. Счётчик в приложении у Instagram свой: у «Одно слово» там 135 тыс., в панели 90 тыс.
+   * Картинка лежит в public/montage/results/ под именем из file (подходят .png, .jpg, .jpeg, .webp).
+   * views — строка ровно с того счётчика, что виден на самой плитке; title — тема рилса; date — дата выхода, как в панели. null — пропуск.
    */
   viral: [
-    { file: "viral-1", views: "135 тыс." as string | null, title: "Одно слово в ссылке GitHub" as string | null },
-    { file: "viral-2", views: "118 тыс." as string | null, title: "$20 за калькулятор" as string | null },
-    { file: "viral-3", views: "63,8 тыс." as string | null, title: "Claude Code и Facebook-реклама" as string | null },
-    { file: "viral-4", views: "62,2 тыс." as string | null, title: "Тестировщики, сорри" as string | null },
-    { file: "viral-5", views: "23,6 тыс." as string | null, title: "Калькулятор без коннекторов" as string | null },
-    { file: "viral-6", views: "21,2 тыс." as string | null, title: "Правки сайта кликом" as string | null },
+    { file: "viral-1", views: "116 тыс." as string | null, title: "4 умных коннектора для Claude" as string | null, date: "6 сентября" as string | null },
+    { file: "viral-2", views: "90 тыс." as string | null, title: "Одно слово в ссылке GitHub" as string | null, date: "3 октября" as string | null },
+    { file: "viral-3", views: "61,7 тыс." as string | null, title: "Claude тестирует на Android" as string | null, date: "28 сентября" as string | null },
+    { file: "viral-4", views: "29,8 тыс." as string | null, title: "Открытая замена Semrush" as string | null, date: "28 сентября" as string | null },
+    { file: "viral-5", views: "21,6 тыс." as string | null, title: "Четыре подключения" as string | null, date: "25 сентября" as string | null },
   ],
-  /** Когда сняты скрины рилсов — подпись под стеной. */
-  viralSource: "Instagram · скрины рилсов из приложения · 5 октября 2026" as string | null,
+  /** Откуда плитки — подпись под заголовком. */
+  viralSource: "Instagram · профессиональная панель, топ контента по просмотрам · 5 октября 2026" as string | null,
 
   /**
    * 10g · «30 дней: охваты и подписчики». Instagram, профессиональная панель, срез 5 октября 2026 (скрины раздаток, 16:50).
@@ -92,7 +92,7 @@ export const RESULTS = {
 
   /**
    * 44 · воронка одного рилса: все четыре ступени из одного источника, чтобы цифры не спорили между собой.
-   * Просмотры и кодовые слова уже стояли на слайде 44 (статистика Instagram, сентябрь 2026). Это не рилс слайда 30 (118 тыс.).
+   * Просмотры и кодовые слова уже стояли на слайде 44 (статистика Instagram, сентябрь 2026). Это не рилс слайда 30 (116 тыс.).
    */
   funnel: {
     reel: null as string | null, // название рилса, строкой: подпись под воронкой. null — на слайде пропуск [название рилса]
