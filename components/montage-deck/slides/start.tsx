@@ -52,7 +52,7 @@ export function M_Poll({ kicker, title, lead, options, icons }: { kicker: string
 export function M_Program() {
   const lessons = [
     ["Практика 1", "Монтирую рилс вживую, без знаний монтажа", "lg-i-clapper"],
-    ["Практика 2", "Договор и презентация по брифу из чата", "lg-i-cards"],
+    ["Практика 2", "Презентация по брифу из чата", "lg-i-cards"],
     ["Практика 3", "Приложение и сайт из одного описания", "lg-i-phones"],
   ];
   return (
@@ -78,7 +78,7 @@ export function M_Program() {
 
 /** 6 · Большое обещание: ролик → реклама → заявка, связки прорисовываются по очереди. */
 export function M_Promise() {
-  const chain = ["Ролик", "Договор", "Приложение"];
+  const chain = ["Ролик", "Презентация", "Приложение"];
   const icons = ["lg-i-clapper", "lg-i-cards", "lg-i-phones"];
   return (
     <Statement kicker="Что увидите сегодня" title={<>Покажу, как ИИ забирает монтаж, документы и <Em>разработку</Em></>} lead="Без монтажёра, без дизайнера презентаций, без программиста." size="2.8cqw">

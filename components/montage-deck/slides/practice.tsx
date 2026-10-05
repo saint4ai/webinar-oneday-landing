@@ -7,7 +7,7 @@ import { T, card, goldButton } from "../theme";
 import { Arrow, Card, EASE, Em, Fill, MaskIcon, Note, Px, Stagger, txt } from "../ui";
 
 /**
- * Практики 2 и 3 эфира 6 октября (режиссура 04.10: монтаж → договоры и презентации → сайты и приложения).
+ * Практики 2 и 3 эфира 6 октября (режиссура 04.10: монтаж → презентации → сайты и приложения).
  * Практика 3 перенесена из прошлого воркшопа по вайбкодингу (Deck60, слайды 71–79) в бренд сайтов.
  * Всё в левых 60% кадра. Чего нет в фактах — [в скобках] через <Fill>, дописывает Александр.
  */
@@ -37,19 +37,19 @@ function Flow({ items }: { items: { icon: string; title: string; text: string }[
   );
 }
 
-/* ───────────────────────── Практика 2 · договоры и презентации ───────────────────────── */
+/* ───────────────────────── Практика 2 · презентация по брифу ───────────────────────── */
 
 /** P2 · Как устроено: бриф → шаблон и правила → готовый файл. */
 export function M_DocsHow() {
   return (
     <Statement kicker="Практика 2 · как устроено" title={<>Бриф словами — на выходе <Em>готовый файл</Em></>} size="2.8cqw"
-      lead="Агент работает в папке проекта: там ваши образцы, реквизиты и стиль.">
+      lead="Агент работает в папке проекта: там ваши образцы, логотип и стиль.">
       <Flow items={[
         { icon: "lg-i-chatkey", title: "Бриф", text: "Голосом или текстом: кто клиент, что продаём, сроки и цена" },
-        { icon: "lg-i-cards", title: "Шаблон и правила", text: "Образцы договоров, бренд, тон — один раз в папке проекта" },
-        { icon: "lg-i-laptopfilm", title: "Готовый файл", text: "Договор в Word, презентация в PDF" },
+        { icon: "lg-i-cards", title: "Шаблон и правила", text: "Образцы презентаций, бренд, тон — один раз в папке проекта" },
+        { icon: "lg-i-laptopfilm", title: "Готовый файл", text: "Презентация в PDF" },
       ]} />
-      <Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Агент готовит черновик. Юридические формулировки проверяет юрист.</Note>
+      <Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Агент готовит черновик — финальную правку делаете вы.</Note>
     </Statement>
   );
 }
@@ -58,14 +58,14 @@ export function M_DocsHow() {
 export function M_DocsExample({ shot }: { shot?: string }) {
   const rows: [string, React.ReactNode][] = [
     ["На входе", <Fill key="in">бриф: что было сказано агенту</Fill>],
-    ["На выходе", <Fill key="out">договор или презентация, сколько страниц</Fill>],
+    ["На выходе", <Fill key="out">презентация, сколько слайдов</Fill>],
     ["Время", <Fill key="t">сколько минут вместо часов</Fill>],
   ];
   return (
     <Statement kicker="Практика 2 · пример" title={<>Документ, который <Em>собрал агент</Em></>} size="2.8cqw">
       <div className="grid items-center gap-[2.2cqw]" style={{ gridTemplateColumns: "20cqw minmax(0, 1fr)", maxWidth: "54cqw" }}>
         <div style={{ height: "25cqw" }}>
-          <ScreenStage3D src={shot} alt="Документ, который собрал агент" empty="Сюда скрин договора или презентации: results/doc-example.png" />
+          <ScreenStage3D src={shot} alt="Документ, который собрал агент" empty="Сюда скрин презентации: results/doc-example.png" />
         </div>
         <div className="grid gap-[0.8cqw]">
           {rows.map(([k, v], i) => (
@@ -82,14 +82,14 @@ export function M_DocsExample({ shot }: { shot?: string }) {
 
 /** P2 · Вживую: перед переключением на чат — что именно соберём. */
 export function M_DocsLive() {
-  const items = ["Договор с клиентом", "Коммерческое предложение", "Презентация продукта"];
+  const items = ["Коммерческое предложение", "Презентация продукта"];
   return (
     <Statement obj="lg-i-cards" objSize="7cqw" kicker="Практика 2 · вживую" title={<>Сейчас соберу <Em>по брифу из чата</Em></>} size="3cqw"
       lead="В своём настроенном чате. Повторяйте за мной.">
       <div className="flex flex-wrap gap-[0.7cqw]" style={{ maxWidth: "50cqw" }}>
         {items.map((t, i) => (
-          <motion.div key={t} {...inUp(i)} style={{ ...(i === 2 ? goldButton : card), borderRadius: 999, padding: "0.9cqw 1.6cqw",
-            fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.15cqw", color: i === 2 ? T.ink : T.brown }}>{t}</motion.div>
+          <motion.div key={t} {...inUp(i)} style={{ ...(i === items.length - 1 ? goldButton : card), borderRadius: 999, padding: "0.9cqw 1.6cqw",
+            fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.15cqw", color: i === items.length - 1 ? T.ink : T.brown }}>{t}</motion.div>
         ))}
       </div>
     </Statement>
