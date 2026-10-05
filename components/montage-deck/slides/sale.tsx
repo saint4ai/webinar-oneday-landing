@@ -53,18 +53,22 @@ export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { 
 
 /* ─────────────── Переход к продаже ─────────────── */
 
-/** 30 ✦ · Один рилс: 107 237 просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом. */
+/**
+ * 30 ✦ · Один рилс: 118 тыс. просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом.
+ * Рилс «4 умных коннектора для Claude» (06.09): счётчик из приложения, как на скрине 10v. Раньше на телефоне крутился другой рилс,
+ * «Четыре подключения» от 25.09, а число 107 237 (на 26 сентября) относилось к этому.
+ */
 export function M_Case107() {
   return (
     <Statement kicker="Тот самый 1 из 14" title="Один рилс" size="2.8cqw"
       leftSize="18cqw" left={
         <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.15 }}>
-          <Phone video="/montage/reels/mcp.mp4" src="/montage/reels/mcp.jpg" views={nb("107 237")} caption="Четыре подключения для Claude" width="13.5cqw" showTop={false} />
+          <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" views={nb("118 тыс.")} caption="4 умных коннектора для Claude" width="13.5cqw" showTop={false} />
         </motion.div>
       }>
-      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value="107 237" label="просмотров · смонтировал агент" size="6.4cqw" /></div>
+      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("118 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" /></div>
       <Stagger i={4} base={0.6}><Lead style={{ marginTop: "2cqw", maxWidth: "34cqw" }}>Я записал видео, агент собрал графику, анимацию, субтитры и звук по моим правкам.</Lead></Stagger>
-      <Note>Статистика Instagram на 26 сентября 2026</Note>
+      <Note>Статистика Instagram на 5 октября 2026</Note>
     </Statement>
   );
 }
@@ -407,8 +411,8 @@ export function M_FinalCTA() {
 /** 57g ✦ · Бонус за игру: QR на Token Runner, код из игры снимает ещё 10 000 ₸. */
 export function M_GameBonus() {
   return (
-    <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру — ещё <Em>−10 000 ₸</Em></>} size="3cqw"
-      lead="Игра Token Runner в Telegram. Пройди 3 испытания — получишь код: Vibe Production за 140 000 ₸ вместо 150 000 ₸.">
+    <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру — ещё <Em><span style={{ whiteSpace: "nowrap" }}>{nb("−10 000 ₸")}</span></Em></>} size="3cqw"
+      lead={<>Игра Token Runner в Telegram. Пройди 3 испытания — получишь код: Vibe Production за {nb("140 000 ₸")} вместо {nb("150 000 ₸")}.</>}>
       <Stagger i={0}>
         <div style={{ ...card, borderRadius: 22, padding: "1cqw", width: "13cqw" }}>
           <img src="/montage/qr-game.svg" alt="QR-код: игра Token Runner в Telegram" style={{ display: "block", width: "100%", height: "auto" }} />
