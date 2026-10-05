@@ -1,0 +1,329 @@
+{
+ "task": "Дека эфира 6 октября, волна 2: реальные цифры соцсетей за 30 дней на слайды 10, 10v, 10g, 10i, 22r; практика 2 без договора; две мелкие правки ; КП стр. 07",
+ "why": "Эфир Vibe Production — вторник, 6 октября, 20:00 Алматы. Цифры на слайдах должны совпасть с голосом интро: «по пять рилсов в день», «больше восьмисот тысяч просмотров», «один рилс привёл 852 подписчика», «больше ста обращений». Договор на практике не делаем — владелец 04.10. Ошибка в цифре — неправда в лицо залу.",
+ "roles": "Решения по текстам, цифрам и раскладке уже приняты ниже — исполняй дословно. Не влезает или расходится с кодом — не выбирай сам: вопрос Александру в отчёте, и дальше по шагам.",
+ "read_first": [
+  "docs/WINDOWS_AGENT.md — правила проекта",
+  "components/montage-deck/results.ts",
+  "components/montage-deck/slides/results.tsx",
+  "components/montage-deck/slides/start.tsx (M_Proof15, программа, цепочка)",
+  "components/montage-deck/slides/practice.tsx",
+  "app/montage/page.tsx (resultShot)",
+  "docs/social-30d/Как-использовать.txt — что можно и нельзя подписывать"
+ ],
+ "data": {
+  "period": "4 сентября — 3 октября 2026, срез 4 октября 2026",
+  "views": {
+   "instagram": 662010,
+   "tiktok": 133636,
+   "youtube": 30055,
+   "total": 825701,
+   "rule": "просмотры трёх площадок сложены — не число людей; не писать «охват» и «зрителей» про 825 701"
+  },
+  "reels_per_day_now": 5,
+  "instagram": {
+   "viewers_30d": 281072,
+   "interactions_30d": 45561,
+   "followers_now": 16275,
+   "followers_net_30d": 1714,
+   "followers_net_how": "Instagram API: 2 321 новых подписок минус 607 отписок"
+  },
+  "one_reel": {
+   "follows": 852,
+   "rule": "без «за 30 дней»: в карточке рилса нет периода",
+   "screenshot": "docs/social-30d/Instagram-Reel-01-реакции-и-подписки.png"
+  },
+  "inquiries": {
+   "total": 101,
+   "how": "директ-бот AI-РОП: 101 человек дошёл до раздела с предложениями за 30 дней",
+   "rule": "разбивки по услугам и обучению нет"
+  },
+  "screenshots_dir": "docs/social-30d/"
+ },
+ "repo": "этот репозиторий, ветка feat/deck-1920-zone40",
+ "setup": [
+  "git checkout feat/deck-1920-zone40 && git pull",
+  "git checkout -b deck-wave2",
+  "npm ci; сервер: npx next dev -p 3001; скриншоты — node docs/deck-v2/shoot.mjs --only <ключи> (см. docs/WINDOWS_AGENT.md)",
+  "картинки резать sharp (он в зависимостях) или ffmpeg"
+ ],
+ "forbidden": [
+  "push, deploy, слияние в feat — нельзя",
+  "components/montage-deck/fx/ и components/sales-deck/ не править",
+  "тексты и цифры — только из этого JSON; новых формулировок не придумывать",
+  "новые npm-пакеты, pip --break-system-packages, npm -g",
+  "не рисовать интерфейс TikTok Studio — скриншотов TikTok нет",
+  "не складывать зрителей разных площадок в «людей»",
+  "секреты: *.env и ключи не коммитить",
+  "push — только с разрешения Александра"
+ ],
+ "steps": [
+  {
+   "id": 1,
+   "slide": "57g",
+   "file": "components/montage-deck/slides/sale.tsx (M_GameBonus)",
+   "do": "«−10 000 ₸» в заголовке одним куском: nb() из ui.tsx или white-space: nowrap. То же для «140 000 ₸» и «150 000 ₸» в подводке"
+  },
+  {
+   "id": 2,
+   "slide": "10",
+   "file": "components/montage-deck/slides/start.tsx (M_Proof15)",
+   "set": {
+    "title": "30 дней: 825 701 просмотр (число через nb)",
+    "cards": [
+     {
+      "value": 5,
+      "label": "рилсов в день — сейчас"
+     },
+     {
+      "value": 825701,
+      "label": "просмотр в Instagram, TikTok и YouTube"
+     }
+    ],
+    "count_up_targets": [
+     5,
+     825701
+    ],
+    "lead": "Рилсы собирает ИИ-агент — каждый сразу выходит в Instagram, TikTok и YouTube.",
+    "note": "4 сентября — 3 октября 2026, срез 4 октября. Просмотры трёх соцсетей сложены — это не число людей.",
+    "remove": "<Fill>15 или 14 рилсов…</Fill> и цифры 15 / 140 689",
+    "phones": "четыре телефона по 11cqw, 9:16, ряд ≈47cqw, всё в левых 60%; не влезает по высоте — уменьшить отступы, ширину не трогать"
+   }
+  },
+  {
+   "id": 3,
+   "slide": "10v",
+   "files": [
+    "components/montage-deck/results.ts",
+    "components/montage-deck/slides/results.tsx (M_ViralReels)",
+    "public/montage/results/viral-1…6.png"
+   ],
+   "do": "вырезать 6 плиток из docs/social-30d/Instagram-03-Топ-Reels-за-30-дней.png (1080×2340): обложка с плашкой просмотров целиком. Границы плиток — по белым промежуткам ≈3px; ориентиры x,y,w,h ниже, подогнать по факту",
+   "tiles": [
+    {
+     "file": "viral-1",
+     "crop": [
+      21,
+      415,
+      262,
+      465
+     ],
+     "views": "115 тыс.",
+     "title": "$20 за калькулятор"
+    },
+    {
+     "file": "viral-2",
+     "crop": [
+      287,
+      415,
+      261,
+      465
+     ],
+     "views": "56,7 тыс.",
+     "title": "Тестировщики, сорри"
+    },
+    {
+     "file": "viral-3",
+     "crop": [
+      551,
+      415,
+      261,
+      465
+     ],
+     "views": "29,2 тыс.",
+     "title": "Свой Semrush"
+    },
+    {
+     "file": "viral-4",
+     "crop": [
+      815,
+      415,
+      261,
+      465
+     ],
+     "views": "19,1 тыс.",
+     "title": "Калькулятор без коннекторов"
+    },
+    {
+     "file": "viral-5",
+     "crop": [
+      287,
+      883,
+      261,
+      466
+     ],
+     "views": "15,2 тыс.",
+     "title": "Хакеру хватит одной двери"
+    },
+    {
+     "file": "viral-6",
+     "crop": [
+      551,
+      883,
+      261,
+      466
+     ],
+     "views": "9,4 тыс.",
+     "title": "Скилл Карпатого"
+    }
+   ],
+   "code": "views в RESULTS.viral — строкой (тип string | null), выводить как есть, подпись «просмотров»",
+   "viralSource": "Instagram · топ Reels за последние 30 дней · срез 4 октября 2026"
+  },
+  {
+   "id": 4,
+   "slide": "10g",
+   "files": [
+    "components/montage-deck/results.ts",
+    "components/montage-deck/slides/results.tsx (M_Growth30)"
+   ],
+   "copy": {
+    "docs/social-30d/Instagram-02-Просмотры-и-взаимодействия.png": "public/montage/results/growth-reach.png",
+    "docs/social-30d/Instagram-04-Панель-повторная-проверка.png": "public/montage/results/growth-followers.png"
+   },
+   "stats": [
+    {
+     "value": 16275,
+     "label": "подписчиков сейчас"
+    },
+    {
+     "value": 1714,
+     "label": "чистый прирост за 30 дней"
+    },
+    {
+     "value": 281072,
+     "label": "зрителей за 30 дней"
+    }
+   ],
+   "source": "Instagram, последние 30 дней · срез 4 октября 2026 · прирост: 2 321 новых подписок − 607 отписок (Instagram API)"
+  },
+  {
+   "id": 5,
+   "slide": "10i",
+   "files": [
+    "components/montage-deck/results.ts",
+    "components/montage-deck/slides/results.tsx (M_Inquiries)"
+   ],
+   "do": "вместо двух чисел (услуги / обучение) одно крупное",
+   "stat": {
+    "value": 101,
+    "label": "обращение: услуги, консультации, онлайн-обучение"
+   },
+   "source": "Директ-бот AI-РОП: дошли до раздела с предложениями, 4 сентября — 3 октября 2026"
+  },
+  {
+   "id": 6,
+   "slide": "22r",
+   "files": [
+    "components/montage-deck/results.ts",
+    "components/montage-deck/slides/results.tsx (M_ResultMontage)"
+   ],
+   "set": {
+    "month": "30 дней",
+    "main": {
+     "value": 825701,
+     "label": "просмотр в Instagram, TikTok и YouTube"
+    },
+    "small": [
+     {
+      "value": 852,
+      "label": "подписчика с одного рилса"
+     },
+     {
+      "value": 45561,
+      "label": "взаимодействие в Instagram"
+     },
+     {
+      "value": 1714,
+      "label": "чистый прирост подписчиков"
+     }
+    ],
+    "remove": "счётчики «роликов» и «сохранений»",
+    "covers": "не менять",
+    "source": "Instagram, TikTok, YouTube · 4 сентября — 3 октября 2026 · срез 4 октября"
+   }
+  },
+  {
+   "id": 7,
+   "slides": "01, 05, 06, p2, p2a, p2b, p2c",
+   "do": "практика 2 — презентация, без договора; заменить строки дословно",
+   "replace": [
+    {
+     "file": "components/montage-deck/slides/M_Cover.tsx",
+     "from": "Монтирует ИИ-агент по вашему голосу. Договоры, презентации и сайты — тоже ИИ.",
+     "to": "Монтирует ИИ-агент по вашему голосу. Презентации и сайты — тоже ИИ."
+    },
+    {
+     "file": "components/montage-deck/slides/start.tsx",
+     "from": "Договор и презентация по брифу из чата",
+     "to": "Презентация по брифу из чата"
+    },
+    {
+     "file": "components/montage-deck/slides/start.tsx",
+     "from": "[\"Ролик\", \"Договор\", \"Приложение\"]",
+     "to": "[\"Ролик\", \"Презентация\", \"Приложение\"]"
+    },
+    {
+     "file": "components/montage-deck/MontageDeck.tsx",
+     "from": "title=\"Договоры и презентации\" sub=\"Бриф словами — на выходе договор и презентация в вашем стиле\"",
+     "to": "title=\"Презентация по брифу\" sub=\"Бриф словами — на выходе презентация в вашем стиле\""
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "Агент работает в папке проекта: там ваши образцы, реквизиты и стиль.",
+     "to": "Агент работает в папке проекта: там ваши образцы, логотип и стиль."
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "Образцы договоров, бренд, тон — один раз в папке проекта",
+     "to": "Образцы презентаций, бренд, тон — один раз в папке проекта"
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "Договор в Word, презентация в PDF",
+     "to": "Презентация в PDF"
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "Агент готовит черновик. Юридические формулировки проверяет юрист.",
+     "to": "Агент готовит черновик — финальную правку делаете вы."
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "договор или презентация, сколько страниц",
+     "to": "презентация, сколько слайдов"
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "Сюда скрин договора или презентации",
+     "to": "Сюда скрин презентации"
+    },
+    {
+     "file": "components/montage-deck/slides/practice.tsx",
+     "from": "[\"Договор с клиентом\", \"Коммерческое предложение\", \"Презентация продукта\"]",
+     "to": "[\"Коммерческое предложение\", \"Презентация продукта\"] — золотом подсветить последний пункт (сейчас i === 2)"
+    }
+   ],
+   "comments": "слово «договоры» в комментариях practice.tsx и MontageDeck.tsx заменить на «презентации»"
+  },
+  {
+   "id": 8,
+   "where": "ветка glm/commercial-pdf этого репозитория: git worktree add ../kp glm/commercial-pdf, файлы в docs/commercial-deck/out/",
+   "do": "КП стр. 07, карточка «Было: монтажёр от 1 500 000 ₸»: подпись «каждый месяц · 150 роликов по 10 000 ₸ · вакансия на hh.kz, Алматы, 26.09.2026» → «каждый месяц · 150 роликов по 10 000 ₸». Больше ничего не менять",
+   "build": "python docs/commercial-deck/out/build_pdf.py (Playwright + Chrome) → docs/commercial-deck/out/onAI_Vibe_Production_KP.pdf, 10 страниц; отдать PDF Александру"
+  }
+ ],
+ "commits": "по коммиту на шаг; шаги 1–7 — ветка deck-wave2 от feat/deck-1920-zone40, шаг 8 — ветка glm/commercial-pdf; push только с разрешения Александра",
+ "acceptance": [
+  "скриншоты 1920×1080: 01, 05, 06, 10, 10v, 10g, 10i, 22r, p2, p2a, p2b, p2c, 57g → docs/reports/wave2/; на каждом зона камеры чистая (shoot.mjs без «⚠ зона камеры»)",
+  "цифры на слайдах совпадают с data до знака",
+  "на слайдах 10, 10v, 10g, 10i, 22r нет <Fill>, «ждёт цифры», пунктирных мест под скрин",
+  "grep -rni договор components/montage-deck/slides components/montage-deck/MontageDeck.tsx — 0",
+  "grep -rn '140 689' components/montage-deck — 0",
+  "tsc: в components/montage-deck новых ошибок нет",
+  "WEBINAR_LOCAL=1 npx next build — без ошибок",
+  "КП: 10 страниц, grep hh.kz по presentation.html — 0, скриншот стр. 07"
+ ],
+ "report": "docs/reports/deck_wave2.md: таблица шаг → коммит → доказательство; что не получилось; вопросы Александру",
+ "deadline": "5 октября 2026, 12:00 Алматы"
+}
