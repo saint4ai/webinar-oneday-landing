@@ -3,14 +3,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
-import { LeadFunnel3D, ReelTunnel3D } from "../fx";
+import { CoverTunnel } from "../CoverTunnel";
+import { LeadFunnel3D } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Statement } from "../Statement";
 import { Logo as BrandLogo } from "../Logo";
 import { RESULTS, fmtStat } from "../results";
 import { T, card, goldButton, nightCard } from "../theme";
 import { Card, DrawLine, EASE, Em, Fill, H, Lead, MaskIcon, Note, Rise, STEP, Stagger, at, nb, txt } from "../ui";
-import { TUNNEL_REELS } from "./M_Cover";
+import { COVER_CARDS } from "./M_Cover";
 
 /** 43 · Просмотры есть, заявок нет: путь зрителя, на последнем шаге он уходит из кадра. */
 export function M_ViewsNoLeads() {
@@ -258,10 +259,10 @@ export function M_Plan30() {
   );
 }
 
-/** 59 ✦ · Спасибо. Ночной, фоном тоннель рилсов, как на обложке. Без контактов. */
+/** 59 ✦ · Спасибо. Ночной, фоном тот же тоннель свежих скринов и видео рилсов, что на обложке (CoverTunnel, карточки COVER_CARDS). Без контактов. */
 export function M_Thanks() {
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><ReelTunnel3D reels={TUNNEL_REELS} /></MontageBg>}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><CoverTunnel cards={COVER_CARDS} /></MontageBg>}>
       <div style={{ maxWidth: "31cqw" }}>
         <Rise><BrandLogo night height="1.8cqw" style={{ marginBottom: "3cqw" }} /></Rise>
         <Rise delay={STEP}><H size="4.2cqw" color={T.nightText} style={{ lineHeight: 1.05 }}>Спасибо,<br /><Em night><span style={{ whiteSpace: "nowrap" }}>что пришли</span></Em></H></Rise>
