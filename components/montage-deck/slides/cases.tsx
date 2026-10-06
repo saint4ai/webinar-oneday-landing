@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CASES, type BizCase } from "../cases";
+import { Pill, Rim, glassSurface } from "../Glass";
 import { Statement } from "../Statement";
 import { T } from "../theme";
 import { EASE, Em, Note, Px, txt } from "../ui";
@@ -24,34 +25,8 @@ const plural = (n: number) => {
 };
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** Жидкое стекло: тонированная подложка, размытие и насыщение фона, внутренний свет сверху, глубокая тень. */
-const glass = (radius: string): CSSProperties => ({
-  position: "relative",
-  borderRadius: radius,
-  background: "linear-gradient(150deg, rgba(251,243,228,.14), rgba(251,243,228,.045) 50%, rgba(251,243,228,.08))",
-  backdropFilter: "blur(22px) saturate(170%)",
-  WebkitBackdropFilter: "blur(22px) saturate(170%)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(255,255,255,.05), 0 2.6cqw 5cqw -1.6cqw rgba(0,0,0,.8)",
-});
-
-/** Кромка стекла: градиентная рамка в 1 px (светлее сверху слева, золотом снизу справа) и мягкий блик по диагонали. */
-const Rim = ({ sheen = 0.14 }: { sheen?: number }) => (
-  <>
-    <span aria-hidden style={{ position: "absolute", inset: 0, borderRadius: "inherit", padding: 1, pointerEvents: "none",
-      background: "linear-gradient(140deg, rgba(255,255,255,.6), rgba(255,255,255,.08) 32%, rgba(227,192,123,.38) 72%, rgba(255,255,255,.16))",
-      WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude" }} />
-    <span aria-hidden style={{ position: "absolute", inset: 0, borderRadius: "inherit", pointerEvents: "none",
-      background: `linear-gradient(115deg, rgba(255,255,255,${sheen}) 0%, rgba(255,255,255,0) 36%)` }} />
-  </>
-);
-
-/** Метка-пилюля из стекла: теги в карточке продукта, пометка «демо-данные». */
-const Pill = ({ children, gold = false, size = "0.7cqw" }: { children: ReactNode; gold?: boolean; size?: string }) => (
-  <span style={{ ...txt, fontSize: size, fontWeight: 700, whiteSpace: "nowrap", padding: "0.3cqw 0.7cqw", borderRadius: 99,
-    color: gold ? "#F1D9A8" : T.nightText, background: gold ? "rgba(227,192,123,.12)" : "rgba(20,16,14,.55)",
-    border: `1px solid ${gold ? "rgba(227,192,123,.34)" : "rgba(251,243,228,.18)"}`, boxShadow: "inset 0 1px 0 rgba(255,255,255,.14)",
-    backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}>{children}</span>
-);
+/** Стекло, кромка и метки живут в общем модуле Glass.tsx: тот же приём используют карточки всей колоды (theme.ts). */
+const glass = (radius: string) => glassSurface(radius, { lift: "lg" });
 
 /** Экран под адресной строкой: скриншот, логотип клиента или карточка продукта. Заполняет остаток окна. */
 function Screen({ c }: { c: BizCase }) {

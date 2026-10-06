@@ -1,4 +1,4 @@
-import { T } from "./theme";
+import { LT, T } from "./theme";
 
 /** Айфон с рилсом 9:16: корпус цвета ночи сайта #14100E, экран — интерфейс Instagram. src — картинка, video — ролик в цикле без звука.
  *  ratio="9/19" — для скринов профиля: телефон выше, видео без обрезки не влезает. */
@@ -16,22 +16,22 @@ export function Phone({ src, video, views, author = "saint4ai", caption, width =
         {chrome && <>
         <div className="absolute inset-x-0 top-0 h-[18%]" style={{ background: "linear-gradient(rgba(20,16,14,.45),transparent)" }} />
         <div className="absolute inset-x-0 bottom-0 h-[34%]" style={{ background: "linear-gradient(transparent,rgba(20,16,14,.6))" }} />
-        {showTop && <div className="absolute left-[7%] top-[5.5%]" style={{ color: T.paper, fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "1.05cqw" }}>Reels</div>}
-        <div className="absolute right-[5%] bottom-[20%] flex flex-col items-center gap-[1.1cqw]" style={{ color: T.paper, fontSize: "0.62cqw", fontFamily: "var(--font-manrope)", fontWeight: 600 }}>
+        {showTop && <div className="absolute left-[7%] top-[5.5%]" style={{ color: LT.paper, fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "1.05cqw" }}>Reels</div>}
+        <div className="absolute right-[5%] bottom-[20%] flex flex-col items-center gap-[1.1cqw]" style={{ color: LT.paper, fontSize: "0.62cqw", fontFamily: "var(--font-manrope)", fontWeight: 600 }}>
           {[
             "M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3.2 5 6.7 5c2 0 3.4 1.1 4.3 2.4.9-1.3 2.3-2.4 4.3-2.4 3.5 0 5.5 3.6 4.2 6.8C19.5 16.4 12 21 12 21z",
             "M4 5h16v11H8l-4 4z",
             "M4 12l16-8-6 16-2.5-6.5z",
           ].map((d, i) => (
-            <svg key={i} viewBox="0 0 24 24" style={{ width: "1.35cqw", height: "1.35cqw" }} fill="none" stroke={T.paper} strokeWidth="1.8" strokeLinejoin="round"><path d={d} /></svg>
+            <svg key={i} viewBox="0 0 24 24" style={{ width: "1.35cqw", height: "1.35cqw" }} fill="none" stroke={LT.paper} strokeWidth="1.8" strokeLinejoin="round"><path d={d} /></svg>
           ))}
         </div>
-        <div className="absolute left-[6%] right-[22%] bottom-[5%]" style={{ color: T.paper, fontFamily: "var(--font-manrope)" }}>
+        <div className="absolute left-[6%] right-[22%] bottom-[5%]" style={{ color: LT.paper, fontFamily: "var(--font-manrope)" }}>
           <div style={{ fontWeight: 700, fontSize: "0.72cqw" }}>{author}</div>
           {caption && <div style={{ fontSize: "0.62cqw", opacity: 0.9, marginTop: "0.2cqw" }}>{caption}</div>}
           {views && (
             <div className="flex items-center gap-[0.3cqw]" style={{ fontSize: "0.66cqw", fontWeight: 700, marginTop: "0.35cqw", fontVariantNumeric: "tabular-nums" }}>
-              <svg viewBox="0 0 24 24" style={{ width: "0.8cqw", height: "0.8cqw" }} fill={T.paper}><path d="M8 5v14l11-7z" /></svg>
+              <svg viewBox="0 0 24 24" style={{ width: "0.8cqw", height: "0.8cqw" }} fill={LT.paper}><path d="M8 5v14l11-7z" /></svg>
               {views}
             </div>
           )}

@@ -8,7 +8,7 @@ import { MontageBg } from "../MontageBg";
 import { ReelRail } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
-import { T, card, glass, goldButton } from "../theme";
+import { GLASS, LT, T, card, glass, goldButton } from "../theme";
 import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
 
 const label: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.35, color: T.ink };
@@ -23,7 +23,7 @@ export function M_Check() {
           <motion.div key={i} initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.25 + i * 0.035, duration: 0.35, ease: EASE }}
             className="flex items-center justify-center"
             style={{ ...card, borderRadius: 16, width: "4.2cqw", height: "4.2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.5cqw",
-              color: i === 9 ? T.ink : T.brown, ...(i === 9 ? { ...goldButton, border: "none" } : null) }}>
+              color: i === 9 ? LT.ink : T.brown, ...(i === 9 ? { ...goldButton, border: "none" } : null) }}>
             {i + 1}
           </motion.div>
         ))}
@@ -89,7 +89,7 @@ export function M_Promise() {
             <div className="flex flex-col items-center gap-[0.6cqw]">
               <Px name={icons[i]} size="7.4cqw" delay={0.3 + i * 0.12} />
               <motion.div {...inUp(i * 2)}
-                style={{ ...(i === 2 ? goldButton : card), borderRadius: 999, padding: "0.9cqw 1.8cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.25cqw", color: i === 2 ? T.ink : T.brown }}>
+                style={{ ...(i === 2 ? goldButton : card), borderRadius: 999, padding: "0.9cqw 1.8cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.25cqw", color: i === 2 ? LT.ink : T.brown }}>
                 {c}
               </motion.div>
             </div>
@@ -152,7 +152,7 @@ export function M_About() {
       leftObject={
         <motion.div className="relative w-full h-full" initial={{ opacity: 0, y: "2cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ duration: 0.6, ease: EASE }}>
           {/* Свет: белый блик сверху и золотое пятно за спиной, без жёстких краёв */}
-          <div className="absolute" style={{ left: "-30%", right: "-30%", top: "-6%", height: "70%", background: `radial-gradient(closest-side, ${T.paper}, ${T.paper}00)` }} />
+          <div className="absolute" style={{ left: "-30%", right: "-30%", top: "-6%", height: "70%", background: "radial-gradient(closest-side, rgba(251,243,228,.16), rgba(251,243,228,0))" }} />
           <div className="absolute" style={{ left: "-10%", right: "-10%", top: "16%", bottom: "-4%", background: `radial-gradient(closest-side, ${T.gold}B3, ${T.gold}33 60%, ${T.gold}00)` }} />
           <img src="/montage/alex-cacao.webp" alt="Александр" className="absolute bottom-0 left-[52%] h-[72%] w-auto max-w-none" style={{ translate: "-50% 0", filter: "drop-shadow(0 2cqw 3cqw rgba(42,33,28,.25))" }} />
         </motion.div>
@@ -166,7 +166,7 @@ export function M_About() {
       <motion.div initial={{ opacity: 0, y: "1.6cqw", scale: 0.97 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }} transition={{ delay: at(3, 0.2), duration: 0.55, ease: EASE }}
         style={{ marginTop: "1.6cqw", width: "calc(100% + 56px - 0.8cqw)", maxWidth: "none" }}>
         <img src="/montage/profile.jpg" alt="Профиль saint4ai в Instagram" draggable={false}
-          style={{ display: "block", width: "100%", height: "auto", borderRadius: "1.2cqw", border: `1px solid ${T.line}`, boxShadow: T.shadow, background: T.paper }} />
+          style={{ display: "block", width: "100%", height: "auto", borderRadius: "1.2cqw", border: `1px solid ${T.line}`, boxShadow: T.shadow, background: LT.paper }} />
       </motion.div>
       <Rise delay={at(4, 0.2)} className="flex items-center" style={{ gap: "1.1cqw", marginTop: "1.4cqw", maxWidth: "29cqw" }}>
         <Num size="3cqw" color={T.brown}>1000+</Num>
@@ -181,7 +181,17 @@ export function M_About() {
 export function M_CostStory() {
   return (
     <Statement kicker="Моя история" title={<>Сколько мне стоит <Em>монтаж в месяц</Em></>} size="2.7cqw">
-      <div style={{ marginTop: "0.4cqw" }}>
+      <div className="glass-fx" style={{ marginTop: "0.4cqw" }}>
+        {/* CostDrop3D (fx/) красит текст под светлую тему и не принимает цвета, поэтому на тёмном стекле его подписи перекрашиваются
+            отсюда по структуре: колонка справа от стопки плит = третий элемент корня (первый — style, второй — svg) */}
+        {GLASS && <style>{`
+          .glass-fx > div > div:nth-child(3) > div:nth-child(1) { opacity: .85 !important; }
+          .glass-fx > div > div:nth-child(3) > div:nth-child(1) > div:nth-child(1) { color: ${T.brown} !important; }
+          .glass-fx > div > div:nth-child(3) > div:nth-child(1) > div:nth-child(1) > span { background: ${T.brown} !important; }
+          .glass-fx > div > div:nth-child(3) > div:nth-child(1) > div:nth-child(2),
+          .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(2) { color: ${T.muted} !important; }
+          .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) { background: linear-gradient(160deg, rgba(42,33,28,.92), rgba(20,16,14,.95)) !important; border: 1px solid ${T.gold2}66; }
+        `}</style>}
         <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Было бы: монтажёр · 150 роликов по 10 000 ₸, мой темп 5 роликов в день" }}
           to={{ value: "$200", label: "Стало: подписка Claude Max · 150 роликов в месяц" }} />
       </div>

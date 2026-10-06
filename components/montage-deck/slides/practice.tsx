@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ScreenStage3D } from "../fx";
 import { Statement } from "../Statement";
-import { T, card, goldButton } from "../theme";
+import { LT, T, card, goldButton } from "../theme";
 import { Arrow, Card, EASE, Em, Fill, MaskIcon, Note, Px, Stagger, txt } from "../ui";
 
 /**
@@ -89,7 +89,7 @@ export function M_DocsLive() {
       <div className="flex flex-wrap gap-[0.7cqw]" style={{ maxWidth: "50cqw" }}>
         {items.map((t, i) => (
           <motion.div key={t} {...inUp(i)} style={{ ...(i === items.length - 1 ? goldButton : card), borderRadius: 999, padding: "0.9cqw 1.6cqw",
-            fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.15cqw", color: i === items.length - 1 ? T.ink : T.brown }}>{t}</motion.div>
+            fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.15cqw", color: i === items.length - 1 ? LT.ink : T.brown }}>{t}</motion.div>
         ))}
       </div>
     </Statement>
@@ -146,7 +146,7 @@ export function M_AIStudio() {
             {[T.gold, T.brownLt, T.nightMuted].map((c) => <span key={c} style={{ width: "0.6cqw", height: "0.6cqw", borderRadius: 99, background: c }} />)}
             <span style={{ marginLeft: "0.8cqw", padding: "0.2cqw 0.8cqw", borderRadius: 99, background: T.night, ...txt, fontSize: "0.75cqw", color: T.nightMuted }}>aistudio.google.com</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-[0.8cqw]" style={{ height: "17cqw", background: T.soft }}>
+          <div className="flex flex-col items-center justify-center gap-[0.8cqw]" style={{ height: "17cqw", background: T.paper }}>
             <MaskIcon name="google" color={T.brown} size="3cqw" />
             <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.4cqw", color: T.brown }}>AI Studio</div>
             <div style={{ ...txt, fontSize: "0.9cqw", color: T.muted }}>Опишите приложение — оно соберётся</div>
@@ -261,8 +261,8 @@ export function M_MainConclusion() {
         <motion.div initial={{ opacity: 0, x: "-0.8cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ delay: 0.6, duration: 0.35, ease: EASE }}><Arrow size="2cqw" /></motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8, type: "spring", stiffness: 180, damping: 14 }}
           style={{ ...goldButton, borderRadius: 22, padding: "1.2cqw 1.4cqw" }}>
-          <div style={{ ...txt, fontSize: "0.85cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.ink }}>Сейчас</div>
-          <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.45cqw", whiteSpace: "nowrap", color: T.ink, marginTop: "0.4cqw" }}><Fill>1 человек × 1 неделя</Fill></div>
+          <div style={{ ...txt, fontSize: "0.85cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: LT.ink }}>Сейчас</div>
+          <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.45cqw", whiteSpace: "nowrap", color: LT.ink, marginTop: "0.4cqw" }}><Fill>1 человек × 1 неделя</Fill></div>
         </motion.div>
       </div>
     </Statement>

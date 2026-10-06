@@ -9,7 +9,7 @@ import { MontageBg } from "../MontageBg";
 import { Statement } from "../Statement";
 import { Logo as BrandLogo } from "../Logo";
 import { RESULTS, fmtStat } from "../results";
-import { T, card, goldButton, nightCard } from "../theme";
+import { LT, T, card, goldButton, nightCard } from "../theme";
 import { Card, DrawLine, EASE, Em, Fill, H, Lead, MaskIcon, Note, Rise, STEP, Stagger, at, nb, txt } from "../ui";
 import { COVER_CARDS } from "./M_Cover";
 
@@ -95,7 +95,7 @@ export function DirectPhone({ msgs, step = 0.7, width = "17cqw" }: { msgs: { me?
       <div className="flex h-full w-full flex-col overflow-hidden" style={{ borderRadius: "1.98cqw", background: T.paper }}>
         <div className="flex items-center gap-[0.5cqw]" style={{ padding: "1.4cqw 1cqw 0.7cqw", borderBottom: `1px solid ${T.line}` }}>
           <span className="flex items-center justify-center" style={{ width: "1.8cqw", height: "1.8cqw", borderRadius: 99, background: `linear-gradient(180deg, ${T.gold}, ${T.gold2})` }}>
-            <MaskIcon name="instagram" color={T.ink} size="1cqw" />
+            <MaskIcon name="instagram" color={LT.ink} size="1cqw" />
           </span>
           <div>
             <div style={{ ...txt, fontWeight: 700, fontSize: "0.8cqw" }}>saint4ai</div>
@@ -107,7 +107,7 @@ export function DirectPhone({ msgs, step = 0.7, width = "17cqw" }: { msgs: { me?
             {msgs.slice(0, n).map((m, i) => (
               <motion.div key={i} layout initial={{ opacity: 0, y: "0.8cqw", scale: 0.92 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }} transition={{ duration: 0.3, ease: EASE }}
                 style={{ alignSelf: m.me ? "flex-end" : "flex-start", maxWidth: "86%", padding: "0.55cqw 0.8cqw", ...txt, fontWeight: 500, fontSize: "0.78cqw", lineHeight: 1.35,
-                  borderRadius: m.me ? "14px 14px 4px 14px" : "14px 14px 14px 4px", background: m.me ? T.ink : T.card, color: m.me ? T.nightText : T.ink,
+                  borderRadius: m.me ? "14px 14px 4px 14px" : "14px 14px 14px 4px", background: m.me ? T.gold : T.card, color: m.me ? LT.ink : T.ink,
                   ...(m.me ? { fontFamily: "var(--font-unbounded)", fontWeight: 700 } : null) }}>{m.t}</motion.div>
             ))}
             {typing && <motion.div key="typing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ alignSelf: "flex-start", borderRadius: "14px 14px 14px 4px", background: T.card }}><Typing /></motion.div>}

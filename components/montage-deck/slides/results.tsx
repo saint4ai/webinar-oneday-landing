@@ -6,7 +6,7 @@ import { DirectStack } from "../DirectMock";
 import { ReelRail, Views } from "../ReelRail";
 import { RESULTS, fmtStat, type Stat } from "../results";
 import { Statement } from "../Statement";
-import { T, card } from "../theme";
+import { NUM_ACCENT, T, card } from "../theme";
 import { EASE, Em, Fill, Note, Num, STEP } from "../ui";
 
 /**
@@ -50,7 +50,7 @@ const MainStat = ({ value, label, size }: { value: Stat | string; label: string;
       </div>
     </In>
   ) : (
-    <div style={{ marginTop: "1.4cqw" }}><ExtrudedNumber value={typeof value === "string" ? value : fmtStat(value)} label={label} size={size} /></div>
+    <div style={{ marginTop: "1.4cqw" }}><ExtrudedNumber value={typeof value === "string" ? value : fmtStat(value)} label={label} size={size} accent={NUM_ACCENT} /></div>
   );
 
 /** 22r · 30 дней: что смонтировал агент. Цифры и подписи — RESULTS.montage (срез 4 октября, три площадки). */
@@ -80,7 +80,7 @@ export function M_ResultMontage() {
 
 /** Плитка рилса в рамке (по умолчанию 9:16, плитки панели 232×324). Нет файла — пунктирное место с номером и путём, куда положить скрин. */
 const ReelShot = ({ src, n, file, ratio = "9 / 16" }: { src?: string; n: number; file: string; ratio?: string }) => (
-  <div style={{ width: "100%", aspectRatio: ratio, borderRadius: "0.9cqw", overflow: "hidden", background: src ? T.card : `${T.card}99`,
+  <div style={{ width: "100%", aspectRatio: ratio, borderRadius: "0.9cqw", overflow: "hidden", background: T.card,
     boxShadow: src ? `0 0 0 1px ${T.line}, ${T.shadowSm}` : "none", border: src ? "none" : `1.5px dashed ${T.brownLt}`,
     display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
     {src ? <img src={src} alt={`Рилс ${n}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : (

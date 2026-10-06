@@ -2,7 +2,7 @@
 
 import { CSSProperties, ReactNode } from "react";
 import { motion } from "framer-motion";
-import { T, card, nightCard } from "./theme";
+import { LT, T, card, nightCard } from "./theme";
 
 /** Неразрывные пробелы в числах: «300 000 ₸» не рвётся по строкам. */
 export const nb = (s: string) => s.replace(/ /g, " ");
@@ -40,7 +40,7 @@ export const Chip = ({ children, night = false, gold = false }: { children: Reac
   <span style={{
     fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "1cqw", borderRadius: 999, padding: "0.6cqw 1.2cqw", whiteSpace: "nowrap", display: "inline-block",
     ...(gold
-      ? { background: `linear-gradient(180deg, ${T.gold}, ${T.gold2})`, color: T.ink, border: `1px solid ${T.gold2}` }
+      ? { background: `linear-gradient(180deg, ${T.gold}, ${T.gold2})`, color: LT.ink, border: `1px solid ${T.gold2}` }
       : night
         ? { background: T.night2, color: T.nightText, border: `1px solid ${T.nightLine}` }
         : { background: T.card, color: T.ink, border: `1px solid ${T.line}` }),

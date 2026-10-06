@@ -8,7 +8,7 @@ import { ExtrudedNumber } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
-import { T, card, goldButton, goldText, pricePlate } from "../theme";
+import { NUM_ACCENT, LT, T, card, goldButton, goldText, pricePlate } from "../theme";
 import { Card, DrawLine, EASE, Em, Fill, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
 
 /** Чип-условие: золотая рамка на светлом золоте. */
@@ -25,7 +25,7 @@ export const BigWord = ({ word, size = "9cqw" }: { word: string; size?: string }
       <style>{`@keyframes bw-shine { from { background-position: 160% 0; } to { background-position: -60% 0; } }`}</style>
       <div style={{ ...face, ...goldText, filter: "drop-shadow(0 1cqw 1.6cqw rgba(201,160,90,.35))" }}>{word}</div>
       <div aria-hidden className="absolute inset-0" style={{
-        ...face, color: "transparent", backgroundImage: `linear-gradient(100deg, transparent 38%, ${T.card}CC 50%, transparent 62%)`,
+        ...face, color: "transparent", backgroundImage: `linear-gradient(100deg, transparent 38%, ${LT.card}CC 50%, transparent 62%)`,
         backgroundSize: "250% 100%", backgroundRepeat: "no-repeat", WebkitBackgroundClip: "text", backgroundClip: "text", animation: "bw-shine 1.4s ease-out 0.9s both",
       }}>{word}</div>
     </motion.div>
@@ -67,7 +67,7 @@ export function M_Case107() {
           <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" views={nb("118 тыс.")} caption="4 умных коннектора для Claude" width="13.5cqw" showTop={false} />
         </motion.div>
       }>
-      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("116 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" /></div>
+      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("116 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" accent={NUM_ACCENT} /></div>
       <Stagger i={4} base={0.6}><Lead style={{ marginTop: "2cqw", maxWidth: "34cqw" }}>Я записал видео, агент собрал графику, анимацию, субтитры и звук по моим правкам.</Lead></Stagger>
       <Note>Статистика Instagram на 5 октября 2026</Note>
     </Statement>
@@ -193,7 +193,7 @@ export function M_Installments() {
       </div>
       <Rise delay={1.6} className="flex flex-wrap items-center gap-[0.6cqw]" style={{ marginTop: "1.6cqw" }}>
         {BANKS.map((b) => (
-          <span key={b.name} className="flex items-center justify-center" style={{ height: "3.2cqw", minWidth: "7.5cqw", padding: "0 1.1cqw", borderRadius: 12, background: T.paper, border: `1px solid ${T.line}`, boxShadow: T.shadowSm }}>
+          <span key={b.name} className="flex items-center justify-center" style={{ height: "3.2cqw", minWidth: "7.5cqw", padding: "0 1.1cqw", borderRadius: 12, background: LT.paper, border: `1px solid ${T.line}`, boxShadow: T.shadowSm }}>
             <img src={`/payment/banks/${b.logo}.png`} alt={b.name} style={{ maxHeight: "2.1cqw", maxWidth: "6.5cqw", width: "auto" }} />
           </span>
         ))}
@@ -415,7 +415,8 @@ export function M_GameBonus() {
     <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру — ещё <Em><span style={{ whiteSpace: "nowrap" }}>{nb("−10 000 ₸")}</span></Em></>} size="3cqw"
       lead={<>Игра Token Runner в Telegram. Пройди 3 испытания — получишь код: Vibe Production за {nb("140 000 ₸")} вместо {nb("150 000 ₸")}.</>}>
       <Stagger i={0}>
-        <div style={{ ...card, borderRadius: 22, padding: "1cqw", width: "13cqw" }}>
+        {/* плита QR остаётся белой: тёмные модули на стекле камера не прочитает */}
+        <div style={{ ...card, background: LT.paper, borderRadius: 22, padding: "1cqw", width: "13cqw" }}>
           <img src="/montage/qr-game.svg" alt="QR-код: игра Token Runner в Telegram" style={{ display: "block", width: "100%", height: "auto" }} />
         </div>
         <div style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", color: T.brown, marginTop: "1cqw", whiteSpace: "nowrap" }}>t.me/tokenrunner_bot</div>

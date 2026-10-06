@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { ReelRail, Views } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
-import { T, card, goldButton } from "../theme";
+import { LT, T, card, goldButton } from "../theme";
 import { EASE, Em, Note, Num, Px, STEP, nb, txt } from "../ui";
 
 /**
@@ -25,7 +25,7 @@ function Qr({ src, alt, caption, sub, i = 6 }: { src: string; alt: string; capti
   return (
     <In i={i} style={{ width: "12.5cqw" }}>
       <motion.div initial={{ rotate: -4, scale: 0.92 }} animate={{ rotate: 0, scale: 1 }} transition={{ delay: 0.5 + i * STEP, type: "spring", stiffness: 180, damping: 15 }}
-        style={{ ...card, background: T.paper, borderRadius: 22, padding: "0.9cqw", boxShadow: T.shadow }}>
+        style={{ ...card, background: LT.paper, borderRadius: 22, padding: "0.9cqw", boxShadow: T.shadow }}>
         <img src={src} alt={alt} draggable={false} style={{ display: "block", width: "100%", height: "auto" }} />
       </motion.div>
       <div style={{ ...txt, fontWeight: 700, fontSize: "1.05cqw", color: T.brown, marginTop: "0.8cqw", whiteSpace: "nowrap" }}>{caption}</div>
@@ -122,7 +122,7 @@ export function M_GameCommunity() {
               <motion.div key={p.n} initial={{ height: "0cqw" }} animate={{ height: p.h }} transition={{ delay: 0.5 + k * 0.12, duration: 0.6, ease: EASE }}
                 className="flex flex-1 items-start justify-center" style={{ borderRadius: "0.8cqw 0.8cqw 0.3cqw 0.3cqw", paddingTop: "0.5cqw", overflow: "hidden",
                   ...(p.n === 1 ? goldButton : { background: T.card, border: `1px solid ${T.line}` }) }}>
-                <Num size="1.9cqw" color={p.n === 1 ? T.ink : T.brown}>{p.n}</Num>
+                <Num size="1.9cqw" color={p.n === 1 ? LT.ink : T.brown}>{p.n}</Num>
               </motion.div>
             ))}
           </In>

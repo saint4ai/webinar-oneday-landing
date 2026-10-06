@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { VoxelField } from "../fx";
 import { MontageBg } from "../MontageBg";
-import { T, goldText } from "../theme";
+import { LT, T, goldText } from "../theme";
 import { EASE, H, Kicker, Lead, Px, RISE_DUR, STEP } from "../ui";
 
 /**
@@ -26,7 +26,7 @@ export function M_Chapter({ big, kicker, title, sub, bigSize = "16cqw", obj }: {
           {/* Блик по золоту — один проход */}
           <div aria-hidden className="absolute inset-0" style={{
             ...text, color: "transparent",
-            backgroundImage: `linear-gradient(100deg, transparent 38%, ${T.card}B3 50%, transparent 62%)`,
+            backgroundImage: `linear-gradient(100deg, transparent 38%, ${LT.card}B3 50%, transparent 62%)`,
             backgroundSize: "250% 100%", backgroundRepeat: "no-repeat", WebkitBackgroundClip: "text", backgroundClip: "text",
             animation: "ch-shine 1.4s ease-out 0.5s both",
           }}>{big}</div>

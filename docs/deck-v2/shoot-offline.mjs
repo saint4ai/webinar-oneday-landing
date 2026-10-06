@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, "..", "..");
+const DIST = process.env.NEXT_DIST_DIR || ".next"; // NEXT_DIST_DIR=.next-glass — снимать вторую сборку, не трогая основную
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 const OUT = opt("--out") ?? join(here, "shots");
@@ -40,7 +41,7 @@ const marks = []; // [ключ, начало в мс от старта запи�
 const CLIP_LONG = { "08c": 41500, "10i": 13300 };
 mkdirSync(OUT, { recursive: true });
 
-if (!existsSync(join(ROOT, ".next/server/app/montage.html"))) {
+if (!existsSync(join(ROOT, DIST + "/server/app/montage.html"))) {
   console.error("Нет сборки: сначала WEBINAR_LOCAL=1 npx next build");
   process.exit(1);
 }
@@ -54,8 +55,8 @@ const TYPES = { ".js": "application/javascript", ".css": "text/css", ".woff2": "
 
 const missing = new Set();
 function fileFor(pathname) {
-  if (pathname === "/montage" || pathname === "/montage/") return join(ROOT, ".next/server/app/montage.html");
-  if (pathname.startsWith("/_next/static/")) return join(ROOT, ".next/static", decodeURIComponent(pathname.slice("/_next/static/".length)));
+  if (pathname === "/montage" || pathname === "/montage/") return join(ROOT, DIST + "/server/app/montage.html");
+  if (pathname.startsWith("/_next/static/")) return join(ROOT, DIST + "/static", decodeURIComponent(pathname.slice("/_next/static/".length)));
   return join(ROOT, "public", decodeURIComponent(pathname));
 }
 
@@ -68,7 +69,7 @@ await ctx.route("**/*", async (route) => {
   const url = new URL(route.request().url());
   if (url.host !== "deck.offline") return route.abort();
   let file = fileFor(url.pathname);
-  if (url.searchParams.has("_rsc")) file = join(ROOT, ".next/server/app/montage.rsc");
+  if (url.searchParams.has("_rsc")) file = join(ROOT, DIST + "/server/app/montage.rsc");
   if (!existsSync(file) || statSync(file).isDirectory()) { missing.add(url.pathname); return route.fulfill({ status: 404, body: "" }); }
   const type = TYPES[extname(file).toLowerCase()] ?? "application/octet-stream";
   const buf = readFileSync(file);
