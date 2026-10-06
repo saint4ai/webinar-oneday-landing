@@ -1,0 +1,14 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//onAI Academy//Efir//RU
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:efir-vibe-production-2026-10-06@onai.academy
+DTSTAMP:20261005T120000Z
+DTSTART:20261006T150000Z
+DTEND:20261006T162000Z
+SUMMARY:Бесплатный эфир: рилсы без знаний монтажа
+DESCRIPTION:Ссылку пришлём в WhatsApp перед началом. Записи не будет.
+ORGANIZER;CN=onAI Academy:mailto:platform@onai.academy
+END:VEVENT
+END:VCALENDAR
