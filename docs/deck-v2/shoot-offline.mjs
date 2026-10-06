@@ -133,8 +133,14 @@ const last = only ? Math.max(...only.map((k) => keys.indexOf(k))) : keys.length 
 for (let i = 0; i <= last; i++) {
   const k = keys[i];
   const wanted = !only || only.includes(k);
+  // с --only к нужному слайду прыгаем по адресу #N (SlideDeck читает номер при загрузке), а не пролистываем:
+  // при частом листании переход SlideDeck (AnimatePresence mode="wait") иногда залипает на уходящем слайде
+  if (only && !wanted) continue;
   errors.length = 0;
-  if (i > 0) await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
+  if (only) {
+    await page.goto(`http://deck.offline/montage?n=${i}#${i + 1}`, { waitUntil: "load" });
+    await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+  } else if (i > 0) await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
   if (wanted && clips.includes(k)) {
     const len = CLIP_LONG[k] ?? CLIP_MS;
     marks.push([k, Date.now() - t0, len]);
@@ -143,7 +149,7 @@ for (let i = 0; i <= last; i++) {
     let prev = 0;
     for (const t of FILM_MS) { await page.waitForTimeout(t - prev); prev = t; await shot(`film-${k}-${t}`); }
   } else {
-    await page.waitForTimeout(wanted ? (SLOW[k] ?? 2500) : 450);
+    await page.waitForTimeout(SLOW[k] ?? 2500);
   }
   if (!wanted) continue;
   if (!film.includes(k)) await shot(k);

@@ -22,6 +22,7 @@ import { M_MyPath } from "./slides/warmup";
 import { M_Cases } from "./slides/cases";
 import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides/results";
 import { M_CodeWordFlow, M_Plan30, M_Thanks } from "./slides/lesson3";
+import { M_Blog, M_GameCommunity, M_Instagram, M_ServicesOffer, M_TeamTraining } from "./slides/outro";
 import { M_IntroVideo } from "./slides/intro";
 import { M_DocsHow, M_DocsExample, M_DocsLive, M_AppsBuilds, M_AIStudio, M_AppBrief, M_AppStart, M_AppNext, M_MarketPrice, M_WebApps, M_MainConclusion, M_DeckByAgent } from "./slides/practice";
 
@@ -115,6 +116,12 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_GameBonus key="57g" />,
     // Финал · 2 мин
     <M_Guides key="58" kicker="Обещанное" title="Забирайте три гайда" lead="Напишите МОНТАЖ в чат." />,
+    // Финал перед прощанием (Александр 06.10): обучение для компаний, внедрение, игра, блог, Instagram — у каждого свой QR
+    <M_TeamTraining key="o1" />,
+    <M_ServicesOffer key="o2" />,
+    <M_GameCommunity key="o3" />,
+    <M_Blog key="o4" />,
+    <M_Instagram key="o5" />,
     <M_Thanks key="59" />,
   ];
   // Вне показа 6 октября (компоненты в slides/, вернуть — импортировать и вставить в массив):
