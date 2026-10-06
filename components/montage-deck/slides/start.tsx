@@ -161,9 +161,10 @@ export function M_About() {
       <Rise delay={STEP}><H size="3.4cqw">Александр</H></Rise>
       {/* Позиционирование — слова Александра 05.10: «разработчик без знаний программирования, разрабатываю IT-решения для бизнеса» */}
       <Rise delay={STEP * 2}><Lead style={{ marginTop: "0.8cqw", maxWidth: "29cqw" }}>Разработчик без знаний программирования: собираю IT-решения для бизнеса с <span style={{ whiteSpace: "nowrap" }}>ИИ-агентами</span>. Основатель onAI Academy.</Lead></Rise>
-      {/* Скрин профиля Instagram без рамки телефона, со скруглёнными углами (правка Александра 05.10) */}
+      {/* Скрин профиля Instagram без рамки телефона, со скруглёнными углами (правка Александра 05.10).
+          06.10: крупнее, до линии-разделителя зоны камеры — съедаем правый отступ колонки SlideLayout (56px) */}
       <motion.div initial={{ opacity: 0, y: "1.6cqw", scale: 0.97 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }} transition={{ delay: at(3, 0.2), duration: 0.55, ease: EASE }}
-        style={{ marginTop: "1.6cqw", maxWidth: "29cqw" }}>
+        style={{ marginTop: "1.6cqw", width: "calc(100% + 56px - 0.8cqw)", maxWidth: "none" }}>
         <img src="/montage/profile.jpg" alt="Профиль saint4ai в Instagram" draggable={false}
           style={{ display: "block", width: "100%", height: "auto", borderRadius: "1.2cqw", border: `1px solid ${T.line}`, boxShadow: T.shadow, background: T.paper }} />
       </motion.div>

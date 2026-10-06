@@ -1,13 +1,13 @@
 /**
- * Кейсы для карусели 08c «Что я собрал для бизнеса»: 12 кейсов, которые хаб кейсов разрешает показывать
- * (onai-workspace, ветка claude/quirky-carson-ei234s, business-cases/README.md, раздел «Что показывать», срез 05.10.2026).
- * Тексты сжаты из business-cases/site-texts/<slug>.md, цифры только из FACTS.md с пометкой «да» или «с оговоркой» (оговорка в чипе).
- * Порядок как советует хаб для эфира: платформы, AI-ассистенты, аналитика, продукты, прототип.
- * Правила хаба: без цен и бюджетов, без названий AI-поставщиков, кадр на демо-данных с пометкой «демо-данные».
- * Кадры 1600×1000 в public/montage/cases/; первые три — одобренные кадры сайта из projects/saint_landing/public/assets/cases.
+ * Кейсы для карусели 08c «Что я собрал для бизнеса»: 11 кейсов витрины onai.academy/saint (версия сайта 10, 06.10.2026).
+ * ShowToday убран с сайта и из презентации по решению Александра 06.10: работа не состоялась.
+ * Кадры — главные картинки кейсов с сайта (у сайта поле image: <имя>-large.webp, 2400×1500), уменьшены до 1600×1000 в public/montage/cases/.
+ * Тексты сжаты из карточек сайта (title, description, proof), цифры только проверенные: фактчек сайта 06.10 и FACTS.md хаба кейсов.
+ * Порядок как советует хаб для эфира: платформы, AI-ассистенты, аналитика, продукты.
+ * Правила хаба: без цен и бюджетов клиентов, без названий AI-поставщиков, кадр на демо-данных с пометкой «демо-данные».
  */
 
-/** Что показывать в окне браузера: скриншот, логотип клиента или карточку продукта (когда кадра нет, как на сайте). */
+/** Что показывать в окне браузера: скриншот, логотип клиента или карточку продукта (когда кадра нет). */
 export type CaseVisual =
   | { kind: "shot"; src: string; demo?: boolean }
   | { kind: "logo"; src: string; dark?: boolean; tags: string[] }
@@ -23,6 +23,9 @@ export type BizCase = {
   url: string; // страница кейса без https://
 };
 
+// ?v= — сброс кэша: prod-сервер отдаёт картинки из public с кэшем на 7 дней, а имена файлов при замене кадров не меняются
+const shot = (slug: string, demo = false): CaseVisual => ({ kind: "shot", src: `/montage/cases/${slug}.webp?v=1006`, demo });
+
 export const CASES: BizCase[] = [
   {
     slug: "erickson",
@@ -30,16 +33,16 @@ export const CASES: BizCase[] = [
     niche: "Коучинговый университет",
     oneLiner: "Платформа обучения с AI-куратором и менторингами",
     metric: "50 студентов · 81 урок · запуск за 2 месяца",
-    visual: { kind: "shot", src: "/montage/cases/erickson.webp" },
+    visual: shot("erickson"),
     url: "onai.academy/saint/cases/erickson",
   },
   {
     slug: "the-one-system",
     title: "The One System",
     niche: "Бизнес-школа, Алматы",
-    oneLiner: "Своя платформа обучения с AI за 9 недель",
+    oneLiner: "Платформа обучения для бизнес-школы за 9 недель",
     metric: "78 экранов · 3 роли · 2 языка",
-    visual: { kind: "shot", src: "/montage/cases/the-one-system.webp" },
+    visual: shot("the-one-system"),
     url: "onai.academy/saint/cases/the-one-system",
   },
   {
@@ -49,99 +52,87 @@ export const CASES: BizCase[] = [
     oneLiner: "AI-наставник отвечает ученикам по каждому уроку",
     // 900+ на платформе со слов Александра 05.10.2026 (318 в FACTS — только с действующим доступом); всего выпускников 1000+ вместе с Discord, это на слайде 08
     metric: "900+ учеников · 113 уроков · 595 вопросов наставнику",
-    visual: { kind: "shot", src: "/montage/cases/onai-academy.webp" },
+    visual: shot("onai-academy"),
     url: "onai.academy/saint/cases/onai-academy",
   },
   {
-    // site-texts/ai-assistant.md, cases/instagram-bot-saint4ai/FACTS.md: срез базы ассистента на 04.10.2026, работает с 06.09.2026
+    // карточка сайта ai-assistant; цифры — срез базы ассистента на 04.10.2026, работает с 06.09.2026
     slug: "ai-assistant",
     title: "AI-ассистент",
     niche: "Свой продукт · Instagram",
     oneLiner: "Комментарий под роликом превращается в заявку",
     metric: "2 117 человек получили материал · 66 кодовых слов",
-    visual: { kind: "card", icon: "lg-i-chatkey", label: "Слово → директ → заявка", tags: ["Кодовые слова", "Ответы в директе", "Заявки в Telegram"] },
+    visual: shot("ai-assistant", true),
     url: "onai.academy/saint/cases/ai-assistant",
   },
   {
-    // site-texts/iqra.md: цифр результата нет, школа их не подтвердила; логотип logos/iqra.svg.
-    // Дашборд: Александр 06.10.2026 «по CRM мы делали dashboard, был репозиторий»; IQRA — первый клиент в коде iqra-dashboard (cases/diskurs-whatsapp-analytics/FACTS.md)
+    // карточка сайта iqra: дашборд сквозной аналитики и AI-консультант; кадр — стенд на вымышленных данных
     slug: "iqra",
     title: "IQRA",
     niche: "Школа казахского языка",
-    oneLiner: "AI-консультант в чате и дашборд по заявкам из CRM",
-    metric: "Запись на пробный урок в чате · дашборд на данных AmoCRM",
-    visual: { kind: "logo", src: "/montage/cases/iqra-logo.svg", tags: ["AI-консультант", "Дашборд", "AmoCRM"] },
+    oneLiner: "Видно, какое объявление приводит учеников",
+    metric: "Реклама, заявки и продажи в AmoCRM · запись на урок в чате",
+    visual: shot("iqra", true),
     url: "onai.academy/saint/cases/iqra",
   },
   {
-    // site-texts/diskurs.md: дашборд нагрузки в статусе пилота; логотип logos/diskurs.png белый, только на тёмном
+    // карточка сайта diskurs: сквозная аналитика с WhatsApp для клиентов агентства плюс AI-менеджер; кадр — стенд на вымышленных данных
     slug: "diskurs",
     title: "Diskurs",
     niche: "Маркетинговое агентство",
-    oneLiner: "AI-менеджер в чате и дашборд нагрузки команды",
-    metric: "2 решения для одного агентства · дашборд в пилоте",
-    visual: { kind: "logo", src: "/montage/cases/diskurs-logo.png", dark: true, tags: ["AI-менеджер", "Дашборд нагрузки"] },
+    oneLiner: "Клиенты агентства видят, какая реклама доходит до продажи",
+    metric: "Сквозная аналитика с WhatsApp · AI-менеджер для агентства",
+    visual: shot("diskurs", true),
     url: "onai.academy/saint/cases/diskurs",
   },
   {
-    // site-texts/whatsapp-analytics.md. Цифры 7% → 55% и 141 из 141 не ставить: по FACTS.md это аудит клиента AT Academy, без его согласия нельзя
+    // карточка сайта whatsapp-analytics. Цифры 7% → 55% и 141 из 141 не ставить: аудит клиента AT Academy, без его согласия нельзя
     slug: "whatsapp-analytics",
     title: "Сквозная аналитика WhatsApp",
-    niche: "Клиенты агентства Diskurs",
-    oneLiner: "Видно, какое объявление привело клиента из WhatsApp",
-    metric: "Реклама, WhatsApp и CRM в одном отчёте · в Telegram в 8:00",
-    visual: { kind: "card", icon: "lg-i-laptopcoins", label: "Клик → диалог → сделка", tags: ["Реклама", "WhatsApp", "CRM", "Отчёт в 8:00"] },
+    niche: "Решение onAI для рекламы в WhatsApp",
+    oneLiner: "Заявка из WhatsApp связана с рекламой и сделкой",
+    metric: "Реклама → WhatsApp → CRM · отчёт в Telegram в 8:00",
+    visual: shot("whatsapp-analytics", true),
     url: "onai.academy/saint/cases/whatsapp-analytics",
   },
   {
-    // cases/ai-targetolog/FACTS.md, только строки «да»; цифры клиентов и «60+ клиентов» без выгрузки не ставить, цен по правилу хаба нет.
-    // Кадр — публичный лендинг app.aoneagency.kz, блок «Как работает»
+    // cases/ai-targetolog/FACTS.md, только строки «да»; цифры клиентов и «60+ клиентов» без выгрузки не ставить. Кадр сайта — демо-данные
     slug: "ai-targetolog",
     title: "AI-Таргетолог",
     niche: "Свой продукт · реклама FB и IG",
     oneLiner: "Видно, какая реклама приносит продажи",
     metric: "Собрал за 3 месяца · отчёт в Telegram каждое утро",
-    visual: { kind: "shot", src: "/montage/cases/ai-targetolog.webp" },
+    visual: shot("ai-targetolog", true),
     url: "onai.academy/saint/cases/ai-targetolog",
   },
   {
-    // site-texts/omnidash.md: число клиентов не выгружено; кадр — публичный лендинг omnidash.kz, блок подключений
+    // карточка сайта omnidash: пилот, кадр отчёта по таргету на вымышленных данных
     slug: "omnidash",
     title: "OmniDash",
-    niche: "Свой продукт · сквозная аналитика",
+    niche: "Решение onAI для предпринимателей",
     oneLiner: "Реклама и продажи на одном экране",
-    metric: "9 подключений · 5 моделей атрибуции · пилот",
-    visual: { kind: "shot", src: "/montage/cases/omnidash.webp" },
+    metric: "Расход, выручка и ROMI по кампаниям · пилот",
+    visual: shot("omnidash", true),
     url: "onai.academy/saint/cases/omnidash",
   },
   {
-    // site-texts/callvision.md: интерфейс на демо-данных (имена вымышлены), движок проверен на звонках школы onAI
+    // карточка сайта callvision: демо интерфейса на примерных данных
     slug: "callvision",
     title: "CallVision AI",
     niche: "Отделы продаж",
-    oneLiner: "AI-РОП оценивает каждый звонок",
-    metric: "10 критериев · до 3 цитат из разговора на критерий",
-    visual: { kind: "shot", src: "/montage/cases/callvision.webp", demo: true },
+    oneLiner: "Оценка каждого звонка отдела продаж",
+    metric: "10 пунктов чек-листа · цитаты из разговора",
+    visual: shot("callvision", true),
     url: "onai.academy/saint/cases/callvision",
   },
   {
-    // site-texts/voiceseller.md и фактчек сайта 06.10: собран, чтобы позвонить, проверен на тестовой заявке без телефонии; звонков как факта нет
+    // карточка сайта voiceseller: собран, чтобы позвонить по заявке, проверен на тестовой заявке; кадр — макет на демо-данных
     slug: "voiceseller",
     title: "VoiceSeller",
-    niche: "Свой продукт · звонки лидам",
-    oneLiner: "Голосовой менеджер на казахском и русском",
-    metric: "2 языка · проверен на тестовой заявке",
-    visual: { kind: "card", icon: "lg-i-phonearrow", label: "Заявка → звонок → запись", tags: ["Казахский", "Русский", "AmoCRM"] },
+    niche: "Решение onAI для звонков по заявкам",
+    oneLiner: "Звонок по свежей заявке через 7 минут",
+    metric: "Казахский и русский · сценарий и ответы на возражения",
+    visual: shot("voiceseller", true),
     url: "onai.academy/saint/cases/voiceseller",
-  },
-  {
-    // site-texts/showtoday.md: прототип на демо-данных, январь 2026; кадр обрезан сверху без значка внизу (правило хаба)
-    slug: "showtoday",
-    title: "ShowToday",
-    niche: "Агентство праздников",
-    oneLiner: "Прототип показал систему до разработки",
-    metric: "8 метрик переписки · 10 экранов · из него вырос OmniDash",
-    visual: { kind: "shot", src: "/montage/cases/showtoday.webp", demo: true },
-    url: "onai.academy/saint/cases/showtoday",
   },
 ];

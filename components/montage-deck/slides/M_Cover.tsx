@@ -33,10 +33,23 @@ export function M_Cover() {
         <Rise><Logo night height="1.8cqw" style={{ marginBottom: "3cqw" }} /></Rise>
         <Rise delay={STEP}><Kicker color={T.gold}>Эфир · Vibe Production</Kicker></Rise>
         <Rise delay={STEP * 2}><H size="4.6cqw" color={T.nightText} style={{ lineHeight: 1.04 }}>Рилсы без знаний <Em night>монтажа</Em></H></Rise>
-        <Rise delay={STEP * 3}><Lead color={T.nightMuted} style={{ marginTop: "1.8cqw", fontSize: "1.35cqw" }}>Монтирует ИИ-агент по вашему голосу. Презентации и сайты — тоже ИИ.</Lead></Rise>
-        <Rise delay={STEP * 4} className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2.4cqw" }}>
+        {/* 06.10 Александр: продающая подача, особенно про презентации и сайты */}
+        <Rise delay={STEP * 3}><Lead color={T.nightMuted} style={{ marginTop: "1.8cqw", fontSize: "1.35cqw" }}>
+          <span style={{ color: T.nightText }}>Рилс, презентация и сайт за один вечер.</span> Делает ИИ-агент по вашему голосу, без монтажёра, дизайнера и программиста.
+        </Lead></Rise>
+        <Rise delay={STEP * 4} className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2cqw" }}>
           {/* без конкретной даты: Александр 06.10 «просто сегодня в 20:00» */}
           <Chip gold>Сегодня в 20:00</Chip><Chip night>3 практики за вечер</Chip>
+        </Rise>
+        {/* Призыв к действию, пока зрители подключаются: что сделать сейчас и зачем оставаться до конца (гайды — слайд 58, скидка — 57g) */}
+        <Rise delay={STEP * 5} style={{ marginTop: "1.6cqw", borderRadius: 18, padding: "1cqw 1.2cqw", background: "rgba(251,243,228,.06)", border: `1px solid ${T.nightLine}`,
+          backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+          <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.78cqw", letterSpacing: ".14em", textTransform: "uppercase", color: T.gold }}>Что сделать сейчас</div>
+          {["Напишите в чат «+» и свою нишу", "Останьтесь до конца: 3 гайда и скидка участникам эфира"].map((t, i) => (
+            <div key={t} className="flex items-baseline" style={{ gap: "0.7cqw", marginTop: "0.55cqw", fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", color: T.nightText }}>
+              <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, color: T.gold }}>{i + 1}</span>{t}
+            </div>
+          ))}
         </Rise>
       </div>
     </SlideLayout>
