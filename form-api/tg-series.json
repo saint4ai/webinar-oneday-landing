@@ -138,7 +138,6 @@
       "at": "21:15",
       "audience": "all",
       "essential": true,
-      "enabled": false,
       "text": "Обещанные бонусы участникам эфира, забирай:\n\n1. Гайд «Как сделать вирусный рилс»\n2. Контент-план на месяц и схема выкладки\n3. 30 хуков под твою нишу\n\nИ карта 6 референсов для видеомонтажа, если ещё не забрал.",
       "buttons": [
         [{ "text": "Гайд: вирусный рилс", "url": "https://onai.academy/workshop-montazh/assets/bonus/gaid-virusny-rils.pdf" }],

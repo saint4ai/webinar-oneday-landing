@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Как сделать вирусный рилс</title>
+<link rel="stylesheet" href="common.css">
+<style>
+/* стр. 2: карта гайда */
+.map{position:relative;display:flex;gap:26px;margin-top:46px}
+.map::before{content:"";position:absolute;left:116px;right:116px;top:27px;height:0;border-top:3px dashed var(--gold2)}
+.map .st{position:relative;flex:1;text-align:center}
+.map .st .no{position:relative;z-index:1;margin:0 auto}
+.map .st .cd{margin-top:-28px;padding:44px 16px 20px;border-radius:22px;background:var(--cream);border:1.5px solid rgba(160,83,42,.18);min-height:350px}
+.map .st img{height:132px;width:auto;margin:8px auto 16px}
+.map .st .t{font-weight:800;font-size:25px;line-height:1.25;color:var(--brown)}
+.map .st .s{margin-top:10px;font-size:20px;line-height:1.38;color:var(--muted)}
+
+/* стр. 3: полосы */
+.bars{padding:30px 30px 26px 30px;height:392px}
+.bars .lbl{font-size:20px;font-weight:600;color:var(--cream);margin-bottom:10px}
+.bars .bar{height:64px;border-radius:14px;display:flex;align-items:center;padding:0 18px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:28px}
+.bars .b1{width:330px;background:var(--gold);color:var(--night)}
+.bars .b2{width:76px;background:#6E5F53;color:var(--cream);padding:0}
+.bars .v2{margin-left:14px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:28px;color:var(--cream)}
+.bars .cap{font-size:16px;font-weight:600;color:rgba(251,243,228,.7);margin-top:8px}
+.nb>.x4{position:absolute;right:26px;top:110px;text-align:center}
+.x4 .big{font-family:'Unbounded',sans-serif;font-weight:700;font-size:92px;line-height:1;color:var(--gold)}
+.x4 .t{font-size:16px;font-weight:600;color:rgba(251,243,228,.7);margin-top:6px}
+
+/* стр. 4: схема, было / стало */
+.eq{display:flex;align-items:stretch;gap:10px;margin-top:22px}
+.eq .bx{flex:1;border-radius:18px;padding:14px 14px 14px 16px;border:2px solid var(--brown);background:#fff}
+.eq .bx .k{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--brown)}
+.eq .bx .v{font-size:20px;font-weight:800;line-height:1.25;margin-top:4px}
+.eq .bx.g{background:var(--gold);border-color:var(--gold)}
+.eq .bx.g .k{color:var(--night)}
+.eq .bx.n{background:var(--night);border-color:var(--night);color:var(--gold)}
+.eq .bx.n .v{font-size:18px}
+.eq .op{flex:none;width:24px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:700;font-size:28px;color:var(--brown)}
+.pairs{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.pair{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:18px;background:#fff;border:1.5px solid rgba(160,83,42,.2)}
+.pair .was{flex:1;min-width:0}.pair .now{flex:1.25;min-width:0}
+.pair .tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border-radius:7px;padding:2px 8px 3px;margin-bottom:5px}
+.pair .was .tag{background:#E9DFD0;color:var(--muted)}
+.pair .now .tag{background:var(--gold);color:var(--night)}
+.pair .was .tx{font-size:19px;line-height:1.32;color:var(--muted)}
+.pair .now .tx{font-size:21px;line-height:1.3;font-weight:800;color:var(--ink)}
+.pair .ar{flex:none;width:34px;height:34px;border-radius:50%;background:var(--brown);display:flex;align-items:center;justify-content:center}
+.pair .ar svg{width:18px;height:18px}
+.proof{display:flex;flex-direction:column;gap:14px}
+.proof .rl{display:flex;gap:16px;align-items:center}
+.proof .rl .im{position:relative;flex:none;width:100px;height:160px;border-radius:13px;overflow:hidden;border:2px solid var(--gold2);background:#000}
+.proof .rl .im img{width:100px;height:160px;object-fit:cover;object-position:top}
+.proof .rl .cp{font-size:20px;line-height:1.3;font-weight:700;color:var(--ink)}
+
+/* стр. 5: три правила */
+.rules3{display:flex;gap:22px;margin-top:22px}
+.rules3 .rc{flex:1;border-radius:22px;background:#fff;border:1.5px solid rgba(160,83,42,.2);padding:20px 22px 22px}
+.rules3 .viz{position:relative;height:76px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;overflow:hidden}
+.rules3 .t{font-weight:800;font-size:23px;color:var(--brown);line-height:1.2}
+.rules3 .s{margin-top:6px;font-size:19px;line-height:1.38;color:var(--muted)}
+.cmp{padding:24px 28px 22px}
+.cmp .ttl{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19px;line-height:1.3;color:var(--cream)}
+.cmp .it{margin-top:16px}
+.cmp .it .l{font-size:19px;font-weight:600;margin-bottom:6px;color:var(--cream)}
+.cmp .it .br{height:52px;border-radius:12px;display:flex;align-items:center;justify-content:flex-end;padding:0 16px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:24px}
+
+/* стр. 6: 5 шагов */
+.steps5{position:relative;display:flex;gap:14px;margin-top:30px}
+.steps5::before{content:"";position:absolute;left:100px;right:100px;top:27px;border-top:3px dashed var(--gold2)}
+.steps5 .s5{position:relative;flex:1;text-align:center}
+.steps5 .s5 .no{margin:0 auto;position:relative;z-index:1}
+.steps5 .s5 .t{margin-top:14px;min-height:52px;font-weight:800;font-size:21px;line-height:1.22;color:var(--brown)}
+.steps5 .s5 .d{margin-top:8px;font-size:18px;line-height:1.36;color:var(--muted)}
+.hold{display:flex;gap:16px;align-items:center;margin-top:20px;padding:16px 24px;border-radius:18px;background:var(--cream);border:1.5px solid rgba(160,83,42,.2);font-size:22px;line-height:1.38;font-weight:600}
+.hold svg{flex:none;width:34px;height:34px}
+.edits{margin-top:18px;padding:18px 26px 16px;display:flex;gap:26px;align-items:center}
+.edits .tt{flex:none;width:190px}
+.edits .tt .h{font-family:'Unbounded',sans-serif;font-weight:700;font-size:20px;line-height:1.25;color:var(--gold)}
+.edits .tt .c{margin-top:8px;font-size:15px;line-height:1.35;color:rgba(251,243,228,.66)}
+.edits .bb{flex:1;display:flex;gap:14px}
+.bub{flex:1;background:var(--cream);color:var(--ink);font-size:21px;line-height:1.3;font-weight:700;padding:14px 18px;border-radius:22px 22px 6px 22px}
+
+/* стр. 7: проблема -> что сделать */
+.fix{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.fx{display:flex;align-items:stretch;gap:0;border-radius:20px;overflow:hidden;border:1.5px solid rgba(160,83,42,.22);background:#fff}
+.fx .pr{flex:none;width:370px;min-height:112px;background:var(--brown);color:#fff;padding:18px 24px;display:flex;align-items:center;gap:14px;font-size:23px;line-height:1.3;font-weight:800}
+.fx .pr svg{flex:none;width:30px;height:30px}
+.fx .ar{flex:none;width:44px;background:var(--gold);display:flex;align-items:center;justify-content:center}
+.fx .ar svg{width:22px;height:22px}
+.fx .ac{flex:1;padding:18px 26px;font-size:23px;line-height:1.38;font-weight:600;display:flex;align-items:center}
+
+/* стр. 8: плакат */
+.ck{display:grid;grid-template-columns:1fr 1fr;gap:16px 26px;margin-top:32px}
+.ck .it{display:flex;align-items:center;gap:16px;padding:14px 20px 14px 14px;border-radius:18px;background:var(--night2);border:1.5px solid rgba(227,192,123,.28);min-height:118px}
+.ck .it .q{flex:1;font-size:25px;line-height:1.32;font-weight:700;color:var(--cream)}
+.ck .it .bx{flex:none;width:30px;height:30px;border-radius:8px;border:2.5px solid var(--gold)}
+</style></head>
+<body>
+
+<!-- 1. Обложка -->
+<section class="page cover">
+  <img class="glow bleed" src="img/glow-gold.png" style="left:-260px;top:-240px;width:760px;opacity:.55" alt="">
+  <img class="glow bleed" src="img/glow-brown.png" style="left:-200px;bottom:-380px;width:760px;opacity:.7" alt="">
+  <img class="logo" src="img/logo-night.svg" alt="onAI">
+  <div class="txt">
+    <div class="kicker">Гайд 1 из 3 · Бонус воркшопа <span style="white-space:nowrap">«Вайб-продакшен»</span></div>
+    <h1>Как сделать вирусный рилс</h1>
+    <p class="sub">Правило первых 3 секунд, формула первой фразы и чек-лист перед публикацией</p>
+  </div>
+  <div class="sig">Александр, основатель onAI Academy · <a href="https://www.instagram.com/saint4ai/">@saint4ai</a></div>
+  <div class="art bleed"><img src="img/cover-virusny.jpg" style="left:-190px" alt=""></div>
+</section>
+
+<!-- 2. Что вы сделаете -->
+<section class="page">
+  <div class="kicker">Что вы сделаете после этого гайда</div>
+  <h1 style="font-size:34px;line-height:1.2;margin-top:16px;max-width:980px">Соберёте начало рилса так, чтобы его не пролистывали, и будете выпускать ролики без монтажёра.</h1>
+  <div class="map">
+    <div class="st"><span class="no">1</span><div class="cd"><img src="img/lg-i-hourglass.png" alt=""><div class="t">Первые 3 секунды</div><div class="s">почему всё решается там</div></div></div>
+    <div class="st"><span class="no">2</span><div class="cd"><img src="img/lg-i-hook.png" alt=""><div class="t">Фраза-обещание</div><div class="s">4–6 слов на экране</div></div></div>
+    <div class="st"><span class="no">3</span><div class="cd"><img src="img/lg-i-phones.png" alt=""><div class="t">Экран</div><div class="s">три правила</div></div></div>
+    <div class="st"><span class="no">4</span><div class="cd"><img src="img/lg-i-rocket.png" alt=""><div class="t">Чек-лист перед публикацией</div></div></div>
+  </div>
+</section>
+
+<!-- 3. Первые 3 секунды -->
+<section class="page cream">
+  <div class="kicker">Почему всё решают первые 3 секунды</div>
+  <h1>Охват решают первые 3 секунды</h1>
+  <div class="row" style="gap:28px;margin-top:22px;align-items:flex-start">
+    <div style="flex:none;width:410px">
+      <p class="lead" style="font-size:25px;line-height:1.5">Instagram сначала показывает рилс небольшой группе людей. Если они сразу листают дальше, показ останавливается. Я разобрал 14 своих рилсов: там, где сразу пролистали меньше 46% зрителей, охват был в 4 раза выше.</p>
+    </div>
+    <div class="nb bars" style="flex:1;margin-top:0">
+      <img class="glow" src="img/glow-gold.png" style="right:-200px;top:-200px;opacity:.5" alt="">
+      <div class="lbl">Пролистали меньше 46%</div>
+      <div class="bar b1">4 816</div>
+      <div class="cap">медиана охвата</div>
+      <div class="lbl" style="margin-top:34px">Пролистали больше 46%</div>
+      <div class="row ctr"><div class="bar b2"></div><span class="v2">1 098</span></div>
+      <div class="cap">медиана охвата</div>
+      <div class="x4"><div class="big">×4</div><div class="t">разница в охвате</div></div>
+    </div>
+  </div>
+  <div class="rule" style="margin-top:28px"><span class="mk"></span><span>Смотрите в статистике рилса, какая доля зрителей пролистала его сразу. Это главная цифра.</span></div>
+  <div class="note" style="margin-top:14px">Мои 14 рилсов, статистика Instagram на 19 сентября 2026. 46% это граница на моих роликах, не закон платформы.</div>
+</section>
+
+<!-- 4. Формула первой фразы -->
+<section class="page">
+  <div class="row" style="gap:30px">
+    <div style="flex:none;width:594px">
+      <div class="kicker">Формула первой фразы</div>
+      <h1>Одна фраза-обещание на 4–6 слов</h1>
+      <div class="eq">
+        <div class="bx"><div class="k">Голос</div><div class="v">первая фраза</div></div>
+        <div class="op">+</div>
+        <div class="bx g"><div class="k">Экран</div><div class="v">обещание <span style="white-space:nowrap">4–6 слов</span></div></div>
+        <div class="op">=</div>
+        <div class="bx n"><div class="v">зритель понимает, зачем смотреть</div></div>
+      </div>
+      <div class="pairs">
+        <div class="pair"><div class="was"><span class="tag">Было</span><div class="tx">Всем привет, сегодня расскажу про рекламу</div></div><div class="ar"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="now"><span class="tag">Стало</span><div class="tx">Реклама без таргетолога за вечер</div></div></div>
+        <div class="pair"><div class="was"><span class="tag">Было</span><div class="tx">Хочу поделиться одним интересным инструментом</div></div><div class="ar"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="now"><span class="tag">Стало</span><div class="tx">Одно слово в ссылке GitHub</div></div></div>
+        <div class="pair"><div class="was"><span class="tag">Было</span><div class="tx">Многие спрашивают, как я монтирую ролики</div></div><div class="ar"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="now"><span class="tag">Стало</span><div class="tx">Этот рилс смонтировал не человек</div></div></div>
+      </div>
+    </div>
+    <div class="grow" style="padding-top:6px">
+      <div class="proof">
+        <div class="rl"><div class="im"><img src="../../../public/montage/reels/app-1.jpg" alt=""><span class="vw"><svg viewBox="0 0 24 24" fill="none" stroke="#E3C07B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>135 тыс.</span></div><div class="cp">Одно слово в ссылке GitHub · 135 тыс.</div></div>
+        <div class="rl"><div class="im"><img src="../../../public/montage/reels/app-2.jpg" alt=""><span class="vw"><svg viewBox="0 0 24 24" fill="none" stroke="#E3C07B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>118 тыс.</span></div><div class="cp">4 умных коннектора для Claude · 118 тыс.</div></div>
+        <div class="rl"><div class="im"><img src="../../../public/montage/reels/app-4.jpg" alt=""><span class="vw"><svg viewBox="0 0 24 24" fill="none" stroke="#E3C07B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>62,2 тыс.</span></div><div class="cp">Claude тестирует на Android · 62,2 тыс.</div></div>
+      </div>
+      <div class="note" style="margin-top:16px">Мои рилсы: на экране 4–5 слов. Счётчики из приложения Instagram, 5 октября 2026.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Экран: три правила -->
+<section class="page cream">
+  <div class="kicker">Экран первых 3 секунд</div>
+  <h1>Три правила экрана</h1>
+  <div class="rules3">
+    <div class="rc"><div class="viz" style="background:var(--night)"><span class="u" style="font-size:54px;color:var(--gold);letter-spacing:-.02em">Аа</span></div><div class="t">Огромный шрифт</div><div class="s">читается на телефоне в руке</div></div>
+    <div class="rc"><div class="viz" style="background:#fff;border:1.5px solid rgba(160,83,42,.2);padding:0"><span style="flex:1;height:100%;background:var(--night);display:flex;align-items:center;justify-content:center" class="u"><span style="font-size:34px;color:var(--gold)">Аа</span></span><span style="flex:1;height:100%;background:var(--cream2);display:flex;align-items:center;justify-content:center" class="u"><span style="font-size:34px;color:var(--night)">Аа</span></span></div><div class="t">Контраст с фоном</div><div class="s">светлое на тёмном или тёмное на светлом</div></div>
+    <div class="rc"><div class="viz" style="background:var(--cream2);flex-direction:column;gap:7px;align-items:flex-start;padding:0 22px"><span style="display:block;height:7px;width:150px;background:#B9A88F;border-radius:4px"></span><span style="display:block;height:7px;width:110px;background:#B9A88F;border-radius:4px"></span><span style="display:block;height:7px;width:130px;background:#B9A88F;border-radius:4px"></span><svg viewBox="0 0 60 60" style="position:absolute;right:22px;width:52px;height:52px" fill="none" stroke="#8E3B2E" stroke-width="5" stroke-linecap="round"><circle cx="30" cy="30" r="24"/><path d="M13 47L47 13"/></svg></div><div class="t">Без мелких подписей</div><div class="s">всё мелкое в первые 3 секунды не прочтут</div></div>
+  </div>
+  <div class="row" style="gap:22px;margin-top:22px;align-items:stretch">
+    <div class="nb cmp" style="flex:none;width:640px">
+      <img class="glow" src="img/glow-gold.png" style="right:-240px;top:-260px;opacity:.45" alt="">
+      <div class="ttl">Тот же голос, два монтажа. Сколько пролистали сразу</div>
+      <div class="it"><div class="l">Оригинал</div><div class="br" style="width:372px;background:var(--gold);color:var(--night)">34%</div></div>
+      <div class="it"><div class="l">Красивый перемонтаж</div><div class="br" style="width:538px;background:var(--brown);color:#fff">49%</div></div>
+    </div>
+    <div class="grow col" style="justify-content:center"><div class="rule" style="flex-direction:column;align-items:flex-start;gap:14px;padding:22px 24px"><span class="mk"></span><span>Красота не спасает слабое начало. Сначала фраза, потом эффекты.</span></div></div>
+  </div>
+  <div class="note" style="margin-top:14px">Данные моей статистики Instagram.</div>
+</section>
+
+<!-- 6. Как собрать рилс без монтажёра -->
+<section class="page">
+  <div class="kicker">Порядок работы</div>
+  <h1>Как собрать рилс без монтажёра: <span style="white-space:nowrap">5 шагов</span></h1>
+  <div class="steps5">
+    <div class="s5"><span class="no lg">1</span><div class="t">Голос и расшифровка</div><div class="d">записываете голос на телефон, агент расшифровывает каждое слово со временем.</div></div>
+    <div class="s5"><span class="no lg">2</span><div class="t">Формат и стиль</div><div class="d">выбираете по живым примерам. 6 форматов, три из них без лица.</div></div>
+    <div class="s5"><span class="no lg">3</span><div class="t">Сборка</div><div class="d">агент собирает сцены, субтитры и звук.</div></div>
+    <div class="s5"><span class="no lg">4</span><div class="t">Проверка кадров</div><div class="d">агент показывает кадры и черновик, вы правите словами.</div></div>
+    <div class="s5"><span class="no lg">5</span><div class="t">Публикация</div></div>
+  </div>
+  <div class="hold"><svg viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Агент останавливается и ждёт вашего одобрения на сценарии, кадрах и черновике. Premiere и CapCut не нужны.</span></div>
+  <div class="nb nb2 edits">
+    <img class="glow" src="img/glow-gold.png" style="right:-260px;top:-300px;opacity:.4" alt="">
+    <div class="tt"><div class="h">Как давать правки</div><div class="c">Мои настоящие правки агенту.</div></div>
+    <div class="bb">
+      <div class="bub">Меня вообще не видно, подними выше</div>
+      <div class="bub">Субтитры крупнее и светлее</div>
+      <div class="bub">Финал собирай <span style="white-space:nowrap">в 4K</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Если ролик не полетел -->
+<section class="page cream">
+  <div class="row jb ctr">
+    <div><div class="kicker">Если ролик не полетел</div><h1>Ролик не полетел: что проверить</h1></div>
+    <img src="img/lg-i-magnifier.png" style="height:96px;width:auto" alt="">
+  </div>
+  <div class="fix">
+    <div class="fx"><div class="pr"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg>Пролистывают в первые секунды</div><div class="ar"><svg viewBox="0 0 24 24" fill="none" stroke="#2A211C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="ac">Перепишите фразу-обещание и выложите снова пробным рилсом.</div></div>
+    <div class="fx"><div class="pr"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg>Досматривают начало, но уходят на середине</div><div class="ar"><svg viewBox="0 0 24 24" fill="none" stroke="#2A211C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="ac">Уберите вступление и лишние паузы, первая мысль сразу после фразы.</div></div>
+    <div class="fx"><div class="pr"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/></svg>Смотрят, но не пишут</div><div class="ar"><svg viewBox="0 0 24 24" fill="none" stroke="#2A211C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="ac">В конце одно действие: кодовое слово в комментарии, по нему бот пришлёт материал.</div></div>
+  </div>
+  <div class="rule" style="margin-top:30px"><span class="mk"></span><span>Из 14 моих рилсов залетел один. Поэтому выпускаю много: схема на 30 роликов в месяц во втором гайде.</span></div>
+</section>
+
+<!-- 8. Шпаргалка -->
+<section class="page night">
+  <img class="glow bleed" src="img/glow-gold.png" style="right:-200px;top:-260px;width:760px;opacity:.5" alt="">
+  <div class="kicker">Шпаргалка перед публикацией</div>
+  <h1 style="font-size:36px">Чек-лист: 8 вопросов перед публикацией</h1>
+  <div class="ck">
+    <div class="it"><span class="no">1</span><span class="q">В первом кадре фраза-обещание на 4–6 слов?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">2</span><span class="q">Шрифт читается на телефоне в руке?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">3</span><span class="q">В первые 3 секунды нет мелких подписей?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">4</span><span class="q">Голос говорит то же, что написано на экране?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">5</span><span class="q">Первая мысль идёт сразу, без «всем привет»?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">6</span><span class="q">Субтитры крупные и контрастные?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">7</span><span class="q">В конце одно действие: кодовое слово?</span><span class="bx"></span></div>
+    <div class="it"><span class="no">8</span><span class="q">Ролик выложен пробным, решение через 72 часа?</span><span class="bx"></span></div>
+  </div>
+</section>
+
+<script src="common.js"></script>
+</body></html>

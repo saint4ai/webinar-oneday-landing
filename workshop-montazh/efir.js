@@ -50,6 +50,8 @@ var EFIR = { firstDay: '2026-10-07', hour: 20, minutes: 80, joinLiveMinutes: 40 
   EFIR.text.wdDate = EFIR.text.wd + ', ' + EFIR.text.date;      // среда, 7 октября
   EFIR.text.WdDate = EFIR.text.Wd + ', ' + EFIR.text.date;      // Среда, 7 октября
   EFIR.text.vwdDate = EFIR.text.vwd + ', ' + EFIR.text.date;    // в среду, 7 октября
+  EFIR.text.relDate = diff === 0 || diff === 1 ? EFIR.text.rel + ', ' + EFIR.text.date : EFIR.text.date; // завтра, 7 октября
+  EFIR.text.timeMsk = two((t.hour + 24 - 2) % 24) + ':' + two(t.minute); // Москва на 2 часа западнее Алматы: 18:00
 
   // Встроенные браузеры (Instagram, Facebook и др.): ссылки WhatsApp и blob-файлы там работают плохо.
   var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
@@ -73,20 +75,25 @@ var EFIR = { firstDay: '2026-10-07', hour: 20, minutes: 80, joinLiveMinutes: 40 
       'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   }
 
-  EFIR.fill = function(){
-    document.querySelectorAll('[data-efir]').forEach(function(el){
+  // Ссылка на календарь: во встроенном браузере blob-файл не скачивается, поэтому отдаём календарь с сервера.
+  EFIR.calendarHref = function(){
+    if (EFIR.env.inApp) return '/workshop/calendar';
+    if (!EFIR._ics) EFIR._ics = URL.createObjectURL(new Blob([ics()], { type: 'text/calendar;charset=utf-8' }));
+    return EFIR._ics;
+  };
+
+  // fill() без аргумента заполняет страницу целиком; fill(узел) только вставленный фрагмент (например, окно «Готово»).
+  EFIR.fill = function(root){
+    var scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('[data-efir]').forEach(function(el){
       var v = EFIR.text[el.dataset.efir];
       if (v) el.textContent = v;
     });
-    document.querySelectorAll('a[data-efir-ics]').forEach(function(a){
-      if (EFIR.env.inApp) {
-        // Во встроенном браузере blob-файл не скачивается: отдаём календарь с сервера.
-        a.href = '/workshop/calendar';
-        a.removeAttribute('download');
-      } else {
-        a.href = URL.createObjectURL(new Blob([ics()], { type: 'text/calendar;charset=utf-8' }));
-      }
+    scope.querySelectorAll('a[data-efir-ics]').forEach(function(a){
+      a.href = EFIR.calendarHref();
+      if (EFIR.env.inApp) a.removeAttribute('download');
     });
+    if (scope !== document) return;
     // Заголовок вкладки: в HTML он без дня, здесь добавляем «сегодня» или «завтра».
     var title = document.querySelector('title[data-efir-title]');
     if (title) document.title = title.getAttribute('data-efir-title').replace(/\{(\w+)\}/g, function(m, k){ return EFIR.text[k] || ''; });

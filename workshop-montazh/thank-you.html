@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Остался один шаг: вступите в группу</title>
-<script src="efir.js?v=20261006"></script>
+<script src="efir.js?v=20261006b"></script>
+<script src="assets/js/join.js?v=20261006b" defer></script>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#FFFFFF">
 <!-- Шрифты со своего сервера: без лишних запросов к Google на слабой сети -->
@@ -169,24 +170,24 @@ footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-s
   <div class="wrap">
     <div class="card">
       <span class="ok">заявка принята</span>
-      <h1 id="head">Остался один шаг</h1>
+      <h1 id="head" data-join="head">Остался один шаг</h1>
       <p class="lead">Эфир <span data-efir="vwdDate">каждый день</span>, в <span data-efir="time">20:00</span> по Алматы. Записи не будет, поэтому приходите вживую.</p>
 
-      <p class="live-note" id="live" role="status" hidden>Эфир идёт прямо сейчас. Нажмите Telegram, и бот сразу пришлёт ссылку.</p>
+      <p class="live-note" id="live" data-join="live" role="status" hidden>Эфир идёт прямо сейчас. Нажмите Telegram, и бот сразу пришлёт ссылку.</p>
 
       <section class="alarm" id="linkstep" aria-labelledby="alarm-h">
         <span class="alarm-tag">ОБЯЗАТЕЛЬНЫЙ ШАГ</span>
         <h2 id="alarm-h">Вступите в группу, иначе не попадёте на воркшоп</h2>
         <p class="alarm-text">Ссылку на эфир отправим только в группу WhatsApp или в Telegram-бот. Нет группы, нет ссылки. Выберите, где вам удобнее:</p>
         <div class="join">
-          <div class="jcell"><a class="gbtn gbtn-wa" id="wa" href="https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg><span>Подключиться к воркшопу в WhatsApp</span></a></div>
-          <div class="jcell"><a class="gbtn gbtn-tg" id="tg" href="https://t.me/workshop_aiprod_bot?start=ty" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg><span>Подключиться к воркшопу в Telegram</span></a><p class="tgnote">В Telegram нажмите «Запустить»</p></div>
+          <div class="jcell"><a class="gbtn gbtn-wa" id="wa" data-join="wa" href="https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg><span>Подключиться к воркшопу в WhatsApp</span></a></div>
+          <div class="jcell"><a class="gbtn gbtn-tg" id="tg" data-join="tg" href="https://t.me/workshop_aiprod_bot?start=ty" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg><span>Подключиться к воркшопу в Telegram</span></a><p class="tgnote">В Telegram нажмите «Запустить»</p></div>
         </div>
-        <div class="help" id="help" hidden>
+        <div class="help" id="help" data-join="help" hidden>
           <p>Не открывается? Нажмите <b>•••</b> вверху и «Открыть в браузере»</p>
           <div class="copyrow">
-            <button class="copybtn btn btn-ghost" type="button" data-copy="wa">Скопировать ссылку WhatsApp</button>
-            <button class="copybtn btn btn-ghost" type="button" data-copy="tg">Скопировать ссылку Telegram</button>
+            <button class="copybtn btn btn-ghost" type="button" data-join="copy" data-copy="wa">Скопировать ссылку WhatsApp</button>
+            <button class="copybtn btn btn-ghost" type="button" data-join="copy" data-copy="tg">Скопировать ссылку Telegram</button>
           </div>
         </div>
         <p class="alarm-hint">Из России или WhatsApp работает с перебоями? Выбирайте Telegram.</p>
@@ -268,84 +269,10 @@ footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-s
 </div>
 <script>
 (function(){
-  var env=(window.EFIR&&EFIR.env)||{inApp:false,isAndroid:false,isIOS:false};
-  var BOT='workshop_aiprod_bot';
-  var wa=document.getElementById('wa'), tg=document.getElementById('tg');
-
-  // Имя и номер заявки берём из формы записи.
-  var name='', eid='';
-  try{ name=(sessionStorage.getItem('efirName')||'').trim(); }catch(e){}
-  try{ eid=(sessionStorage.getItem('efirEid')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,60); }catch(e){}
-  if(name) document.getElementById('head').textContent=name+', остался один шаг';
-
-  // Эфир идёт: зовём сразу в Telegram, бот пришлёт ссылку.
-  if(window.EFIR&&EFIR.state==='live') document.getElementById('live').hidden=false;
-
-  // Метка Telegram: ty_<номер заявки>, чтобы связать заявку на лендинге с запуском бота.
-  var payload=eid?'ty_'+eid:'ty';
-  var tgUrl='https://t.me/'+BOT+'?start='+payload;
-  tg.href=tgUrl;
-
-  // Адрес группы WhatsApp хранится на сервере: Александр меняет её через бота, страница берёт свежую.
-  // Принимаем только chat.whatsapp.com и wa.me. Пока ответа нет (или он не пришёл), кнопка работает по ссылке из href.
-  function isWaLink(link){
-    try{ var u=new URL(link); return u.protocol==='https:'&&(u.hostname==='chat.whatsapp.com'||u.hostname==='wa.me'); }catch(e){ return false; }
-  }
-  fetch('/workshop/api/whatsapp-link').then(function(r){ return r.json(); }).then(function(d){
-    var link=d&&d.link;
-    if(isWaLink(link||'')) wa.href=link;
-  }).catch(function(){});
-
-  // Встроенный браузер Instagram: universal-ссылки там не срабатывают, на Android ведём через intent.
-  function waCode(href){
-    try{ var u=new URL(href); return u.hostname==='chat.whatsapp.com'?(u.pathname.replace(/^\/+/,'').split('/')[0]||null):null; }catch(e){ return null; }
-  }
-  function waIntent(code){
-    return 'intent://chat.whatsapp.com/'+code+'#Intent;scheme=https;package=com.whatsapp;S.browser_fallback_url='+encodeURIComponent('https://chat.whatsapp.com/'+code)+';end';
-  }
-  function tgIntent(){
-    return 'intent://resolve?domain='+BOT+'&start='+payload+'#Intent;scheme=tg;S.browser_fallback_url='+encodeURIComponent(tgUrl)+';end';
-  }
-  window.TY={payload:payload,tgUrl:tgUrl,waIntent:waIntent,tgIntent:tgIntent,waCode:waCode};
-
-  // Клик считаем до перехода.
-  function beacon(ch){
-    try{
-      var body='ch='+ch+'&eid='+encodeURIComponent(eid);
-      if(navigator.sendBeacon) navigator.sendBeacon('/workshop/api/ty-click',body);
-      else fetch('/workshop/api/ty-click',{method:'POST',body:body,keepalive:true});
-    }catch(e){}
-  }
-  wa.addEventListener('click',function(e){
-    beacon('wa');
-    var code=waCode(wa.href);
-    if(code&&env.inApp&&env.isAndroid){ e.preventDefault(); location.href=waIntent(code); }
-  });
-  tg.addEventListener('click',function(e){
-    beacon('tg');
-    if(env.inApp&&env.isAndroid){ e.preventDefault(); location.href=tgIntent(); }
-  });
-
-  // iOS во встроенном браузере: программно не открыть, показываем подсказку и копирование ссылки.
-  function fallbackCopy(text,done){
-    try{
-      var t=document.createElement('textarea'); t.value=text; t.setAttribute('readonly',''); t.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';
-      document.body.appendChild(t); t.select(); t.setSelectionRange(0,text.length);
-      var ok=document.execCommand('copy'); document.body.removeChild(t); if(ok) done();
-    }catch(e){}
-  }
-  if(env.inApp&&env.isIOS){
-    document.getElementById('help').hidden=false;
-    [].forEach.call(document.querySelectorAll('.copybtn'),function(b){
-      var label=b.textContent;
-      b.addEventListener('click',function(){
-        var text=b.getAttribute('data-copy')==='wa'?wa.href:tgUrl;
-        var done=function(){ b.textContent='Ссылка скопирована'; setTimeout(function(){ b.textContent=label; },2000); };
-        if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done,function(){ fallbackCopy(text,done); }); }
-        else fallbackCopy(text,done);
-      });
-    });
-  }
+  // Кнопки WhatsApp и Telegram, имя, метка заявки, клики, встроенный браузер Instagram: assets/js/join.js.
+  // Если модуль не загрузился, кнопки остаются обычными ссылками и работают.
+  function boot(){ if(window.Join) window.Join.mount(document.querySelector('main'),{src:'ty'}); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 
   // Рилс не грузим, пока он не подъехал к экрану: src и play() ставит наблюдатель. За экраном пауза.
   var v=document.getElementById('reel');

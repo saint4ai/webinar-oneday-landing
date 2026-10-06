@@ -1,5 +1,5 @@
 // Рендер картинок серии, обложки Bizon, аватарки и контактного листа.
-// Запуск: node docs/tg-media/render.mjs [cover|cards|avatar|contact|all]
+// Запуск: node docs/tg-media/render.mjs [cover|cards|avatar|bizon|og|contact|all]
 // Нужен Chromium Playwright: npx playwright install chromium
 import { chromium } from "@playwright/test";
 import sharp from "sharp";
@@ -11,6 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "../..");
 const outDir = join(root, "workshop-montazh/assets/tg");
 const reportDir = join(root, "docs/reports/tg-media-1006");
+const imgDir = join(root, "workshop-montazh/assets/img");
 mkdirSync(outDir, { recursive: true });
 mkdirSync(reportDir, { recursive: true });
 
@@ -85,6 +86,31 @@ if (what === "avatar" || what === "all") {
   const { png } = await shoot("avatar.html", "", 640, 640);
   const r = await toJpg(png, join(outDir, "avatar.jpg"), { quality: 92 });
   log.push(`avatar.jpg q${r.q} ${r.bytes} B`);
+}
+
+if (what === "bizon" || what === "all") {
+  // фон комнаты эфира: один шаблон 1920x1080, вторая версия 2560x1440 снимается с масштабом 4/3
+  const lim = 690 * 1000;
+  const a = await shoot("bizon-bg.html", "", 1920, 1080, 1);
+  const r1 = await toJpg(a.png, join(outDir, "bizon-bg-1920x1080.jpg"), { quality: 90, maxBytes: lim });
+  const b = await shoot("bizon-bg.html", "", 1920, 1080, 4 / 3);
+  const r2 = await toJpg(b.png, join(outDir, "bizon-bg-2560x1440.jpg"), { quality: 90, maxBytes: lim });
+  log.push(`bizon-bg-1920x1080.jpg q${r1.q} ${r1.bytes} B; bizon-bg-2560x1440.jpg q${r2.q} ${r2.bytes} B`);
+  // превью комнаты: фон + обложка 1180x664 + колонка чата 360x664
+  const p = await shoot("bizon-bg-preview.html", "", 1920, 1080, 1);
+  const rp = await toJpg(p.png, join(reportDir, "bizon-bg-preview.jpg"), { quality: 90 });
+  log.push(`bizon-bg-preview.jpg q${rp.q} ${rp.bytes} B`);
+}
+
+if (what === "og" || what === "all") {
+  // og:image лендинга (эфир каждый день): 1200x630, до 300 КБ, плюс контрольные превью
+  const { png } = await shoot("og-daily.html", "", 1200, 630);
+  const r = await toJpg(png, join(imgDir, "og-cover-daily.jpg"), { quality: 90, maxBytes: 300 * 1000 });
+  const prev = await sharp(png).resize(600, 315, { kernel: "lanczos3" }).jpeg({ quality: 92 }).toBuffer();
+  writeFileSync(join(reportDir, "og-cover-daily-600x315.jpg"), prev);
+  const sq = await sharp(png).extract({ left: 285, top: 0, width: 630, height: 630 }).jpeg({ quality: 92 }).toBuffer();
+  writeFileSync(join(reportDir, "og-cover-daily-630x630.jpg"), sq);
+  log.push(`og-cover-daily.jpg q${r.q} ${r.bytes} B`);
 }
 
 if (what === "contact" || what === "all") {

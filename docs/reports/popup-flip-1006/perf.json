@@ -1,0 +1,41 @@
+{
+  "new4x": {
+    "label": "новое окно, CPU x4",
+    "openFirst": 42,
+    "openFirstMax": 60,
+    "openEnd": 240,
+    "openEndMax": 253,
+    "openLongMax": 0,
+    "openLongCount": 0,
+    "flowFirst": 101,
+    "flowFirstMax": 135,
+    "flowEnd": 362,
+    "flowEndMax": 398,
+    "flowLongMax": 0,
+    "flowLongCount": 0
+  },
+  "old4x": {
+    "label": "старое окно (HEAD), CPU x4",
+    "openFirst": 62,
+    "openFirstMax": 135,
+    "openEnd": 269,
+    "openEndMax": 325,
+    "openLongMax": 75,
+    "openLongCount": 5
+  },
+  "new1x": {
+    "label": "новое окно, без замедления",
+    "openFirst": 11,
+    "openFirstMax": 12,
+    "openEnd": 212,
+    "openEndMax": 218,
+    "openLongMax": 0,
+    "openLongCount": 0,
+    "flowFirst": 24,
+    "flowFirstMax": 30,
+    "flowEnd": 275,
+    "flowEndMax": 291,
+    "flowLongMax": 0,
+    "flowLongCount": 0
+  }
+}

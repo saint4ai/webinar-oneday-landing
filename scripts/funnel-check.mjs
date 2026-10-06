@@ -112,6 +112,16 @@ await check("7. /workshop/api/go/bad отвечает 302 на start.bizon365.ru
   return { pass: res.status === 302 && host === "start.bizon365.ru", detail: `HTTP ${res.status}, location: ${loc || "нет"}` };
 });
 
+await check("8. Общий модуль join.js отдаётся и подключён на обеих страницах, окно «Готово» на лендинге", async () => {
+  const { res, text } = await get("/workshop-montazh/assets/js/join.js");
+  if (!landing) landing = (await get("/workshop-montazh/")).text;
+  if (!thanks) thanks = (await get("/workshop-montazh/thank-you.html")).text;
+  const mod = res.status === 200 && text.includes("window.Join");
+  const onIndex = /assets\/js\/join\.js\?v=\w+/.test(landing) && landing.includes('id="tpl-done"');
+  const onThanks = /assets\/js\/join\.js\?v=\w+/.test(thanks);
+  return { pass: mod && onIndex && onThanks, detail: `join.js: HTTP ${res.status}, window.Join: ${text.includes("window.Join")}, лендинг: ${onIndex}, «Спасибо»: ${onThanks}` };
+});
+
 // Таблица
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log(`\nПроверка воронки: ${BASE}\n`);
