@@ -1433,10 +1433,10 @@ test("essential: проверка поля в /reload, строка в /series; 
   assert.deepEqual(f.sent, []);
 });
 
-test("tg-series.json: essential у link-1950 и live-2000 принимается проверкой", () => {
+test("tg-series.json: essential у ссылки, старта и бонусов принимается проверкой", () => {
   const sr = validateSeries(JSON.parse(readFileSync(seriesFile, "utf8")));
   const essential = sr.messages.filter((m) => m.essential).map((m) => m.id);
-  assert.deepEqual(essential, ["link-1950", "live-2000"]);
+  assert.deepEqual(essential, ["link-1950", "live-2000", "bonus-2115"]);
 });
 
 // ───────────────────────── таймаут медиа ─────────────────────────
