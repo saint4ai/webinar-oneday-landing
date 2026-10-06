@@ -12,6 +12,7 @@
  */
 import { SlideDeck } from "@/components/sales-deck/SlideDeck";
 import { unbounded, manrope } from "./fonts";
+import { GLASS } from "./theme";
 import { M_Cover } from "./slides/M_Cover";
 import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
@@ -130,7 +131,9 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <div className={`montage-deck ${unbounded.variable} ${manrope.variable}`}>
       {/* Номер слайда общего SlideDeck перенесён из правого нижнего угла в левый:
           справа зона камеры, там только фон. Номер совпадает с #N в адресной строке. */}
-      <style>{`.montage-deck .bottom-4.right-5.z-30 { right: auto; left: 1.25rem; }`}</style>
+      <style>{`.montage-deck .bottom-4.right-5.z-30 { right: auto; left: 1.25rem; }${GLASS ? `
+        /* поля вокруг кадра 16:9 на нестандартном окне: бежевый #EFE6DA общего SlideDeck рядом с тёмным стеклом выглядит дёшево */
+        .montage-deck > div.fixed { background: #0F0B09 !important; }` : ""}`}</style>
       <SlideDeck slides={slides} theme="cacao" />
     </div>
   );

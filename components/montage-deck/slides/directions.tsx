@@ -9,7 +9,7 @@ import { Phone } from "../Phone";
 import { Views } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
-import { T, card, goldButton, nightCard } from "../theme";
+import { LT, T, card, goldButton, nightCard } from "../theme";
 import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, nb, thousands, txt } from "../ui";
 import { DirectPhone } from "./lesson3";
 
@@ -39,7 +39,7 @@ function ChainHeader({ active }: { active: number }) {
       {["Ролик", "Реклама", "Заявка"].map((l, i) => (
         <div key={l} className="flex items-center" style={{ gap: "0.5cqw" }}>
           <motion.span initial={{ opacity: 0, y: "-0.5cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.05 + i * 0.06, duration: 0.35, ease: EASE }}
-            style={{ display: "inline-block", borderRadius: 999, padding: "0.45cqw 1.05cqw", ...unb("0.8cqw", i === active ? T.ink : T.muted),
+            style={{ display: "inline-block", borderRadius: 999, padding: "0.45cqw 1.05cqw", ...unb("0.8cqw", i === active ? LT.ink : T.muted),
               ...(i === active ? goldButton : { border: `1px solid ${T.line}` }) }}>
             {l}
           </motion.span>
@@ -62,7 +62,7 @@ function Conveyor({ no, lessons, start }: { no: number; lessons: string[]; start
             <motion.div initial={{ opacity: 0.4, backgroundColor: GOLD(0), borderColor: LINE }} animate={{ opacity: 1, backgroundColor: last ? GOLD(1) : GOLD(0.16), borderColor: GOLD2 }}
               transition={{ delay: t, duration: 0.3, ease: EASE }}
               style={{ flex: 1, minWidth: 0, alignSelf: "stretch", borderRadius: 14, borderWidth: 1.5, borderStyle: "solid", padding: "0.55cqw 0.75cqw" }}>
-              <div style={unb("0.72cqw", last ? T.ink : T.brownLt)}>{no}.{i + 1}</div>
+              <div style={unb("0.72cqw", last ? LT.ink : T.brownLt)}>{no}.{i + 1}</div>
               <div style={{ ...txt, fontSize: "0.88cqw", fontWeight: 700, lineHeight: 1.25, marginTop: "0.3cqw" }}>{l}</div>
             </motion.div>
             {!last && <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: t + 0.12, duration: 0.15 }}
@@ -92,7 +92,7 @@ function VoiceNote({ width = "9.4cqw" }: { width?: string }) {
   return (
     <div className="flex items-center" style={{ ...nightCard, width, borderRadius: 18, padding: "0.65cqw 0.8cqw", gap: "0.6cqw" }}>
       <span className="flex items-center justify-center" style={{ width: "2cqw", height: "2cqw", borderRadius: 99, flexShrink: 0, ...goldButton }}>
-        <svg viewBox="0 0 24 24" style={{ width: "1.1cqw", height: "1.1cqw" }} fill="none" stroke={T.ink} strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></svg>
+        <svg viewBox="0 0 24 24" style={{ width: "1.1cqw", height: "1.1cqw" }} fill="none" stroke={LT.ink} strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></svg>
       </span>
       <Wave />
     </div>
@@ -195,11 +195,11 @@ export function M_ShopAd() {
       visual={
         <div className="relative" style={{ width: "22cqw", height: "20.6cqw" }}>
           {fan.map((f, i) => (
-            <motion.div key={i} className="absolute" style={{ left: `${f.x}cqw`, top: `${f.y}cqw`, width: `${W}cqw`, padding: "0.3cqw 0.3cqw 0.95cqw", background: T.paper, borderRadius: 6,
+            <motion.div key={i} className="absolute" style={{ left: `${f.x}cqw`, top: `${f.y}cqw`, width: `${W}cqw`, padding: "0.3cqw 0.3cqw 0.95cqw", background: LT.paper, borderRadius: 6,
               boxShadow: "0 1cqw 2cqw -1cqw rgba(42,33,28,.35)", border: `1px solid ${T.line}`, zIndex: i === 1 ? 3 : 2 }}
               initial={{ opacity: 0, y: "1.5cqw", rotate: f.r * 2 }} animate={{ opacity: 1, y: "0cqw", rotate: f.r }}
               transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 170, damping: 15 }}>
-              <div style={{ aspectRatio: "1", background: T.card, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ aspectRatio: "1", background: LT.card, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 <img src={`/montage/lego/${PRODUCTS[i]}.webp`} alt="" style={{ width: "86%", height: "auto" }} />
               </div>
             </motion.div>

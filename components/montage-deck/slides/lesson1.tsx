@@ -8,7 +8,7 @@ import { Phone } from "../Phone";
 import { ReelRail, Views } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
-import { T, card, goldButton } from "../theme";
+import { LT, T, card, goldButton } from "../theme";
 import { Card, EASE, Em, H, Kicker, MaskIcon, Note, Num, RISE_DUR, Rise, STEP, at, nb } from "../ui";
 
 const txt: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.4, color: T.ink };
@@ -218,7 +218,7 @@ export function M_FiveSteps() {
           {steps.map((name, i) => (
             <div key={name} className="flex flex-col items-center text-center">
               <motion.div className="flex items-center justify-center"
-                initial={{ scale: 0.7, backgroundColor: T.card, color: T.muted }} animate={{ scale: [0.7, 1.15, 1], backgroundColor: [T.card, T.gold, T.gold], color: [T.muted, T.ink, T.ink] }}
+                initial={{ scale: 0.7, backgroundColor: T.card, color: T.muted }} animate={{ scale: [0.7, 1.15, 1], backgroundColor: [T.card, T.gold, T.gold], color: [T.muted, LT.ink, LT.ink] }}
                 transition={{ delay: T0 + i * DT, duration: 0.45, ease: EASE }}
                 style={{ width: "4cqw", height: "4cqw", borderRadius: 999, border: `1.5px solid ${T.gold2}`, boxShadow: T.shadowSm, fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.4cqw" }}>
                 {i + 1}
@@ -317,7 +317,7 @@ export function M_StepAssemble() {
             ))}
           </div>
           <div className="grid gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
-            <Stagger i={3} style={{ justifySelf: "end", maxWidth: "80%", borderRadius: "18px 18px 4px 18px", padding: "0.9cqw 1.2cqw", background: T.ink, ...txt, fontWeight: 500, color: T.nightText }}>
+            <Stagger i={3} style={{ justifySelf: "end", maxWidth: "80%", borderRadius: "18px 18px 4px 18px", padding: "0.9cqw 1.2cqw", background: "rgba(227,192,123,.16)", border: `1px solid ${T.gold2}66`, ...txt, fontWeight: 500, color: T.nightText }}>
               Сделай первую фразу крупнее и убери мелкие подписи
             </Stagger>
             <Stagger i={5} style={{ justifySelf: "start", maxWidth: "80%", borderRadius: "18px 18px 18px 4px", padding: "0.9cqw 1.2cqw", ...card, ...txt, fontWeight: 500 }}>
