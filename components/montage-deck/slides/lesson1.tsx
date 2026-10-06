@@ -362,7 +362,7 @@ const FORMATS = [
   { f: "03-kartochka-spikera", t: "Карточка спикера" },
   { f: "04-spiker-vnizu", t: "Спикер внизу, графика сверху" },
   { f: "05-bez-lica", t: "Без лица, на весь кадр", noFace: true },
-  { f: "06-podcast", t: "Подкаст", video: "/montage/styles/podcast.mp4" },
+  { f: "06-podcast", t: "Подкаст" },
 ];
 
 /** 23 ✦ · Без лица: телефон перестраивается из формата в формат. */
@@ -379,7 +379,7 @@ export function M_NoFace() {
         <div className="relative" style={{ width: "13.5cqw", aspectRatio: "9/19" }}>
           <AnimatePresence mode="popLayout">
             <motion.div key={cur.f} className="absolute inset-0" initial={{ opacity: 0, scale: 0.92, rotateY: -25 }} animate={{ opacity: 1, scale: 1, rotateY: 0 }} exit={{ opacity: 0, scale: 1.04, rotateY: 20 }} transition={{ duration: 0.55, ease: EASE }}>
-              <Phone video={cur.video ?? `/montage/formats/${cur.f}.mp4`} src={`/montage/formats/${cur.f}.jpg`} width="13.5cqw" chrome={false} />
+              <Phone video={`/montage/formats/${cur.f}.mp4`} src={`/montage/formats/${cur.f}.jpg`} width="13.5cqw" chrome={false} />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -394,7 +394,7 @@ export function M_NoFace() {
           </div>
         ))}
       </div>
-      <Note>Голос, графика и персонаж-рассказчик. Кадры моих настоящих роликов, шестой формат показан на демо стиля</Note>
+      <Note>Голос, графика и персонаж-рассказчик. Кадры моих настоящих роликов</Note>
     </Statement>
   );
 }
