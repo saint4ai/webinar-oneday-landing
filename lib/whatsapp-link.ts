@@ -29,7 +29,7 @@ const LINK_PATH =
 // сообщества воркшопа (живой эфир — среда). Обновлено 2026-06-21.
 const FALLBACK =
   process.env.WHATSAPP_COMMUNITY_FALLBACK ||
-  "https://chat.whatsapp.com/JVdWLXG9L8jCTUp2W2vxeu";
+  "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
 
 export type LinkRecord = {
   link: string;

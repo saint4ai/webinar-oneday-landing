@@ -24,9 +24,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // form-api/server.ts
 var import_node_http = require("node:http");
-var import_node_crypto3 = require("node:crypto");
-var import_node_fs3 = require("node:fs");
-var import_node_path3 = require("node:path");
+var import_node_crypto4 = require("node:crypto");
+var import_node_fs6 = require("node:fs");
+var import_node_path6 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -418,78 +418,6 @@ async function pushLeadToAmo(lead, opts) {
   return { ok: false, error: `amocrm:${r.reason}${status}` };
 }
 
-// lib/easybot/register.ts
-var DEFAULT_CHATBOT_ID = "079c01a7-a882-4ea2-a9ea-282520dbb870";
-var TIMEOUT_MS = 3500;
-async function registerEasybotLead(input) {
-  const chatbotId = process.env.EASYBOT_CHATBOT_ID || DEFAULT_CHATBOT_ID;
-  const url = `https://my.easybot.kz/api/main/webinar/${chatbotId}/register/`;
-  const body = {
-    form_name: input.name,
-    phone_number: input.phone.replace(/[^\d+]/g, ""),
-    email: "",
-    location: (input.location || "onai.academy/workshop").slice(0, 100),
-    utm_source: input.utm?.utm_source || "",
-    utm_medium: input.utm?.utm_medium || "",
-    utm_campaign: input.utm?.utm_campaign || "",
-    utm_term: input.utm?.utm_term || "",
-    utm_content: input.utm?.utm_content || ""
-  };
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: ctrl.signal
-    });
-    clearTimeout(t);
-    if (!res.ok) return { ok: false, reason: `http_${res.status}` };
-    let s = (await res.text()).trim();
-    try {
-      const parsed = JSON.parse(s);
-      if (typeof parsed === "string") s = parsed;
-    } catch {
-    }
-    if (!/^https?:\/\//i.test(s)) return { ok: false, reason: "no_url" };
-    let botUrl = s;
-    try {
-      botUrl = new URL(s).toString();
-    } catch {
-    }
-    return { ok: true, botUrl };
-  } catch (e) {
-    return { ok: false, reason: String(e).slice(0, 60) };
-  }
-}
-
-// lib/easybot/redirect.ts
-var EASYBOT_DIRECT = "https://my.easybot.kz/api/?hash=%3C5kKKpd0H%3E";
-function buildStaticEasybotUrl(utm) {
-  try {
-    const params = new URLSearchParams();
-    for (const k of [
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "utm_term",
-      "utm_content"
-    ]) {
-      const v = utm?.[k];
-      if (v) params.set(k, v);
-    }
-    const qs = params.toString();
-    return qs ? `${EASYBOT_DIRECT}&${qs}` : EASYBOT_DIRECT;
-  } catch {
-    return EASYBOT_DIRECT;
-  }
-}
-function resolveEasybotRedirect(botUrl, utm) {
-  if (botUrl && /^https?:\/\//i.test(botUrl)) return botUrl;
-  return buildStaticEasybotUrl(utm);
-}
-
 // lib/telegram/alert.ts
 var TOKEN = process.env.TELEGRAM_ALERT_TOKEN || "";
 var CHAT_ID = process.env.TELEGRAM_ALERT_CHAT_ID || "";
@@ -602,10 +530,1737 @@ function writeWhatsAppLink(link, by) {
   }
 }
 
+// form-api/tg-workshop.ts
+var import_node_crypto3 = require("node:crypto");
+var import_node_fs4 = require("node:fs");
+var import_node_path4 = require("node:path");
+
+// form-api/tg-store.ts
+var import_node_fs3 = require("node:fs");
+var import_node_path3 = require("node:path");
+var TY_DAILY_CAP = 5e3;
+function applyEvent(subs, ev) {
+  const ts = Date.parse(ev.ts);
+  const s = subs.get(ev.chat_id);
+  switch (ev.type) {
+    case "start": {
+      if (!s) {
+        subs.set(ev.chat_id, {
+          chatId: ev.chat_id,
+          userId: ev.user_id,
+          username: ev.username || "",
+          firstName: ev.first_name || "",
+          languageCode: ev.language_code || "",
+          payload: ev.payload || "",
+          streamDay: ev.streamDay,
+          registeredAt: ts,
+          firstStartAt: ts,
+          blocked: false,
+          stopped: false,
+          paid: false
+        });
+        return;
+      }
+      const fresh = s.streamDay !== ev.streamDay || s.stopped || s.blocked;
+      s.userId = ev.user_id;
+      s.username = ev.username || s.username;
+      s.firstName = ev.first_name || s.firstName;
+      s.languageCode = ev.language_code || s.languageCode;
+      if (!s.payload && ev.payload) s.payload = ev.payload;
+      s.streamDay = ev.streamDay;
+      s.stopped = false;
+      s.blocked = false;
+      if (fresh) s.registeredAt = ts;
+      return;
+    }
+    case "blocked":
+      if (s) s.blocked = true;
+      return;
+    case "unblocked":
+      if (s) s.blocked = false;
+      return;
+    case "stop":
+      if (s) s.stopped = true;
+      return;
+    case "paid":
+      if (s) s.paid = true;
+      return;
+    case "rejoin":
+      if (s) {
+        s.streamDay = ev.streamDay;
+        s.registeredAt = ts;
+      }
+      return;
+  }
+}
+function readJsonl(file) {
+  const rows = [];
+  let bad = 0;
+  if (!(0, import_node_fs3.existsSync)(file)) return { rows, bad };
+  for (const line of (0, import_node_fs3.readFileSync)(file, "utf8").split("\n")) {
+    const s = line.trim();
+    if (!s) continue;
+    try {
+      rows.push(JSON.parse(s));
+    } catch {
+      bad++;
+    }
+  }
+  return { rows, bad };
+}
+var TgStore = class _TgStore {
+  constructor(dir) {
+    this.subs = /* @__PURE__ */ new Map();
+    /** Ключи «сообщение|день|чат» по всем попыткам отправки, включая неудачные: повторов нет. */
+    this.sent = /* @__PURE__ */ new Set();
+    /** То же только для успешных отправок (для /series). */
+    this.sentOk = /* @__PURE__ */ new Set();
+    /** Ключи «чат|день» по переходам в эфир. */
+    this.clicks = /* @__PURE__ */ new Set();
+    /** Клики на «Спасибо»: сколько за день по каналу, плюс ключи «день|канал|eid» против дублей. */
+    this.tyCounts = /* @__PURE__ */ new Map();
+    /** Ключи дублей живут только в пределах одного дня: при смене дня множество сбрасывается, память не растёт. */
+    this.tyKeys = /* @__PURE__ */ new Set();
+    this.tyKeysDay = "";
+    /** Сколько строк за день записано в ty-clicks.jsonl (потолок TY_DAILY_CAP). */
+    this.tyTotals = /* @__PURE__ */ new Map();
+    /** Кто записывался на эфир дня D (по событиям start и rejoin): день остаётся в истории, даже если человек потом перезаписался. */
+    this.regDays = /* @__PURE__ */ new Map();
+    /** Кто нажал «Я уже оплатил(а)» сам, по дню эфира, на который был записан в тот момент. */
+    this.paidDays = /* @__PURE__ */ new Map();
+    this.state = { seriesEnabled: false, media: {}, overrides: {}, bizon: "", reported: [] };
+    this.dir = dir;
+    (0, import_node_fs3.mkdirSync)(dir, { recursive: true });
+    this.fSubs = (0, import_node_path3.join)(dir, "tg-subscribers.jsonl");
+    this.fSent = (0, import_node_path3.join)(dir, "tg-sent.jsonl");
+    this.fClicks = (0, import_node_path3.join)(dir, "tg-clicks.jsonl");
+    this.fTy = (0, import_node_path3.join)(dir, "ty-clicks.jsonl");
+    this.fState = (0, import_node_path3.join)(dir, "tg-state.json");
+    this.load();
+  }
+  load() {
+    const evs = readJsonl(this.fSubs);
+    for (const ev of evs.rows) {
+      if (ev && typeof ev.chat_id === "number" && typeof ev.ts === "string") {
+        this.track(ev);
+        applyEvent(this.subs, ev);
+      }
+    }
+    const sent = readJsonl(this.fSent);
+    for (const e of sent.rows) {
+      if (!e || !e.msg) continue;
+      this.sent.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
+      if (e.ok) this.sentOk.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
+    }
+    const clicks = readJsonl(this.fClicks);
+    for (const c of clicks.rows) if (c && c.day) this.clicks.add(_TgStore.clickKey(c.chat_id, c.day));
+    const ty = readJsonl(this.fTy);
+    for (const c of ty.rows) if (c && c.day && (c.ch === "tg" || c.ch === "wa")) this.countTy(c.ch, c.eid || "", c.day);
+    try {
+      if ((0, import_node_fs3.existsSync)(this.fState)) {
+        const st = JSON.parse((0, import_node_fs3.readFileSync)(this.fState, "utf8"));
+        const obj = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
+        this.state = {
+          seriesEnabled: st.seriesEnabled === true,
+          media: obj(st.media),
+          overrides: obj(st.overrides),
+          bizon: typeof st.bizon === "string" ? st.bizon : "",
+          reported: Array.isArray(st.reported) ? st.reported.filter((x) => typeof x === "string") : []
+        };
+      }
+    } catch {
+      console.warn("[tg-store] tg-state.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u0431\u0435\u0440\u0443 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E");
+    }
+    const bad = evs.bad + sent.bad + clicks.bad + ty.bad;
+    console.log(
+      "[tg-store] \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u043E\u0432=%d, \u043E\u0442\u043F\u0440\u0430\u0432\u043E\u043A=%d, \u043F\u0435\u0440\u0435\u0445\u043E\u0434\u043E\u0432=%d, \u0431\u0438\u0442\u044B\u0445 \u0441\u0442\u0440\u043E\u043A=%d, \u0441\u0435\u0440\u0438\u044F=%s",
+      this.subs.size,
+      this.sent.size,
+      this.clicks.size,
+      bad,
+      this.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"
+    );
+  }
+  /** Дописать строку в JSONL. Сбой диска не должен ронять бота: логируем и идём дальше. */
+  append(file, row) {
+    try {
+      (0, import_node_fs3.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
+    } catch (e) {
+      console.error("[tg-store] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C %s:", file, e.message);
+    }
+  }
+  static sentKey(msg, day, chatId) {
+    return `${msg}|${day}|${chatId}`;
+  }
+  static clickKey(chatId, day) {
+    return `${chatId}|${day}`;
+  }
+  recordEvent(ev) {
+    this.append(this.fSubs, ev);
+    this.track(ev);
+    applyEvent(this.subs, ev);
+  }
+  /** Метрики по дням эфира копятся из событий, поэтому после рестарта восстанавливаются тем же проходом. */
+  track(ev) {
+    const add = (m, day, chat) => {
+      let s = m.get(day);
+      if (!s) m.set(day, s = /* @__PURE__ */ new Set());
+      s.add(chat);
+    };
+    if (ev.type === "start" || ev.type === "rejoin") add(this.regDays, ev.streamDay, ev.chat_id);
+    else if (ev.type === "paid" && ev.by === "self") {
+      const day = this.subs.get(ev.chat_id)?.streamDay;
+      if (day) add(this.paidDays, day, ev.chat_id);
+    }
+  }
+  /** Дни эфира, на которые кто-то записывался. */
+  regDayKeys() {
+    return [...this.regDays.keys()];
+  }
+  /**
+   * Метрики эфира дня D: записались (уникальные chat_id с этим днём), из них перешли по кнопке
+   * эфира (уникальные, /api/go), из них нажали «Я уже оплатил(а)».
+   */
+  dayMetrics(day) {
+    const reg = this.regDays.get(day);
+    if (!reg) return { registered: 0, clicked: 0, paid: 0 };
+    let clicked = 0;
+    let paid = 0;
+    const paidSet = this.paidDays.get(day);
+    for (const chat of reg) {
+      if (this.clicks.has(_TgStore.clickKey(chat, day))) clicked++;
+      if (paidSet?.has(chat)) paid++;
+    }
+    return { registered: reg.size, clicked, paid };
+  }
+  isReported(day) {
+    return this.state.reported.includes(day);
+  }
+  markReported(day) {
+    if (this.isReported(day)) return;
+    this.state.reported = [...this.state.reported, day].slice(-30);
+    this.saveState();
+  }
+  recordSent(e) {
+    this.append(this.fSent, e);
+    this.sent.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
+    if (e.ok) this.sentOk.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
+  }
+  hasSent(msg, day, chatId) {
+    return this.sent.has(_TgStore.sentKey(msg, day, chatId));
+  }
+  /** Клик по переходу в эфир. Пара (chat_id, день) пишется один раз. Возвращает true, если запись новая. */
+  recordClick(chatId, day, ts) {
+    const key = _TgStore.clickKey(chatId, day);
+    if (this.clicks.has(key)) return false;
+    this.append(this.fClicks, { chat_id: chatId, day, ts });
+    this.clicks.add(key);
+    return true;
+  }
+  countTy(ch, eid, day) {
+    this.tyTotals.set(day, (this.tyTotals.get(day) || 0) + 1);
+    if (eid) {
+      if (day !== this.tyKeysDay) {
+        this.tyKeys = /* @__PURE__ */ new Set();
+        this.tyKeysDay = day;
+      }
+      const k = `${day}|${ch}|${eid}`;
+      if (this.tyKeys.has(k)) return;
+      this.tyKeys.add(k);
+    }
+    const c = `${day}|${ch}`;
+    this.tyCounts.set(c, (this.tyCounts.get(c) || 0) + 1);
+  }
+  /**
+   * Клик по кнопке Telegram или WhatsApp на странице «Спасибо». Повтор того же eid за день не
+   * считается. Потолок TY_DAILY_CAP записей в сутки: дальше ничего не пишем и возвращаем false.
+   */
+  recordTyClick(ch, eid, day, ts) {
+    if ((this.tyTotals.get(day) || 0) >= TY_DAILY_CAP) return false;
+    this.append(this.fTy, { ch, eid, day, ts });
+    this.countTy(ch, eid, day);
+    return true;
+  }
+  /** Размер множества ключей против дублей (для проверки, что оно не растёт между днями). */
+  tyKeySize() {
+    return this.tyKeys.size;
+  }
+  tyCount(day, ch) {
+    return this.tyCounts.get(`${day}|${ch}`) || 0;
+  }
+  /** Сколько человек впервые нажали «Запустить» в день D и сколько из них пришли с метки prefix. */
+  startedOn(day, dayOfMs, prefix = "ty") {
+    let total = 0;
+    let fromPrefix = 0;
+    for (const s of this.subs.values()) {
+      if (dayOfMs(s.firstStartAt) !== day) continue;
+      total++;
+      if (s.payload === prefix || s.payload.startsWith(prefix + "_")) fromPrefix++;
+    }
+    return { total, fromPrefix };
+  }
+  hasClick(chatId, day) {
+    return this.clicks.has(_TgStore.clickKey(chatId, day));
+  }
+  /** Сколько разных людей перешли в эфир дня D. */
+  clickedCount(day) {
+    let n = 0;
+    for (const s of this.subs.values()) if (this.clicks.has(_TgStore.clickKey(s.chatId, day))) n++;
+    return n;
+  }
+  /** Сколько человек получили сообщение msg за день D (успешно). Для /series. */
+  sentCount(msg, day) {
+    let n = 0;
+    for (const s of this.subs.values()) if (this.sentOk.has(_TgStore.sentKey(msg, day, s.chatId))) n++;
+    return n;
+  }
+  /** Найти подписчика по chat_id или @username (без учёта регистра). */
+  find(query) {
+    const q = query.trim();
+    if (/^-?\d+$/.test(q)) return this.subs.get(Number(q));
+    const name = q.replace(/^@/, "").toLowerCase();
+    if (!name) return void 0;
+    for (const s of this.subs.values()) if (s.username.toLowerCase() === name) return s;
+    return void 0;
+  }
+  isActive(s) {
+    return !s.blocked && !s.stopped;
+  }
+  /** Подходит ли подписчик под аудиторию сообщения для дня D. */
+  audienceOk(aud, s, day) {
+    if (aud === "clicked") return this.clicks.has(_TgStore.clickKey(s.chatId, day));
+    if (aud === "notClicked") return !this.clicks.has(_TgStore.clickKey(s.chatId, day));
+    if (aud === "notPaid") return !s.paid;
+    return true;
+  }
+  saveState() {
+    try {
+      const tmp = `${this.fState}.tmp.${process.pid}`;
+      (0, import_node_fs3.writeFileSync)(tmp, JSON.stringify(this.state, null, 2) + "\n", "utf8");
+      (0, import_node_fs3.renameSync)(tmp, this.fState);
+    } catch (e) {
+      console.error("[tg-store] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C tg-state.json:", e.message);
+    }
+  }
+  setSeriesEnabled(v) {
+    this.state.seriesEnabled = v;
+    this.saveState();
+  }
+  /** Правка расписания: at строкой HH:MM или enabled; null снимает поле. Пустая правка удаляется. */
+  setOverride(id, patch) {
+    const cur = { ...this.state.overrides[id] || {} };
+    if (patch.at !== void 0) {
+      if (patch.at === null) delete cur.at;
+      else cur.at = patch.at;
+    }
+    if (patch.enabled !== void 0) {
+      if (patch.enabled === null) delete cur.enabled;
+      else cur.enabled = patch.enabled;
+    }
+    if (Object.keys(cur).length) this.state.overrides[id] = cur;
+    else delete this.state.overrides[id];
+    this.saveState();
+  }
+  setBizon(url) {
+    this.state.bizon = url;
+    this.saveState();
+  }
+  getMedia(key) {
+    return this.state.media[key];
+  }
+  setMedia(key, fileId) {
+    this.state.media[key] = fileId;
+    this.saveState();
+  }
+  dropMedia(key) {
+    delete this.state.media[key];
+    this.saveState();
+  }
+};
+
+// form-api/tg-time.ts
+var DEFAULT_OFFSET_MIN = 300;
+var offsetMs = DEFAULT_OFFSET_MIN * 6e4;
+function setUtcOffsetMinutes(min) {
+  offsetMs = min * 6e4;
+}
+var DEFAULT_JOIN_MINUTES = 40;
+var MONTHS_GEN = [
+  "\u044F\u043D\u0432\u0430\u0440\u044F",
+  "\u0444\u0435\u0432\u0440\u0430\u043B\u044F",
+  "\u043C\u0430\u0440\u0442\u0430",
+  "\u0430\u043F\u0440\u0435\u043B\u044F",
+  "\u043C\u0430\u044F",
+  "\u0438\u044E\u043D\u044F",
+  "\u0438\u044E\u043B\u044F",
+  "\u0430\u0432\u0433\u0443\u0441\u0442\u0430",
+  "\u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044F",
+  "\u043E\u043A\u0442\u044F\u0431\u0440\u044F",
+  "\u043D\u043E\u044F\u0431\u0440\u044F",
+  "\u0434\u0435\u043A\u0430\u0431\u0440\u044F"
+];
+var pad = (n) => String(n).padStart(2, "0");
+function partsInTZ(ms) {
+  const d = new Date(ms + offsetMs);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    second: d.getUTCSeconds()
+  };
+}
+function almatyWallToUTC(y, m0, d, hour, minute = 0) {
+  return Date.UTC(y, m0, d, hour, minute, 0) - offsetMs;
+}
+function dayKeyOf(ms) {
+  const p = partsInTZ(ms);
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+}
+var DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+function isDayKey(s) {
+  if (typeof s !== "string" || !DAY_RE.test(s)) return false;
+  const [y, m, d] = s.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+function parseDayKey(day) {
+  if (!isDayKey(day)) throw new Error(`bad day key: ${day}`);
+  const [y, m, d] = day.split("-").map(Number);
+  return { y, m0: m - 1, d };
+}
+function addDays(day, n) {
+  const { y, m0, d } = parseDayKey(day);
+  const t = new Date(Date.UTC(y, m0, d + n));
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+}
+function parseHHMM(s) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s);
+  if (!m) throw new Error(`bad time: ${s}`);
+  const h = Number(m[1]);
+  const mi = Number(m[2]);
+  if (h > 23 || mi > 59) throw new Error(`bad time: ${s}`);
+  return { h, m: mi };
+}
+function atTime(day, hhmm) {
+  const { y, m0, d } = parseDayKey(day);
+  const { h, m } = parseHHMM(hhmm);
+  return almatyWallToUTC(y, m0, d, h, m);
+}
+function streamStart(day, cfg) {
+  return atTime(day, cfg.streamStart);
+}
+function streamEnd(day, cfg) {
+  return streamStart(day, cfg) + cfg.streamMinutes * 6e4;
+}
+function joinCloses(day, cfg) {
+  return streamStart(day, cfg) + (cfg.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * 6e4;
+}
+function isStreamDay(day, cfg) {
+  if (cfg.firstDay && day < cfg.firstDay) return false;
+  return !(cfg.skipDays || []).includes(day);
+}
+function nextStreamDay(from, cfg) {
+  let d = cfg.firstDay && cfg.firstDay > from ? cfg.firstDay : from;
+  for (let i = 0; i < 400 && !isStreamDay(d, cfg); i++) d = addDays(d, 1);
+  return d;
+}
+function isLive(day, now, cfg) {
+  return now >= streamStart(day, cfg) && now < streamEnd(day, cfg);
+}
+function liveDayNow(now, cfg) {
+  const today = dayKeyOf(now);
+  return isStreamDay(today, cfg) && isLive(today, now, cfg) ? today : null;
+}
+function assignStreamDay(now, cfg) {
+  const today = dayKeyOf(now);
+  if (isStreamDay(today, cfg) && now < joinCloses(today, cfg)) return today;
+  return nextStreamDay(addDays(today, 1), cfg);
+}
+function dayWord(day, now) {
+  const today = dayKeyOf(now);
+  if (day === today) return "\u0421\u0435\u0433\u043E\u0434\u043D\u044F";
+  if (day === addDays(today, 1)) return "\u0417\u0430\u0432\u0442\u0440\u0430";
+  const { m0, d } = parseDayKey(day);
+  return `${d} ${MONTHS_GEN[m0]}`;
+}
+function dateLabel(day) {
+  const { m0, d } = parseDayKey(day);
+  return `${d} ${MONTHS_GEN[m0]}`;
+}
+function dayWordLower(day, now) {
+  const w = dayWord(day, now);
+  return w.charAt(0).toLowerCase() + w.slice(1);
+}
+
+// form-api/tg-workshop.ts
+var env = (k) => (process.env[k] || "").trim();
+var botToken = () => env("TG_WORKSHOP_BOT_TOKEN");
+var webhookSecret = () => env("TG_WORKSHOP_WEBHOOK_SECRET");
+var goSecret = () => env("TG_GO_SECRET");
+var ownerIds = () => env("TG_LINK_OWNER_IDS").split(",").map((s) => s.trim()).filter(Boolean);
+var botOff = () => env("TG_BOT").toLowerCase() === "off";
+var apiBase = () => env("TG_API_BASE").replace(/\/+$/, "") || "https://api.telegram.org";
+function isOwner(userId) {
+  const ids = ownerIds();
+  return userId !== void 0 && ids.length > 0 && ids.includes(String(userId));
+}
+var GO_BASE = "https://onai.academy/workshop/api/go";
+var MAX_UPDATE_BODY = 64 * 1024;
+var API_TIMEOUT_MS = 1e4;
+var DEFAULT_BIZON = "https://start.bizon365.ru/room/196985/BguY0kXF-l";
+var DEFAULT_REJOIN_ACK = "\u0413\u043E\u0442\u043E\u0432\u043E, \u0441\u0441\u044B\u043B\u043A\u0443 \u043F\u0440\u0438\u0448\u043B\u044E \u0441\u044E\u0434\u0430 \u0432 19:50.";
+var OTHER_THROTTLE_MS = 10 * 6e4;
+var SEEN_UPDATES = 1e3;
+var AUDIENCES = ["all", "clicked", "notClicked", "notPaid"];
+var LINK_KEYS = ["bizon", "manager", "managerName", "whatsapp", "whatsappPhone", "pay", "prepayKz", "prepayIntl", "cases", "game", "template"];
+var TEXT_VARS = ["hi", "dayWord", "dayWordLower", "TEMPLATE"];
+var URL_VARS = ["STREAM", "PAY", "PREPAY_KZ", "PREPAY_INTL", "MANAGER", "CASES", "GAME", "WHATSAPP_TEMPLATE"];
+var HTML_TAGS = /* @__PURE__ */ new Set(["b", "strong", "i", "em", "u", "ins", "s", "strike", "del", "code", "pre", "a", "tg-spoiler", "blockquote"]);
+function isObj(x) {
+  return !!x && typeof x === "object" && !Array.isArray(x);
+}
+function allStrings(x, out = []) {
+  if (typeof x === "string") out.push(x);
+  else if (Array.isArray(x)) x.forEach((v) => allStrings(v, out));
+  else if (isObj(x)) Object.values(x).forEach((v) => allStrings(v, out));
+  return out;
+}
+function checkHtml(s, where) {
+  const stack = [];
+  const re = /<(\/?)([A-Za-z][\w-]*)[^<>]*>|<|&(?!#?\w+;)/g;
+  let m;
+  while (m = re.exec(s)) {
+    if (m[0] === "<") throw new Error(`${where}: \u043B\u0438\u0448\u043D\u0438\u0439 \u0441\u0438\u043C\u0432\u043E\u043B < (\u044D\u043A\u0440\u0430\u043D\u0438\u0440\u0443\u0439 \u043A\u0430\u043A &lt;)`);
+    if (m[0] === "&") throw new Error(`${where}: \u0433\u043E\u043B\u044B\u0439 & (\u043F\u0438\u0448\u0438 &amp;)`);
+    const name = m[2].toLowerCase();
+    if (!HTML_TAGS.has(name)) throw new Error(`${where}: \u0442\u0435\u0433 <${name}> Telegram \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442`);
+    if (m[1] === "/") {
+      if (stack.pop() !== name) throw new Error(`${where}: \u0442\u0435\u0433 </${name}> \u0437\u0430\u043A\u0440\u044B\u0442 \u043D\u0435 \u0442\u0430\u043C`);
+    } else stack.push(name);
+  }
+  if (stack.length) throw new Error(`${where}: \u043D\u0435 \u0437\u0430\u043A\u0440\u044B\u0442 \u0442\u0435\u0433 <${stack[stack.length - 1]}>`);
+}
+function checkText(s, where) {
+  if (typeof s !== "string" || !s) throw new Error(`${where}: \u043D\u0443\u0436\u0435\u043D \u043D\u0435\u043F\u0443\u0441\u0442\u043E\u0439 \u0442\u0435\u043A\u0441\u0442`);
+  for (const m of s.matchAll(/\{(\w+)\}/g)) {
+    if (!TEXT_VARS.includes(m[1])) throw new Error(`${where}: \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043F\u043E\u0434\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 {${m[1]}}`);
+  }
+  checkHtml(s, where);
+}
+function checkMedia(m, where) {
+  if (!isObj(m) || m.type !== "photo" && m.type !== "video" || typeof m.url !== "string" || !/^https:\/\//.test(m.url)) {
+    throw new Error(`${where}: media \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C { type: photo|video, url: https://... }`);
+  }
+  if (m.poster !== void 0 && typeof m.poster !== "string") throw new Error(`${where}: poster \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0439`);
+  for (const k of ["width", "height", "duration"]) {
+    if (m[k] !== void 0 && (typeof m[k] !== "number" || m[k] <= 0)) throw new Error(`${where}: ${k} \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u043C \u0447\u0438\u0441\u043B\u043E\u043C`);
+  }
+}
+function checkButtons(b, where) {
+  if (b === void 0) return;
+  if (!Array.isArray(b)) throw new Error(`${where}: buttons \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043C\u0430\u0441\u0441\u0438\u0432\u043E\u043C \u0440\u044F\u0434\u043E\u0432`);
+  for (const row of b) {
+    if (!Array.isArray(row)) throw new Error(`${where}: \u0440\u044F\u0434 \u043A\u043D\u043E\u043F\u043E\u043A \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043C\u0430\u0441\u0441\u0438\u0432\u043E\u043C`);
+    for (const btn of row) {
+      if (!isObj(btn) || typeof btn.text !== "string" || !btn.text) throw new Error(`${where}: \u0443 \u043A\u043D\u043E\u043F\u043A\u0438 \u043D\u0435\u0442 text`);
+      const hasUrl = typeof btn.url === "string";
+      const hasCb = typeof btn.callback === "string";
+      if (hasUrl === hasCb) throw new Error(`${where}: \u0443 \u043A\u043D\u043E\u043F\u043A\u0438 \xAB${btn.text}\xBB \u043D\u0443\u0436\u0435\u043D \u0440\u043E\u0432\u043D\u043E \u043E\u0434\u0438\u043D \u0438\u0437 url \u0438\u043B\u0438 callback`);
+      if (hasCb && (!btn.callback || Buffer.byteLength(btn.callback) > 64)) throw new Error(`${where}: callback \u043A\u043D\u043E\u043F\u043A\u0438 \xAB${btn.text}\xBB \u0434\u043B\u0438\u043D\u043D\u0435\u0435 64 \u0431\u0430\u0439\u0442`);
+      if (hasUrl) {
+        const url = btn.url;
+        for (const m of url.matchAll(/\{(\w+)\}/g)) {
+          if (!URL_VARS.includes(m[1])) throw new Error(`${where}: \u0443 \u043A\u043D\u043E\u043F\u043A\u0438 \xAB${btn.text}\xBB \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043F\u043E\u0434\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 {${m[1]}}`);
+        }
+        if (!/\{\w+\}/.test(url) && !/^https:\/\/\S+$/.test(url)) throw new Error(`${where}: \u0443 \u043A\u043D\u043E\u043F\u043A\u0438 \xAB${btn.text}\xBB \u0430\u0434\u0440\u0435\u0441 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C https`);
+      }
+    }
+  }
+}
+function validateSeries(raw) {
+  if (!isObj(raw)) throw new Error("\u0441\u0435\u0440\u0438\u044F: \u043A\u043E\u0440\u0435\u043D\u044C \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C");
+  for (const s of allStrings(raw)) {
+    if (s.includes(String.fromCharCode(8212))) throw new Error(`\u0441\u0435\u0440\u0438\u044F: \u0434\u043B\u0438\u043D\u043D\u043E\u0435 \u0442\u0438\u0440\u0435 \u0432 \xAB${s.slice(0, 50)}\xBB`);
+  }
+  if (raw.timezone !== "Asia/Almaty") throw new Error("\u0441\u0435\u0440\u0438\u044F: timezone \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C Asia/Almaty");
+  if (typeof raw.version !== "string") throw new Error("\u0441\u0435\u0440\u0438\u044F: \u043D\u0435\u0442 version");
+  if (raw.utcOffsetMinutes !== void 0 && (!Number.isInteger(raw.utcOffsetMinutes) || Math.abs(raw.utcOffsetMinutes) > 14 * 60)) {
+    throw new Error("\u0441\u0435\u0440\u0438\u044F: utcOffsetMinutes \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043C\u0438\u043D\u0443\u0442 (300 \u0434\u043B\u044F \u0410\u043B\u043C\u0430\u0442\u044B)");
+  }
+  if (raw.firstDay !== void 0 && !isDayKey(raw.firstDay)) throw new Error("\u0441\u0435\u0440\u0438\u044F: firstDay \u0432\u0438\u0434\u0430 YYYY-MM-DD");
+  if (raw.skipDays !== void 0 && (!Array.isArray(raw.skipDays) || !raw.skipDays.every(isDayKey))) throw new Error("\u0441\u0435\u0440\u0438\u044F: skipDays \u043C\u0430\u0441\u0441\u0438\u0432 \u0434\u043D\u0435\u0439 YYYY-MM-DD");
+  if (typeof raw.streamStart !== "string" || !/^\d{1,2}:\d{2}$/.test(raw.streamStart)) throw new Error("\u0441\u0435\u0440\u0438\u044F: streamStart \u0432\u0438\u0434\u0430 HH:MM");
+  try {
+    parseHHMM(raw.streamStart);
+  } catch {
+    throw new Error("\u0441\u0435\u0440\u0438\u044F: streamStart \u043D\u0435 \u0432\u0440\u0435\u043C\u044F");
+  }
+  if (typeof raw.streamMinutes !== "number" || raw.streamMinutes <= 0) throw new Error("\u0441\u0435\u0440\u0438\u044F: streamMinutes \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0447\u0438\u0441\u043B\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u0435 0");
+  if (raw.joinLiveMinutes !== void 0 && (typeof raw.joinLiveMinutes !== "number" || raw.joinLiveMinutes < 0)) throw new Error("\u0441\u0435\u0440\u0438\u044F: joinLiveMinutes \u0447\u0438\u0441\u043B\u043E \u043C\u0438\u043D\u0443\u0442");
+  if (typeof raw.graceMinutes !== "number" || raw.graceMinutes < 0) throw new Error("\u0441\u0435\u0440\u0438\u044F: graceMinutes \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0447\u0438\u0441\u043B\u043E\u043C");
+  if (!isObj(raw.links)) throw new Error("\u0441\u0435\u0440\u0438\u044F: \u043D\u0435\u0442 links");
+  for (const k of LINK_KEYS) {
+    if (typeof raw.links[k] !== "string") throw new Error(`\u0441\u0435\u0440\u0438\u044F: links.${k} \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0439`);
+  }
+  if (!/^https:\/\//.test(raw.links.bizon)) throw new Error("\u0441\u0435\u0440\u0438\u044F: links.bizon \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C https-\u0441\u0441\u044B\u043B\u043A\u043E\u0439");
+  const w = raw.welcome;
+  if (!isObj(w)) throw new Error("\u0441\u0435\u0440\u0438\u044F: \u043D\u0435\u0442 welcome");
+  checkMedia(w.media, "welcome");
+  for (const k of ["before", "live", "stop", "other", "paidAck"]) checkText(w[k], `welcome.${k}`);
+  for (const k of ["lateToday", "rejoinAck"]) if (w[k] !== void 0) checkText(w[k], `welcome.${k}`);
+  checkButtons(w.liveButtons, "welcome.liveButtons");
+  if (!Array.isArray(raw.messages)) throw new Error("\u0441\u0435\u0440\u0438\u044F: messages \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043C\u0430\u0441\u0441\u0438\u0432\u043E\u043C");
+  const ids = /* @__PURE__ */ new Set();
+  for (const m of raw.messages) {
+    if (!isObj(m) || typeof m.id !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(m.id)) throw new Error("\u0441\u0435\u0440\u0438\u044F: \u0443 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0443\u0436\u0435\u043D id \u0438\u0437 \u0431\u0443\u043A\u0432, \u0446\u0438\u0444\u0440, _ \u0438 - (\u0434\u043E 40 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432)");
+    if (ids.has(m.id)) throw new Error(`\u0441\u0435\u0440\u0438\u044F: id \xAB${m.id}\xBB \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u0442\u0441\u044F`);
+    ids.add(m.id);
+    const where = `\u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 ${m.id}`;
+    if (typeof m.at !== "string" || !/^\d{1,2}:\d{2}$/.test(m.at)) throw new Error(`${where}: at \u0432\u0438\u0434\u0430 HH:MM`);
+    try {
+      parseHHMM(m.at);
+    } catch {
+      throw new Error(`${where}: at \u043D\u0435 \u0432\u0440\u0435\u043C\u044F`);
+    }
+    if (typeof m.audience !== "string" || !AUDIENCES.includes(m.audience)) throw new Error(`${where}: audience \u0438\u0437 ${AUDIENCES.join(", ")}`);
+    checkText(m.text, where);
+    if (m.dayOffset !== void 0 && (!Number.isInteger(m.dayOffset) || m.dayOffset < 0 || m.dayOffset > 3)) {
+      throw new Error(`${where}: dayOffset \u0446\u0435\u043B\u043E\u0435 \u043E\u0442 0 \u0434\u043E 3`);
+    }
+    if (m.enabled !== void 0 && typeof m.enabled !== "boolean") throw new Error(`${where}: enabled \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C true \u0438\u043B\u0438 false`);
+    if (m.silent !== void 0 && typeof m.silent !== "boolean") throw new Error(`${where}: silent \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C true \u0438\u043B\u0438 false`);
+    if (m.essential !== void 0 && typeof m.essential !== "boolean") throw new Error(`${where}: essential \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C true \u0438\u043B\u0438 false`);
+    if (m.media !== void 0) checkMedia(m.media, where);
+    checkButtons(m.buttons, where);
+  }
+  return raw;
+}
+function seriesWarnings(sr) {
+  const out = [];
+  const ctx = { series: sr, now: Date.now(), chatId: 1, firstName: "\u0416".repeat(64), day: dayKeyOf(Date.now()) };
+  const check = (id, c) => {
+    const n = visibleLength(expandText(c.text, ctx));
+    if (c.media && n > 1024) out.push(`${id}: \u043F\u043E\u0434\u043F\u0438\u0441\u044C \u0441 \u0434\u043B\u0438\u043D\u043D\u044B\u043C \u0438\u043C\u0435\u043D\u0435\u043C ${n} \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432, \u0431\u043E\u043B\u044C\u0448\u0435 1024, \u0443\u0439\u0434\u0451\u0442 \u0434\u0432\u0443\u043C\u044F \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F\u043C\u0438 (\u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0438 \u0442\u0435\u043A\u0441\u0442)`);
+    if (n > 4096) out.push(`${id}: \u0442\u0435\u043A\u0441\u0442 ${n} \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432, \u0431\u043E\u043B\u044C\u0448\u0435 4096, Telegram \u043D\u0435 \u043F\u0440\u0438\u043C\u0435\u0442`);
+  };
+  check("welcome.before", { media: sr.welcome.media, text: sr.welcome.before });
+  for (const m of sr.messages) check(m.id, m);
+  return out;
+}
+var store = null;
+var series = null;
+var botError = "";
+function getStore() {
+  if (!store) throw new Error("tg-workshop \u043D\u0435 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D (initTgWorkshop)");
+  return store;
+}
+function getSeries() {
+  if (!series) throw new Error("\u0441\u0435\u0440\u0438\u044F \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u0430");
+  return series;
+}
+var botEnabled = () => !botOff() && !!series && !!store;
+var botConfigured = () => !!botToken() && !!webhookSecret() && !!goSecret();
+var timeCfg = (s) => ({
+  streamStart: s.streamStart,
+  streamMinutes: s.streamMinutes,
+  joinLiveMinutes: s.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES,
+  firstDay: s.firstDay,
+  skipDays: s.skipDays
+});
+function applyOverrides(sr, ov) {
+  return {
+    ...sr,
+    messages: sr.messages.map((m) => {
+      const o = ov[m.id];
+      if (!o) return m;
+      return { ...m, ...o.at ? { at: o.at } : {}, ...o.enabled !== void 0 ? { enabled: o.enabled } : {} };
+    })
+  };
+}
+function activeSeries() {
+  return applyOverrides(getSeries(), getStore().state.overrides);
+}
+function seriesPath(explicit) {
+  return explicit || env("TG_SERIES_FILE") || (0, import_node_path4.join)(__dirname, "tg-series.json");
+}
+function reloadSeries(explicit) {
+  const loaded = validateSeries(JSON.parse((0, import_node_fs4.readFileSync)(seriesPath(explicit), "utf8")));
+  series = loaded;
+  botError = "";
+  setUtcOffsetMinutes(loaded.utcOffsetMinutes ?? 300);
+  return { version: loaded.version, count: loaded.messages.length, warnings: seriesWarnings(loaded) };
+}
+function initTgWorkshop(opts = {}) {
+  series = null;
+  botError = "";
+  store = new TgStore(opts.dir || env("DATA_DIR") || (0, import_node_path4.join)(__dirname, "data"));
+  if (botOff()) {
+    botError = "off";
+    console.log("[tg] TG_BOT=off: \u0431\u043E\u0442 \u0438 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B");
+    return store;
+  }
+  try {
+    const r = reloadSeries(opts.seriesFile);
+    console.log("[tg] \u0441\u0435\u0440\u0438\u044F %s, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 %d", r.version, r.count);
+    for (const w of r.warnings) console.warn("[tg] \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0435: %s", w);
+  } catch (e) {
+    botError = e.message;
+    console.error("[tg] \u0441\u0435\u0440\u0438\u044F \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u0430, \u0431\u043E\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D: %s", botError);
+  }
+  return store;
+}
+function tgHealth() {
+  return {
+    configured: botEnabled() && botConfigured(),
+    seriesEnabled: store?.state.seriesEnabled ?? false,
+    subscribers: store?.subs.size ?? 0,
+    ...botError ? { error: botError } : {}
+  };
+}
+var CONNECT_FAIL_CODES = /* @__PURE__ */ new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH", "UND_ERR_CONNECT_TIMEOUT"]);
+var scrub = (s) => {
+  const t = botToken();
+  return t ? s.split(t).join("***") : s;
+};
+var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function botCall(method, params, timeoutMs = API_TIMEOUT_MS) {
+  const token = botToken();
+  if (!token) return { ok: false, code: 0, description: "no_token" };
+  try {
+    const init = params instanceof FormData ? { method: "POST", body: params } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) };
+    const res = await fetch(`${apiBase()}/bot${token}/${method}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+    const data = await res.json().catch(() => null);
+    if (data?.ok) return { ok: true, result: data.result };
+    return {
+      ok: false,
+      code: data?.error_code ?? res.status,
+      description: scrub(String(data?.description ?? res.statusText)),
+      retryAfter: data?.parameters?.retry_after
+    };
+  } catch (e) {
+    const err = e;
+    const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
+    return {
+      ok: false,
+      code: 0,
+      description: timeout ? "timeout" : scrub(String(err?.message || err)),
+      ...!timeout && err?.cause?.code && CONNECT_FAIL_CODES.has(err.cause.code) ? { connectFail: true } : {}
+    };
+  }
+}
+var MIN_GAP_MS = 50;
+var waitHi = [];
+var waitLo = [];
+var pumping = false;
+var lastCallAt = 0;
+var pausedUntil = 0;
+function acquireSlot(prio) {
+  return new Promise((resolve) => {
+    (prio === "hi" ? waitHi : waitLo).push(resolve);
+    void pump();
+  });
+}
+async function pump() {
+  if (pumping) return;
+  pumping = true;
+  try {
+    while (waitHi.length || waitLo.length) {
+      const wait = Math.max(lastCallAt + MIN_GAP_MS, pausedUntil) - Date.now();
+      if (wait > 0) {
+        await sleep(wait);
+        continue;
+      }
+      const next = waitHi.shift() ?? waitLo.shift();
+      lastCallAt = Date.now();
+      next?.();
+    }
+  } finally {
+    pumping = false;
+  }
+}
+function pauseAll(seconds) {
+  pausedUntil = Math.max(pausedUntil, Date.now() + Math.min(60, Math.max(0, seconds)) * 1e3 + 250);
+}
+async function botSend(method, params, prio = "hi", opts = {}) {
+  let netRetried = false;
+  let r = { ok: false, code: 0, description: "not_sent" };
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await acquireSlot(prio);
+    r = await botCall(method, params, opts.timeoutMs);
+    if (r.ok) return r;
+    if (r.code === 429) {
+      pauseAll(r.retryAfter ?? 1);
+      continue;
+    }
+    if (r.code === 0 && !netRetried && r.description !== "timeout" && (opts.retryNet === "connect" ? r.connectFail : true)) {
+      netRetried = true;
+      continue;
+    }
+    break;
+  }
+  return r;
+}
+var mediaTimeout = () => Number(env("TG_MEDIA_TIMEOUT_MS")) || 6e4;
+var toSend = (r) => r.ok ? { ok: true } : { ok: false, code: r.code, error: `${r.code} ${r.description}` };
+function isGone(r) {
+  return !r.ok && (r.code === 403 || r.code === 400 && /chat not found/i.test(r.error || ""));
+}
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function visibleLength(html) {
+  return html.replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").length;
+}
+function goUrl(chatId, day) {
+  const t = makeGoToken(chatId, day);
+  return t ? `${GO_BASE}/${t}` : "";
+}
+function textVars(ctx) {
+  const name = (ctx.firstName || "").replace(/\s+/g, " ").trim().slice(0, 64);
+  return {
+    hi: name ? `\u041F\u0440\u0438\u0432\u0435\u0442, ${name}!` : "\u041F\u0440\u0438\u0432\u0435\u0442!",
+    dayWord: dayWord(ctx.day, ctx.now),
+    dayWordLower: dayWordLower(ctx.day, ctx.now),
+    TEMPLATE: ctx.series.links.template
+  };
+}
+function expandText(tpl, ctx) {
+  const vars = textVars(ctx);
+  return tpl.replace(/\{(\w+)\}/g, (m, k) => Object.prototype.hasOwnProperty.call(vars, k) ? escapeHtml(vars[k]) : m);
+}
+function urlVars(ctx) {
+  const l = ctx.series.links;
+  const pv = (v) => v || (ctx.preview ? l.manager : "");
+  return {
+    STREAM: goUrl(ctx.chatId, ctx.liveDay ?? ctx.day),
+    PAY: pv(l.pay),
+    PREPAY_KZ: pv(l.prepayKz),
+    PREPAY_INTL: pv(l.prepayIntl),
+    MANAGER: l.manager,
+    CASES: l.cases,
+    GAME: l.game,
+    WHATSAPP_TEMPLATE: l.whatsapp ? `${l.whatsapp}?text=${encodeURIComponent(l.template)}` : ""
+  };
+}
+function expandUrl(url, ctx) {
+  const vars = urlVars(ctx);
+  const out = url.replace(/\{(\w+)\}/g, (m, k) => Object.prototype.hasOwnProperty.call(vars, k) ? vars[k] : m).trim();
+  return /^https?:\/\/[^\s{}]+$/i.test(out) ? out : "";
+}
+function buildKeyboard(rows, ctx) {
+  if (!rows) return void 0;
+  const out = [];
+  for (const row of rows) {
+    const r = [];
+    for (const b of row) {
+      if (b.callback) {
+        r.push({ text: b.text, callback_data: b.callback });
+        continue;
+      }
+      const url = b.url ? expandUrl(b.url, ctx) : "";
+      if (url) r.push({ text: b.text, url });
+    }
+    if (r.length) out.push(r);
+  }
+  return out.length ? out : void 0;
+}
+var signGo = (payload, secret) => (0, import_node_crypto3.createHmac)("sha256", secret).update(payload).digest("base64url").slice(0, 12);
+function makeGoToken(chatId, day, secret = goSecret()) {
+  if (!secret) return "";
+  const payload = `${chatId}:${day}`;
+  return `${Buffer.from(payload).toString("base64url")}.${signGo(payload, secret)}`;
+}
+function verifyGoToken(token, secret = goSecret()) {
+  if (!secret || typeof token !== "string" || token.length > 200) return null;
+  const dot = token.indexOf(".");
+  if (dot < 1) return null;
+  const payload = Buffer.from(token.slice(0, dot), "base64url").toString("utf8");
+  const m = /^(-?\d{1,15}):(\d{4}-\d{2}-\d{2})$/.exec(payload);
+  if (!m || !isDayKey(m[2])) return null;
+  const given = Buffer.from(token.slice(dot + 1));
+  const want = Buffer.from(signGo(payload, secret));
+  if (given.length !== want.length || !(0, import_node_crypto3.timingSafeEqual)(given, want)) return null;
+  return { chatId: Number(m[1]), day: m[2] };
+}
+function largest(sizes) {
+  if (!Array.isArray(sizes) || !sizes.length) return void 0;
+  return sizes.reduce((a, b) => (b.width ?? 0) * (b.height ?? 0) >= (a.width ?? 0) * (a.height ?? 0) ? b : a).file_id;
+}
+async function sendText(chatId, html, markup, silent, prio = "hi") {
+  return toSend(
+    await botSend(
+      "sendMessage",
+      {
+        chat_id: chatId,
+        text: html,
+        parse_mode: "HTML",
+        // Telegram сам открывает ссылки и портит учёт переходов: превью выключено везде.
+        link_preview_options: { is_disabled: true },
+        ...markup ? { reply_markup: { inline_keyboard: markup } } : {},
+        ...silent ? { disable_notification: true } : {}
+      },
+      prio
+    )
+  );
+}
+async function sendMedia(chatId, media, caption, markup, silent, prio) {
+  const st = getStore();
+  const isVideo = media.type === "video";
+  const method = isVideo ? "sendVideo" : "sendPhoto";
+  const field = isVideo ? "video" : "photo";
+  const cachedRef = st.getMedia(media.url);
+  const cachedCover = isVideo && media.poster ? st.getMedia(media.poster) : void 0;
+  const attempts = [[cachedRef ?? media.url, cachedCover ?? media.poster]];
+  if (cachedRef || cachedCover) attempts.push([media.url, media.poster]);
+  if (isVideo && media.poster) attempts.push([media.url, void 0]);
+  let r = { ok: false, code: 0, description: "not_sent" };
+  let used = attempts[0];
+  for (const a of attempts) {
+    used = a;
+    const params = { chat_id: chatId, [field]: a[0] };
+    if (caption) {
+      params.caption = caption;
+      params.parse_mode = "HTML";
+    }
+    if (markup) params.reply_markup = { inline_keyboard: markup };
+    if (silent) params.disable_notification = true;
+    if (isVideo) {
+      params.supports_streaming = true;
+      if (media.width) params.width = media.width;
+      if (media.height) params.height = media.height;
+      if (media.duration) params.duration = media.duration;
+      if (a[1]) params.cover = a[1];
+    }
+    const byUrl = /^https?:\/\//.test(a[0]);
+    r = await botSend(method, params, prio, { retryNet: "connect", ...byUrl ? { timeoutMs: mediaTimeout() } : {} });
+    if (r.ok || r.code !== 400) break;
+  }
+  if (r.ok) {
+    if (used[0] === media.url) {
+      const id = isVideo ? r.result?.video?.file_id : largest(r.result?.photo);
+      if (id) st.setMedia(media.url, id);
+    }
+    if (isVideo && media.poster && used[1] === media.poster) {
+      const cover = largest(r.result?.video?.cover);
+      if (cover) st.setMedia(media.poster, cover);
+    }
+  }
+  return toSend(r);
+}
+async function plain(chatId, text, markup) {
+  return toSend(
+    await botSend("sendMessage", {
+      chat_id: chatId,
+      text: text.slice(0, 4e3),
+      link_preview_options: { is_disabled: true },
+      ...markup ? { reply_markup: { inline_keyboard: markup } } : {}
+    })
+  );
+}
+async function notifyOwners(text) {
+  let delivered = 0;
+  for (const id of ownerIds()) {
+    const n = Number(id);
+    if (Number.isFinite(n) && (await plain(n, text)).ok) delivered++;
+  }
+  return delivered;
+}
+var mediaWarned = /* @__PURE__ */ new Set();
+async function warnMedia(url, error) {
+  if (mediaWarned.has(url)) return;
+  mediaWarned.add(url);
+  await notifyOwners(`\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0430\u0441\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0438\u043B\u0438 \u0432\u0438\u0434\u0435\u043E ${url}: ${error || "\u043E\u0448\u0438\u0431\u043A\u0430"}. \u0428\u043B\u044E \u0442\u043E\u0442 \u0436\u0435 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
+}
+async function sendContent(c, ctx, opts = {}) {
+  const prio = opts.prio ?? "hi";
+  const html = expandText(c.text, ctx);
+  const kb = buildKeyboard(c.buttons, ctx);
+  if (!c.media) return sendText(ctx.chatId, html, kb, c.silent, prio);
+  const short = visibleLength(html) <= 1024;
+  const m = await sendMedia(ctx.chatId, c.media, short ? html : void 0, short ? kb : void 0, c.silent, prio);
+  if (m.ok) return short ? m : sendText(ctx.chatId, html, kb, c.silent, prio);
+  if (isGone(m)) return m;
+  console.warn("[tg] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", c.media.url, m.error);
+  void warnMedia(c.media.url, m.error);
+  return sendText(ctx.chatId, html, kb, c.silent, prio);
+}
+function noteSendResult(chatId, r, now) {
+  if (!isGone(r)) return;
+  const st = getStore();
+  const s = st.subs.get(chatId);
+  if (s && !s.blocked) st.recordEvent({ type: "blocked", chat_id: chatId, ts: new Date(now).toISOString() });
+}
+function displayDay(sub, now, cfg) {
+  return sub && now < streamEnd(sub.streamDay, cfg) ? sub.streamDay : assignStreamDay(now, cfg);
+}
+function liveContent(sr) {
+  return { text: sr.welcome.live, buttons: sr.welcome.liveButtons };
+}
+async function sendGreeting(sub, now) {
+  const sr = getSeries();
+  const cfg = timeCfg(sr);
+  const ctx = { series: sr, now, chatId: sub.chatId, firstName: sub.firstName, day: sub.streamDay };
+  if (isLive(sub.streamDay, now, cfg)) {
+    noteSendResult(sub.chatId, await sendContent(liveContent(sr), ctx), now);
+    return;
+  }
+  const r = await sendContent({ media: sr.welcome.media, text: sr.welcome.before }, ctx);
+  noteSendResult(sub.chatId, r, now);
+  const live = liveDayNow(now, cfg);
+  if (r.ok && live && live !== sub.streamDay && sr.welcome.lateToday) {
+    const r2 = await sendContent({ text: sr.welcome.lateToday, buttons: sr.welcome.liveButtons }, { ...ctx, liveDay: live });
+    noteSendResult(sub.chatId, r2, now);
+  }
+}
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+function parseCommand(text) {
+  const m = /^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/.exec(text.trim());
+  return m ? { cmd: m[1].toLowerCase(), args: (m[2] || "").trim() } : null;
+}
+function cleanPayload(args) {
+  const first = args.split(/\s+/)[0] || "";
+  return /^[A-Za-z0-9_-]{1,64}$/.test(first) ? first : "";
+}
+var chains = /* @__PURE__ */ new Map();
+function serial(key, fn) {
+  const prev = chains.get(key) ?? Promise.resolve();
+  const next = prev.then(fn, fn);
+  const tail = next.then(() => void 0, () => void 0);
+  chains.set(key, tail);
+  void tail.then(() => {
+    if (chains.get(key) === tail) chains.delete(key);
+  });
+  return next;
+}
+var seenUpdates = [];
+var seenSet = /* @__PURE__ */ new Set();
+function seenBefore(id) {
+  if (typeof id !== "number") return false;
+  if (seenSet.has(id)) return true;
+  seenSet.add(id);
+  seenUpdates.push(id);
+  if (seenUpdates.length > SEEN_UPDATES) seenSet.delete(seenUpdates.shift());
+  return false;
+}
+var lastOther = /* @__PURE__ */ new Map();
+var previewing = /* @__PURE__ */ new Set();
+var fireHook = null;
+function registerFire(h) {
+  fireHook = h;
+}
+async function processUpdate(u, now = Date.now()) {
+  if (!store || !series) return;
+  if (seenBefore(u.update_id)) return;
+  const chatId = u.message?.chat?.id ?? u.callback_query?.message?.chat?.id ?? u.callback_query?.from?.id ?? u.my_chat_member?.chat?.id;
+  if (typeof chatId !== "number") return;
+  await serial(String(chatId), async () => {
+    try {
+      if (u.message) await onMessage(u.message, now);
+      else if (u.callback_query) await onCallback(u.callback_query, now);
+      else if (u.my_chat_member) onMemberUpdate(u.my_chat_member, now);
+    } catch (e) {
+      console.error("[tg] \u043E\u0448\u0438\u0431\u043A\u0430 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0438 \u0430\u043F\u0434\u0435\u0439\u0442\u0430:", scrub(String(e?.stack || e)));
+    }
+  });
+}
+async function onMessage(m, now) {
+  if (m.chat?.type !== "private" || !m.from || m.from.is_bot) return;
+  const text = (m.text || "").trim();
+  if (!text) return;
+  const c = parseCommand(text);
+  if (c?.cmd === "start") return onStart(m, cleanPayload(c.args), now);
+  if (c?.cmd === "stop") return onStop(m, now);
+  if (c && OWNER_CMDS.has(c.cmd)) {
+    if (isOwner(m.from.id)) await ownerCommand(c.cmd, c.args, m, now);
+    return;
+  }
+  if (isOwner(m.from.id)) return;
+  await onOther(m, now);
+}
+async function onStart(m, payload, now) {
+  const st = getStore();
+  const sr = getSeries();
+  const cfg = timeCfg(sr);
+  const from = m.from;
+  const prev = st.subs.get(m.chat.id);
+  const day = prev && now < streamEnd(prev.streamDay, cfg) ? prev.streamDay : assignStreamDay(now, cfg);
+  st.recordEvent({
+    type: "start",
+    chat_id: m.chat.id,
+    user_id: from.id,
+    username: from.username,
+    first_name: from.first_name,
+    language_code: from.language_code,
+    payload,
+    streamDay: day,
+    ts: new Date(now).toISOString()
+  });
+  await sendGreeting(st.subs.get(m.chat.id), now);
+}
+async function onStop(m, now) {
+  const st = getStore();
+  const sr = getSeries();
+  const sub = st.subs.get(m.chat.id);
+  if (sub) st.recordEvent({ type: "stop", chat_id: m.chat.id, ts: new Date(now).toISOString() });
+  const ctx = { series: sr, now, chatId: m.chat.id, firstName: sub?.firstName, day: displayDay(sub, now, timeCfg(sr)) };
+  noteSendResult(m.chat.id, await sendContent({ text: sr.welcome.stop }, ctx), now);
+}
+async function onOther(m, now) {
+  const last = lastOther.get(m.chat.id) ?? 0;
+  if (now - last < OTHER_THROTTLE_MS) return;
+  lastOther.set(m.chat.id, now);
+  if (lastOther.size > 5e3) {
+    for (const [k, t] of lastOther) if (now - t >= OTHER_THROTTLE_MS) lastOther.delete(k);
+  }
+  const st = getStore();
+  const sr = getSeries();
+  const cfg = timeCfg(sr);
+  const sub = st.subs.get(m.chat.id);
+  const firstName = sub?.firstName || m.from?.first_name;
+  const live = liveDayNow(now, cfg);
+  const ctx = { series: sr, now, chatId: m.chat.id, firstName, day: live ?? displayDay(sub, now, cfg) };
+  const content = live ? liveContent(sr) : { text: sr.welcome.other };
+  noteSendResult(m.chat.id, await sendContent(content, ctx), now);
+}
+async function onCallback(cq, now) {
+  const st = getStore();
+  const sr = getSeries();
+  const cfg = timeCfg(sr);
+  const chatId = cq.message?.chat?.id ?? cq.from.id;
+  const sub = st.subs.get(chatId);
+  const ts = new Date(now).toISOString();
+  await botSend("answerCallbackQuery", { callback_query_id: cq.id });
+  if (cq.data === "paid") {
+    if (!sub || sub.paid) return;
+    st.recordEvent({ type: "paid", chat_id: chatId, by: "self", ts });
+    const ctx = { series: sr, now, chatId, firstName: sub.firstName, day: displayDay(sub, now, cfg) };
+    noteSendResult(chatId, await sendContent({ text: sr.welcome.paidAck }, ctx), now);
+    return;
+  }
+  if (cq.data === "rejoin") {
+    const day = assignStreamDay(now, cfg);
+    if (sub) st.recordEvent({ type: "rejoin", chat_id: chatId, streamDay: day, ts });
+    const ctx = { series: sr, now, chatId, firstName: sub?.firstName, day };
+    const content = isLive(day, now, cfg) ? liveContent(sr) : { text: sr.welcome.rejoinAck ?? DEFAULT_REJOIN_ACK };
+    noteSendResult(chatId, await sendContent(content, ctx), now);
+    return;
+  }
+  if (cq.data?.startsWith("fire:")) {
+    if (!isOwner(cq.from.id) || !fireHook) return;
+    if (cq.message?.message_id) {
+      await botSend("editMessageReplyMarkup", { chat_id: chatId, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
+    }
+    await plain(chatId, await fireHook.run(cq.data.slice(5), now));
+  }
+}
+function onMemberUpdate(u, now) {
+  if (u.chat?.type !== "private") return;
+  const st = getStore();
+  const sub = st.subs.get(u.chat.id);
+  if (!sub) return;
+  const status = u.new_chat_member?.status;
+  const ts = new Date(now).toISOString();
+  if (status === "kicked" && !sub.blocked) st.recordEvent({ type: "blocked", chat_id: u.chat.id, ts });
+  else if (status === "member" && sub.blocked) st.recordEvent({ type: "unblocked", chat_id: u.chat.id, ts });
+}
+var AUD_LABEL = { all: "\u0432\u0441\u0435", clicked: "\u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C", notClicked: "\u043D\u0435 \u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C", notPaid: "\u043D\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u0432\u0448\u0438\u043C" };
+var payloadGroup = (payload) => payload.split("_")[0] || "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438";
+var pct = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
+function buildDayTable(st, sr, now) {
+  const today = dayKeyOf(now);
+  const days = new Set(st.regDayKeys());
+  if (isStreamDay(today, timeCfg(sr))) days.add(today);
+  return [...days].sort().reverse().slice(0, 7).map((d) => {
+    const m = st.dayMetrics(d);
+    return `${d}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 ${m.clicked} (${pct(m.clicked, m.registered)}%), \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB ${m.paid}`;
+  });
+}
+function buildStatsText(st, sr, now) {
+  const today = dayKeyOf(now);
+  const tomorrow = addDays(today, 1);
+  let active = 0;
+  let forToday = 0;
+  let forTomorrow = 0;
+  let paid = 0;
+  const byPayload = /* @__PURE__ */ new Map();
+  for (const s of st.subs.values()) {
+    if (st.isActive(s)) {
+      active++;
+      if (s.streamDay === today) forToday++;
+      if (s.streamDay === tomorrow) forTomorrow++;
+    }
+    if (s.paid) paid++;
+    const key = payloadGroup(s.payload);
+    byPayload.set(key, (byPayload.get(key) || 0) + 1);
+  }
+  const tags = [...byPayload.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k, n]) => `${k}: ${n}`).join(", ");
+  const started = st.startedOn(today, dayKeyOf);
+  const table = buildDayTable(st, sr, now);
+  return [
+    `\u0421\u0435\u0440\u0438\u044F: ${st.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"} (\u0432\u0435\u0440\u0441\u0438\u044F ${sr.version})`,
+    `\u041F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u043E\u0432 \u0432\u0441\u0435\u0433\u043E: ${st.subs.size}`,
+    `\u0410\u043A\u0442\u0438\u0432\u043D\u044B\u0445 (\u043D\u0435 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438, \u043D\u0435 \u043E\u0442\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C): ${active}`,
+    `\u041D\u0430 \u044D\u0444\u0438\u0440 \u0441\u0435\u0433\u043E\u0434\u043D\u044F (${today}): ${forToday}`,
+    `\u041D\u0430 \u044D\u0444\u0438\u0440 \u0437\u0430\u0432\u0442\u0440\u0430 (${tomorrow}): ${forTomorrow}`,
+    `\u041E\u043F\u043B\u0430\u0442\u0438\u043B\u0438 (\u0432\u0441\u0435\u0433\u043E): ${paid}`,
+    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435 \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram: ${st.tyCount(today, "tg")}, WhatsApp: ${st.tyCount(today, "wa")}`,
+    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0430\u0436\u0430\u043B\u0438 \xAB\u0417\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C\xBB \u0432 \u0431\u043E\u0442\u0435: ${started.total} (\u0441\u043E \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB: ${started.fromPrefix})`,
+    `\u041F\u043E \u043C\u0435\u0442\u043A\u0430\u043C: ${tags || "\u043F\u043E\u043A\u0430 \u043F\u0443\u0441\u0442\u043E"}`,
+    "",
+    "\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u044D\u0444\u0438\u0440\u044B (\u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 / \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 \u044D\u0444\u0438\u0440\u0430 / \u043D\u0430\u0436\u0430\u043B\u0438 \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB):",
+    ...table.length ? table : ["\u043F\u043E\u043A\u0430 \u043F\u0443\u0441\u0442\u043E"]
+  ].join("\n");
+}
+function dayReportText(st, day) {
+  const m = st.dayMetrics(day);
+  return `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+}
+function buildSeriesText(st, sr, now) {
+  const today = dayKeyOf(now);
+  const rows = sr.messages.map((m) => ({ m, day: addDays(today, -(m.dayOffset ?? 0)) })).sort((a, b) => atTime(today, a.m.at) - atTime(today, b.m.at));
+  const lines = rows.map(({ m, day }) => {
+    let eligible = 0;
+    for (const s of st.subs.values()) if (s.streamDay === day && st.isActive(s) && st.audienceOk(m.audience, s, day)) eligible++;
+    const sent = st.sentCount(m.id, day);
+    const ov = st.state.overrides[m.id];
+    const inJson = series?.messages.find((x) => x.id === m.id)?.at;
+    const marks = [
+      m.enabled === false ? "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "",
+      m.essential ? "\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0435, \u0438\u0434\u0451\u0442 \u0431\u0435\u0437 /series_on" : "",
+      ov?.at ? `\u0432\u0440\u0435\u043C\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E, \u0432 json ${inJson ?? "?"}` : ""
+    ].filter(Boolean);
+    return `${m.at} ${m.id} (${AUD_LABEL[m.audience]})${marks.length ? ` [${marks.join("; ")}]` : ""}: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${sent} \u0438\u0437 ${Math.max(sent, eligible)}`;
+  });
+  const head = [
+    `\u0421\u0435\u0440\u0438\u044F: ${st.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"}, \u0432\u0435\u0440\u0441\u0438\u044F ${sr.version}`,
+    isStreamDay(today, timeCfg(sr)) ? `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F (${today}):` : `\u0421\u0435\u0433\u043E\u0434\u043D\u044F (${today}) \u044D\u0444\u0438\u0440\u0430 \u043D\u0435\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0438\u0436\u0435 \u0434\u043B\u044F \u0441\u043F\u0440\u0430\u0432\u043A\u0438:`
+  ];
+  return [...head, ...lines].join("\n");
+}
+function payWarning(sr) {
+  if (sr.links.pay) return "";
+  const ids = sr.messages.filter((m) => m.enabled !== false && (m.buttons || []).some((row) => row.some((b) => b.url?.includes("{PAY}")))).map((m) => m.id);
+  if (!ids.length) return "";
+  return `
+
+\u0412\u043D\u0438\u043C\u0430\u043D\u0438\u0435: links.pay \u043F\u0443\u0441\u0442, \u043A\u043D\u043E\u043F\u043A\u0438 {PAY} \u0432\u044B\u043F\u0430\u0434\u0443\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F\u0445: ${ids.join(", ")}. \u0421\u0435\u0440\u0438\u044F \u0432\u0441\u0451 \u0440\u0430\u0432\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430; \u0437\u0430\u0434\u0430\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u0432 tg-series.json \u0438 \u0441\u0434\u0435\u043B\u0430\u0439 /reload.`;
+}
+function bizonValid(raw) {
+  try {
+    const u = new URL(raw);
+    const h = u.hostname.toLowerCase();
+    if (u.protocol !== "https:" || !(h === "bizon365.ru" || h.endsWith(".bizon365.ru")) || u.pathname.length < 2) return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+async function ownerCommand(cmd, args, m, now) {
+  const st = getStore();
+  const chatId = m.chat.id;
+  const sr = () => activeSeries();
+  switch (cmd) {
+    case "stats":
+      await plain(chatId, buildStatsText(st, sr(), now));
+      return;
+    case "series":
+      await plain(chatId, buildSeriesText(st, sr(), now));
+      return;
+    case "series_on":
+      st.setSeriesEnabled(true);
+      await plain(chatId, `\u0421\u0435\u0440\u0438\u044F \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430. \u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0443\u0445\u043E\u0434\u044F\u0442 \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E.${payWarning(sr())}`);
+      return;
+    case "series_off":
+      st.setSeriesEnabled(false);
+      await plain(chatId, "\u0421\u0435\u0440\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430. \u041F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043A\u0430\u043A \u0440\u0430\u043D\u044C\u0448\u0435.");
+      return;
+    case "reload":
+      try {
+        const r = reloadSeries();
+        const warn = r.warnings.length ? `
+
+\u041D\u0430 \u0437\u0430\u043C\u0435\u0442\u043A\u0443:
+${r.warnings.slice(0, 8).join("\n")}` : "";
+        await plain(chatId, `\u0421\u0435\u0440\u0438\u044F \u043F\u0435\u0440\u0435\u0447\u0438\u0442\u0430\u043D\u0430: \u0432\u0435\u0440\u0441\u0438\u044F ${r.version}, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 ${r.count}.${warn}`);
+      } catch (e) {
+        await plain(chatId, `\u041D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0441\u0435\u0440\u0438\u044E, \u0440\u0430\u0431\u043E\u0442\u0430\u044E \u043D\u0430 \u043F\u0440\u0435\u0436\u043D\u0435\u0439: ${e.message}`);
+      }
+      return;
+    case "at": {
+      const [id, time] = args.split(/\s+/);
+      const msg = getSeries().messages.find((x) => x.id === id);
+      if (!id || !time || !msg) {
+        await plain(chatId, "\u0424\u043E\u0440\u043C\u0430\u0442: /at <id> HH:MM \u0438\u043B\u0438 /at <id> reset. \u0421\u043F\u0438\u0441\u043E\u043A id: /series");
+        return;
+      }
+      if (time === "reset") {
+        st.setOverride(id, { at: null });
+        await plain(chatId, `\u0412\u0440\u0435\u043C\u044F \xAB${id}\xBB \u0432\u0435\u0440\u043D\u0443\u043B \u043A\u0430\u043A \u0432 json: ${msg.at}.`);
+        return;
+      }
+      let hhmm;
+      try {
+        const t = parseHHMM(time);
+        hhmm = `${String(t.h).padStart(2, "0")}:${String(t.m).padStart(2, "0")}`;
+      } catch {
+        await plain(chatId, "\u0412\u0440\u0435\u043C\u044F \u0432\u0438\u0434\u0430 HH:MM \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 20:55.");
+        return;
+      }
+      st.setOverride(id, { at: hhmm });
+      await plain(chatId, `\u0412\u0440\u0435\u043C\u044F \xAB${id}\xBB \u0442\u0435\u043F\u0435\u0440\u044C ${hhmm} (\u0432 json ${msg.at}).`);
+      return;
+    }
+    case "off":
+    case "on": {
+      const id = args.split(/\s+/)[0];
+      const msg = getSeries().messages.find((x) => x.id === id);
+      if (!id || !msg) {
+        await plain(chatId, `\u0424\u043E\u0440\u043C\u0430\u0442: /${cmd} <id>. \u0421\u043F\u0438\u0441\u043E\u043A id: /series`);
+        return;
+      }
+      st.setOverride(id, { enabled: cmd === "on" });
+      await plain(chatId, cmd === "on" ? `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \xAB${id}\xBB \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E.` : `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \xAB${id}\xBB \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E.`);
+      return;
+    }
+    case "bizon": {
+      if (!args) {
+        await plain(chatId, `\u0421\u0441\u044B\u043B\u043A\u0430 \u044D\u0444\u0438\u0440\u0430 \u0441\u0435\u0439\u0447\u0430\u0441: ${currentBizon()}
+\u0427\u0442\u043E\u0431\u044B \u0441\u043C\u0435\u043D\u0438\u0442\u044C: /bizon https://start.bizon365.ru/room/...`);
+        return;
+      }
+      const url = bizonValid(args.split(/\s+/)[0]);
+      if (!url) {
+        await plain(chatId, "\u041D\u0443\u0436\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u0432\u0438\u0434\u0430 https://...bizon365.ru/... \u0414\u0440\u0443\u0433\u0438\u0435 \u0430\u0434\u0440\u0435\u0441\u0430 \u043D\u0435 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E.");
+        return;
+      }
+      st.setBizon(url);
+      await plain(chatId, `\u0421\u0441\u044B\u043B\u043A\u0430 \u044D\u0444\u0438\u0440\u0430 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0430: ${url}
+\u041F\u0435\u0440\u0435\u0445\u043E\u0434\u044B \u0438\u0437 \u0431\u043E\u0442\u0430 \u0432\u0435\u0434\u0443\u0442 \u043D\u0430 \u043D\u0435\u0451 \u0441\u0440\u0430\u0437\u0443, \u0441 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u043A\u043B\u0438\u043A\u0430.`);
+      return;
+    }
+    case "paid": {
+      if (!args) {
+        await plain(chatId, "\u0423\u043A\u0430\u0436\u0438 chat_id \u0438\u043B\u0438 @username: /paid 123456789");
+        return;
+      }
+      const s = st.find(args);
+      if (!s) {
+        await plain(chatId, `\u041D\u0435 \u043D\u0430\u0448\u0451\u043B \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u0430: ${args}`);
+        return;
+      }
+      if (!s.paid) st.recordEvent({ type: "paid", chat_id: s.chatId, by: "owner", ts: new Date(now).toISOString() });
+      await plain(chatId, `\u041E\u0442\u043C\u0435\u0447\u0435\u043D \u043E\u043F\u043B\u0430\u0442\u0438\u0432\u0448\u0438\u043C: ${s.firstName || "\u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438"} (${s.username ? "@" + s.username + ", " : ""}${s.chatId}).`);
+      return;
+    }
+    case "fire": {
+      const id = args.split(/\s+/)[0];
+      if (!id) {
+        await plain(chatId, "\u0423\u043A\u0430\u0436\u0438 id \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: /fire topic-p23. \u0421\u043F\u0438\u0441\u043E\u043A: /series");
+        return;
+      }
+      if (!fireHook) {
+        await plain(chatId, "\u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D.");
+        return;
+      }
+      const p = fireHook.plan(id, now);
+      if (!p.ok) {
+        await plain(chatId, p.error);
+        return;
+      }
+      const ctx = { series: sr(), now, chatId, firstName: m.from?.first_name, day: p.day };
+      await sendContent({ media: p.msg.media, text: p.msg.text, buttons: p.msg.buttons, silent: p.msg.silent }, ctx);
+      await plain(chatId, `\u041F\u043E\u043B\u0443\u0447\u0430\u0442\u0435\u043B\u0435\u0439: ${p.count}. \u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \xAB${id}\xBB \u0441\u0435\u0439\u0447\u0430\u0441?`, [[{ text: "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C", callback_data: `fire:${id}` }]]);
+      return;
+    }
+    case "preview":
+      void runPreview(m, now).catch((e) => console.error("[tg] preview:", scrub(String(e))));
+      return;
+  }
+}
+async function runPreview(m, now) {
+  const chatId = m.chat.id;
+  if (previewing.has(chatId)) {
+    await plain(chatId, "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442.");
+    return;
+  }
+  previewing.add(chatId);
+  try {
+    const sr = activeSeries();
+    const day = assignStreamDay(now, timeCfg(sr));
+    const msgs = [...sr.messages].sort((a, b) => (a.dayOffset ?? 0) - (b.dayOffset ?? 0) || atTime(day, a.at) - atTime(day, b.at));
+    const list = msgs.map((x) => `${x.dayOffset ? `+${x.dayOffset}\u0434 ` : ""}${x.at} ${x.id} (${AUD_LABEL[x.audience]})${x.enabled === false ? " [\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E]" : ""}`);
+    await plain(chatId, `\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0441\u0435\u0440\u0438\u0438: ${msgs.length} \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439, \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0432 1,5 \u0441\u0435\u043A\u0443\u043D\u0434\u044B. \u0421\u0441\u044B\u043B\u043A\u0430 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0434\u0435\u043D\u044C \u043A\u0430\u043A \u0434\u043B\u044F \u0442\u0435\u0431\u044F; \u043F\u0443\u0441\u0442\u0430\u044F \u043E\u043F\u043B\u0430\u0442\u0430 \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u0430 \u043A\u043D\u043E\u043F\u043A\u043E\u0439 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0430.
+
+${list.join("\n")}`);
+    const failed = [];
+    for (const x of msgs) {
+      await sleep(1500);
+      const ctx = { series: sr, now: Date.now(), chatId, firstName: m.from?.first_name, day, preview: true };
+      const r = await sendContent({ media: x.media, text: x.text, buttons: x.buttons, silent: x.silent }, ctx);
+      if (!r.ok) failed.push(`${x.id} (${r.error})`);
+    }
+    await plain(chatId, failed.length ? `\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D. \u041D\u0435 \u0443\u0448\u043B\u0438: ${failed.join("; ")}` : "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D.");
+  } finally {
+    previewing.delete(chatId);
+  }
+}
+function reply(res, status, body) {
+  const payload = JSON.stringify(body);
+  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
+  res.end(payload);
+}
+function readLimited(req, max) {
+  return new Promise((resolve) => {
+    let size = 0;
+    let over = false;
+    const chunks = [];
+    req.on("data", (c) => {
+      if (over) return;
+      size += c.length;
+      if (size > max) {
+        over = true;
+        chunks.length = 0;
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on("end", () => resolve(over ? null : Buffer.concat(chunks).toString("utf8")));
+    req.on("error", () => resolve(null));
+  });
+}
+function secretOk(provided) {
+  const secret = webhookSecret();
+  if (!secret || !provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(secret);
+  return a.length === b.length && (0, import_node_crypto3.timingSafeEqual)(a, b);
+}
+async function handleTgWorkshop(req, res) {
+  const h = req.headers["x-telegram-bot-api-secret-token"];
+  if (!secretOk(Array.isArray(h) ? h[0] : h)) return reply(res, 401, { ok: false });
+  const raw = await readLimited(req, MAX_UPDATE_BODY);
+  reply(res, 200, { ok: true });
+  if (raw === null || !botEnabled()) return;
+  let update = null;
+  try {
+    update = JSON.parse(raw);
+  } catch {
+    update = null;
+  }
+  if (!update || typeof update !== "object") return;
+  void processUpdate(update).catch((e) => console.error("[tg] webhook:", scrub(String(e))));
+}
+function currentBizon() {
+  return store?.state.bizon || series?.links.bizon || DEFAULT_BIZON;
+}
+function handleGo(req, res, rawToken) {
+  let token = rawToken;
+  try {
+    token = decodeURIComponent(rawToken);
+  } catch {
+  }
+  if (req.method === "GET" && store && botEnabled()) {
+    const v = verifyGoToken(token);
+    if (v) store.recordClick(v.chatId, v.day, (/* @__PURE__ */ new Date()).toISOString());
+  }
+  res.writeHead(302, { Location: currentBizon(), "Cache-Control": "no-store" });
+  res.end();
+}
+var tyWindowStart = 0;
+var tyWindowCount = 0;
+function parseTyBody(raw) {
+  let ch = "";
+  let eid = "";
+  const s = raw.trim();
+  try {
+    if (s.startsWith("{")) {
+      const o = JSON.parse(s);
+      ch = String(o.ch ?? "");
+      eid = String(o.eid ?? "");
+    } else {
+      const p = new URLSearchParams(s);
+      ch = p.get("ch") || "";
+      eid = p.get("eid") || "";
+    }
+  } catch {
+    return null;
+  }
+  if (ch !== "tg" && ch !== "wa") return null;
+  return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "" };
+}
+async function handleTyClick(req, res) {
+  const raw = await readLimited(req, 2048);
+  res.writeHead(204, { "Cache-Control": "no-store" });
+  res.end();
+  if (raw === null || !store) return;
+  const p = parseTyBody(raw);
+  if (!p) return;
+  const t = Date.now();
+  if (t - tyWindowStart > 1e4) {
+    tyWindowStart = t;
+    tyWindowCount = 0;
+  }
+  if (++tyWindowCount > 200) return;
+  store.recordTyClick(p.ch, p.eid, dayKeyOf(t), new Date(t).toISOString());
+}
+function calendarDay(now = Date.now()) {
+  return assignStreamDay(now, series ? timeCfg(series) : { streamStart: "20:00", streamMinutes: 80, joinLiveMinutes: DEFAULT_JOIN_MINUTES });
+}
+
+// form-api/tg-scheduler.ts
+var import_node_fs5 = require("node:fs");
+var import_node_path5 = require("node:path");
+var TICK_MS = 3e4;
+var LOCK_STALE_MS = 3 * TICK_MS;
+var REPORT_DELAY_MS = 5 * 6e4;
+var REPORT_WINDOW_MS = 12 * 36e5;
+function planTime(day, msg) {
+  return atTime(addDays(day, msg.dayOffset ?? 0), msg.at);
+}
+function inWindow(now, plan, graceMinutes) {
+  return now >= plan && now <= plan + graceMinutes * 6e4;
+}
+function candidateDays(sr, now) {
+  const today = dayKeyOf(now);
+  const back = Math.max(1, ...sr.messages.map((m) => m.dayOffset ?? 0));
+  const out = [];
+  for (let k = 0; k <= back; k++) out.push(addDays(today, -k));
+  return out;
+}
+function dueMessages(sr, now) {
+  const out = [];
+  for (const day of candidateDays(sr, now)) {
+    for (const msg of sr.messages) {
+      if (msg.enabled === false) continue;
+      const plan = planTime(day, msg);
+      if (inWindow(now, plan, sr.graceMinutes)) out.push({ msg, day, plan });
+    }
+  }
+  return out.sort((a, b) => a.plan - b.plan);
+}
+function pickRecipients(st, msg, day, opts = {}) {
+  const out = [];
+  for (const s of st.subs.values()) {
+    if (s.streamDay !== day || !st.isActive(s)) continue;
+    if (opts.plan !== void 0 && !(s.registeredAt < opts.plan)) continue;
+    if (st.hasSent(msg.id, day, s.chatId)) continue;
+    if (!st.audienceOk(msg.audience, s, day)) continue;
+    out.push(s);
+  }
+  return out.sort((a, b) => a.chatId - b.chatId);
+}
+var lockPath = (st) => (0, import_node_path5.join)(st.dir, "scheduler.lock");
+function pidAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM";
+  }
+}
+var lockedOutLogged = false;
+function holdLock(st) {
+  const f = lockPath(st);
+  try {
+    if ((0, import_node_fs5.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs5.readFileSync)(f, "utf8"));
+      if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS && pidAlive(cur.pid)) {
+        if (!lockedOutLogged) console.warn("[tg-sched] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0448\u043B\u0451\u0442", cur.pid);
+        lockedOutLogged = true;
+        return false;
+      }
+    }
+    lockedOutLogged = false;
+    (0, import_node_fs5.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    return true;
+  } catch (e) {
+    console.error("[tg-sched] lock-\u0444\u0430\u0439\u043B \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
+    return true;
+  }
+}
+function releaseLock(st) {
+  try {
+    const f = lockPath(st);
+    if ((0, import_node_fs5.existsSync)(f) && JSON.parse((0, import_node_fs5.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs5.unlinkSync)(f);
+  } catch {
+  }
+}
+var defaultDeps = {
+  send: (s, msg, day) => sendContent(
+    { media: msg.media, text: msg.text, buttons: msg.buttons, silent: msg.silent },
+    { series: activeSeries(), now: Date.now(), chatId: s.chatId, firstName: s.firstName, day },
+    // Рассылка идёт в очереди «lo»: приветствия новым людям обгоняют её.
+    { prio: "lo" }
+  ),
+  now: () => Date.now()
+};
+var inflight = /* @__PURE__ */ new Set();
+async function deliver(st, msg, day, rcpts, opts = {}, deps = defaultDeps) {
+  const stats = { ok: 0, failed: 0, blocked: 0, netFail: 0, skippedLate: 0 };
+  for (let i = 0; i < rcpts.length; i++) {
+    const s = rcpts[i];
+    if (opts.deadline !== void 0 && deps.now() > opts.deadline) {
+      stats.skippedLate = rcpts.length - i;
+      console.warn("[tg-sched] skip late msg=%s day=%s: \u043E\u043A\u043D\u043E \u0437\u0430\u043A\u0440\u044B\u043B\u043E\u0441\u044C, \u043D\u0435 \u0443\u0441\u043F\u0435\u043B\u0438 %d", msg.id, day, stats.skippedLate);
+      break;
+    }
+    const key = `${msg.id}|${day}|${s.chatId}`;
+    if (inflight.has(key) || st.hasSent(msg.id, day, s.chatId)) continue;
+    inflight.add(key);
+    try {
+      let r;
+      try {
+        r = await deps.send(s, msg, day);
+      } catch (e) {
+        r = { ok: false, code: 0, error: `exception ${e?.message || e}` };
+      }
+      st.recordSent({ msg: msg.id, day, chat_id: s.chatId, ts: new Date(deps.now()).toISOString(), ok: r.ok, ...r.ok ? {} : { err: r.error } });
+      if (r.ok) stats.ok++;
+      else {
+        stats.failed++;
+        if (r.code === 403) stats.blocked++;
+        if (!r.code || r.code >= 500) stats.netFail++;
+        noteSendResult(s.chatId, r, deps.now());
+        console.warn("[tg-sched] msg=%s day=%s chat=%d \u043D\u0435 \u0443\u0448\u043B\u043E: %s", msg.id, day, s.chatId, r.error);
+      }
+    } finally {
+      inflight.delete(key);
+    }
+  }
+  return stats;
+}
+var running = false;
+var lateLogged = /* @__PURE__ */ new Set();
+var errStreak = 0;
+var errAlerted = false;
+function logLate(st, sr, now) {
+  for (const day of candidateDays(sr, now)) {
+    for (const msg of sr.messages) {
+      if (msg.enabled === false) continue;
+      const plan = planTime(day, msg);
+      const key = `${msg.id}|${day}`;
+      if (now <= plan + sr.graceMinutes * 6e4 || lateLogged.has(key)) continue;
+      const n = pickRecipients(st, msg, day, { plan }).length;
+      if (n > 0) {
+        lateLogged.add(key);
+        console.warn("[tg-sched] skip late msg=%s day=%s: \u043E\u043A\u043D\u043E \u0437\u0430\u043A\u0440\u044B\u043B\u043E\u0441\u044C, \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 %d", msg.id, day, n);
+      }
+    }
+  }
+}
+function noteTickResult(ok, why) {
+  if (ok) {
+    errStreak = 0;
+    errAlerted = false;
+    return;
+  }
+  errStreak++;
+  console.error("[tg-sched] \u0442\u0438\u043A \u0441 \u043E\u0448\u0438\u0431\u043A\u043E\u0439 (%d \u043F\u043E\u0434\u0440\u044F\u0434): %s", errStreak, why);
+  if (errStreak >= 3 && !errAlerted) {
+    errAlerted = true;
+    void notifyOwners(`\u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u0441\u0435\u0440\u0438\u0438: ${errStreak} \u0442\u0438\u043A\u0430 \u043F\u043E\u0434\u0440\u044F\u0434 \u0441 \u043E\u0448\u0438\u0431\u043A\u043E\u0439. \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${why}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C pm2 logs workshop-form.`);
+  }
+}
+async function dailyReport(now = Date.now()) {
+  const st = getStore();
+  const cfg = timeCfg(activeSeries());
+  const today = dayKeyOf(now);
+  for (const day of [addDays(today, -1), today]) {
+    if (!isStreamDay(day, cfg) || st.isReported(day)) continue;
+    const at = streamEnd(day, cfg) + REPORT_DELAY_MS;
+    if (now < at || now > at + REPORT_WINDOW_MS) continue;
+    if (!ownerIds().length) return false;
+    if (await notifyOwners(dayReportText(st, day)) > 0) {
+      st.markReported(day);
+      return true;
+    }
+  }
+  return false;
+}
+async function tick(now = Date.now(), deps = defaultDeps) {
+  if (running) return 0;
+  running = true;
+  try {
+    if (!botEnabled() || !botConfigured()) return 0;
+    const st = getStore();
+    if (!holdLock(st)) return 0;
+    try {
+      await dailyReport(now);
+    } catch (e) {
+      console.error("[tg-sched] \u043E\u0442\u0447\u0451\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B:", e?.message || e);
+    }
+    const full = activeSeries();
+    const sr = st.state.seriesEnabled ? full : { ...full, messages: full.messages.filter((m) => m.essential) };
+    if (!sr.messages.length) return 0;
+    logLate(st, sr, now);
+    let sent = 0;
+    let worked = false;
+    let netDown = "";
+    for (const d of dueMessages(sr, now)) {
+      const rcpts = pickRecipients(st, d.msg, d.day, { plan: d.plan });
+      if (!rcpts.length) continue;
+      worked = true;
+      console.log("[tg-sched] msg=%s day=%s \u043F\u043E\u043B\u0443\u0447\u0430\u0442\u0435\u043B\u0435\u0439=%d", d.msg.id, d.day, rcpts.length);
+      const r = await deliver(st, d.msg, d.day, rcpts, { deadline: d.plan + sr.graceMinutes * 6e4 }, deps);
+      sent += r.ok;
+      console.log("[tg-sched] msg=%s day=%s \u0443\u0448\u043B\u043E=%d \u043E\u0448\u0438\u0431\u043E\u043A=%d \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438=%d", d.msg.id, d.day, r.ok, r.failed, r.blocked);
+      if (r.ok === 0 && r.failed > 0 && r.netFail === r.failed) netDown = "Telegram \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u0438\u043B\u0438 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u043E\u0448\u0438\u0431\u043A\u0430\u043C\u0438 5xx";
+    }
+    if (worked) noteTickResult(!netDown, netDown);
+    return sent;
+  } catch (e) {
+    noteTickResult(false, e?.message || String(e));
+    return 0;
+  } finally {
+    running = false;
+  }
+}
+function firePlan(id, now = Date.now()) {
+  const st = getStore();
+  const msg = activeSeries().messages.find((m) => m.id === id);
+  if (!msg) return { ok: false, error: `\u041D\u0435\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \xAB${id}\xBB. \u0421\u043F\u0438\u0441\u043E\u043A: /series` };
+  if (!st.state.seriesEnabled) return { ok: false, error: "\u0421\u0435\u0440\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430, \u043C\u0430\u0441\u0441\u043E\u0432\u0430\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u0437\u0430\u043A\u0440\u044B\u0442\u0430. \u0412\u043A\u043B\u044E\u0447\u0438 \u043A\u043E\u043C\u0430\u043D\u0434\u043E\u0439 /series_on." };
+  if (msg.enabled === false) return { ok: false, error: `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \xAB${id}\xBB \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E (enabled: false \u0432 json \u0438\u043B\u0438 /off). \u0412\u043A\u043B\u044E\u0447\u0438: /on ${id}` };
+  const day = addDays(dayKeyOf(now), -(msg.dayOffset ?? 0));
+  const count = pickRecipients(st, msg, day).length;
+  if (!count) return { ok: false, error: `\u041D\u0435\u043A\u043E\u043C\u0443 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0442\u044C: \u0432\u0441\u0435, \u043A\u043E\u043C\u0443 \xAB${id}\xBB \u043F\u043E\u043B\u043E\u0436\u0435\u043D\u043E \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F, \u0443\u0436\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 \u0435\u0433\u043E, \u0438\u043B\u0438 \u0442\u0430\u043A\u0438\u0445 \u043D\u0435\u0442.` };
+  return { ok: true, day, msg, count };
+}
+async function fireNow(id, now = Date.now(), deps = defaultDeps) {
+  const p = firePlan(id, now);
+  if (!p.ok) return p.error;
+  const st = getStore();
+  const rcpts = pickRecipients(st, p.msg, p.day);
+  const r = await deliver(st, p.msg, p.day, rcpts, {}, deps);
+  return `\xAB${id}\xBB \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E: ${r.ok}, \u043E\u0448\u0438\u0431\u043E\u043A: ${r.failed} (\u0438\u0437 \u043D\u0438\u0445 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0431\u043E\u0442\u0430: ${r.blocked}), \u043F\u043E\u043B\u0443\u0447\u0430\u0442\u0435\u043B\u0435\u0439 \u0431\u044B\u043B\u043E: ${rcpts.length}.`;
+}
+function startScheduler() {
+  registerFire({ plan: firePlan, run: (id, now) => fireNow(id, now) });
+  if (!botEnabled() || !botConfigured()) {
+    console.log("[tg-sched] \u0431\u043E\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438\u043B\u0438 \u043D\u0435\u0442 \u0442\u043E\u043A\u0435\u043D\u0430, \u0441\u0435\u043A\u0440\u0435\u0442\u0430 \u0432\u0435\u0431\u0445\u0443\u043A\u0430, TG_GO_SECRET: \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D");
+    return () => {
+    };
+  }
+  const st = getStore();
+  const timer = setInterval(() => void tick(), TICK_MS);
+  const first = setTimeout(() => void tick(), 3e3);
+  const onExit = () => releaseLock(st);
+  process.on("exit", onExit);
+  console.log("[tg-sched] \u0437\u0430\u043F\u0443\u0449\u0435\u043D, \u0442\u0438\u043A %d \u0441", TICK_MS / 1e3);
+  return () => {
+    clearInterval(timer);
+    clearTimeout(first);
+    process.off("exit", onExit);
+    releaseLock(st);
+  };
+}
+
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs3.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path3.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs6.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path6.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -622,6 +2277,7 @@ loadEnv();
 var PORT = Number(process.env.PORT) || 4010;
 var HOST = "127.0.0.1";
 var MAX_BODY = 64 * 1024;
+var THANKYOU_URL = "https://onai.academy/workshop-montazh/thank-you.html";
 function json(res, status, body, headers2 = {}) {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
@@ -677,7 +2333,7 @@ async function handleLead(req, res) {
   const forwarded = req.headers["x-forwarded-for"];
   const clientIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
   const userAgent = req.headers["user-agent"] || void 0;
-  const metaEventId = eventId || (0, import_node_crypto3.randomUUID)();
+  const metaEventId = eventId || (0, import_node_crypto4.randomUUID)();
   const fbclid = fbc ? fbc.split(".").slice(3).join(".") || void 0 : void 0;
   const captured = await captureLead({
     eventId: metaEventId,
@@ -704,16 +2360,7 @@ async function handleLead(req, res) {
     const capiStatus = capiResult.status === "fulfilled" ? capiResult.value.ok ? `ok:${capiResult.value.received}` : `skip:${capiResult.value.reason}` : "throw";
     console.log("[lead] name=%s phone=***%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), source, crmStatus, capiStatus);
   });
-  const FUNNEL_REDIRECT = process.env.FUNNEL_REDIRECT === "easybot" ? "easybot" : "whatsapp";
-  const WHATSAPP_GROUP = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
-  let redirect;
-  if (FUNNEL_REDIRECT === "easybot") {
-    const easybot = await registerEasybotLead({ name: cleanName, phone: cleanPhone, utm, location: siteUrl });
-    redirect = resolveEasybotRedirect(easybot.botUrl, utm);
-  } else {
-    redirect = WHATSAPP_GROUP;
-  }
-  return json(res, 200, { ok: true, redirect });
+  return json(res, 200, { ok: true, redirect: THANKYOU_URL });
 }
 var RETRY_MAX = Number(process.env.LEAD_RETRY_MAX) || 5;
 async function handleReconcile(req, res) {
@@ -761,13 +2408,12 @@ function handleWhatsAppLink(res) {
 }
 var TG_SECRET = process.env.TG_LINK_WEBHOOK_SECRET || "";
 var TG_OWNER_IDS = (process.env.TG_LINK_OWNER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
-var THANKYOU_URL = "https://onai.academy/workshop/thank-you";
-function secretOk(provided) {
+function secretOk2(provided) {
   if (!TG_SECRET || !provided) return false;
   const a = Buffer.from(provided);
   const b = Buffer.from(TG_SECRET);
   if (a.length !== b.length) return false;
-  return (0, import_node_crypto3.timingSafeEqual)(a, b);
+  return (0, import_node_crypto4.timingSafeEqual)(a, b);
 }
 function webhookReply(res, chatId, text) {
   return json(res, 200, { method: "sendMessage", chat_id: chatId, text, disable_web_page_preview: true });
@@ -779,7 +2425,7 @@ function extractUrl(text) {
 }
 async function handleTgLink(req, res) {
   const headerSecret = req.headers["x-telegram-bot-api-secret-token"];
-  if (!secretOk(Array.isArray(headerSecret) ? headerSecret[0] : headerSecret)) {
+  if (!secretOk2(Array.isArray(headerSecret) ? headerSecret[0] : headerSecret)) {
     return json(res, 401, { ok: false });
   }
   const len = Number(req.headers["content-length"] || "0");
@@ -820,26 +2466,41 @@ ${url}
   }
   return webhookReply(res, chatId, `\u274C \u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C: ${saved.error}`);
 }
-var ALMATY_OFFSET_MS = 5 * 60 * 60 * 1e3;
 function handleCalendar(res) {
-  const nowAlmaty = new Date(Date.now() + ALMATY_OFFSET_MS);
-  const cutoff = nowAlmaty.getUTCHours() * 60 + nowAlmaty.getUTCMinutes();
-  const target = new Date(nowAlmaty);
-  if (cutoff >= 19 * 60 + 45) target.setUTCDate(target.getUTCDate() + 1);
-  const y = target.getUTCFullYear();
-  const m = String(target.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(target.getUTCDate()).padStart(2, "0");
+  const [y, m, d] = calendarDay().split("-");
   const dates = `${y}${m}${d}T200000/${y}${m}${d}T220000`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: "\u0412\u043E\u0440\u043A\u0448\u043E\u043F \u043F\u043E \u0432\u0430\u0439\u0431\u043A\u043E\u0434\u0438\u043D\u0433\u0443 \u2014 onAI Academy",
+    text: "\u0412\u043E\u0440\u043A\u0448\u043E\u043F \xAB\u0412\u0430\u0439\u0431-\u043F\u0440\u043E\u0434\u0430\u043A\u0448\u0435\u043D\xBB \xB7 onAI Academy",
     dates,
     ctz: "Asia/Almaty",
-    details: "\u0421\u0442\u0430\u0440\u0442 \u0432 20:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u044D\u0444\u0438\u0440 \u043F\u0440\u0438\u0434\u0451\u0442 \u0432 WhatsApp \u0437\u0430 5 \u043C\u0438\u043D\u0443\u0442 \u0434\u043E \u043D\u0430\u0447\u0430\u043B\u0430.",
+    details: "\u0421\u0442\u0430\u0440\u0442 \u0432 20:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u044D\u0444\u0438\u0440 \u043F\u0440\u0438\u0434\u0451\u0442 \u0432 \u0433\u0440\u0443\u043F\u043F\u0443 WhatsApp \u0438\u043B\u0438 \u0432 Telegram-\u0431\u043E\u0442.",
     location: "\u041E\u043D\u043B\u0430\u0439\u043D"
   });
   res.writeHead(302, { Location: `https://calendar.google.com/calendar/render?${params.toString()}` });
   res.end();
+}
+function readVersion() {
+  try {
+    return (0, import_node_fs6.readFileSync)((0, import_node_path6.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+  } catch {
+    return "dev";
+  }
+}
+function handleHealth(res) {
+  return json(
+    res,
+    200,
+    {
+      ok: true,
+      funnel: "thank-you",
+      thankYou: THANKYOU_URL,
+      whatsapp: readWhatsAppLink(),
+      tgBot: tgHealth(),
+      version: readVersion()
+    },
+    { "Cache-Control": "no-store" }
+  );
 }
 var server = (0, import_node_http.createServer)(async (req, res) => {
   const url = (req.url || "").split("?")[0].replace(/\/+$/, "") || "/";
@@ -850,7 +2511,10 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
     if (method === "GET" && url === "/api/whatsapp-link") return handleWhatsAppLink(res);
     if (method === "GET" && url === "/calendar") return handleCalendar(res);
     if (method === "POST" && url === "/api/tg-link") return await handleTgLink(req, res);
-    if (method === "GET" && url === "/health") return json(res, 200, { ok: true });
+    if (method === "POST" && url === "/api/tg-workshop") return await handleTgWorkshop(req, res);
+    if (method === "POST" && url === "/api/ty-click") return await handleTyClick(req, res);
+    if ((method === "GET" || method === "HEAD") && url.startsWith("/api/go/")) return handleGo(req, res, url.slice("/api/go/".length));
+    if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);
     return json(res, 404, { ok: false, error: "not_found" });
   } catch (err) {
     console.error("[form-api] %s %s \u2192", method, url, err);
@@ -859,6 +2523,12 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
 });
 process.on("unhandledRejection", (err) => console.error("[form-api] unhandledRejection", err));
 process.on("uncaughtException", (err) => console.error("[form-api] uncaughtException", err));
+try {
+  initTgWorkshop();
+  startScheduler();
+} catch (err) {
+  console.error("[form-api] tg-\u0431\u043E\u0442 \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D:", err);
+}
 server.listen(PORT, HOST, () => {
   console.log(`[form-api] listening on http://${HOST}:${PORT}`);
 });

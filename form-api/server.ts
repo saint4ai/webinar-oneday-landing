@@ -12,8 +12,13 @@
  *   POST /api/reconcile     — дожим лидов, не доехавших в amoCRM (cron)
  *   GET  /api/whatsapp-link — текущая ссылка на сообщество
  *   POST /api/tg-link       — вебхук бота: смена ссылки
+ *   POST /api/tg-workshop   — вебхук бота @workshop_aiprod_bot (приветствие, серия, команды)
+ *   POST /api/ty-click      — клик по кнопке Telegram/WhatsApp на странице «Спасибо» (204)
+ *   GET  /api/go/<token>    — переход в эфир с учётом клика (302 на Bizon)
+ *   GET  /api/health        — состояние (наружу через nginx), /health — то же для проверки на сервере
+ *   GET  /calendar          — ссылка «добавить эфир в календарь»
  *
- * Вся бизнес-логика переиспользуется из lib/* без изменений.
+ * Бизнес-логика лидов переиспользуется из lib/* без изменений, бот живёт в tg-*.ts.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID, timingSafeEqual } from "node:crypto";
@@ -22,11 +27,11 @@ import { join } from "node:path";
 import { sendLeadEvent } from "../lib/meta-capi";
 import { captureLead, markFailed, incrementRetry, markAlertSent, ingestWalToSupabase, type CapturedLead } from "../lib/leads/store";
 import { pushLeadToAmo, type PushResult } from "../lib/leads/process";
-import { registerEasybotLead } from "../lib/easybot/register";
-import { resolveEasybotRedirect } from "../lib/easybot/redirect";
 import { selectRetryable, supabaseConfigured } from "../lib/supabase-rest";
 import { sendOwnerAlert } from "../lib/telegram/alert";
 import { readWhatsAppLink, writeWhatsAppLink, readWhatsAppRecord, isValidWhatsAppLink } from "../lib/whatsapp-link";
+import { calendarDay, handleGo, handleTgWorkshop, handleTyClick, initTgWorkshop, tgHealth } from "./tg-workshop";
+import { startScheduler } from "./tg-scheduler";
 
 /**
  * Секреты из .env рядом с бандлом (PM2 сам env-файлы не читает).
@@ -54,6 +59,8 @@ const PORT = Number(process.env.PORT) || 4010;
 const HOST = "127.0.0.1";
 /** Лимит тела запроса — анти-DoS: форма весит сотни байт, вебхук Telegram — единицы КБ. */
 const MAX_BODY = 64 * 1024;
+/** Единственная страница «Спасибо» для всех форм: сюда ведёт ответ /api/lead и ссылка в /api/tg-link. */
+const THANKYOU_URL = "https://onai.academy/workshop-montazh/thank-you.html";
 
 // ───────────────────────── helpers ─────────────────────────
 
@@ -195,19 +202,8 @@ async function handleLead(req: IncomingMessage, res: ServerResponse) {
     console.log("[lead] name=%s phone=***%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), source, crmStatus, capiStatus);
   });
 
-  // Редирект воронки — ПЕРЕКЛЮЧАТЕЛЬ через ENV (без пересборки).
-  const FUNNEL_REDIRECT: "whatsapp" | "easybot" = process.env.FUNNEL_REDIRECT === "easybot" ? "easybot" : "whatsapp";
-  const WHATSAPP_GROUP = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
-
-  let redirect: string;
-  if (FUNNEL_REDIRECT === "easybot") {
-    const easybot = await registerEasybotLead({ name: cleanName, phone: cleanPhone, utm, location: siteUrl });
-    redirect = resolveEasybotRedirect(easybot.botUrl, utm);
-  } else {
-    redirect = WHATSAPP_GROUP;
-  }
-
-  return json(res, 200, { ok: true, redirect });
+  // Воронка одна: страница «Спасибо», где человек сам выбирает WhatsApp или Telegram-бот.
+  return json(res, 200, { ok: true, redirect: THANKYOU_URL });
 }
 
 // ───────────────────────── POST /api/reconcile ─────────────────────────
@@ -272,7 +268,6 @@ function handleWhatsAppLink(res: ServerResponse) {
 
 const TG_SECRET = process.env.TG_LINK_WEBHOOK_SECRET || "";
 const TG_OWNER_IDS = (process.env.TG_LINK_OWNER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
-const THANKYOU_URL = "https://onai.academy/workshop/thank-you";
 
 /** Сравнение секрета вебхука за константное время. Пустой секрет → false. */
 function secretOk(provided: string | undefined): boolean {
@@ -350,53 +345,56 @@ async function handleTgLink(req: IncomingMessage, res: ServerResponse) {
 // ───────────────────────── GET /calendar ─────────────────────────
 
 /**
- * Динамическая ссылка «Добавь эфир в календарь» для WhatsApp-воронки EasyBot.
- * Статичную Google Calendar-ссылку сделать нельзя — дата зашивается в URL,
- * а автовебинар идёт каждый день в 20:00 Алматы. Роут сам считает ближайший
- * эфир (до 19:45 — сегодняшний, после — завтрашний) и 302-редиректит.
+ * Динамическая ссылка «Добавь эфир в календарь». Статичную Google Calendar-ссылку сделать
+ * нельзя: дата зашивается в URL, а эфир идёт каждый день. Роут сам берёт ближайший эфир
+ * по тому же правилу, что и бот при /start (calendarDay): пока не прошло 40 минут после
+ * старта, зовём на сегодняшний, позже на следующий день эфира (с учётом firstDay и skipDays).
  */
-const ALMATY_OFFSET_MS = 5 * 60 * 60 * 1000; // UTC+5, без DST
-
-// Фиксированная дата эфира (YYYY-MM-DD по Алматы) — держим в паре с
-// FIXED_DATE в lib/workshop-date.ts, иначе календарь и таймер разъедутся.
-// null → прежнее поведение: ближайший ежедневный эфир.
-// 2026-09-10: ежедневный эфир 20:00 Алматы, дата считается сама (было 2026-08-17).
-const FIXED_WORKSHOP_DATE: string | null = null;
-
 function handleCalendar(res: ServerResponse) {
-  let y: number, mNum: number, dNum: number;
-
-  if (FIXED_WORKSHOP_DATE) {
-    const [fy, fm, fd] = FIXED_WORKSHOP_DATE.split("-").map(Number);
-    y = fy; mNum = fm; dNum = fd;
-  } else {
-    const nowAlmaty = new Date(Date.now() + ALMATY_OFFSET_MS);
-    // До 19:45 зовём на сегодняшний эфир, позже — на завтрашний.
-    const cutoff = nowAlmaty.getUTCHours() * 60 + nowAlmaty.getUTCMinutes();
-    const target = new Date(nowAlmaty);
-    if (cutoff >= 19 * 60 + 45) target.setUTCDate(target.getUTCDate() + 1);
-    y = target.getUTCFullYear();
-    mNum = target.getUTCMonth() + 1;
-    dNum = target.getUTCDate();
-  }
-
-  const m = String(mNum).padStart(2, "0");
-  const d = String(dNum).padStart(2, "0");
+  const [y, m, d] = calendarDay().split("-");
 
   // Локальное время Алматы, без Z — часовой пояс передаём через ctz.
   const dates = `${y}${m}${d}T200000/${y}${m}${d}T220000`;
 
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: "Воркшоп по вайбкодингу — onAI Academy",
+    text: "Воркшоп «Вайб-продакшен» · onAI Academy",
     dates,
     ctz: "Asia/Almaty",
-    details: "Старт в 20:00 по Алматы. Ссылка на эфир придёт в WhatsApp за 5 минут до начала.",
+    details: "Старт в 20:00 по Алматы. Ссылка на эфир придёт в группу WhatsApp или в Telegram-бот.",
     location: "Онлайн",
   });
 
   res.writeHead(302, { Location: `https://calendar.google.com/calendar/render?${params.toString()}` });
   res.end();
+}
+
+// ───────────────────────── GET /api/health ─────────────────────────
+
+/** Версия деплоя: файл VERSION рядом с бандлом (коммит и дата), иначе "dev". */
+function readVersion(): string {
+  try {
+    return readFileSync(join(__dirname, "VERSION"), "utf8").trim() || "dev";
+  } catch {
+    return "dev";
+  }
+}
+
+/** Состояние воронки. Без секретов: токен и секрет бота отдаём только как «настроено или нет». */
+function handleHealth(res: ServerResponse) {
+  return json(
+    res,
+    200,
+    {
+      ok: true,
+      funnel: "thank-you",
+      thankYou: THANKYOU_URL,
+      whatsapp: readWhatsAppLink(),
+      tgBot: tgHealth(),
+      version: readVersion(),
+    },
+    { "Cache-Control": "no-store" },
+  );
 }
 
 // ───────────────────────── router ─────────────────────────
@@ -411,7 +409,11 @@ const server = createServer(async (req, res) => {
     if (method === "GET" && url === "/api/whatsapp-link") return handleWhatsAppLink(res);
     if (method === "GET" && url === "/calendar") return handleCalendar(res);
     if (method === "POST" && url === "/api/tg-link") return await handleTgLink(req, res);
-    if (method === "GET" && url === "/health") return json(res, 200, { ok: true });
+    if (method === "POST" && url === "/api/tg-workshop") return await handleTgWorkshop(req, res);
+    if (method === "POST" && url === "/api/ty-click") return await handleTyClick(req, res);
+    if ((method === "GET" || method === "HEAD") && url.startsWith("/api/go/")) return handleGo(req, res, url.slice("/api/go/".length));
+    // /api/health виден снаружи через nginx (/workshop/api/health), /health только с самого сервера.
+    if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);
     return json(res, 404, { ok: false, error: "not_found" });
   } catch (err) {
     console.error("[form-api] %s %s →", method, url, err);
@@ -423,6 +425,14 @@ const server = createServer(async (req, res) => {
 // лид уже сохранён в WAL, а падение сервиса стоит следующих регистраций.
 process.on("unhandledRejection", (err) => console.error("[form-api] unhandledRejection", err));
 process.on("uncaughtException", (err) => console.error("[form-api] uncaughtException", err));
+
+// Бот воркшопа: хранилище, серия, планировщик. Сбой здесь не должен мешать приёму лидов.
+try {
+  initTgWorkshop();
+  startScheduler();
+} catch (err) {
+  console.error("[form-api] tg-бот не запущен:", err);
+}
 
 server.listen(PORT, HOST, () => {
   console.log(`[form-api] listening on http://${HOST}:${PORT}`);

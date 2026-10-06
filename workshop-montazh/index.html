@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Рилсы монтирует ИИ-агент · бесплатный воркшоп сегодня в 20:00</title>
-<script src="efir.js"></script>
+<title data-efir-title="Рилсы монтирует ИИ-агент · бесплатный воркшоп {rel} в {time}">Рилсы монтирует ИИ-агент · бесплатный воркшоп в 20:00 по Алматы</title>
+<script src="efir.js?v=20261006"></script>
 <link rel="preload" as="image" href="assets/video/reel-podarok-poster.jpg" fetchpriority="high">
-<meta name="description" content="Записываете голос — ИИ-агент собирает рилс: графика, субтитры, звук. Бесплатный воркшоп сегодня в 20:00 по Алматы. Premiere и CapCut не нужны.">
+<meta name="description" content="Записываете голос, ИИ-агент собирает рилс: графика, субтитры, звук. Бесплатный воркшоп в 20:00 по Алматы. Premiere и CapCut не нужны.">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="canonical" href="https://onai.academy/workshop-montazh/">
@@ -18,15 +18,15 @@
 <meta property="og:locale" content="ru_RU">
 <meta property="og:url" content="https://onai.academy/workshop-montazh/">
 <meta property="og:title" content="Рилсы монтирует ИИ-агент, а не вы">
-<meta property="og:description" content="Бесплатный воркшоп сегодня в 20:00 по Алматы. Записываете голос — агент собирает рилс: графика, субтитры, звук.">
+<meta property="og:description" content="Бесплатный воркшоп в 20:00 по Алматы. Записываете голос, агент собирает рилс: графика, субтитры, звук.">
 <meta property="og:image" content="https://onai.academy/workshop-montazh/assets/img/og-cover.jpg?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Воркшоп сегодня в 20:00: рилсы монтирует ИИ-агент">
+<meta property="og:image:alt" content="Воркшоп в 20:00 по Алматы: рилсы монтирует ИИ-агент">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Рилсы монтирует ИИ-агент, а не вы">
-<meta name="twitter:description" content="Бесплатный воркшоп сегодня в 20:00 по Алматы. Записываете голос — агент собирает рилс.">
+<meta name="twitter:description" content="Бесплатный воркшоп в 20:00 по Алматы. Записываете голос, агент собирает рилс.">
 <meta name="twitter:image" content="https://onai.academy/workshop-montazh/assets/img/og-cover.jpg?v=3">
 
 <script type="application/ld+json" id="efir-ld">
@@ -135,6 +135,11 @@ section[id]{scroll-margin-top:84px}
 .tcell{min-width:64px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);text-align:center}
 .tcell b{display:block;font-family:'Unbounded',sans-serif;font-size:22px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .tcell span{font-size:11px;color:var(--muted)}
+.tcell.tlive{min-width:0;padding:12px 18px;border-color:var(--gold2)}
+.tcell.tlive b{font-size:17px;white-space:nowrap}
+.tcell.tlive b::before{content:"";display:inline-block;width:9px;height:9px;margin-right:9px;border-radius:50%;background:#D92D20;animation:livedot 1.4s ease-in-out infinite}
+@keyframes livedot{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.tcell.tlive b::before{animation:none}}
 .hero-media{position:relative}
 .reelframe{border-radius:24px;overflow:hidden;background:#141210;border:1px solid rgba(255,255,255,.9);box-shadow:0 34px 70px -34px rgba(42,33,28,.55)}
 .reelframe video{width:100%;height:auto;aspect-ratio:9/16;object-fit:cover;display:block}
@@ -440,7 +445,7 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
 <header class="top">
   <div class="top-in">
     <a class="brand" href="#top"><img src="assets/logos/onai-logo-gold.svg" alt="onAI Academy"></a>
-    <span class="when"><span data-efir="date">7 октября</span>, <span data-efir="time">20:00</span> по Алматы</span>
+    <span class="when"><span data-efir="date">каждый день</span>, <span data-efir="time">20:00</span> по Алматы</span>
     <button class="btn btn-gold" type="button" data-reg="header" style="min-height:44px;padding:0 20px;font-size:15px">Записаться</button>
   </div>
 </header>
@@ -450,7 +455,7 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <p class="mono">бесплатный эфир · <span data-efir="wd">среда</span>, <span data-efir="date">7 октября</span>, <span data-efir="time">20:00</span> по Алматы</p>
+      <p class="mono">бесплатный эфир · <span data-efir="wdDate">каждый день</span>, <span data-efir="time">20:00</span> по Алматы</p>
       <div class="stage-lights">
         <span class="lamp lamp-l" aria-hidden="true"><img src="assets/px/px-spot.png" alt=""><span class="ray"></span></span>
         <span class="lamp lamp-r" aria-hidden="true"><img src="assets/px/px-spot.png" alt=""><span class="ray"></span></span>
@@ -461,7 +466,7 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
       <div class="cta-row" style="margin-top:26px">
         <button class="btn btn-gold" type="button" data-reg="hero">Записаться на эфир</button>
       </div>
-      <p class="under">Займёт полминуты. Ссылку пришлём в WhatsApp, а карту 6 референсов для видеомонтажа заберёте сразу.</p>
+      <p class="under">Займёт полминуты. Ссылку пришлём в WhatsApp или Telegram, а карту 6 референсов для видеомонтажа заберёте сразу.</p>
       <div class="timer" id="timer" aria-label="До начала эфира"></div>
     </div>
     <div class="hero-media">
@@ -565,7 +570,7 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
   <div class="wrap">
     <div class="final">
       <div>
-        <p class="mono" style="color:var(--gold)">бесплатно · <span data-efir="date">7 октября</span> · <span data-efir="time">20:00</span> по Алматы</p>
+        <p class="mono" style="color:var(--gold)">бесплатно · <span data-efir="date">каждый день</span> · <span data-efir="time">20:00</span> по Алматы</p>
         <h2 style="margin-top:14px">Приходите и повторяйте за мной</h2>
         <p>Час двадцать вживую. Записи не будет — только в прямом эфире.</p>
         <ul class="take">
@@ -612,7 +617,7 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
   <div class="modal-card">
     <button class="modal-x" type="button" id="regmodal-close" aria-label="Закрыть">×</button>
     <h3 id="regmodal-title">Записаться на эфир</h3>
-    <span class="when"><span data-efir="Wd">Среда</span>, <span data-efir="date">7 октября</span>, <span data-efir="time">20:00</span> по Алматы. Ссылку пришлём в WhatsApp.</span>
+    <span class="when"><span data-efir="WdDate">Каждый день</span>, <span data-efir="time">20:00</span> по Алматы. Ссылку пришлём в WhatsApp или Telegram.</span>
     <form class="form" data-source="efir-1-okt-popup" novalidate>
       <input name="name" type="text" placeholder="Имя" autocomplete="name" required aria-label="Имя">
       <input name="phone" type="tel" placeholder="WhatsApp, +7" autocomplete="tel" required aria-label="WhatsApp">
@@ -624,7 +629,7 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
   </div>
 </dialog>
 
-<div class="dock" id="dock"><button class="btn btn-gold" type="button" data-reg="dock">Записаться на эфир</button><small><span data-efir="date">7 октября</span>, <span data-efir="time">20:00</span> по Алматы · бесплатно</small></div>
+<div class="dock" id="dock"><button class="btn btn-gold" type="button" data-reg="dock">Записаться на эфир</button><small><span data-efir="date">каждый день</span>, <span data-efir="time">20:00</span> по Алматы · бесплатно</small></div>
 
 <script>
 // Кнопка «▶», если телефон не дал ролику запуститься сам
@@ -682,7 +687,18 @@ function playBtn(box,on){
   var forms=[['день','дня','дней'],['час','часа','часов'],['минута','минуты','минут'],['секунда','секунды','секунд']];
   function plural(n,f){var m=n%100,k=n%10;return m>10&&m<15?f[2]:k===1?f[0]:k>1&&k<5?f[1]:f[2];}
   function tick(){
-    var left=Math.max(0,target-Date.now()), s=Math.floor(left/1000);
+    var now=Date.now();
+    if(now>=target){
+      // Эфир идёт: вместо обратного отсчёта плашка. Когда окно «зайти в эфир» закрылось, страница пересчитывает день сама.
+      if(!box.classList.contains('live')){
+        box.classList.add('live'); box.setAttribute('aria-label','Эфир идёт');
+        box.innerHTML='<div class="tcell tlive"><b>Эфир идёт</b></div>';
+      }
+      var dlg=document.getElementById('regmodal');
+      if(now>=target+EFIR.joinLiveMinutes*60000 && !(dlg&&dlg.open)) location.reload();
+      return;
+    }
+    var left=target-now, s=Math.floor(left/1000);
     var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), sec=s%60;
     var vals=[d,h,m,sec];
     if(!box.children.length){
@@ -763,7 +779,7 @@ function playBtn(box,on){
         });
       }).then(function(){
         if(typeof fbq==='function') fbq('track','Lead',{},{eventID:id});
-        try{ sessionStorage.setItem('efirName',name.value.trim()); }catch(e2){}
+        try{ sessionStorage.setItem('efirName',name.value.trim()); sessionStorage.setItem('efirEid',id); }catch(e2){}
         location.href='thank-you.html';
       }).catch(function(err){
         btn.disabled=false; btn.textContent=label;
