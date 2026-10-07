@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { CAMERA_SAFE_MASK } from "./fx/brand";
 import { GLASS, T } from "./theme";
+import { Typo } from "./Typo";
 
 export type Tone = "paper" | "soft" | "night";
 
@@ -15,12 +16,16 @@ export type Tone = "paper" | "soft" | "night";
  * и медленно плывёт (14 с), на слайдах с children (воксели, тоннели) не рисуется: там свой полноэкранный эффект.
  * data-deck-bg — метка фона: проверка зоны камеры в docs/deck-v2/shoot-offline.mjs его пропускает.
  * children — полноэкранный эффект поверх фона (VoxelField, ReelTunnel3D), он тоже считается фоном.
+ * Заодно переводит отступы колонки общего SlideLayout (фиксированные 32px и 56px) в cqw: 56px = 2,917cqw от кадра 1920. Слайд остаётся точной копией
+ * кадра на любом окне, текст не сжимается в узком окне (на 1100 px шириной «6 форматов и 9 стилей» рвалось на четыре строки).
  */
 export function MontageBg({ tone = "paper", children }: { tone?: Tone | "ink"; children?: ReactNode }) {
   const night = GLASS || tone === "night" || tone === "ink";
   const base = night ? T.night : tone === "soft" ? T.card : T.paper;
   return (
     <div className="absolute inset-0" data-deck-bg style={{ background: base }}>
+      <style>{`.montage-deck .sl-col { padding: 1.667cqw 2.917cqw !important; }`}</style>
+      <Typo />
       <div
         className="absolute inset-0"
         style={{

@@ -3,9 +3,9 @@
 import type { CSSProperties, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Statement } from "../Statement";
-import { BOOKING_PRICE, BUNDLE_PRICE, BUNDLE_SAVING, PRODUCTION_PRICE, PRO_HALF, PRO_PRICE, PRO_SOLO_PRICE, SEPARATE_PRICE, money } from "../prices";
+import { BOOKING_PRICE, BUNDLE_PRICE, BUNDLE_SAVING, PRODUCTION_PRICE, PRO_HALF, PRO_PRICE, PRO_SOLO_PRICE, SEPARATE_PRICE, money, moneyBoth, moneyUsd } from "../prices";
 import { LT, T, card, goldButton, goldText, pricePlate } from "../theme";
-import { DrawLine, Em, Note, Num, Stagger, at, nb, txt } from "../ui";
+import { DrawLine, Em, Note, Num, Stagger, UsdTag, at, nb, txt } from "../ui";
 import { PricePlate, Struck } from "./sale";
 
 /**
@@ -124,6 +124,7 @@ export function M_VcTariffs() {
         <Stagger i={0} style={{ ...card, padding: "1.5cqw 1.7cqw" }}>
           <div style={unb("1.15cqw", T.muted)}>Вайб Solo</div>
           <div style={{ marginTop: "0.9cqw" }}><Num size="2.5cqw" color={T.brown}>{money(PRO_SOLO_PRICE)}</Num></div>
+          <div style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw", color: T.muted, marginTop: "0.4cqw", whiteSpace: "nowrap" }}>{moneyUsd(PRO_SOLO_PRICE)}</div>
           <PlanRow>Все модули, материалы и промпты</PlanRow>
           <PlanRow>AI-наставник на платформе</PlanRow>
           <PlanRow muted>Без обратной связи, проходите сами</PlanRow>
@@ -132,10 +133,11 @@ export function M_VcTariffs() {
         <Stagger i={2} style={{ ...pricePlate, border: `1.5px solid ${T.gold2}`, padding: "1.9cqw 1.7cqw" }}>
           <div style={unb("1.15cqw", T.gold)}>Вайбкодер Pro</div>
           <div style={{ marginTop: "0.9cqw" }}><Num size="2.5cqw" color={T.gold}>{money(PRO_PRICE)}</Num></div>
+          <div style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw", color: T.nightMuted, marginTop: "0.4cqw", whiteSpace: "nowrap" }}>{moneyUsd(PRO_PRICE)}</div>
           <PlanRow>Все модули, материалы и промпты</PlanRow>
           <PlanRow>AI-наставник на платформе</PlanRow>
           <PlanRow>Кураторы разбирают ваши работы</PlanRow>
-          <PlanRow>Можно двумя платежами по {money(PRO_HALF)}</PlanRow>
+          <PlanRow>Можно двумя платежами по {moneyBoth(PRO_HALF)}</PlanRow>
         </Stagger>
       </div>
       <Stagger i={5}><Note style={{ marginTop: "1.2cqw", maxWidth: "54cqw" }}>Рассрочка до 24 месяцев через менеджера. Подписка Claude от $20 в месяц оплачивается отдельно</Note></Stagger>
@@ -146,29 +148,30 @@ export function M_VcTariffs() {
 /* ───────────── v4 · Два курса вместе ───────────── */
 
 /** Курс-обложка: название и цена. */
-const CourseCard = ({ name, price, i }: { name: string; price: string; i: number }) => (
+const CourseCard = ({ name, price, usd, i }: { name: string; price: string; usd: string; i: number }) => (
   <Stagger i={i} style={{ ...card, padding: "1.1cqw 1.3cqw", width: "15cqw", flexShrink: 0 }}>
     <div style={unb("0.95cqw", T.muted)}>{name}</div>
     <div style={{ marginTop: "0.8cqw" }}><Num size="1.55cqw" color={T.brown}>{price}</Num></div>
+    <div style={{ ...txt, fontWeight: 700, fontSize: "0.95cqw", color: T.muted, marginTop: "0.3cqw", whiteSpace: "nowrap" }}>{usd}</div>
   </Stagger>
 );
 
 export function M_VcBundle() {
   return (
-    <Statement kicker="Только для участников эфира" title={<>Оба курса вместе: <Em>{money(BUNDLE_PRICE)}</Em></>} size="3cqw"
+    <Statement kicker="Только для участников эфира" title={<>Оба курса вместе: <Em>{money(BUNDLE_PRICE)}</Em> <UsdTag n={BUNDLE_PRICE} /></>} size="3cqw"
       lead="Vibe Production и Vibe Coding PRO с кураторами.">
       {/* расчёт одной строкой: курс + курс = сумма по отдельности */}
       <div className="flex items-center" style={{ gap: "0.9cqw", maxWidth: "54cqw" }}>
-        <CourseCard i={0} name="Vibe Production" price={money(PRODUCTION_PRICE)} />
+        <CourseCard i={0} name="Vibe Production" price={money(PRODUCTION_PRICE)} usd={moneyUsd(PRODUCTION_PRICE)} />
         <Stagger i={1} className="flex items-center justify-center" style={{ ...goldButton, width: "2.4cqw", height: "2.4cqw", borderRadius: 999, flexShrink: 0, ...unb("1.5cqw", LT.ink) }}>+</Stagger>
-        <CourseCard i={2} name="Vibe Coding PRO" price={money(PRO_PRICE)} />
+        <CourseCard i={2} name="Vibe Coding PRO" price={money(PRO_PRICE)} usd={moneyUsd(PRO_PRICE)} />
         <Stagger i={3} style={{ ...unb("1.8cqw", T.muted), flexShrink: 0 }}>=</Stagger>
-        <Stagger i={4} style={{ flexShrink: 0 }}><Struck delay={1} size="1.7cqw">{money(SEPARATE_PRICE)}</Struck></Stagger>
+        <Stagger i={4} style={{ flexShrink: 0 }}><Struck delay={1} size="1.7cqw" usd={moneyUsd(SEPARATE_PRICE)}>{money(SEPARATE_PRICE)}</Struck></Stagger>
       </div>
       {/* итог: золотая плашка как цена на слайде 39a и плашка экономии */}
       <div className="flex items-center" style={{ gap: "1.2cqw", marginTop: "1.6cqw", maxWidth: "54cqw" }}>
-        <PricePlate delay={1.15} label="Участникам эфира" value={money(BUNDLE_PRICE)} />
-        <Stagger i={6} base={1.3}><span style={{ display: "inline-block", ...goldButton, borderRadius: 999, padding: "0.8cqw 1.5cqw", ...txt, fontWeight: 700, fontSize: "1.2cqw", color: LT.ink }}>Вы экономите {money(BUNDLE_SAVING)}</span></Stagger>
+        <PricePlate delay={1.15} label="Участникам эфира" value={money(BUNDLE_PRICE)} usd={moneyUsd(BUNDLE_PRICE)} />
+        <Stagger i={6} base={1.3}><span style={{ display: "inline-block", ...goldButton, borderRadius: 999, padding: "0.8cqw 1.5cqw", ...txt, fontWeight: 700, fontSize: "1.2cqw", color: LT.ink }}>Вы экономите {moneyBoth(BUNDLE_SAVING)}</span></Stagger>
       </div>
       <Stagger i={6} base={1.3}>
         <Note style={{ marginTop: "1.4cqw", maxWidth: "54cqw" }}>Vibe Production: 3 модуля, 15 уроков. Vibe Coding PRO: 10 модулей, 36 уроков.</Note>
@@ -181,10 +184,10 @@ export function M_VcBundle() {
 /* ───────────── v5 · Что выбрать ───────────── */
 
 export function M_VcChoose() {
-  const rows: { kind: GlyphKind; want: string; take: string; price: string; gold?: boolean }[] = [
-    { kind: "clapper", want: "Делать рилсы и рекламу без монтажёра", take: "Vibe Production", price: money(PRODUCTION_PRICE) },
-    { kind: "terminal", want: "Собирать свои сервисы и сайты", take: "Vibe Coding PRO", price: `от ${money(PRO_SOLO_PRICE)}, с кураторами ${money(PRO_PRICE)}` },
-    { kind: "cards", want: "И то и другое", take: "Оба курса", price: `${money(BUNDLE_PRICE)} вместо ${money(SEPARATE_PRICE)}`, gold: true },
+  const rows: { kind: GlyphKind; want: string; take: string; price: ReactNode; gold?: boolean }[] = [
+    { kind: "clapper", want: "Делать рилсы и рекламу без монтажёра", take: "Vibe Production", price: moneyBoth(PRODUCTION_PRICE) },
+    { kind: "terminal", want: "Собирать свои сервисы и сайты", take: "Vibe Coding PRO", price: <>от {moneyBoth(PRO_SOLO_PRICE)}<br />с кураторами {moneyBoth(PRO_PRICE)}</> },
+    { kind: "cards", want: "И то и другое", take: "Оба курса", price: <>{moneyBoth(BUNDLE_PRICE)}<br />вместо {moneyBoth(SEPARATE_PRICE)}</>, gold: true },
   ];
   return (
     <Statement kicker="Выберите свой путь" title={<>Что взять <Em>именно вам</Em></>} size="3cqw"
@@ -201,10 +204,10 @@ export function M_VcChoose() {
                 <div style={{ ...txt, fontWeight: 700, fontSize: "0.7cqw", letterSpacing: ".14em", textTransform: "uppercase", color: sub }}>Если вы хотите</div>
                 <div style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", lineHeight: 1.25, marginTop: "0.25cqw", color: ink }}>{r.want}</div>
               </div>
-              <div style={{ width: "24cqw", flexShrink: 0 }}>
+              <div style={{ width: "26.5cqw", flexShrink: 0 }}>
                 <div style={{ ...txt, fontWeight: 700, fontSize: "0.7cqw", letterSpacing: ".14em", textTransform: "uppercase", color: sub }}>Берёте</div>
                 <div style={{ ...unb("1.2cqw", r.gold ? LT.ink : T.brown), lineHeight: 1.2, marginTop: "0.3cqw" }}>{r.take}</div>
-                <div style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw", lineHeight: 1.3, marginTop: "0.3cqw", color: ink }}>{r.price}</div>
+                <div style={{ ...txt, fontWeight: 700, fontSize: "1.1cqw", lineHeight: 1.3, marginTop: "0.3cqw", color: ink }}>{r.price}</div>
               </div>
             </Stagger>
           );
@@ -217,9 +220,9 @@ export function M_VcChoose() {
 /* ───────────── v6 · Как занять место ───────────── */
 
 export function M_VcBook() {
-  const steps = ["Напишите слово в чат: МОНТАЖ, ПРО или ДВА", "Менеджер Аяна пришлёт ссылку на предоплату", `Предоплата ${nb("10 000 ₸")} закрепляет за вами место`];
+  const steps = ["Напишите слово в чат: МОНТАЖ, ПРО или ДВА", "Менеджер Аяна пришлёт ссылку на предоплату", `Предоплата ${moneyBoth(BOOKING_PRICE)} закрепляет за вами место`];
   return (
-    <Statement kicker="Как оплатить" title={<>Предоплата <Em>{money(BOOKING_PRICE)}</Em> закрепляет место</>} size="3cqw"
+    <Statement kicker="Как оплатить" title={<>Предоплата <Em>{money(BOOKING_PRICE)}</Em> <UsdTag n={BOOKING_PRICE} /> закрепляет место</>} size="3cqw"
       lead="Она входит в цену выбранного курса.">
       <div className="flex items-stretch" style={{ maxWidth: "54cqw" }}>
         {steps.map((t, i) => (

@@ -1,11 +1,55 @@
 "use client";
 
-import { CSSProperties, ReactNode } from "react";
+import { Children, CSSProperties, ReactNode, cloneElement, isValidElement } from "react";
 import { motion } from "framer-motion";
 import { LT, T, card, nightCard } from "./theme";
+import { moneyUsd } from "./prices";
 
 /** Неразрывные пробелы в числах: «300 000 ₸» не рвётся по строкам. */
 export const nb = (s: string) => s.replace(/ /g, " ");
+
+const NBSP = String.fromCharCode(160);
+/** Слова из одной-двух букв и служебные из трёх (без, для, что, как...): не остаются в конце строки, клеятся к следующему слову. */
+const GLUE_SHORT = /(?<=^|[\s(«"“„])([А-Яа-яЁёA-Za-z]{1,2}|без|для|над|под|при|про|что|как|это|все|вам|вас|нас|или) (?=\S)/gi;
+
+/**
+ * Типографская склейка для заголовков, подводок и подписей (как функция Je на сайте /saint/): строка не рвётся в плохом месте.
+ * Число идёт с разрядами и своим словом («6 форматов», «150 000 ₸», «118 тыс.»), слово перед числом остаётся рядом
+ * («Практика 1», «на 19 сентября 2026»), предлоги и союзы из 1–3 букв приклеены к следующему слову, тире и «·» не начинают строку, последнее короткое слово не остаётся одно.
+ * Цифры и слова не меняются, только пробелы между ними становятся неразрывными.
+ */
+export function glue(s: string): string {
+  return s
+    .replace(/(\d) (?=\d{3}(?!\d))/g, `$1${NBSP}`) // разряды: 150 000
+    .replace(/(\d) (?=[^\s\d])/g, `$1${NBSP}`) // число и единица: 6 форматов, 150 000 ₸, 118 тыс.
+    .replace(/([A-Za-zА-Яа-яЁё]{2,}) (?=\d)/g, `$1${NBSP}`) // слово и число после него: Практика 1, сентября 2026
+    .replace(GLUE_SHORT, `$1${NBSP}`) // предлоги и союзы
+    .replace(/ ([–·]) /g, `${NBSP}$1 `) // тире и «·» остаются на строке со словом слева
+    .replace(/(\S) (\S{1,5})$/, `$1${NBSP}$2`); // короткое последнее слово не остаётся одно на строке
+}
+
+/** Соседние строки и числа сливаются в одну: «от » и «300 000 ₸» из двух JSX-выражений склеиваются как одна фраза. */
+function mergeText(list: ReactNode[]): ReactNode[] {
+  const out: ReactNode[] = [];
+  for (const n of list) {
+    const last = out[out.length - 1];
+    if ((typeof n === "string" || typeof n === "number") && (typeof last === "string" || typeof last === "number")) out[out.length - 1] = String(last) + String(n);
+    else out.push(n);
+  }
+  return out;
+}
+
+/** glue() для готового узла: идёт по строкам внутри элементов, компоненты и ключи не трогает. */
+export function glueNode(n: ReactNode): ReactNode {
+  if (typeof n === "string") return glue(n);
+  if (Array.isArray(n)) return mergeText(Children.toArray(n)).map(glueNode);
+  if (isValidElement(n)) {
+    const c = (n.props as { children?: ReactNode }).children;
+    if (c == null || typeof c === "function") return n;
+    return cloneElement(n, undefined, ...(Array.isArray(c) ? mergeText(Children.toArray(c)).map(glueNode) : [glueNode(c)]));
+  }
+  return n;
+}
 
 /** 107237 → «107 237» с неразрывным пробелом. */
 export const thousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -20,7 +64,7 @@ export const at = (i: number, base = 0) => base + Math.min(i, 6) * STEP;
 
 /** Заголовок сайта: Unbounded 800, коричневый; на ночи — #FBF3E4. Слово-акцент — <Em>. */
 export const H = ({ children, size = "3.2cqw", color = T.brown, style }: { children: ReactNode; size?: string; color?: string; style?: CSSProperties }) => (
-  <h2 style={{ fontFamily: "var(--font-unbounded)", fontWeight: 800, letterSpacing: "-.025em", lineHeight: 1.1, fontSize: size, color, ...style }}>{children}</h2>
+  <h2 style={{ fontFamily: "var(--font-unbounded)", fontWeight: 800, letterSpacing: "-.025em", lineHeight: 1.1, fontSize: size, color, ...style }}>{glueNode(children)}</h2>
 );
 
 /** Слово-акцент в заголовке: #C08552 на светлом, золото на ночи. */
@@ -29,11 +73,11 @@ export const Em = ({ children, night = false }: { children: ReactNode; night?: b
 );
 
 export const Kicker = ({ children, color = T.accent }: { children: ReactNode; color?: string }) => (
-  <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.85cqw", letterSpacing: ".16em", textTransform: "uppercase", color, marginBottom: "1.3cqw" }}>{children}</div>
+  <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.85cqw", letterSpacing: ".16em", textTransform: "uppercase", color, marginBottom: "1.3cqw" }}>{glueNode(children)}</div>
 );
 
 export const Lead = ({ children, color = T.muted, style }: { children: ReactNode; color?: string; style?: CSSProperties }) => (
-  <p style={{ fontFamily: "var(--font-manrope)", fontWeight: 500, fontSize: "1.3cqw", lineHeight: 1.45, color, ...style }}>{children}</p>
+  <p style={{ fontFamily: "var(--font-manrope)", fontWeight: 500, fontSize: "1.3cqw", lineHeight: 1.45, color, ...style }}>{glueNode(children)}</p>
 );
 
 export const Chip = ({ children, night = false, gold = false }: { children: ReactNode; night?: boolean; gold?: boolean }) => (
@@ -44,7 +88,7 @@ export const Chip = ({ children, night = false, gold = false }: { children: Reac
       : night
         ? { background: T.night2, color: T.nightText, border: `1px solid ${T.nightLine}` }
         : { background: T.card, color: T.ink, border: `1px solid ${T.line}` }),
-  }}>{children}</span>
+  }}>{glueNode(children)}</span>
 );
 
 export const Num = ({ children, size = "4cqw", color = T.ink }: { children: ReactNode; size?: string; color?: string }) => (
@@ -53,7 +97,7 @@ export const Num = ({ children, size = "4cqw", color = T.ink }: { children: Reac
 
 /** Подпись-источник под цифрой. */
 export const Note = ({ children, color = T.muted, style }: { children: ReactNode; color?: string; style?: CSSProperties }) => (
-  <div style={{ fontFamily: "var(--font-manrope)", fontSize: "0.85cqw", lineHeight: 1.4, color, marginTop: "1.4cqw", ...style }}>{children}</div>
+  <div style={{ fontFamily: "var(--font-manrope)", fontSize: "0.85cqw", lineHeight: 1.4, color, marginTop: "1.4cqw", ...style }}>{glueNode(children)}</div>
 );
 
 /** Появление снизу со сдвигом по времени. Сдвиг в cqw → cqw: одинаковые единицы на входе и выходе. */
@@ -84,8 +128,8 @@ export const Card = ({ no, title, text, accent, style, icon, night }: { no?: str
   <div style={{ ...(night ? nightCard : card), borderRadius: 22, padding: "1.3cqw 1.5cqw", ...(accent ? { border: `1.5px solid ${T.gold2}` } : null), ...style }}>
     {icon && <Px name={icon} size="4.2cqw" bob={false} style={{ margin: "-0.4cqw 0 0.5cqw -0.4cqw" }} />}
     {no && <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: accent ? T.gold2 : night ? T.gold : T.accent, marginBottom: "0.6cqw" }}>{no}</div>}
-    <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "1.2cqw", lineHeight: 1.3, color: night ? T.nightText : T.ink }}>{title}</div>
-    {text && <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 500, fontSize: "0.95cqw", lineHeight: 1.45, color: night ? T.nightMuted : T.muted, marginTop: "0.4cqw" }}>{text}</div>}
+    <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "1.2cqw", lineHeight: 1.3, color: night ? T.nightText : T.ink }}>{glueNode(title)}</div>
+    {text && <div style={{ fontFamily: "var(--font-manrope)", fontWeight: 500, fontSize: "0.95cqw", lineHeight: 1.45, color: night ? T.nightMuted : T.muted, marginTop: "0.4cqw" }}>{glueNode(text)}</div>}
   </div>
 );
 
@@ -117,6 +161,11 @@ export const DrawLine = ({ delay = 0, width = "2.4cqw", dur = 0.35 }: { delay?: 
     <motion.div className="absolute inset-0" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay, duration: dur, ease: EASE }}
       style={{ borderRadius: 4, background: `linear-gradient(90deg, ${T.gold}, ${T.gold2})`, transformOrigin: "left" }} />
   </div>
+);
+
+/** Доллары мелко рядом с тенге в заголовке или крупной строке: «(≈ $335)». Размер в em от окружающего текста, не переносится. */
+export const UsdTag = ({ n, size = "0.5em", color = T.muted, paren = true }: { n: number; size?: string; color?: string; paren?: boolean }) => (
+  <span style={{ whiteSpace: "nowrap", fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: size, letterSpacing: 0, color }}>{paren ? `(${moneyUsd(n)})` : moneyUsd(n)}</span>
 );
 
 /** Пропуск, который дописывает Александр: пунктирная плашка «[…]». На эфир не выходит, пока не заменён текстом. */

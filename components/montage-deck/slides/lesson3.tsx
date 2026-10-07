@@ -8,16 +8,17 @@ import { LeadFunnel3D } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Statement } from "../Statement";
 import { Logo as BrandLogo } from "../Logo";
-import { RESULTS, fmtStat, type Stat } from "../results";
+import { RESULTS, fmtStat, ru } from "../results";
 import { LT, T, card, goldButton, nightCard } from "../theme";
-import { Card, DrawLine, EASE, Em, H, Lead, MaskIcon, Note, Rise, STEP, Stagger, at, nb, txt } from "../ui";
+import { Card, DrawLine, EASE, Em, H, Lead, MaskIcon, Note, Rise, STEP, Stagger, at, glue, nb, txt } from "../ui";
 import { COVER_CARDS } from "./M_Cover";
 
 /** 43 · Просмотры есть, заявок нет: путь зрителя, на последнем шаге он уходит из кадра. */
 export function M_ViewsNoLeads() {
   const path = ["Посмотрел", "Лайкнул", "Ушёл"];
   return (
-    <Statement obj="lg-s43-leaving" kicker="Урок 3 · Проблема" title={<>Просмотры есть. <Em>Заявок нет</Em></>} size="3.2cqw" lead={<>Человек посмотрел ролик, поставил лайк и ушёл. На моём рилсе {nb("1 773")} просмотра и только 68 кодовых слов.</>}>
+    <Statement obj="lg-s43-leaving" kicker="Урок 3 · Проблема" title={<>Просмотры есть. <Em>Заявок нет</Em></>} size="3.2cqw"
+      lead={<>Человек посмотрел ролик, поставил лайк и ушёл. На моём рилсе {nb(fmtStat(RESULTS.funnel.views))} просмотров и {nb(fmtStat(RESULTS.funnel.comments))} комментариев с кодовым словом.</>}>
       <div className="flex items-center gap-[0.8cqw]">
         {path.map((p, i) => (
           <div key={p} className="flex items-center gap-[0.8cqw]">
@@ -36,16 +37,18 @@ export function M_ViewsNoLeads() {
   );
 }
 
-/** 44 ✦ · Ночной: объёмная воронка одного рилса просмотры → кодовое слово → диалог с ботом → заявка (RESULTS.funnel), справа цепочка комментарий → директ → Telegram. */
+/**
+ * 44 ✦ · Ночной: объёмная воронка одного рилса просмотры → кодовое слово → материал в директ → диалог с ботом, справа цепочка комментарий → директ → Telegram.
+ * Все числа, название рилса и источник — RESULTS.funnel (results.ts): вёрстка их только показывает.
+ */
 export function M_CodeWordFlow() {
   const f = RESULTS.funnel;
-  // Ступень без цифры (диалоги и заявки по этому рилсу в данных пусты) идёт одной подписью, без «—» и заглушек (ревью А2, 07.10)
-  const val = (v: Stat) => (v == null ? "" : fmtStat(v));
+  const n = (v: number) => fmtStat(v);
   const stages = [
-    { label: "просмотры", value: val(f.views) },
-    { label: "кодовое слово", value: val(f.codeWords) },
-    { label: "диалог с ботом", value: val(f.dialogs) },
-    { label: "заявка", value: val(f.leads) },
+    { label: "просмотры", value: n(f.views) },
+    { label: "кодовое слово", value: n(f.comments) },
+    { label: "получили материал", value: n(f.material) },
+    { label: "диалогов с ботом", value: n(f.dialogs) },
   ];
   const nodes = [
     { logo: "instagram", head: "Комментарий", body: "ГАЙД" },
@@ -53,7 +56,7 @@ export function M_CodeWordFlow() {
     { logo: "telegram", head: "Вам в Telegram", body: "Новый контакт из рилса" },
   ];
   return (
-    <Statement tone="night" kicker="Кодовое слово" title={<>Кодовое слово превращает зрителя <Em night>в контакт</Em></>} size="2.5cqw"
+    <Statement tone="night" kicker="Кодовое слово" title={<>Кодовое слово<br />превращает зрителя <Em night>в контакт</Em></>} size="2.5cqw"
       leftSize="25cqw" leftOverflow="visible" left={<div style={{ width: "25cqw", height: "34cqw" }}><LeadFunnel3D stages={stages} /></div>}>
       <div className="grid gap-[0.6cqw]" style={{ maxWidth: "26cqw" }}>
         {nodes.map((n, i) => (
@@ -64,11 +67,10 @@ export function M_CodeWordFlow() {
           </motion.div>
         ))}
       </div>
-      <Stagger i={6} base={1.2} style={{ marginTop: "1.2cqw", maxWidth: "27cqw" }}>
-        {/* одна строка без цифр, которых нет в данных: название рилса и число диалогов с заявками подставлять только вместе с источником (results.ts, funnel) */}
-        <div style={{ ...txt, fontSize: "1.05cqw", color: T.nightText }}>Рилс собрал комментарии с кодовым словом, бот ответил каждому в директе</div>
+      <Stagger i={6} base={1.2} style={{ marginTop: "1.2cqw", maxWidth: "29cqw" }}>
+        <div style={{ ...txt, fontSize: "1.05cqw", color: T.nightText }}>{glue(`Рилс «${f.reel}»: ${fmtStat(f.comments)} ${ru(f.comments, ["комментарий", "комментария", "комментариев"])} с кодовым словом и ${fmtStat(f.dialogs)} ${ru(f.dialogs, ["диалог", "диалога", "диалогов"])} в директе`)}</div>
       </Stagger>
-      <Note color={T.nightMuted} style={{ marginTop: "0.8cqw" }}>Статистика Instagram, сентябрь 2026</Note>
+      <Note color={T.nightMuted} style={{ marginTop: "0.8cqw" }}>{f.source}</Note>
     </Statement>
   );
 }
@@ -206,7 +208,7 @@ export function M_FactoryChain() {
     <motion.div initial={{ opacity: 0.35, scale: 0.94, borderColor: T.line }} animate={{ opacity: 1, scale: 1, borderColor: i === 0 || i === 5 ? T.gold2 : T.line }}
       transition={{ delay: T0 + i * DT, duration: 0.35, ease: EASE }}
       style={{ ...card, borderRadius: 16, padding: "0.8cqw 1cqw", flex: 1, ...txt, borderWidth: 1.5, borderStyle: "solid", ...(i === 5 ? { ...goldButton } : null) }}>
-      <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.8cqw", color: i === 5 ? T.ink : T.brownLt, marginRight: "0.6cqw" }}>{i + 1}</span>{c}
+      <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.8cqw", color: i === 5 ? LT.ink : T.brownLt, marginRight: "0.6cqw" }}>{i + 1}</span>{c}
     </motion.div>
   );
   const row = (from: number) => (
@@ -244,7 +246,7 @@ export function M_Plan30() {
           {Array.from({ length: 30 }, (_, i) => (
             <motion.div key={i} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: i === 17 ? [0.5, 1.2, 1] : 1 }} transition={{ delay: 0.3 + i * 0.03, duration: i === 17 ? 0.5 : 0.25 }}
               className="flex items-center justify-center" style={{ height: "2.2cqw", borderRadius: 8, fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.7cqw",
-                background: i === 17 ? `linear-gradient(180deg, ${T.gold}, ${T.gold2})` : `${T.accent}1F`, color: i === 17 ? T.ink : T.muted }}>{i + 1}</motion.div>
+                background: i === 17 ? `linear-gradient(180deg, ${T.gold}, ${T.gold2})` : `${T.accent}1F`, color: i === 17 ? LT.ink : T.muted }}>{i + 1}</motion.div>
           ))}
         </div>
         <div className="grid gap-[0.5cqw]" style={{ maxWidth: "26cqw" }}>

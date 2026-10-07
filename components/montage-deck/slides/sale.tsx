@@ -8,13 +8,13 @@ import { ExtrudedNumber } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
-import { BUNDLE_PRICE, PRO_SOLO_PRICE, SEPARATE_PRICE, money } from "../prices";
+import { BOOKING_PRICE, BUNDLE_PRICE, PRO_SOLO_PRICE, SEPARATE_PRICE, money, moneyBoth, moneyUsd } from "../prices";
 import { NUM_ACCENT, LT, T, card, goldButton, goldText, pricePlate } from "../theme";
-import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
+import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, UsdTag, at, nb, thousands, txt } from "../ui";
 
 /** Чип-условие: золотая рамка на светлом золоте. */
 export const GoldChip = ({ children, size = "0.95cqw" }: { children: React.ReactNode; size?: string }) => (
-  <span style={{ display: "inline-block", borderRadius: 999, padding: "0.65cqw 1.2cqw", border: `1px solid ${T.gold2}`, background: `${T.gold}24`, ...txt, fontSize: size }}>{children}</span>
+  <span style={{ display: "inline-block", maxWidth: "100%", borderRadius: 999, padding: "0.65cqw 1.2cqw", border: `1px solid ${T.gold2}`, background: `${T.gold}24`, ...txt, fontSize: size }}>{children}</span>
 );
 
 /** Большое слово в золоте: ХОЧУ, МОНТАЖ. Собирается из разрядки, по золоту один раз проходит блик. */
@@ -34,21 +34,25 @@ export const BigWord = ({ word, size = "9cqw" }: { word: string; size?: string }
 };
 
 /** Цена на тёмной плашке сайта: #2A211C, сумма золотом. */
-export const PricePlate = ({ label, value, sub, delay = 0 }: { label: string; value: string; sub?: string; delay?: number }) => (
+export const PricePlate = ({ label, value, usd, sub, delay = 0 }: { label: string; value: string; usd?: string; sub?: string; delay?: number }) => (
   <motion.div initial={{ opacity: 0, x: "3cqw", scale: 0.96 }} animate={{ opacity: 1, x: "0cqw", scale: 1 }} transition={{ delay, duration: 0.55, ease: EASE }}
-    style={{ ...pricePlate, padding: "1.6cqw 1.8cqw", border: `1.5px solid ${T.gold2}` }}>
+    style={{ ...pricePlate, padding: "1.6cqw 1.8cqw", border: `1.5px solid ${T.gold2}`, minWidth: "max-content" }}>
     <div style={{ ...txt, fontSize: "0.95cqw", fontWeight: 700, color: T.gold }}>{label}</div>
     <div style={{ marginTop: "0.8cqw" }}><Num size="2.8cqw" color={T.gold}>{value}</Num></div>
+    {usd && <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", color: T.nightMuted, marginTop: "0.45cqw", whiteSpace: "nowrap" }}>{usd}</div>}
     {sub && <div style={{ ...txt, fontWeight: 500, fontSize: "0.95cqw", color: T.nightMuted, marginTop: "0.8cqw" }}>{sub}</div>}
   </motion.div>
 );
 
-/** Сумма, которую перечёркивает линия: зачёркивание прорисовывается в delay. */
-export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { children: React.ReactNode; delay: number; size?: string; color?: string }) => (
-  <div className="relative inline-block">
-    <Num size={size} color={color}>{children}</Num>
-    <motion.div className="absolute left-[-3%] right-[-3%] top-1/2" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay, duration: 0.4, ease: EASE }}
-      style={{ height: "0.24cqw", marginTop: "-0.12cqw", background: T.brownLt, borderRadius: 4, transformOrigin: "left", rotate: "-4deg" }} />
+/** Сумма, которую перечёркивает линия: зачёркивание прорисовывается в delay. usd — доллары мелко под суммой, тоже зачёркнуты. */
+export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted, usd }: { children: React.ReactNode; delay: number; size?: string; color?: string; usd?: string }) => (
+  <div className="inline-block" style={{ whiteSpace: "nowrap" }}>
+    <div className="relative inline-block">
+      <Num size={size} color={color}>{children}</Num>
+      <motion.div className="absolute left-[-3%] right-[-3%] top-1/2" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay, duration: 0.4, ease: EASE }}
+        style={{ height: "0.24cqw", marginTop: "-0.12cqw", background: T.brownLt, borderRadius: 4, transformOrigin: "left", rotate: "-4deg" }} />
+    </div>
+    {usd && <div style={{ ...txt, fontWeight: 700, fontSize: `calc(${size} * 0.5)`, marginTop: "0.3cqw", color: T.muted, textDecoration: "line-through", textDecorationColor: T.brownLt }}>{usd}</div>}
   </div>
 );
 
@@ -146,8 +150,8 @@ export function M_Module({ no, title, lessons, result }: { no: number; title: st
         </div>
         <motion.div className="flex items-center gap-[1cqw]" initial={{ opacity: 0, y: "0.8cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.9, duration: 0.45, ease: EASE }}
           style={{ ...goldButton, borderRadius: 18, padding: "0.9cqw 1.2cqw", marginTop: "0.4cqw" }}>
-          <span style={{ ...txt, fontSize: "0.8cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.ink, opacity: 0.7 }}>Результат</span>
-          <span style={{ ...txt, fontSize: "1.15cqw", fontWeight: 700 }}>{result}</span>
+          <span style={{ ...txt, fontSize: "0.8cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: LT.ink, opacity: 0.7 }}>Результат</span>
+          <span style={{ ...txt, fontSize: "1.15cqw", fontWeight: 700, color: LT.ink }}>{result}</span>
         </motion.div>
       </Stagger>
     </Statement>
@@ -165,11 +169,11 @@ export function M_Anchor() {
           transition={{ delay: 0.3, duration: 1.8, times: [0, 0.2, 0.6, 1], ease: EASE }}
           style={{ ...card, padding: "1.6cqw 1.8cqw" }}>
           <div style={{ ...txt, fontSize: "0.95cqw", fontWeight: 700 }}>Монтажёр</div>
-          <div style={{ marginTop: "0.8cqw" }}><Struck delay={1.1} size="2.5cqw" color={T.brown}>{`от ${thousands(a)} ₸`}</Struck></div>
+          <div style={{ marginTop: "0.8cqw" }}><Struck delay={1.1} size="2.5cqw" color={T.brown} usd={moneyUsd(300000)}>{`от ${thousands(a)} ₸`}</Struck></div>
           <div style={{ ...txt, fontWeight: 500, fontSize: "0.95cqw", color: T.muted, marginTop: "0.8cqw" }}>Каждый месяц. Вакансия на hh.kz, Алматы, 26.09.2026</div>
         </motion.div>
         {/* Полная цена 250 000 ₸; цена участникам эфира 150 000 ₸ — следующим слайдом 39а (Александр, 04.10) */}
-        <PricePlate delay={1.2} label="Vibe Production · полная цена" value={`${thousands(b)} ₸`} sub="Оплата один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
+        <PricePlate delay={1.2} label="Vibe Production · полная цена" value={`${thousands(b)} ₸`} usd={moneyUsd(250000)} sub="Оплата один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
       </div>
       <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц. Начать можно с подписки Claude от $20 в месяц. У меня Claude Max за $200: его хватает на 150 роликов в месяц. Список покажу дальше</Note></Stagger>
     </Statement>
@@ -181,8 +185,8 @@ const BANKS = [{ name: "Kaspi", logo: "kaspi" }, { name: "Home Credit", logo: "h
 /** 39 ✦ · 150 000 ₸ рассыпается на 24 ячейки по 6 250 ₸, ниже банки рассрочки. */
 export function M_Installments() {
   return (
-    <Statement obj="lg-s39-calendar" objSize="7cqw" kicker="Рассрочка до 24 месяцев без переплаты" title={<>Или от <Em>{nb("6 250 ₸")}</Em> в месяц</>} size="3cqw"
-      lead={<>Меньше {nb("210 ₸")} в день. Платите ровно {nb("150 000 ₸")}, частями.</>}>
+    <Statement obj="lg-s39-calendar" objSize="7cqw" kicker="Рассрочка до 24 месяцев без переплаты" title={<>Или от <Em>{nb("6 250 ₸")}</Em> <UsdTag n={6250} /> в месяц</>} size="3cqw"
+      lead={<>Меньше {nb("210 ₸")} ({moneyUsd(210)}) в день. Платите ровно {moneyBoth(150000)}, частями.</>}>
       <div className="grid gap-[0.45cqw]" style={{ gridTemplateColumns: "repeat(12, 1fr)", maxWidth: "50cqw" }}>
         {Array.from({ length: 24 }, (_, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: "-1.2cqw", scale: 0.6 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
@@ -209,22 +213,23 @@ export function M_Installments() {
 export function M_Discount() {
   const after = useCountUp(150000, 1, 1.3);
   return (
-    <Statement kicker="Только для участников эфира" title={<>Ваша цена: <Em>{nb("150 000 ₸")}</Em></>} size="3cqw"
+    <Statement kicker="Только для участников эфира" title={<>Ваша цена: <Em>{nb("150 000 ₸")}</Em> <UsdTag n={150000} /></>} size="3cqw"
       lead="Вы здесь и смотрите практику вживую, поэтому для вас цена ниже. Напишите МОНТАЖ в чат, менеджер закрепит её за вами.">
       <div className="flex items-center gap-[1.2cqw]">
         <Stagger i={0}>
           <div style={{ ...txt, fontSize: "0.9cqw", color: T.muted }}>Полная цена</div>
-          <div style={{ marginTop: "0.5cqw" }}><Struck delay={0.9} size="2.2cqw">{nb("250 000 ₸")}</Struck></div>
+          <div style={{ marginTop: "0.5cqw" }}><Struck delay={0.9} size="2.2cqw" usd={moneyUsd(250000)}>{nb("250 000 ₸")}</Struck></div>
         </Stagger>
         <DrawLine delay={1.05} width="2.4cqw" />
         <motion.div initial={{ opacity: 0, x: "2cqw", scale: 0.96 }} animate={{ opacity: 1, x: "0cqw", scale: 1 }} transition={{ delay: 1.2, duration: 0.5, ease: EASE }}
           style={{ ...pricePlate, padding: "1.1cqw 1.5cqw", border: `1.5px solid ${T.gold2}` }}>
           <div style={{ ...txt, fontSize: "0.9cqw", color: T.gold, fontWeight: 700 }}>Участникам эфира</div>
           <div style={{ marginTop: "0.5cqw" }}><Num size="2.6cqw" color={T.gold}>{`${thousands(after)} ₸`}</Num></div>
+          <div style={{ ...txt, fontWeight: 700, fontSize: "1.15cqw", color: T.nightMuted, marginTop: "0.35cqw", whiteSpace: "nowrap" }}>{moneyUsd(150000)}</div>
         </motion.div>
       </div>
       <Stagger i={6} base={1.2} style={{ marginTop: "1.4cqw" }}>
-        <GoldChip>или от {nb("6 250 ₸")} в месяц в рассрочку на 24 месяца</GoldChip>
+        <GoldChip>или от {moneyBoth(6250)} в месяц в рассрочку на 24 месяца</GoldChip>
       </Stagger>
     </Statement>
   );
@@ -256,7 +261,7 @@ export function M_SixMonths() {
 
 /** 41 · Как занять место: три шага крупно, связки прорисовываются, в конце — золотая кнопка сайта. */
 export function M_HowToBook() {
-  const steps = [["Напишите МОНТАЖ в чат", "Прямо сейчас, под эфиром"], ["Менеджер пришлёт ссылку", "На бронь и рассрочку"], [`Бронь ${nb("10 000 ₸")}`, "Действует до 23:59 сегодня"]];
+  const steps = [["Напишите МОНТАЖ в чат", "Прямо сейчас, под эфиром"], ["Менеджер пришлёт ссылку", "На бронь и рассрочку"], [`Бронь ${moneyBoth(BOOKING_PRICE)}`, "Действует до 23:59 сегодня"]];
   return (
     <Statement obj="lg-s41-deadline" kicker="Как занять место" title={<>Три шага до <Em>места в потоке</Em></>} size="3cqw">
       <div className="flex items-stretch" style={{ maxWidth: "56cqw" }}>
@@ -277,7 +282,7 @@ export function M_HowToBook() {
         <motion.div className="inline-flex" animate={{ boxShadow: [`0 0 0 0cqw ${T.gold}66`, `0 0 0 1cqw ${T.gold}00`] }} transition={{ delay: 1.2, duration: 1.6, repeat: Infinity, ease: "easeOut" }}
           style={{ ...goldButton, borderRadius: 999, padding: "1cqw 2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.2cqw" }}>МОНТАЖ в чат</motion.div>
       </Stagger>
-      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {nb("10 000 ₸")} входит в цену обучения. Остаток вам пришлёт менеджер вместе со ссылкой. Вопросы: Telegram @futleid, WhatsApp {nb("+7 708 583 4575")}</Note></Stagger>
+      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {moneyBoth(BOOKING_PRICE)} входит в цену обучения. Остаток вам пришлёт менеджер вместе со ссылкой. Вопросы: Telegram @futleid, WhatsApp {nb("+7 708 583 4575")}</Note></Stagger>
     </Statement>
   );
 }
@@ -308,13 +313,13 @@ export function M_OneScreen() {
         {mods.map(([no, t, d, ic], i) => <Stagger key={no} i={i}><Card icon={ic} no={no} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
       </div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
-        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} вместо ${nb("250 000 ₸")} для участников эфира`, `или от ${nb("6 250 ₸")} в месяц`, "первым 5 броням 6 месяцев доступа"].map((c, i) => (
+        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${moneyBoth(150000)} вместо ${moneyBoth(250000)} для участников эфира`, `или от ${moneyBoth(6250)} в месяц`, "первым 5 броням 6 месяцев доступа"].map((c, i) => (
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
         <Stagger i={8}><GoldChip>Разбор работ в общем чате потока</GoldChip></Stagger>
       </div>
       {/* пакет двух курсов (07.10): отдельной строкой внизу, цены из prices.ts */}
-      <Stagger i={9} style={{ marginTop: "0.9cqw" }}><GoldChip size="1.1cqw">Оба курса вместе: {money(BUNDLE_PRICE)} вместо {money(SEPARATE_PRICE)}</GoldChip></Stagger>
+      <Stagger i={9} style={{ marginTop: "0.9cqw" }}><GoldChip size="1.1cqw">Оба курса вместе: {moneyBoth(BUNDLE_PRICE)} вместо {moneyBoth(SEPARATE_PRICE)}</GoldChip></Stagger>
     </Statement>
   );
 }
@@ -403,7 +408,7 @@ export function M_FinalCTA() {
       <Rise><Kicker>Напишите в чат до 23:59</Kicker></Rise>
       <div className="flex items-center gap-[1.6cqw]"><BigWord word="МОНТАЖ" size="8cqw" /><Px name="lg-i-hourglass" size="9cqw" delay={0.7} /></div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2cqw", maxWidth: "52cqw" }}>
-        {[`${nb("150 000 ₸")} вместо ${nb("250 000 ₸")}`, `или от ${nb("6 250 ₸")} в месяц`, `бронь ${nb("10 000 ₸")}`].map((c, i) => (
+        {[`${moneyBoth(150000)} вместо ${moneyBoth(250000)}`, `или от ${moneyBoth(6250)} в месяц`, `бронь ${moneyBoth(BOOKING_PRICE)}`].map((c, i) => (
           <Stagger key={c} i={i} base={0.55}>
             <span style={{ display: "inline-block", ...card, borderRadius: 999, padding: "0.8cqw 1.4cqw", ...txt, fontSize: "1.1cqw",
               ...(i === 0 || i === 2 ? { ...goldButton, border: `1px solid ${T.gold2}` } : null) }}>{c}</span>
@@ -412,11 +417,11 @@ export function M_FinalCTA() {
       </div>
       {/* слова для двух других выборов (07.10): под МОНТАЖ и его условиями, цены из prices.ts */}
       <div className="flex flex-wrap gap-[0.8cqw]" style={{ marginTop: "1.5cqw", maxWidth: "52cqw" }}>
-        {([["ПРО", `от ${money(PRO_SOLO_PRICE)}`], ["ДВА", money(BUNDLE_PRICE)]] as const).map(([w, p], i) => (
+        {([["ПРО", `от ${money(PRO_SOLO_PRICE)}`, PRO_SOLO_PRICE], ["ДВА", money(BUNDLE_PRICE), BUNDLE_PRICE]] as const).map(([w, p, n], i) => (
           <Stagger key={w} i={i} base={0.95}>
-            <span className="flex items-baseline" style={{ ...card, border: `1.5px solid ${T.gold2}`, borderRadius: 20, padding: "0.8cqw 1.4cqw", gap: "0.7cqw" }}>
+            <span className="flex items-center" style={{ ...card, border: `1.5px solid ${T.gold2}`, borderRadius: 20, padding: "0.8cqw 1.4cqw", gap: "0.7cqw", whiteSpace: "nowrap" }}>
               <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.5cqw", lineHeight: 1, ...goldText }}>{w}:</span>
-              <span style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw" }}>{p}</span>
+              <span className="flex flex-col"><span style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw" }}>{p}</span><span style={{ ...txt, fontWeight: 700, fontSize: "0.95cqw", color: T.muted }}>{moneyUsd(n)}</span></span>
             </span>
           </Stagger>
         ))}
@@ -425,17 +430,27 @@ export function M_FinalCTA() {
   );
 }
 
-/** 57g ✦ · Бонус за игру: QR на Token Runner, код из игры снимает ещё 10 000 ₸. */
+/**
+ * 57g ✦ · Бонус за игру: слева телефон с роликом игры (public/montage/reels/token-runner.mp4, без звука, на повторе), справа заголовок, лид и QR на Token Runner.
+ * Код из игры снимает ещё 10 000 ₸ с Vibe Production (Александр, 07.10). Всё в левых 60% кадра.
+ */
 export function M_GameBonus() {
   return (
-    <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру и получи ещё <Em><span style={{ whiteSpace: "nowrap" }}>{nb("−10 000 ₸")}</span></Em></>} size="3cqw"
-      lead={<>Игра Token Runner в Telegram. Пройди 3 испытания и получишь код: Vibe Production за {nb("140 000 ₸")} вместо {nb("150 000 ₸")}.</>}>
-      <Stagger i={0}>
+    <Statement kicker="Бонус участникам эфира"
+      title={<>Пройдите игру и получите <Em><span style={{ whiteSpace: "nowrap" }}>{nb("−10 000 ₸")}</span></Em> <UsdTag n={10000} /> на Vibe Production</>} size="2.3cqw"
+      lead={<>Игра Token Runner в Telegram: пройдите 3 испытания, получите код, и Vibe Production обойдётся в {moneyBoth(140000)} вместо {moneyBoth(150000)}</>}
+      leftSize="16cqw"
+      left={
+        <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.15 }}>
+          <Phone video="/montage/reels/token-runner.mp4" src="/montage/reels/token-runner.jpg" width="11.5cqw" chrome={false} />
+        </motion.div>
+      }>
+      <Stagger i={0} className="flex items-center" style={{ gap: "1.6cqw" }}>
         {/* плита QR остаётся белой: тёмные модули на стекле камера не прочитает */}
-        <div style={{ ...card, background: LT.paper, borderRadius: 22, padding: "1cqw", width: "13cqw" }}>
+        <div style={{ ...card, background: LT.paper, borderRadius: 22, padding: "0.9cqw", width: "10cqw", flexShrink: 0 }}>
           <img src="/montage/qr-game.svg" alt="QR-код: игра Token Runner в Telegram" style={{ display: "block", width: "100%", height: "auto" }} />
         </div>
-        <div style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", color: T.brown, marginTop: "1cqw", whiteSpace: "nowrap" }}>t.me/tokenrunner_bot</div>
+        <div style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", color: T.brown, whiteSpace: "nowrap" }}>t.me/tokenrunner_bot</div>
       </Stagger>
     </Statement>
   );

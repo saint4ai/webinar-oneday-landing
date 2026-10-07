@@ -28,6 +28,8 @@ const STATIC_EXPORT = process.env.STATIC_EXPORT === "1";
 const nextConfig: NextConfig = {
   // NEXT_DIST_DIR=.next-glass — собрать вторую копию рядом с основной, не трогая .next, на которой работает показ (сервер на 3001/3002)
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // TURBO_ROOT=C:\Проекты — сборка из worktree, где node_modules подключён junction'ом на соседнюю папку
+  ...(process.env.TURBO_ROOT ? { turbopack: { root: process.env.TURBO_ROOT } } : {}),
   basePath: BASE_PATH,
   assetPrefix: BASE_PATH || undefined,
   // output:'export' несовместим с redirects/headers/ISR — их берёт на себя nginx.

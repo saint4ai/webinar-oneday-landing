@@ -7,7 +7,7 @@ import { ReelRail, Views } from "../ReelRail";
 import { RESULTS, fmtStat, type Stat } from "../results";
 import { Statement } from "../Statement";
 import { NUM_ACCENT, T, card } from "../theme";
-import { EASE, Em, Fill, Note, Num, STEP } from "../ui";
+import { EASE, Em, Note, Num, STEP } from "../ui";
 
 /**
  * Три слайда «результаты за месяц»: 22r (монтаж), 46r (ИИ-бот), 47r (заявки с блога).
@@ -106,7 +106,7 @@ const splitViews = (v: string): [string, string] => {
 export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] }) {
   return (
     <Statement kicker="Результаты · рилсы" title="Рилсы, которые залетели" size="2.6cqw"
-      lead={RESULTS.viralSource ?? <>Скрины из Instagram, просмотры на <Fill>дата скринов</Fill></>}>
+      lead={RESULTS.viralSource}>
       <motion.div initial={{ opacity: 0, y: "2cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }} style={{ maxWidth: "54cqw" }}>
         <ReelRail items={[...RESULTS.viral]} itemWidth="9.2cqw" gap={0.16} amp="1.7cqw" speed={0.28} tilt={3} render={(r, i) => {
           const [num, unit] = r.views == null ? ["", ""] : splitViews(r.views);
@@ -155,7 +155,7 @@ export function M_Growth30({ shots = [] }: { shots?: (string | undefined)[] }) {
           {g.stats.map((s, i) => <SmallStat key={s.label} i={i + 4} value={s.value} label={s.label} />)}
         </div>
       </div>
-      <Note style={{ marginTop: "1cqw" }}>{g.source ?? <>Источник: <Fill>статистика площадок, даты периода</Fill></>}</Note>
+      <Note style={{ marginTop: "1cqw" }}>{g.source}</Note>
     </Statement>
   );
 }
@@ -174,7 +174,7 @@ export function M_Inquiries() {
       <div className="grid items-center" style={{ gridTemplateColumns: "minmax(0, 1fr) 19cqw", gap: "2.4cqw", maxWidth: "50cqw" }}>
         <div>
           <MainStat value={q.total} label={q.label} size="9cqw" />
-          <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source ?? <>Откуда цифры: <Fill>CRM или директ, даты периода</Fill></>}</Note></In>
+          <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source}</Note></In>
         </div>
         <In i={2}>
           <DirectStack width="19cqw" />

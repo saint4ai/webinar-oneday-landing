@@ -9,6 +9,7 @@ import { ReelRail } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { GLASS, LT, T, card, glass, goldButton } from "../theme";
+import { moneyUsd } from "../prices";
 import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, Stagger, at, nb, thousands } from "../ui";
 
 const label: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.35, color: T.ink };
@@ -35,7 +36,7 @@ export function M_Check() {
 /** 3–4 · Опрос: варианты — большие карточки, крупная цифра Unbounded = ответ в чат. */
 export function M_Poll({ kicker, title, lead, options, icons }: { kicker: string; title: string; lead: string; options: string[]; icons?: string[] }) {
   return (
-    <Statement kicker={kicker} title={title} lead={lead} size="2.7cqw">
+    <Statement kicker={kicker} title={title} lead={lead} size="2.6cqw">
       <div className="grid grid-cols-2 gap-[1cqw]" style={{ maxWidth: "54cqw" }}>
         {options.map((o, i) => (
           <motion.div key={o} {...inUp(i)} className="flex items-center gap-[1.2cqw]" style={{ ...card, minHeight: "8.6cqw", padding: "1.2cqw 1.6cqw" }}>
@@ -82,7 +83,7 @@ export function M_Promise() {
   const chain = ["Ролик", "Презентация", "Приложение"];
   const icons = ["lg-i-clapper", "lg-i-cards", "lg-i-phones"];
   return (
-    <Statement kicker="Что увидите сегодня" title={<>Покажу, как ИИ забирает монтаж, документы и <Em>разработку</Em></>} lead="Без монтажёра, без дизайнера презентаций, без программиста." size="2.8cqw">
+    <Statement kicker="Что увидите сегодня" title={<>Покажу, как ИИ забирает монтаж, документы и <Em>разработку</Em></>} lead="Без монтажёра, без дизайнера презентаций, без программиста." size="2.4cqw">
       <div className="flex items-end gap-[1.2cqw]">
         {chain.map((c, i) => (
           <div key={c} className="flex items-center gap-[1.2cqw]">
@@ -162,9 +163,9 @@ export function M_About() {
       {/* Позиционирование — слова Александра 05.10: «разработчик без знаний программирования, разрабатываю IT-решения для бизнеса» */}
       <Rise delay={STEP * 2}><Lead style={{ marginTop: "0.8cqw", maxWidth: "29cqw" }}>Разработчик без знаний программирования: собираю IT-решения для бизнеса с <span style={{ whiteSpace: "nowrap" }}>ИИ-агентами</span>. Основатель onAI Academy.</Lead></Rise>
       {/* Скрин профиля Instagram без рамки телефона, со скруглёнными углами (правка Александра 05.10).
-          06.10: крупнее, до линии-разделителя зоны камеры — съедаем правый отступ колонки SlideLayout (56px) */}
+          06.10: крупнее, до линии-разделителя зоны камеры — съедаем правый отступ колонки SlideLayout (2,917cqw, см. MontageBg) */}
       <motion.div initial={{ opacity: 0, y: "1.6cqw", scale: 0.97 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }} transition={{ delay: at(3, 0.2), duration: 0.55, ease: EASE }}
-        style={{ marginTop: "1.6cqw", width: "calc(100% + 56px - 0.8cqw)", maxWidth: "none" }}>
+        style={{ marginTop: "1.6cqw", width: "calc(100% + 2.917cqw - 0.8cqw)", maxWidth: "none" }}>
         <img src="/montage/profile.jpg" alt="Профиль saint4ai в Instagram" draggable={false}
           style={{ display: "block", width: "100%", height: "auto", borderRadius: "1.2cqw", border: `1px solid ${T.line}`, boxShadow: T.shadow, background: LT.paper }} />
       </motion.div>
@@ -189,10 +190,10 @@ export function M_CostStory() {
           .glass-fx > div > div:nth-child(3) > div:nth-child(1) > div:nth-child(1) { color: ${T.brown} !important; }
           .glass-fx > div > div:nth-child(3) > div:nth-child(1) > div:nth-child(1) > span { background: ${T.brown} !important; }
           .glass-fx > div > div:nth-child(3) > div:nth-child(1) > div:nth-child(2),
-          .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(2) { color: ${T.muted} !important; }
+          .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(2) { color: ${T.muted} !important; white-space: normal !important; max-width: 26cqw; }
           .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) { background: linear-gradient(160deg, rgba(42,33,28,.92), rgba(20,16,14,.95)) !important; border: 1px solid ${T.gold2}66; }
         `}</style>}
-        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Если платить за ролик: 150 по 10 000 ₸ = 1 500 000 ₸" }}
+        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: `Если платить за ролик: 150 по ${nb("10 000 ₸")} (${moneyUsd(10000)}) = ${nb("1 500 000 ₸")} (${moneyUsd(1500000)})` }}
           to={{ value: "$200", label: "Стало: подписка Claude Max · 150 роликов в месяц" }} />
       </div>
       <Stagger i={6} base={2.6}><Note style={{ marginTop: "1cqw", maxWidth: "50cqw" }}>Начать можно с подписки Claude от $20 в месяц. У меня Claude Max за $200: его хватает на 150 роликов в месяц</Note></Stagger>
@@ -231,7 +232,7 @@ export function M_Proof15() {
           </div>
         )} />
       </motion.div>
-      <Note style={{ marginTop: "0.9cqw" }}>{RESULTS.appCoversSource}. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены по скринам 6 октября, это не число людей.</Note>
+      <Note style={{ marginTop: "0.9cqw" }}>Счётчики Instagram, 05.10.2026. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены (скрины 06.10.2026), это не число людей</Note>
     </Statement>
   );
 }

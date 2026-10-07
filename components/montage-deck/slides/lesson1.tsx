@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { MontageBg } from "../MontageBg";
@@ -9,7 +9,8 @@ import { ReelRail, Views } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton } from "../theme";
-import { Card, EASE, Em, H, Kicker, MaskIcon, Note, Num, RISE_DUR, Rise, STEP, at, nb } from "../ui";
+import { moneyUsd } from "../prices";
+import { Card, EASE, Em, H, Kicker, MaskIcon, Note, Num, RISE_DUR, Rise, STEP, UsdTag, at, nb } from "../ui";
 
 const txt: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.4, color: T.ink };
 const Stagger = ({ i, children, style, className }: { i: number; children: React.ReactNode; style?: React.CSSProperties; className?: string }) => (
@@ -36,13 +37,14 @@ export function M_Bottleneck() {
 /** 13 · Вакансия монтажёра: цена крупно. */
 export function M_Vacancy() {
   return (
-    <Statement obj="lg-s13-editor" kicker="Сколько стоит монтажёр" title={<>Монтажёр на окладе: <Em>от {nb("300 000 ₸")}</Em> в месяц</>} size="3.1cqw">
+    <Statement obj="lg-s13-editor" kicker="Сколько стоит монтажёр" title={<>Монтажёр на окладе: <Em>{nb("от 300 000 ₸")}</Em> <UsdTag n={300000} /> в месяц</>} size="3.1cqw">
       <div className="grid grid-cols-2 gap-[1cqw]" style={{ maxWidth: "50cqw" }}>
         <Stagger i={0} style={{ ...card, padding: "1.4cqw 1.6cqw" }}>
           <div style={{ ...txt, color: T.accent, fontSize: "0.85cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" }}>Вакансия · hh.kz</div>
           <div style={{ ...txt, fontSize: "1.3cqw", fontWeight: 700, marginTop: "0.7cqw" }}>Видеомонтажёр на CapCut</div>
           <div style={{ ...txt, color: T.muted, fontWeight: 500, marginTop: "0.3cqw" }}>Алматы</div>
           <div style={{ marginTop: "1cqw" }}><Num size="2.3cqw" color={T.brown}>{nb("от 300 000 ₸")}</Num></div>
+          <div style={{ ...txt, color: T.muted, fontWeight: 700, fontSize: "1.1cqw", marginTop: "0.4cqw", whiteSpace: "nowrap" }}>{moneyUsd(300000)}</div>
           <div style={{ ...txt, color: T.muted, fontWeight: 500, fontSize: "0.85cqw", marginTop: "0.5cqw" }}>на руки, в месяц</div>
         </Stagger>
         <Stagger i={1}><Card no="Или самому" title="Premiere и CapCut учить месяцами" text="Сложные программы и ручная работа над каждым роликом." style={{ height: "100%" }} /></Stagger>
@@ -124,7 +126,7 @@ export function M_OnePhrase() {
 /** 16 · Из 14 залетел 1 → 30 роликов в месяц. */
 export function M_OneOf14() {
   return (
-    <Statement obj="lg-s16-phones" objSize="4.6cqw" kicker="Моя статистика" title={<>Из 14 рилсов залетел 1. Поэтому <Em>30 роликов в месяц</Em></>} size="3cqw"
+    <Statement obj="lg-s16-phones" objSize="4.6cqw" kicker="Моя статистика" title={<>Из 14 рилсов залетел 1. Поэтому <Em>30 роликов в месяц</Em></>} size="2.85cqw"
       lead="Пробные рилсы сначала видят неподписчики. Показывать ли ролик подписчикам, решаете по первым 72 часам.">
       <div className="flex flex-wrap gap-[0.5cqw]" style={{ maxWidth: "40cqw" }}>
         {Array.from({ length: 14 }, (_, i) => (
@@ -294,13 +296,13 @@ export function M_Styles() {
       <div style={{ minHeight: "3cqw" }}>
         <AnimatePresence mode="wait">
           <motion.div key={a} initial={{ opacity: 0, y: "0.4cqw" }} animate={{ opacity: 1, y: "0cqw" }} exit={{ opacity: 0, y: "-0.4cqw" }} transition={{ duration: 0.22 }}
-            className="inline-flex items-center gap-[0.8cqw]" style={{ ...goldButton, borderRadius: 999, padding: "0.6cqw 1.3cqw" }}>
+            className="inline-flex items-center gap-[0.8cqw]" style={{ ...goldButton, borderRadius: 999, padding: "0.6cqw 1.3cqw", whiteSpace: "nowrap", maxWidth: "100%" }}>
             <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.05cqw" }}>{reels[a].views}</span>
-            <span style={{ ...txt, fontWeight: 700, fontSize: "0.9cqw" }}>{reels[a].title}</span>
+            <span style={{ ...txt, color: LT.ink, fontWeight: 700, fontSize: "0.9cqw" }}>{reels[a].title}</span>
           </motion.div>
         </AnimatePresence>
       </div>
-      <Note>Просмотры: счётчик в приложении Instagram, 5 октября 2026</Note>
+      <Note>Instagram, счётчик просмотров, 05.10.2026</Note>
     </Statement>
   );
 }
@@ -339,14 +341,14 @@ export function M_ReadyReel() {
       <Rise><Kicker>Результат</Kicker></Rise>
       <Rise delay={STEP}><H size="3.4cqw">Готовый ролик</H></Rise>
       <div className="flex items-center justify-center gap-[2cqw]" style={{ marginTop: "2cqw", width: "100%" }}>
-        <Stagger i={2} style={{ width: "15cqw", textAlign: "right" }}>
+        <Stagger i={2} style={{ width: "19cqw", textAlign: "right" }}>
           <p style={{ ...txt, fontWeight: 500, fontSize: "1.15cqw", color: T.muted, lineHeight: 1.45 }}>Графика, субтитры и звук собраны агентом по голосу. Сначала черновик на одобрение, потом финал в 4K.</p>
         </Stagger>
         <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.2 }}>
           {/* Мой ролик «Этот рилс смонтировал не человек» (раздатки 05.10, папка 06) */}
           <Phone video="/montage/reels/ai-notman.mp4" src="/montage/reels/ai-notman.jpg" width="13.4cqw" showTop={false} />
         </motion.div>
-        <div className="flex flex-col items-start gap-[0.6cqw]" style={{ width: "15cqw" }}>
+        <div className="flex flex-col items-start gap-[0.6cqw]" style={{ width: "15cqw", flexShrink: 0 }}>
           {["Premiere не открывал", "CapCut не открывал", "Правки словами"].map((c, i) => (
             <Stagger key={c} i={3 + i}><span style={{ ...card, display: "inline-block", borderRadius: 999, padding: "0.65cqw 1.2cqw", ...txt, fontWeight: 700, fontSize: "1cqw", whiteSpace: "nowrap" }}>{c}</span></Stagger>
           ))}
@@ -365,33 +367,63 @@ const FORMATS = [
   { f: "06-podcast", t: "Подкаст" },
 ];
 
-/** 23 ✦ · Без лица: телефон перестраивается из формата в формат. */
+/**
+ * 23 ✦ · Без лица: шесть форматов, ведущий сам включает нужный. Автопереключения нет: клик по пункту или клавиши 1–6, ↑ и ↓.
+ * Старт на пятом формате «Без лица». Видео в телефоне каждый раз идёт с начала, повторный клик по тому же пункту тоже запускает его заново.
+ * Клик и эти клавиши презентацию не листают: цифры и стрелки вверх и вниз общая колода не использует (SlideDeck слушает ← → пробел PageUp PageDown Home End F S).
+ */
 export function M_NoFace() {
   const [k, setK] = useState(4);
+  const [run, setRun] = useState(0); // счётчик включений: новый ключ запускает видео сначала
+  const pick = (i: number) => { setK(i); setRun((r) => r + 1); };
+  const pickRef = useRef(pick);
+  pickRef.current = pick;
+  const kRef = useRef(k);
+  kRef.current = k;
   useEffect(() => {
-    const id = setInterval(() => setK((v) => (v + 1) % FORMATS.length), 2600);
-    return () => clearInterval(id);
+    const h = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      const n = FORMATS.length;
+      if (/^[1-6]$/.test(e.key)) pickRef.current(Number(e.key) - 1);
+      else if (e.key === "ArrowDown") pickRef.current((kRef.current + 1) % n);
+      else if (e.key === "ArrowUp") pickRef.current((kRef.current + n - 1) % n);
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, []);
   const cur = FORMATS[k];
   return (
-    <Statement obj="lg-s23-noface" kicker="Практика 1 · Формат без лица" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.9cqw" leftSize="19cqw"
+    <Statement obj="lg-s23-noface" kicker="Практика 1 · Формат без лица" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.8cqw" leftSize="19cqw"
       left={
         <div className="relative" style={{ width: "13.5cqw", aspectRatio: "9/19" }}>
           <AnimatePresence mode="popLayout">
-            <motion.div key={cur.f} className="absolute inset-0" initial={{ opacity: 0, scale: 0.92, rotateY: -25 }} animate={{ opacity: 1, scale: 1, rotateY: 0 }} exit={{ opacity: 0, scale: 1.04, rotateY: 20 }} transition={{ duration: 0.55, ease: EASE }}>
+            <motion.div key={`${cur.f}-${run}`} className="absolute inset-0" initial={{ opacity: 0, scale: 0.92, rotateY: -25 }} animate={{ opacity: 1, scale: 1, rotateY: 0 }} exit={{ opacity: 0, scale: 1.04, rotateY: 20 }} transition={{ duration: 0.55, ease: EASE }}>
               <Phone video={`/montage/formats/${cur.f}.mp4`} src={`/montage/formats/${cur.f}.jpg`} width="13.5cqw" chrome={false} />
             </motion.div>
           </AnimatePresence>
         </div>
       }>
-      <div className="grid gap-[0.5cqw]" style={{ maxWidth: "34cqw" }}>
+      <style>{`
+        .nf-item { cursor: pointer; text-align: left; width: 100%; transition: background .25s, border-color .25s, transform .2s; }
+        .nf-item:hover:not([aria-pressed="true"]) { background: ${T.card}; border-color: ${T.gold2}88 !important; }
+        .nf-item:active { transform: scale(.985); }
+        .nf-item:focus-visible { outline: 2px solid ${T.gold}; outline-offset: 2px; }
+      `}</style>
+      {/* pointer-events: auto — слой слайда в колоде пропускает клики насквозь, кнопкам их нужно вернуть */}
+      <div className="grid gap-[0.5cqw]" style={{ maxWidth: "34cqw", pointerEvents: "auto" }}>
         {FORMATS.map((f, i) => (
-          <div key={f.f} className="flex items-center gap-[0.9cqw]" style={{ borderRadius: 16, padding: "0.65cqw 1cqw", transition: "background .3s, border-color .3s",
-            background: i === k ? T.card : "transparent", border: `1px solid ${i === k ? T.gold2 : "transparent"}` }}>
+          <button key={f.f} type="button" className="nf-item flex items-center gap-[0.9cqw]" aria-pressed={i === k} aria-label={`Формат ${i + 1}: ${f.t}`}
+            onClick={(e) => { e.stopPropagation(); pick(i); }}
+            style={{ borderRadius: 16, padding: "0.65cqw 1cqw", font: "inherit", background: i === k ? T.card : "transparent", border: `1px solid ${i === k ? T.gold2 : "transparent"}` }}>
             <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: i === k ? T.brown : T.muted }}>{i + 1}</span>
             <span style={{ ...txt, color: i === k ? T.ink : T.muted, fontWeight: i === k ? 700 : 600 }}>{f.t}</span>
-            {f.noFace && <span style={{ marginLeft: "auto", borderRadius: 999, padding: "0.25cqw 0.7cqw", ...goldButton, ...txt, fontSize: "0.75cqw", fontWeight: 700 }}>без лица</span>}
-          </div>
+            {f.noFace && <span style={{ marginLeft: "auto", borderRadius: 999, padding: "0.25cqw 0.7cqw", ...goldButton, ...txt, color: LT.ink, fontSize: "0.75cqw", fontWeight: 700, whiteSpace: "nowrap" }}>без лица</span>}
+          </button>
         ))}
       </div>
       <Note>Голос, графика и персонаж-рассказчик. Кадры моих настоящих роликов</Note>

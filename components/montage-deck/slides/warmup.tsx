@@ -82,7 +82,7 @@ export const Bridge = ({ i, children }: { i: number; children: ReactNode }) => (
  */
 export function M_MyPath() {
   return (
-    <Statement kicker="Хронология" title={<>От таргетолога <Em>до <span style={{ whiteSpace: "nowrap" }}>ИИ-монтажа</span></Em></>} size="2.8cqw">
+    <Statement kicker="Хронология" title={<>От таргетолога <Em><span style={{ whiteSpace: "nowrap" }}>до ИИ-монтажа</span></Em></>} size="2.8cqw">
       <Path dt={0.2} steps={[
         { when: "2017–2023", what: "Таргетолог", text: "Запускал рекламу клиентам" },
         { when: "2023", what: "Начал внедрять ИИ в бизнес", text: "ИИ-менеджеры и автоматизации для клиентов" },

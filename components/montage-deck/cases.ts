@@ -1,7 +1,9 @@
 /**
- * Кейсы для карусели 08c «Что я собрал для бизнеса»: 9 кейсов витрины onai.academy/saint (версия сайта 10, 06.10.2026).
+ * Кейсы для карусели 08c «Что я собрал для бизнеса»: 7 кейсов витрины onai.academy/saint (версия сайта 10, 06.10.2026).
+ * Три платформы обучения (The One System, Erickson Central Asia, onAI Academy) с 07.10 вечером идут отдельным блоком 08p1–08p3
+ * перед каруселью (PLATFORMS ниже) и в карусель не входят: иначе один и тот же кадр шёл бы подряд.
  * ShowToday убран с сайта и из презентации по решению Александра 06.10: работа не состоялась.
- * Erickson убран из презентации по решению Александра 06.10. Diskurs убран с сайта 06.10, из презентации тоже.
+ * Erickson 06.10 был убран, 07.10 вечером Александр вернул его в блок платформ. Diskurs убран с сайта 06.10, из презентации тоже.
  * The One System под NDA: экран входа с основателями не показываем (решение 07.10), остальные экраны платформы можно.
  * Кадры — главные картинки кейсов с сайта (у сайта поле image: <имя>-large.webp, 2400×1500), уменьшены до 1600×1000 в public/montage/cases/.
  * Тексты сжаты из карточек сайта (title, description, proof), цифры только проверенные: фактчек сайта 06.10 и FACTS.md хаба кейсов.
@@ -30,33 +32,13 @@ const shot = (slug: string, demo = false): CaseVisual => ({ kind: "shot", src: `
 
 export const CASES: BizCase[] = [
   {
-    // Срок: 9 недель от первого коммита 03.08 до сдачи 02–03.10.2026 (saint_landing/CASE_SOURCES.md). Роли «Курсант», «Трекер», «Администратор» — это наша работа.
-    slug: "the-one-system",
-    title: "The One System",
-    niche: "Бизнес-школа, Алматы",
-    oneLiner: "Платформа обучения для бизнес-школы за 9 недель",
-    metric: "9 недель разработки · 3 роли · 2 языка",
-    // решение Александра 07.10: на вебинаре не показываем экран входа с основателями, остальные экраны можно; урок с AI-куратором, видео размыто
-    visual: shot("the-one-system-lesson"),
-    url: "onai.academy/saint/cases/the-one-system",
-  },
-  {
-    slug: "onai-academy",
-    title: "onAI Academy",
-    niche: "Моя онлайн-школа",
-    oneLiner: "AI-наставник отвечает ученикам по каждому уроку",
-    // 900+ на платформе со слов Александра 05.10.2026 (318 в FACTS — только с действующим доступом); всего выпускников 1000+ вместе с Discord, это на слайде 08
-    metric: "900+ учеников на платформе · AI-наставник в каждом уроке",
-    visual: shot("onai-academy"),
-    url: "onai.academy/saint/cases/onai-academy",
-  },
-  {
-    // карточка сайта ai-assistant; цифры — срез базы ассистента на 04.10.2026, работает с 06.09.2026
+    // чистовик от сессии «Instagram AI-менеджер», сверен с кодом. Источник цифр: база ассистента и Instagram @saint4ai, 06.09–07.10.2026, срез 07.10 18:20.
+    // Кадр пока прежний (демо-данные), полный кейс ассистента придёт позже
     slug: "ai-assistant",
-    title: "AI-ассистент",
-    niche: "Свой продукт · Instagram",
-    oneLiner: "Комментарий под роликом превращается в заявку",
-    metric: "2 117 человек получили материал · 66 кодовых слов",
+    title: "AI-ассистент Instagram",
+    niche: "Свой продукт · вместо SendPulse и ManyChat",
+    oneLiner: "Раздаёт материалы, помогает в директе, передаёт горячих клиентов",
+    metric: "2 423 получили материал · AI-РОП разобрал 129 разговоров · 16 горячих клиентов",
     visual: shot("ai-assistant", true),
     url: "onai.academy/saint/cases/ai-assistant",
   },
@@ -120,5 +102,87 @@ export const CASES: BizCase[] = [
     metric: "Казахский и русский · сценарий и ответы на возражения",
     visual: shot("voiceseller", true),
     url: "onai.academy/saint/cases/voiceseller",
+  },
+];
+
+/**
+ * Три платформы обучения для слайдов 08p1–08p3 и страницы кейсов 08cs (Александр, 07.10.2026 вечером).
+ * Экраны взяты с живого сайта onai.academy/saint/assets/cases/ и просмотрены глазами: нет экрана входа The One System с основателями,
+ * нет лиц людей и имён курсантов. Файлы в public/montage/cases/: pl-* экраны платформы (компьютер, телефон), page-* страницы кейсов на сайте
+ * (1440×900 и 390×844), logo-* логотипы с сайта. У The One System и Erickson страница кейса снята ниже первого экрана:
+ * наверху у них экран входа с людьми. Факты только с сайта /saint/ (карточки кейсов и страницы кейсов).
+ */
+export type Platform = {
+  slug: string; // страница кейса на сайте: onai.academy/saint/cases/<slug>
+  name: string;
+  line: string; // одна строка: что это
+  facts: { big: string; small: string }[]; // 2–3 проверенных факта
+  logo: string; // файл в public/montage/cases/
+  logoH: number; // высота логотипа на светлой плашке, cqw
+  desk: string; // экран платформы на компьютере
+  mob: string; // экран платформы на телефоне
+  pageDesk: string; // страница кейса на сайте, компьютер
+  pageMob: string; // страница кейса на сайте, телефон
+  demo: boolean; // на экране демо-профиль («Курсант Демонстрация», «Демо Студент»): подписать «демо-данные»
+};
+
+// ?v= — сброс кэша картинок из public (см. выше)
+const img = (name: string) => `/montage/cases/${name}?v=1007`;
+
+export const PLATFORMS: Platform[] = [
+  {
+    // Срок: 9 недель от первого коммита 03.08 до сдачи 02–03.10.2026 (saint_landing/CASE_SOURCES.md). Роли «Курсант», «Трекер», «Администратор» — это наша работа.
+    // Экран: урок с AI-куратором (one-lesson на сайте, видео размыто). Журнал ДЗ (one-journal) не взят: в нём имена курсантов;
+    // one-home и one-mobile-home не взяты: экран входа и главная с фото основателей.
+    slug: "the-one-system",
+    name: "The One System",
+    line: "Платформа обучения для бизнес-школы в Алматы",
+    facts: [
+      { big: "9 недель", small: "разработки" },
+      { big: "3 роли", small: "курсант, трекер, администратор" },
+      { big: "2 языка", small: "русский и казахский" },
+    ],
+    logo: "logo-the-one-system.png",
+    logoH: 4.4,
+    desk: img("pl-one-desk.webp"),
+    mob: img("pl-one-mob.webp"),
+    pageDesk: img("page-one-desk.webp"),
+    pageMob: img("page-one-mob.webp"),
+    demo: true,
+  },
+  {
+    // Факты со страницы кейса /saint/cases/erickson и карточки сайта; 6 групп на 04.10.2026. Экран: диалог с AI-куратором (erickson-curator), на телефоне диалог на казахском.
+    slug: "erickson",
+    name: "Erickson Central Asia",
+    line: "Платформа для коучинговой академии: уроки, практика и менторинг",
+    facts: [
+      { big: "2 месяца", small: "от первого созвона до запуска" },
+      { big: "AI-куратор", small: "на русском и казахском" },
+      { big: "6 групп", small: "учатся (04.10.2026)" },
+    ],
+    logo: "logo-erickson.svg",
+    logoH: 3.4,
+    desk: img("pl-erickson-desk.webp"),
+    mob: img("pl-erickson-mob.webp"),
+    pageDesk: img("page-erickson-desk.webp"),
+    pageMob: img("page-erickson-mob.webp"),
+    demo: true,
+  },
+  {
+    // 1000+ выпускников: слова Александра (900+ на платформе и Discord, слайд 08). Экран: AI-наставник отвечает по уроку (onai-mentor), на телефоне страница урока.
+    slug: "onai-academy",
+    name: "onAI Academy",
+    line: "Моя платформа, где AI-наставник отвечает ученикам по уроку",
+    facts: [
+      { big: "1000+", small: "выпускников" },
+      { big: "AI-наставник", small: "в каждом уроке" },
+    ],
+    logo: "logo-onai-academy.svg",
+    logoH: 2.5,
+    desk: img("pl-onai-desk.webp"),
+    mob: img("pl-onai-mob.webp"),
+    pageDesk: img("page-onai-desk.webp"),
+    pageMob: img("page-onai-mob.webp"),
+    demo: false,
   },
 ];

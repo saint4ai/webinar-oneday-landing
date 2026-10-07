@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
@@ -10,6 +11,7 @@ import { Views } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton, nightCard } from "../theme";
+import { moneyBoth } from "../prices";
 import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, nb, thousands, txt } from "../ui";
 import { DirectPhone } from "./lesson3";
 
@@ -119,15 +121,15 @@ function ResultLine({ delay, children }: { delay: number; children: ReactNode })
 }
 
 /** Каркас цеха: цепочка, кикер, заголовок-обещание, слева превращение, справа доказательство, внизу конвейер уроков. */
-function Shop({ active, kicker, title, visual, side, lessons, conveyorStart }: {
-  active: number; kicker: string; title: ReactNode; visual: ReactNode; side: ReactNode; lessons: string[]; conveyorStart: number;
+function Shop({ active, kicker, title, visual, side, lessons, conveyorStart, visualWidth = "22cqw" }: {
+  active: number; kicker: string; title: ReactNode; visual: ReactNode; side: ReactNode; lessons: string[]; conveyorStart: number; visualWidth?: string;
 }) {
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg />} contentMinWidth={0}>
       <ChainHeader active={active} />
       <Rise><Kicker color={T.accent}>{kicker}</Kicker></Rise>
       <Rise delay={STEP}><H size="2.7cqw" color={T.brown}>{title}</H></Rise>
-      <div className="grid items-center" style={{ gridTemplateColumns: "22cqw minmax(0, 1fr)", gap: "2.4cqw", maxWidth: "54cqw", marginTop: "1.6cqw" }}>
+      <div className="grid items-center" style={{ gridTemplateColumns: `${visualWidth} minmax(0, 1fr)`, gap: "2.4cqw", maxWidth: "54cqw", marginTop: "1.6cqw" }}>
         {visual}
         <div className="min-w-0">{side}</div>
       </div>
@@ -163,7 +165,7 @@ export function M_ShopReel() {
           {["графика", "субтитры", "звук"].map((t, i) => (
             <motion.span key={t} className="absolute" style={{ right: "9.9cqw", top: `${8.4 + i * 3.6}cqw` }}
               initial={{ opacity: 0, x: "-1.6cqw", scale: 0.8 }} animate={{ opacity: 1, x: "0cqw", scale: 1 }} transition={{ delay: 1.2 + i * 0.2, type: "spring", stiffness: 320, damping: 18 }}>
-              <span style={{ display: "inline-block", borderRadius: 999, padding: "0.45cqw 0.95cqw", whiteSpace: "nowrap", ...goldButton, ...unb("0.8cqw") }}>{t}</span>
+              <span style={{ display: "inline-block", borderRadius: 999, padding: "0.45cqw 0.95cqw", whiteSpace: "nowrap", ...goldButton, ...unb("0.8cqw", LT.ink) }}>{t}</span>
             </motion.span>
           ))}
         </div>
@@ -182,54 +184,50 @@ export function M_ShopReel() {
 
 /* ───────────── 36 · Цех «Реклама»: фото → реклама ───────────── */
 
-const PRODUCTS = ["lg-i-box", "lg-s38-piggy", "lg-i-stall"];
+/**
+ * Видеоурок модуля 2 (public/montage/lessons/ai-creator-lesson.mp4, 16:9, 2 мин 17 с, со звуком): в окне браузера, запускается по клику ведущего.
+ * Клик и кнопка слайды не листают (stopPropagation), звук включён, автозапуска нет. Слой слайда пропускает клики насквозь, поэтому pointer-events: auto.
+ */
+function LessonPlayer() {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const toggle = () => {
+    const v = ref.current;
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+  };
+  return (
+    <motion.div initial={{ opacity: 0, y: "2cqw", scale: 0.97 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }} transition={{ delay: 0.25, duration: 0.5, ease: EASE }} style={{ width: "100%", pointerEvents: "auto" }}>
+      <div style={{ ...card, borderRadius: 18, overflow: "hidden", boxShadow: T.shadow }}>
+        <div className="flex items-center" style={{ gap: "0.4cqw", padding: "0.6cqw 0.9cqw", background: T.night2 }}>
+          {[T.gold, T.brownLt, T.nightMuted].map((c) => <span key={c} style={{ width: "0.6cqw", height: "0.6cqw", borderRadius: 99, background: c }} />)}
+        </div>
+        <div className="relative" style={{ aspectRatio: "16 / 9", background: "#000" }}>
+          <video ref={ref} src="/montage/lessons/ai-creator-lesson.mp4" poster="/montage/lessons/ai-creator-lesson.jpg" preload="metadata" playsInline
+            onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
+            className="absolute inset-0 h-full w-full" style={{ objectFit: "contain", background: "#000" }} />
+          <button type="button" aria-label={playing ? "Пауза" : "Воспроизвести видеоурок"} aria-pressed={playing}
+            onClick={(e) => { e.stopPropagation(); toggle(); }}
+            className="absolute inset-0 flex items-center justify-center" style={{ cursor: "pointer", background: playing ? "transparent" : "rgba(10,8,7,.28)", border: 0, padding: 0, transition: "background .25s" }}>
+            {!playing && (
+              <span className="flex items-center justify-center" style={{ width: "5cqw", height: "5cqw", borderRadius: 999, ...goldButton, boxShadow: `0 1cqw 2.4cqw -0.8cqw ${T.gold2}` }}>
+                <svg viewBox="0 0 24 24" style={{ width: "2cqw", height: "2cqw", marginLeft: "0.25cqw" }} fill={LT.ink}><path d="M8 5v14l11-7z" /></svg>
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+      <div style={{ ...txt, fontSize: "0.95cqw", color: T.muted, marginTop: "0.6cqw" }}>Урок из модуля AI-креатор: видео для бизнеса</div>
+    </motion.div>
+  );
+}
 
 export function M_ShopAd() {
-  // Веер фото товара слева остаётся на месте (это вход), их копии по очереди влетают в телефон справа (это выход)
-  const fan = [{ x: 0, y: 5.2, r: -9 }, { x: 2.7, y: 3.8, r: 0 }, { x: 5.3, y: 5.4, r: 9 }];
-  const W = 5.4; // ширина полароида, cqw
-  const target = { x: 16.6, y: 9.6 }; // центр экрана телефона в координатах блока, cqw
   return (
     <Shop active={1} kicker="Модуль 2 · AI-креатор · 5 уроков, около часа" title={<>Реклама товара из фото, <Em>без камеры и студии</Em></>} conveyorStart={1.7}
       lessons={["Сценарий и два кадра", "Движение между кадрами", "Реклама по шаблону", "Предметная motion-реклама", "Сборка и копия голоса"]}
-      visual={
-        <div className="relative" style={{ width: "22cqw", height: "20.6cqw" }}>
-          {fan.map((f, i) => (
-            <motion.div key={i} className="absolute" style={{ left: `${f.x}cqw`, top: `${f.y}cqw`, width: `${W}cqw`, padding: "0.3cqw 0.3cqw 0.95cqw", background: LT.paper, borderRadius: 6,
-              boxShadow: "0 1cqw 2cqw -1cqw rgba(42,33,28,.35)", border: `1px solid ${T.line}`, zIndex: i === 1 ? 3 : 2 }}
-              initial={{ opacity: 0, y: "1.5cqw", rotate: f.r * 2 }} animate={{ opacity: 1, y: "0cqw", rotate: f.r }}
-              transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 170, damping: 15 }}>
-              <div style={{ aspectRatio: "1", background: LT.card, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                <img src={`/montage/lego/${PRODUCTS[i]}.webp`} alt="" style={{ width: "86%", height: "auto" }} />
-              </div>
-            </motion.div>
-          ))}
-          <div className="absolute" style={{ left: "1.6cqw", top: "13.4cqw", ...txt, fontSize: "0.85cqw", color: T.muted }}>3 фото товара</div>
-          {fan.map((f, i) => (
-            <motion.img key={`fly-${i}`} src={`/montage/lego/${PRODUCTS[i]}.webp`} alt="" className="absolute" style={{ left: `${f.x + W / 2 - 1.5}cqw`, top: `${f.y + W / 2 - 1.5}cqw`, width: "3cqw", zIndex: 5 }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 1, 1, 0], x: ["0cqw", "0cqw", `${target.x - f.x - W / 2}cqw`, `${target.x - f.x - W / 2}cqw`], y: ["0cqw", "-0.6cqw", `${target.y - f.y - W / 2}cqw`, `${target.y - f.y - W / 2}cqw`], scale: [0.7, 1, 0.6, 0.3] }}
-              transition={{ delay: 0.75 + i * 0.18, duration: 0.85, times: [0, 0.2, 0.8, 1], ease: EASE }} />
-          ))}
-          <motion.div className="absolute" style={{ right: 0, top: 0 }} initial={{ opacity: 0, y: "2.4cqw", scale: 0.94 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 120, damping: 16 }}>
-            <PhoneFrame width="10.8cqw">
-              <div className="absolute" style={{ left: "6%", top: "4%", zIndex: 2, borderRadius: 999, padding: "0.25cqw 0.6cqw", ...goldButton, ...unb("0.62cqw") }}>9:16</div>
-              <motion.div className="absolute inset-0 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.35, duration: 0.5 }}>
-                <motion.img src="/montage/lego/lg-i-box.webp" alt="Товар в рекламном ролике" style={{ width: "78%", height: "auto", filter: "drop-shadow(0 1.2cqw 1.4cqw rgba(42,33,28,.3))" }}
-                  animate={{ scale: [1, 1.12, 1], y: ["0%", "-3%", "0%"] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
-              </motion.div>
-              <motion.div className="absolute inset-0" style={{ background: `linear-gradient(105deg, transparent 35%, ${GOLD(0.4)} 50%, transparent 65%)`, backgroundSize: "260% 100%" }}
-                initial={{ backgroundPosition: "160% 0" }} animate={{ backgroundPosition: ["160% 0", "-60% 0"] }} transition={{ delay: 1.5, duration: 1.4, repeat: Infinity, repeatDelay: 2.2 }} />
-              <motion.div className="absolute flex items-center" style={{ left: "8%", right: "8%", bottom: "5%", gap: "0.4cqw", borderRadius: 12, padding: "0.35cqw 0.5cqw", background: "rgba(20,16,14,.82)" }}
-                initial={{ opacity: 0, y: "0.6cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 1.6, duration: 0.35, ease: EASE }}>
-                <Wave bars={12} height="1.2cqw" />
-                <span style={{ ...txt, fontSize: "0.6cqw", color: T.nightText, whiteSpace: "nowrap" }}>ваш голос</span>
-              </motion.div>
-            </PhoneFrame>
-          </motion.div>
-        </div>
-      }
+      visualWidth="30cqw" visual={<LessonPlayer />}
       side={
         <>
           {["Копия вашего голоса для озвучки", "Ролики на заказ для клиентов"].map((t, i) => (
@@ -254,7 +252,7 @@ const LEAD_MSGS = [
 ];
 
 export function M_ShopLead() {
-  const leads = useCountUp(101, 1, 1.0);
+  const leads = useCountUp(Number(RESULTS.inquiries.total), 1, 1.0);
   return (
     <Shop active={2} kicker="Модуль 3 · Ассистенты и автоматизация · 5 уроков" title={<>Ролик приводит заявку, <Em>агент отвечает в директе</Em></>} conveyorStart={2.0}
       lessons={["Вайбкодинг в личных делах", "ИИ-менеджер в WhatsApp и Instagram", "Автоматизация процессов", "Документы и презентации", "Контент-завод целиком"]}
@@ -282,8 +280,8 @@ export function M_ShopLead() {
       side={
         <>
           <motion.div initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.9, duration: 0.4, ease: EASE }}>
-            <Num size="4.4cqw" color={T.brown}>{String(leads)}</Num>
-            <div style={{ ...txt, fontSize: "1cqw", color: T.muted, marginTop: "0.5cqw" }}>обращение за 30 дней в моём директе</div>
+            <Num size="4.4cqw" color={T.brown}>{thousands(leads)}</Num>
+            <div style={{ ...txt, fontSize: "1cqw", color: T.muted, marginTop: "0.5cqw" }}>человек написали в директ за 30 дней</div>
           </motion.div>
           <ResultLine delay={1.7}>Результат: воронка от ролика до заявки</ResultLine>
         </>
@@ -300,29 +298,57 @@ const FOR_YOU: [string, string, string][] = [
   ["Хочу брать заказы на монтаж", "Заказы на монтаж", "lg-i-laptopcoins"],
 ];
 
+/**
+ * 37w · Карточки стоят лицом «Кто вы» (вопрос опроса 03). Автоматического переворота нет: ведущий переворачивает карточку кликом или цифрой 1–4,
+ * повторный клик возвращает вопрос. Цифры общая колода не использует (SlideDeck слушает ← → пробел PageUp PageDown Home End F S), клик слайды не листает.
+ */
 export function M_ForYou() {
+  const [open, setOpen] = useState<boolean[]>(() => FOR_YOU.map(() => false));
+  const flip = (i: number) => setOpen((o) => o.map((v, j) => (j === i ? !v : v)));
+  const flipRef = useRef(flip);
+  flipRef.current = flip;
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (!/^[1-4]$/.test(e.key)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      flipRef.current(Number(e.key) - 1);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
   const face: CSSProperties = { position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", borderRadius: 24 };
   return (
     <Statement kicker="Вспомните ответ в начале" title={<>Что даст обучение <Em>именно вам</Em></>} size="2.7cqw">
-      <div className="grid grid-cols-2 gap-[1cqw]" style={{ maxWidth: "54cqw" }}>
+      <style>{`
+        .fy-card[aria-pressed="false"]:hover .fy-front, .fy-card[aria-pressed="true"]:hover .fy-back { outline: 1.5px solid ${T.gold2}; outline-offset: -1.5px; }
+        .fy-card:focus-visible { outline: 2px solid ${T.gold}; outline-offset: 4px; border-radius: 24px; }
+      `}</style>
+      {/* pointer-events: auto — слой слайда в колоде пропускает клики насквозь, карточкам-кнопкам их нужно вернуть */}
+      <div className="grid grid-cols-2 gap-[1cqw]" style={{ maxWidth: "54cqw", pointerEvents: "auto" }}>
         {FOR_YOU.map(([q, a, ic], i) => (
-          <motion.div key={q} initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.25 + i * STEP, duration: 0.4, ease: EASE }}
-            style={{ height: "9cqw", perspective: "80cqw" }}>
+          <motion.button key={q} type="button" className="fy-card" aria-pressed={open[i]} aria-label={`${i + 1}. ${q}`}
+            onClick={(e) => { e.stopPropagation(); flip(i); }}
+            initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.25 + i * STEP, duration: 0.4, ease: EASE }}
+            style={{ display: "block", width: "100%", height: "9cqw", perspective: "80cqw", padding: 0, border: 0, background: "none", font: "inherit", color: "inherit", textAlign: "left", cursor: "pointer" }}>
             <motion.div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }}
-              initial={{ rotateY: 0 }} animate={{ rotateY: 180 }} transition={{ delay: 0.9 + i * 0.35, duration: 0.65, ease: EASE }}>
+              initial={false} animate={{ rotateY: open[i] ? 180 : 0 }} transition={{ duration: 0.7, ease: EASE }}>
               {/* Лицо: как на слайде 03 */}
-              <div className="flex items-center" style={{ ...face, ...card, gap: "1.2cqw", padding: "1.2cqw 1.6cqw" }}>
+              <div className="fy-front flex items-center" style={{ ...face, ...card, gap: "1.2cqw", padding: "1.2cqw 1.6cqw" }}>
                 <span style={{ ...unb("4.6cqw", T.brown), fontVariantNumeric: "tabular-nums", minWidth: "3.4cqw" }}>{i + 1}</span>
                 <Px name={ic} size="4.4cqw" bob={false} delay={0.3 + i * STEP} />
                 <span style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", lineHeight: 1.3 }}>{q}</span>
               </div>
               {/* Оборот: результат */}
-              <div className="flex flex-col justify-center" style={{ ...face, transform: "rotateY(180deg)", background: GOLD(0.16), border: `1.5px solid ${T.gold2}`, padding: "1.1cqw 1.6cqw", boxShadow: T.shadowSm }}>
+              <div className="fy-back flex flex-col justify-center" style={{ ...face, transform: "rotateY(180deg)", background: GOLD(0.16), border: `1.5px solid ${T.gold2}`, padding: "1.1cqw 1.6cqw", boxShadow: T.shadowSm }}>
                 <span style={unb("0.8cqw", T.brownLt)}>{i + 1} · {q}</span>
                 <span style={{ ...txt, fontWeight: 700, fontSize: "1.3cqw", lineHeight: 1.3, marginTop: "0.5cqw" }}>{a}</span>
               </div>
             </motion.div>
-          </motion.div>
+          </motion.button>
         ))}
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.5, duration: 0.5 }}>
@@ -334,7 +360,7 @@ export function M_ForYou() {
 
 /* ───────────── 37v · Сами или с обучением (паттерн Slide_130_WithVsWithout в бренде колоды) ───────────── */
 
-const SOLO = ["Месяцами учите CapCut и Premiere", "Вечер уходит на один ролик", `Монтажёру ${nb("10 000 ₸")} за каждый ролик`, "Застряли, спросить некого"];
+const SOLO = ["Месяцами учите CapCut и Premiere", "Вечер уходит на один ролик", `Монтажёру ${moneyBoth(10000)} за каждый ролик`, "Застряли, спросить некого"];
 const COURSE = ["Готовый движок: 9 стилей и 6 форматов", "Ролик собирает агент, вы утверждаете кадры", "План на 30 роликов в месяц", "Разбор работ в общем чате потока"];
 
 export function M_SoloVsCourse() {
