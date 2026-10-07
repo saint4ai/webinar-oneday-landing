@@ -19,6 +19,7 @@ const CARD_IDS = [
   "warm-edits", "warm-cases", "topic-p1", "topic-p2", "topic-p3", "training", "offer",
   // карточки рассылки: до эфира, в эфире, последний звонок
   "reg-bonus", "live-bonus", "t-minus-10", "live-now", "last-call",
+  "offer-bundle",
 ];
 const what = process.argv[2] || "all";
 // Третий аргумент: снять только перечисленные карточки, остальные не перезаписывать.
