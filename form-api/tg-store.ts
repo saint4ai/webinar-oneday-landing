@@ -49,8 +49,11 @@ export type SubEvent =
   | { type: "paid"; chat_id: number; by: "self" | "owner"; ts: string }
   | { type: "rejoin"; chat_id: number; streamDay: string; ts: string };
 
-/** Кому адресовано сообщение серии: всем, нажавшим / не нажавшим ссылку на эфир (за день D), не оплатившим. */
-export type Audience = "all" | "clicked" | "notClicked" | "notPaid";
+/**
+ * Кому адресовано сообщение серии: всем, нажавшим / не нажавшим ссылку на эфир (за день D), не оплатившим,
+ * нажавшим на эфир и не оплатившим (дожим на следующий день: были на эфире, но не купили).
+ */
+export type Audience = "all" | "clicked" | "notClicked" | "notPaid" | "clickedNotPaid";
 
 export type SentEntry = { msg: string; day: string; chat_id: number; ts: string; ok: boolean; err?: string };
 
@@ -456,6 +459,7 @@ export class TgStore {
     if (aud === "clicked") return this.clicks.has(TgStore.clickKey(s.chatId, day));
     if (aud === "notClicked") return !this.clicks.has(TgStore.clickKey(s.chatId, day));
     if (aud === "notPaid") return !s.paid;
+    if (aud === "clickedNotPaid") return this.clicks.has(TgStore.clickKey(s.chatId, day)) && !s.paid;
     return true;
   }
 

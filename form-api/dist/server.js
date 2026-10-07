@@ -863,6 +863,7 @@ var TgStore = class _TgStore {
     if (aud === "clicked") return this.clicks.has(_TgStore.clickKey(s.chatId, day));
     if (aud === "notClicked") return !this.clicks.has(_TgStore.clickKey(s.chatId, day));
     if (aud === "notPaid") return !s.paid;
+    if (aud === "clickedNotPaid") return this.clicks.has(_TgStore.clickKey(s.chatId, day)) && !s.paid;
     return true;
   }
   saveState() {
@@ -1625,7 +1626,7 @@ var DEFAULT_BIZON = "https://start.bizon365.ru/room/196985/BguY0kXF-l";
 var DEFAULT_REJOIN_ACK = "\u0413\u043E\u0442\u043E\u0432\u043E, \u0441\u0441\u044B\u043B\u043A\u0443 \u043F\u0440\u0438\u0448\u043B\u044E \u0441\u044E\u0434\u0430 \u0432 19:50.";
 var OTHER_THROTTLE_MS = 10 * 6e4;
 var SEEN_UPDATES = 1e3;
-var AUDIENCES = ["all", "clicked", "notClicked", "notPaid"];
+var AUDIENCES = ["all", "clicked", "notClicked", "notPaid", "clickedNotPaid"];
 var LINK_KEYS = ["bizon", "manager", "managerName", "whatsapp", "whatsappPhone", "pay", "prepayKz", "prepayIntl", "cases", "game", "template"];
 var TEXT_VARS = ["hi", "dayWord", "dayWordLower", "TEMPLATE"];
 var URL_VARS = ["STREAM", "PAY", "PREPAY_KZ", "PREPAY_INTL", "MANAGER", "CASES", "GAME", "WHATSAPP_TEMPLATE"];
@@ -1662,8 +1663,11 @@ function checkText(s, where) {
   checkHtml(s, where);
 }
 function checkMedia(m, where) {
-  if (!isObj(m) || m.type !== "photo" && m.type !== "video" || typeof m.url !== "string" || !/^https:\/\//.test(m.url)) {
-    throw new Error(`${where}: media \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C { type: photo|video, url: https://... }`);
+  if (!isObj(m) || m.type !== "photo" && m.type !== "video" && m.type !== "document" || typeof m.url !== "string" || !/^https:\/\//.test(m.url)) {
+    throw new Error(`${where}: media \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C { type: photo|video|document, url: https://... }`);
+  }
+  if (m.type === "document" && !/^https:\/\/[^\s?#]+\.pdf$/i.test(m.url)) {
+    throw new Error(`${where}: \u0443 media document \u0430\u0434\u0440\u0435\u0441 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C https \u0438 \u043E\u043A\u0430\u043D\u0447\u0438\u0432\u0430\u0442\u044C\u0441\u044F \u043D\u0430 .pdf`);
   }
   if (m.poster !== void 0 && typeof m.poster !== "string") throw new Error(`${where}: poster \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0439`);
   for (const k of ["width", "height", "duration"]) {
@@ -2028,8 +2032,9 @@ async function sendText(chatId, html, markup, silent, prio = "hi") {
 async function sendMedia(chatId, media, caption, markup, silent, prio) {
   const st = getStore();
   const isVideo = media.type === "video";
-  const method = isVideo ? "sendVideo" : "sendPhoto";
-  const field = isVideo ? "video" : "photo";
+  const isDoc = media.type === "document";
+  const method = isVideo ? "sendVideo" : isDoc ? "sendDocument" : "sendPhoto";
+  const field = isVideo ? "video" : isDoc ? "document" : "photo";
   const cachedRef = st.getMedia(media.url);
   const cachedCover = isVideo && media.poster ? st.getMedia(media.poster) : void 0;
   const attempts = [[cachedRef ?? media.url, cachedCover ?? media.poster]];
@@ -2059,7 +2064,7 @@ async function sendMedia(chatId, media, caption, markup, silent, prio) {
   }
   if (r.ok) {
     if (used[0] === media.url) {
-      const id = isVideo ? r.result?.video?.file_id : largest(r.result?.photo);
+      const id = isVideo ? r.result?.video?.file_id : isDoc ? r.result?.document?.file_id : largest(r.result?.photo);
       if (id) st.setMedia(media.url, id);
     }
     if (isVideo && media.poster && used[1] === media.poster) {
@@ -2096,9 +2101,14 @@ async function notifyOwnersHtml(text, markup) {
   return delivered;
 }
 var mediaWarned = /* @__PURE__ */ new Set();
-async function warnMedia(url, error) {
+async function warnMedia(media, error) {
+  const url = media.url;
   if (mediaWarned.has(url)) return;
   mediaWarned.add(url);
+  if (media.type === "document") {
+    await notifyOwners(`\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F \u0444\u0430\u0439\u043B ${url}: ${error || "\u043E\u0448\u0438\u0431\u043A\u0430"}. \u0428\u043B\u044E \u0442\u043E\u0442 \u0436\u0435 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043D\u0435\u0433\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
+    return;
+  }
   await notifyOwners(`\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0430\u0441\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0438\u043B\u0438 \u0432\u0438\u0434\u0435\u043E ${url}: ${error || "\u043E\u0448\u0438\u0431\u043A\u0430"}. \u0428\u043B\u044E \u0442\u043E\u0442 \u0436\u0435 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
 }
 async function sendContent(c, ctx, opts = {}) {
@@ -2112,7 +2122,7 @@ async function sendContent(c, ctx, opts = {}) {
   if (isGone(m)) return m;
   console.warn("[tg] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", c.media.url, m.error);
   noteRuntime("mediaFallback", { info: c.media.url });
-  void warnMedia(c.media.url, m.error);
+  void warnMedia(c.media, m.error);
   return sendText(ctx.chatId, html, kb, c.silent, prio);
 }
 function noteSendResult(chatId, r, now) {
@@ -2371,7 +2381,13 @@ function onMemberUpdate(u, now) {
   if (status === "kicked" && !sub.blocked) st.recordEvent({ type: "blocked", chat_id: u.chat.id, ts });
   else if (status === "member" && sub.blocked) st.recordEvent({ type: "unblocked", chat_id: u.chat.id, ts });
 }
-var AUD_LABEL = { all: "\u0432\u0441\u0435", clicked: "\u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C", notClicked: "\u043D\u0435 \u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C", notPaid: "\u043D\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u0432\u0448\u0438\u043C" };
+var AUD_LABEL = {
+  all: "\u0432\u0441\u0435",
+  clicked: "\u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C",
+  notClicked: "\u043D\u0435 \u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C",
+  notPaid: "\u043D\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u0432\u0448\u0438\u043C",
+  clickedNotPaid: "\u0431\u044B\u043B\u0438 \u043D\u0430 \u044D\u0444\u0438\u0440\u0435, \u043D\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B\u0438"
+};
 var payloadGroup = (payload) => payload.split("_")[0] || "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438";
 var pct2 = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
 function buildDayTable(st, sr, now) {
