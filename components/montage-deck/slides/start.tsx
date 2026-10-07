@@ -172,7 +172,7 @@ export function M_About() {
         <Num size="3cqw" color={T.brown}>1000+</Num>
         <div style={{ ...label, fontSize: "1cqw", color: T.muted, fontWeight: 500 }}>выпускников за два года по внедрению ИИ в бизнес</div>
       </Rise>
-      <Note style={{ marginTop: "0.9cqw" }}>Профиль Instagram на 26 сентября 2026</Note>
+      <Note style={{ marginTop: "0.9cqw" }}>Профиль Instagram на 7 октября 2026</Note>
     </SlideLayout>
   );
 }
