@@ -53,7 +53,7 @@ const MainStat = ({ value, label, size }: { value: Stat | string; label: string;
     <div style={{ marginTop: "1.4cqw" }}><ExtrudedNumber value={typeof value === "string" ? value : fmtStat(value)} label={label} size={size} accent={NUM_ACCENT} /></div>
   );
 
-/** 22r · 30 дней: что смонтировал агент. Цифры и подписи — RESULTS.montage (срез 4 октября, три площадки). */
+/** 22r · За месяц: что смонтировал агент. Цифры и подписи — RESULTS.montage (срез 4 октября, три площадки). */
 export function M_ResultMontage() {
   const r = RESULTS.montage;
   return (
@@ -136,7 +136,7 @@ export function M_ViralReels({ shots = [] }: { shots?: (string | undefined)[] })
 export function M_Growth30({ shots = [] }: { shots?: (string | undefined)[] }) {
   const g = RESULTS.growth;
   return (
-    <Statement kicker="Результаты · 30 дней" title={<>{nbsp(RESULTS.totalViews)} просмотров <Em>на трёх площадках</Em></>} size="2.6cqw">
+    <Statement kicker="Результаты · месяц" title={<>Около {nbsp(RESULTS.totalViews)} просмотров <Em><span style={{ whiteSpace: "nowrap" }}>за месяц</span></Em></>} size="2.6cqw">
       <div className="grid items-center gap-[1.4cqw]" style={{ gridTemplateColumns: "repeat(3, 10.4cqw) minmax(0, 1fr)", maxWidth: "54cqw" }}>
         {g.platforms.map((p, i) => (
           <In key={p.file} i={i}>

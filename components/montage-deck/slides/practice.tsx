@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import { ScreenStage3D } from "../fx";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton } from "../theme";
-import { Arrow, Card, EASE, Em, Fill, MaskIcon, Note, Px, Stagger, txt } from "../ui";
+import { Arrow, Card, EASE, Em, MaskIcon, Note, Px, Stagger, txt } from "../ui";
 
 /**
  * Практики 2 и 3 эфира 6 октября (режиссура 04.10: монтаж → презентации → сайты и приложения).
  * Практика 3 перенесена из прошлого воркшопа по вайбкодингу (Deck60, слайды 71–79) в бренд сайтов.
- * Всё в левых 60% кадра. Чего нет в фактах — [в скобках] через <Fill>, дописывает Александр.
+ * Всё в левых 60% кадра. На 07.10 заглушек в скобках на этих слайдах нет: чего нет в фактах, в текст не ставим (ревью А3, А4).
  */
 
 const inUp = (i: number, base = 0.3) => ({
@@ -42,24 +42,25 @@ function Flow({ items }: { items: { icon: string; title: string; text: string }[
 /** P2 · Как устроено: бриф → шаблон и правила → готовый файл. */
 export function M_DocsHow() {
   return (
-    <Statement kicker="Практика 2 · как устроено" title={<>Бриф словами — на выходе <Em>готовый файл</Em></>} size="2.8cqw"
+    <Statement kicker="Практика 2 · как устроено" title={<>Бриф словами, на выходе <Em>готовый файл</Em></>} size="2.8cqw"
       lead="Агент работает в папке проекта: там ваши образцы, логотип и стиль.">
       <Flow items={[
         { icon: "lg-i-chatkey", title: "Бриф", text: "Голосом или текстом: кто клиент, что продаём, сроки и цена" },
-        { icon: "lg-i-cards", title: "Шаблон и правила", text: "Образцы презентаций, бренд, тон — один раз в папке проекта" },
+        { icon: "lg-i-cards", title: "Шаблон и правила", text: "Образцы презентаций, бренд и тон лежат в папке проекта один раз" },
         { icon: "lg-i-laptopfilm", title: "Готовый файл", text: "Презентация в PDF" },
       ]} />
-      <Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Агент готовит черновик — финальную правку делаете вы.</Note>
+      <Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Агент готовит черновик, финальную правку делаете вы.</Note>
     </Statement>
   );
 }
 
 /** P2 · Пример документа, который собрал агент: скрин на плите, рядом — что было на входе и на выходе. */
 export function M_DocsExample({ shot }: { shot?: string }) {
+  // Слайд p2b вне показа 07.10 (MontageDeck.tsx): без скрина results/doc-example.png на плите пустое место. Тексты по ревью А3
   const rows: [string, React.ReactNode][] = [
-    ["На входе", <Fill key="in">бриф: что было сказано агенту</Fill>],
-    ["На выходе", <Fill key="out">презентация, сколько слайдов</Fill>],
-    ["Время", <Fill key="t">сколько минут вместо часов</Fill>],
+    ["На входе", "бриф словами"],
+    ["На выходе", "презентация в PDF"],
+    ["Время", "покажу по таймеру на эфире"],
   ];
   return (
     <Statement kicker="Практика 2 · пример" title={<>Документ, который <Em>собрал агент</Em></>} size="2.8cqw">
@@ -84,8 +85,8 @@ export function M_DocsExample({ shot }: { shot?: string }) {
 export function M_DocsLive() {
   const items = ["Коммерческое предложение", "Презентация продукта"];
   return (
-    <Statement obj="lg-i-cards" objSize="7cqw" kicker="Практика 2 · вживую" title={<>Сейчас соберу <Em>по брифу из чата</Em></>} size="3cqw"
-      lead="В своём настроенном чате. Повторяйте за мной.">
+    <Statement obj="lg-i-cards" objSize="7cqw" kicker="Практика 2 · вживую" title={<>Сейчас соберу <Em>по готовому брифу</Em></>} size="3cqw"
+      lead="В настроенном чате. Смотрите, как идёт работа.">
       <div className="flex flex-wrap gap-[0.7cqw]" style={{ maxWidth: "50cqw" }}>
         {items.map((t, i) => (
           <motion.div key={t} {...inUp(i)} style={{ ...(i === items.length - 1 ? goldButton : card), borderRadius: 999, padding: "0.9cqw 1.6cqw",
@@ -101,7 +102,7 @@ export function M_DocsLive() {
 /** P3 · Один продукт вживую: приложение и сайт к нему (было «Три продукта прямо в эфире», Deck60). */
 export function M_AppsBuilds() {
   const b = [
-    { icon: "lg-i-phones", title: "Приложение Bloom", sub: "Семейный трекер привычек", text: "Вся семья и дети, награды и серии — по детальному ТЗ", tool: "google", toolName: "Google AI Studio" },
+    { icon: "lg-i-phones", title: "Приложение Bloom", sub: "Семейный трекер привычек", text: "Семья, дети, награды и серии по детальному ТЗ", tool: "google", toolName: "Google AI Studio" },
     { icon: "lg-i-laptopfilm", title: "Сайт под Bloom", sub: "Лендинг с анимациями", text: "Промо-страница приложения в том же бренде", tool: "claude", toolName: "Claude Code" },
   ];
   return (
@@ -149,7 +150,7 @@ export function M_AIStudio() {
           <div className="flex flex-col items-center justify-center gap-[0.8cqw]" style={{ height: "17cqw", background: T.paper }}>
             <MaskIcon name="google" color={T.brown} size="3cqw" />
             <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.4cqw", color: T.brown }}>AI Studio</div>
-            <div style={{ ...txt, fontSize: "0.9cqw", color: T.muted }}>Опишите приложение — оно соберётся</div>
+            <div style={{ ...txt, fontSize: "0.9cqw", color: T.muted }}>Опишите приложение, и оно соберётся</div>
           </div>
         </motion.div>
       </div>
@@ -162,7 +163,7 @@ export function M_AppBrief() {
   const f = [
     ["Вся семья", "родители и дети, роли и доступы, вход по коду"],
     ["Привычки и цели", "свои привычки у каждого и общие цели семьи"],
-    ["Игра", "серии, очки, награды от родителей — без давления"],
+    ["Игра", "серии, очки и награды от родителей без давления"],
     ["Дизайн", "светлая и тёмная тема, тёплая палитра"],
     ["Напоминания", "по времени, ненавязчиво"],
     ["Безопасно детям", "детский режим проще, контроль у родителя"],
@@ -187,7 +188,7 @@ export function M_AppBrief() {
 export function M_AppStart() {
   return (
     <Statement obj="lg-i-rocket" objSize="8cqw" kicker="Практика 3 · вживую" title={<>Приступаем: <Em>рабочее приложение</Em> с нуля</>} size="3.2cqw"
-      lead="Собираю на ваших глазах. Повторяйте за мной." />
+      lead="Собираю на ваших глазах. Повторить сможете сами по урокам." />
   );
 }
 
@@ -196,7 +197,7 @@ export function M_AppNext() {
   return (
     <Statement kicker="Практика 3 · дальше" title={<>Что делать <Em>с приложением</Em></>} size="3cqw">
       <div className="grid grid-cols-3 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
-        {[["Пользоваться самому", "экономить время или решать свою задачу"], ["Выложить в Google Play", "пользователи и подписки — доход сверху"], ["Продавать как сервис", "компаниям под их задачи"]].map(([t, d], i) => (
+        {[["Пользоваться самому", "экономить время или решать свою задачу"], ["Выложить в Google Play", "пользователи и подписки"], ["Продавать как сервис", "компаниям под их задачи"]].map(([t, d], i) => (
           <motion.div key={t} {...inUp(i)} style={{ height: "100%" }}><Card no={`0${i + 1}`} title={t} text={d} accent={i === 2} style={{ height: "100%" }} /></motion.div>
         ))}
       </div>
@@ -204,32 +205,8 @@ export function M_AppNext() {
   );
 }
 
-/** P3 · Сколько это стоит на рынке: две полосы растут, студийная — длиннее. Цифры — из прошлого воркшопа, в [скобках] до актуальных от Александра; frac полос подогнать под новые цифры. */
-export function M_MarketPrice() {
-  const bars = [
-    { label: "Вы собрали сами", value: "300–800 тыс ₸", sub: "за заказ", frac: 0.45, color: T.gold },
-    { label: "Студия", value: "от 1,5 млн ₸", sub: "за то же самое", frac: 1, color: T.brown },
-  ];
-  return (
-    <Statement kicker="Практика 3 · деньги" title={<>Сколько такое <Em>стоит на рынке</Em></>} size="3cqw"
-      lead={<>Вы делаете то же самое <Fill>в 2–3 раза</Fill> дешевле студии и <Fill>за дни, а не месяцы</Fill>.</>}>
-      <div className="grid gap-[1.2cqw]" style={{ maxWidth: "50cqw" }}>
-        {bars.map((b, i) => (
-          <div key={b.label}>
-            <div className="flex items-baseline justify-between" style={{ ...txt, fontWeight: 700, fontSize: "1.05cqw" }}>
-              <span>{b.label}</span>
-              <span style={{ fontFamily: "var(--font-unbounded)", fontSize: "1.5cqw", color: i ? T.brown : T.gold2 }}><Fill>{b.value}</Fill> <span style={{ ...txt, fontSize: "0.85cqw", color: T.muted }}>{b.sub}</span></span>
-            </div>
-            <div style={{ marginTop: "0.5cqw", height: "1.6cqw", borderRadius: 99, background: `${T.brown}14`, overflow: "hidden" }}>
-              <motion.div initial={{ width: "0%" }} animate={{ width: `${b.frac * 100}%` }} transition={{ delay: 0.5 + i * 0.25, duration: 0.9, ease: EASE }}
-                style={{ height: "100%", borderRadius: 99, background: i ? `linear-gradient(90deg, ${T.brownLt}, ${T.brown})` : `linear-gradient(90deg, ${T.gold}, ${T.gold2})` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </Statement>
-  );
-}
+/* P3 · «Сколько такое стоит на рынке» (p3f) убрано 07.10, ревью А4: цены 300–800 тыс ₸ и 1,5 млн ₸ без источника, заглушки в скобках,
+   слайд противоречил «Доход не обещаю» на 37w. Старый код в истории git. */
 
 /** P3 · Если нужен сайт или сервис: Claude Code, Cursor, Lovable. */
 export function M_WebApps() {
@@ -249,22 +226,13 @@ export function M_WebApps() {
   );
 }
 
-/** P3 · Главный вывод: было — команда на полгода, стало — один человек с ИИ за неделю. Цифры — из прошлого воркшопа, в [скобках] до актуальных от Александра. */
+/** P3 · Главный вывод: только проверяемое. Раньше было «5 человек × 6 месяцев → 1 человек × 1 неделя» с заглушками в скобках (ревью А4, 07.10). */
 export function M_MainConclusion() {
   return (
-    <Statement kicker="Главный вывод" title={<>Что делала команда, <Em>делает один человек с ИИ</Em></>} size="2.8cqw">
-      <div className="flex items-center gap-[1.4cqw]">
-        <motion.div {...inUp(0)} style={{ ...card, borderRadius: 22, padding: "1.2cqw 1.4cqw" }}>
-          <div style={{ ...txt, fontSize: "0.85cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.muted }}>Раньше</div>
-          <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.45cqw", whiteSpace: "nowrap", color: T.muted, marginTop: "0.4cqw", textDecoration: "line-through", textDecorationColor: `${T.brown}88` }}><Fill>5 человек × 6 месяцев</Fill></div>
-        </motion.div>
-        <motion.div initial={{ opacity: 0, x: "-0.8cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ delay: 0.6, duration: 0.35, ease: EASE }}><Arrow size="2cqw" /></motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8, type: "spring", stiffness: 180, damping: 14 }}
-          style={{ ...goldButton, borderRadius: 22, padding: "1.2cqw 1.4cqw" }}>
-          <div style={{ ...txt, fontSize: "0.85cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: LT.ink }}>Сейчас</div>
-          <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.45cqw", whiteSpace: "nowrap", color: LT.ink, marginTop: "0.4cqw" }}><Fill>1 человек × 1 неделя</Fill></div>
-        </motion.div>
-      </div>
+    <Statement kicker="Практика 3" title={<>Главный <Em>вывод</Em></>} size="3.2cqw">
+      <motion.div {...inUp(0)} style={{ ...card, border: `1.5px solid ${T.gold2}`, borderRadius: 22, padding: "1.6cqw 2cqw", maxWidth: "46cqw" }}>
+        <div style={{ ...txt, fontWeight: 700, fontSize: "1.9cqw", lineHeight: 1.35 }}>Приложение и сайт собираются <span style={{ color: T.brownLt, whiteSpace: "nowrap" }}>из описания</span>, а не из кода</div>
+      </motion.div>
     </Statement>
   );
 }
@@ -273,9 +241,9 @@ export function M_MainConclusion() {
 export function M_DeckByAgent() {
   return (
     <Statement tone="night" kicker="И последнее" title={<>Эту презентацию тоже <Em night>собрали агенты</Em></>} size="3cqw"
-      lead="Тексты, вёрстку, анимации и графику — по моим словам. Как и ролик, которым мы открыли эфир. Я правил и утверждал.">
-      {/* Мост к продаже 2 (волна 3): приложение из практики 3 — это модуль 3 Vibe Production */}
-      <Note color={T.nightMuted} style={{ marginTop: 0, fontSize: "1.1cqw", maxWidth: "44cqw" }}>Приложения и документы под свои задачи: модуль 3 Vibe Production, автоматизации на вайбкодинге.</Note>
+      lead="Тексты, вёрстку, анимации и графику собрали агенты по моим словам, как и ролик, которым мы открыли эфир. Я правил и утверждал.">
+      {/* Мост к продаже: приложения и документы под свои задачи дают модуль 3 Vibe Production и Vibe Coding PRO (ревью Б10, 07.10), дальше блок v1–v6 */}
+      <Note color={T.nightMuted} style={{ marginTop: 0, fontSize: "1.1cqw", maxWidth: "44cqw" }}>Приложения и документы под свои задачи: модуль 3 Vibe Production и Vibe Coding PRO</Note>
     </Statement>
   );
 }

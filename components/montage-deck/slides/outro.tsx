@@ -48,11 +48,11 @@ const Chip = ({ children, gold = false }: { children: ReactNode; gold?: boolean 
 );
 
 /** Карточка с заголовком и строкой пояснения. */
-const Tile = ({ title, text, icon, i }: { title: ReactNode; text: ReactNode; icon?: string; i: number }) => (
+const Tile = ({ title, text, icon, i }: { title: ReactNode; text?: ReactNode; icon?: string; i: number }) => (
   <In i={i} style={{ ...card, borderRadius: 18, padding: "0.9cqw 1cqw" }}>
     {icon && <Px name={icon} size="2.6cqw" bob={false} delay={0.3 + i * STEP} style={{ marginBottom: "0.4cqw" }} />}
     <div style={{ ...txt, fontWeight: 800, fontSize: "1cqw", color: T.ink }}>{title}</div>
-    <div style={{ ...txt, fontWeight: 500, fontSize: "0.82cqw", color: T.muted, marginTop: "0.25cqw", lineHeight: 1.35 }}>{text}</div>
+    {text && <div style={{ ...txt, fontWeight: 500, fontSize: "0.82cqw", color: T.muted, marginTop: "0.25cqw", lineHeight: 1.35 }}>{text}</div>}
   </In>
 );
 
@@ -112,7 +112,7 @@ export function M_ServicesOffer() {
 export function M_GameCommunity() {
   const podium = [{ n: 2, h: "5cqw" }, { n: 1, h: "7cqw" }, { n: 3, h: "3.8cqw" }];
   return (
-    <Statement kicker="Комьюнити вайбкодеров" title={<>Играй и <Em>учись бесплатно</Em></>} size="2.7cqw"
+    <Statement kicker="Комьюнити вайбкодеров" title={<>Играй и <Em>получай скидку</Em></>} size="2.7cqw"
       lead="Token Runner в Telegram: игру мы сделали как комьюнити для вайбкодеров. За игру дают скидку на обучение.">
       <Row qr={<Qr src="/montage/qr-game.svg" alt="QR-код: игра Token Runner в Telegram" caption="t.me/tokenrunner_bot" sub="Игра в Telegram, старт за минуту" />}>
         <div className="grid items-end" style={{ gridTemplateColumns: "15cqw minmax(0, 1fr)", gap: "1.6cqw" }}>
@@ -128,7 +128,8 @@ export function M_GameCommunity() {
           </In>
           <div className="grid" style={{ gap: "0.5cqw" }}>
             <Tile i={1} title="Каждую неделю топ-3 получают модули бесплатно" text="Трое, кто набрал больше всех баллов" />
-            <Tile i={2} title="Нет возможности купить обучение?" text="Играй и забирай его бесплатно" />
+            {/* ревью Б7, 07.10: «играй и забирай бесплатно» противоречило продаже; бесплатно только топ-3, остальным скидка */}
+            <Tile i={2} title={<>Остальным скидка {nb("−10 000 ₸")}</>} />
           </div>
         </div>
       </Row>

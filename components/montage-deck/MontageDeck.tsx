@@ -7,7 +7,8 @@
  * практика 2 презентация по брифу → практика 3 приложения и сайты → продажа 2 → финал.
  * План: projects/ai_montage_webinar/РЕЖИССУРА_воркшоп_06-10.md. Режиссура v2: docs/deck-v2/РЕЖИССУРА.md.
  * Слайд 56: клавиши 0–5 — сколько мест из пяти уже занято. Слайд 00: Enter — старт интро-ролика со звуком.
- * [Скобки] на слайдах — пропуски, их дописывает Александр до эфира.
+ * [Скобки] на слайдах — пропуски, их дописывает Александр до эфира. На 07.10 в показе их нет (ревью deck-review-0710.md).
+ * 07.10: между p3i и 51 блок Vibe Coding PRO v1–v6 (slides/vcpro.tsx, цены в prices.ts); слова в чат: ГАЙД (07, 58), МОНТАЖ, ПРО, ДВА.
  * 10v, 10g, 10i, 22r — результаты: цифры в results.ts, скрины в public/montage/results/ (shots — какие файлы уже лежат).
  */
 import { SlideDeck } from "@/components/sales-deck/SlideDeck";
@@ -25,7 +26,8 @@ import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides
 import { M_CodeWordFlow, M_Plan30, M_Thanks } from "./slides/lesson3";
 import { M_Blog, M_GameCommunity, M_Instagram, M_ServicesOffer, M_TeamTraining } from "./slides/outro";
 import { M_IntroVideo } from "./slides/intro";
-import { M_DocsHow, M_DocsExample, M_DocsLive, M_AppsBuilds, M_AIStudio, M_AppBrief, M_AppStart, M_AppNext, M_MarketPrice, M_WebApps, M_MainConclusion, M_DeckByAgent } from "./slides/practice";
+import { M_DocsHow, M_DocsLive, M_AppsBuilds, M_AIStudio, M_AppBrief, M_AppStart, M_AppNext, M_WebApps, M_MainConclusion, M_DeckByAgent } from "./slides/practice";
+import { M_VcWho, M_VcProgram, M_VcTariffs, M_VcBundle, M_VcChoose, M_VcBook } from "./slides/vcpro";
 
 /** Файлы из public/montage/, которые page.tsx нашёл на диске. Нет файла — на слайде пунктирное место. */
 export type Shots = { intro?: string; doc?: string; growth?: (string | undefined)[]; viral?: (string | undefined)[] };
@@ -44,7 +46,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
       options={["Ни одного", "От 1 до 3", "От 4 до 10", "Больше 10"]} icons={["lg-i-hourglass", "lg-i-clapper", "lg-i-calfilm", "lg-i-rocket"]} />,
     <M_Program key="05" />,
     <M_Promise key="06" />,
-    <M_Guides key="07" kicker="Бонус за досмотр" title={"Досмотрите до конца: три\u00A0гайда"} lead="Выдам в конце эфира по слову МОНТАЖ." />,
+    <M_Guides key="07" kicker="Бонус за досмотр" title={"Досмотрите до конца: три\u00A0гайда"} lead="Выдам в конце эфира по слову ГАЙД." />,
     // Кто я, хронология и результаты · 7 мин
     <M_About key="08" />,
     <M_MyPath key="08w" />,
@@ -91,21 +93,30 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_SixMonths key="40" />,
     <M_HowToBook key="41" />,
     // Практика 2 · презентация по брифу · 10 мин
-    <M_Chapter key="p2" big="2" obj="lg-i-cards" kicker="Практика 2 из 3" title="Презентация по брифу" sub="Бриф словами — на выходе презентация в вашем стиле" />,
+    <M_Chapter key="p2" big="2" obj="lg-i-cards" kicker="Практика 2 из 3" title="Презентация по брифу" sub="Бриф словами, на выходе презентация в вашем стиле" />,
     <M_DocsHow key="p2a" />,
-    <M_DocsExample key="p2b" shot={shots.doc} />,
+    // p2b M_DocsExample убран 07.10 (ревью А3): скрина public/montage/results/doc-example.png нет, на слайде была бы пустая плита.
+    // Вернуть: импортировать M_DocsExample и вставить <M_DocsExample key="p2b" shot={shots.doc} /> после p2a
     <M_DocsLive key="p2c" />,
     // Практика 3 · сайты и приложения (из прошлого воркшопа) · 12 мин
-    <M_Chapter key="p3" big="3" obj="lg-i-phones" kicker="Практика 3 из 3" title="Приложение и сайт из описания" sub="Google AI Studio и Claude Code — собираю вживую" />,
+    <M_Chapter key="p3" big="3" obj="lg-i-phones" kicker="Практика 3 из 3" title="Приложение и сайт из описания" sub="Google AI Studio и Claude Code: покажу, как это собирается" />,
     <M_AppsBuilds key="p3a" />,
     <M_AIStudio key="p3b" />,
     <M_AppBrief key="p3c" />,
     <M_AppStart key="p3d" />,
     <M_AppNext key="p3e" />,
-    <M_MarketPrice key="p3f" />,
+    // p3f «Сколько такое стоит» убран 07.10 (ревью А4): цены без источника, заглушки в скобках, противоречит «Доход не обещаю» на 37w
     <M_WebApps key="p3g" />,
     <M_MainConclusion key="p3h" />,
     <M_DeckByAgent key="p3i" />,
+    // Блок Vibe Coding PRO и два курса вместе · 4 мин (07.10): для кого, программа, тарифы, пакет, выбор, как занять место
+    // Слова в чат: МОНТАЖ, ПРО, ДВА. Цены в prices.ts: PRO_PRICE меняется одной строкой. Тексты: docs/copy/deck-block-vcpro.md
+    <M_VcWho key="v1" />,
+    <M_VcProgram key="v2" />,
+    <M_VcTariffs key="v3" />,
+    <M_VcBundle key="v4" />,
+    <M_VcChoose key="v5" />,
+    <M_VcBook key="v6" />,
     // Окно продаж 2 · 8 мин
     <M_Chapter key="51" big="Решение" bigSize="9cqw" kicker="Vibe Production" title="Остался один шаг" sub="Коротко повторю главное и отвечу на сомнения" />,
     <M_Inaction key="52" />,
@@ -116,7 +127,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_FinalCTA key="57" />,
     <M_GameBonus key="57g" />,
     // Финал · 2 мин
-    <M_Guides key="58" kicker="Обещанное" title="Забирайте три гайда" lead="Напишите МОНТАЖ в чат." />,
+    <M_Guides key="58" kicker="Обещанное" title="Забирайте три гайда" lead="Напишите ГАЙД в чат." />,
     // Финал перед прощанием (Александр 06.10): обучение для компаний, внедрение, игра, блог, Instagram — у каждого свой QR
     <M_TeamTraining key="o1" />,
     <M_ServicesOffer key="o2" />,

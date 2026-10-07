@@ -46,7 +46,7 @@ export const CASES: BizCase[] = [
     niche: "Моя онлайн-школа",
     oneLiner: "AI-наставник отвечает ученикам по каждому уроку",
     // 900+ на платформе со слов Александра 05.10.2026 (318 в FACTS — только с действующим доступом); всего выпускников 1000+ вместе с Discord, это на слайде 08
-    metric: "900+ учеников · 113 уроков · 595 вопросов наставнику",
+    metric: "900+ учеников на платформе · AI-наставник в каждом уроке",
     visual: shot("onai-academy"),
     url: "onai.academy/saint/cases/onai-academy",
   },
@@ -85,8 +85,9 @@ export const CASES: BizCase[] = [
     slug: "ai-targetolog",
     title: "AI-Таргетолог",
     niche: "Свой продукт · реклама FB и IG",
-    oneLiner: "Видно, какая реклама приносит продажи",
-    metric: "Собрал за 3 месяца · отчёт в Telegram каждое утро",
+    // решение Александра 06.10: AI-Таргетолог это замена специалиста, а не отчёт; формулировка из ревью Б8 07.10. Клиентов называть можно (RocketGo, NNN Detailing, KardanKraft), их цифры нельзя
+    oneLiner: "Сам запускает рекламу, управляет кампаниями и присылает отчёты",
+    metric: "Собрал за 3 месяца",
     visual: shot("ai-targetolog", true),
     url: "onai.academy/saint/cases/ai-targetolog",
   },

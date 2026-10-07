@@ -9,7 +9,7 @@ import { ReelRail } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { GLASS, LT, T, card, glass, goldButton } from "../theme";
-import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, at, nb, thousands } from "../ui";
+import { Arrow, EASE, Em, H, Kicker, Lead, Note, Num, Px, RISE_DUR, Rise, STEP, Stagger, at, nb, thousands } from "../ui";
 
 const label: React.CSSProperties = { fontFamily: "var(--font-manrope)", fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.35, color: T.ink };
 const inUp = (i: number, base = 0.28) => ({ initial: { opacity: 0, y: "1cqw" }, animate: { opacity: 1, y: "0cqw" }, transition: { delay: at(i, base), duration: RISE_DUR, ease: EASE } });
@@ -53,7 +53,7 @@ export function M_Poll({ kicker, title, lead, options, icons }: { kicker: string
 export function M_Program() {
   const lessons = [
     ["Практика 1", "Монтирую рилс вживую, без знаний монтажа", "lg-i-clapper"],
-    ["Практика 2", "Презентация по брифу из чата", "lg-i-cards"],
+    ["Практика 2", "Презентация по брифу, как это делает агент", "lg-i-cards"],
     ["Практика 3", "Приложение и сайт из одного описания", "lg-i-phones"],
   ];
   return (
@@ -192,9 +192,10 @@ export function M_CostStory() {
           .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(2) { color: ${T.muted} !important; }
           .glass-fx > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) { background: linear-gradient(160deg, rgba(42,33,28,.92), rgba(20,16,14,.95)) !important; border: 1px solid ${T.gold2}66; }
         `}</style>}
-        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Было бы: монтажёр · 150 роликов по 10 000 ₸, мой темп 5 роликов в день" }}
+        <CostDrop3D from={{ value: nb("1 500 000 ₸"), label: "Если платить за ролик: 150 по 10 000 ₸ = 1 500 000 ₸" }}
           to={{ value: "$200", label: "Стало: подписка Claude Max · 150 роликов в месяц" }} />
       </div>
+      <Stagger i={6} base={2.6}><Note style={{ marginTop: "1cqw", maxWidth: "50cqw" }}>Начать можно с подписки Claude от $20 в месяц. У меня Claude Max за $200: его хватает на 150 роликов в месяц</Note></Stagger>
     </Statement>
   );
 }
@@ -208,9 +209,9 @@ export function M_Proof15() {
   const perDay = useCountUp(5, 0.9, 0.3);
   const views = useCountUp(RESULTS.totalViewsNum, 1.3, 0.35);
   return (
-    <Statement kicker="Моя статистика" title={<>30 дней: {nb(RESULTS.totalViews)} просмотров</>} lead="Рилсы собирает ИИ-агент — каждый сразу выходит в Instagram, TikTok и YouTube." size="2.8cqw">
+    <Statement kicker="Моя статистика" title={<>30 дней: {nb(RESULTS.totalViews)} просмотров</>} lead="Рилсы собирает ИИ-агент, и каждый сразу выходит в Instagram, TikTok и YouTube." size="2.8cqw">
       <div className="flex items-stretch gap-[1cqw]">
-        {[[String(perDay), "рилсов в день — сейчас"], [nb(`${views} тыс.`), "просмотров в Instagram, TikTok и YouTube"]].map(([v, l], i) => (
+        {[[String(perDay), "рилсов в день сейчас"], [nb(`${views} тыс.`), "просмотров в Instagram, TikTok и YouTube"]].map(([v, l], i) => (
           <motion.div key={l} {...inUp(i, 0.22)} style={{ ...card, padding: "1cqw 1.6cqw" }}>
             <Num size="3.4cqw" color={T.brown}>{v}</Num>
             <div style={{ ...label, color: T.muted, marginTop: "0.4cqw" }}>{l}</div>

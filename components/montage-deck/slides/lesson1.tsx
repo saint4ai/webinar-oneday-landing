@@ -36,7 +36,7 @@ export function M_Bottleneck() {
 /** 13 · Вакансия монтажёра: цена крупно. */
 export function M_Vacancy() {
   return (
-    <Statement obj="lg-s13-editor" kicker="Сколько стоит монтажёр" title={<>Монтажёр на CapCut: <Em>от {nb("300 000 ₸")}</Em> в месяц</>} size="3.1cqw">
+    <Statement obj="lg-s13-editor" kicker="Сколько стоит монтажёр" title={<>Монтажёр на окладе: <Em>от {nb("300 000 ₸")}</Em> в месяц</>} size="3.1cqw">
       <div className="grid grid-cols-2 gap-[1cqw]" style={{ maxWidth: "50cqw" }}>
         <Stagger i={0} style={{ ...card, padding: "1.4cqw 1.6cqw" }}>
           <div style={{ ...txt, color: T.accent, fontSize: "0.85cqw", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" }}>Вакансия · hh.kz</div>
@@ -85,7 +85,7 @@ export function M_ThreeSeconds() {
         <Row i={0} label="Пролистали меньше 46%" value={nb("4 816")} pct={100} strong />
         <Row i={1} label="Пролистали больше 46%" value={nb("1 098")} pct={23} />
       </div>
-      <Note>Мои 14 рилсов на 19 сентября 2026. Разница в охвате — в 4 раза</Note>
+      <Note>Мои 14 рилсов на 19 сентября 2026. Разница в охвате: в 4 раза</Note>
     </Statement>
   );
 }

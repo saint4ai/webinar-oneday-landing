@@ -8,8 +8,9 @@ import { ExtrudedNumber } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
+import { BUNDLE_PRICE, PRO_SOLO_PRICE, SEPARATE_PRICE, money } from "../prices";
 import { NUM_ACCENT, LT, T, card, goldButton, goldText, pricePlate } from "../theme";
-import { Card, DrawLine, EASE, Em, Fill, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
+import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, at, nb, thousands, txt } from "../ui";
 
 /** Чип-условие: золотая рамка на светлом золоте. */
 export const GoldChip = ({ children, size = "0.95cqw" }: { children: React.ReactNode; size?: string }) => (
@@ -54,10 +55,11 @@ export const Struck = ({ children, delay, size = "2.4cqw", color = T.muted }: { 
 /* ─────────────── Переход к продаже ─────────────── */
 
 /**
- * 30 ✦ · Один рилс: 116 тыс. просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом.
- * Рилс «4 умных коннектора для Claude» (06.09): счётчик профессиональной панели Instagram на 5 октября, как на плитке 10v
- * (Александр 05.10: на слайдах цифры панели; в приложении 118 тыс., по API 117 178). Раньше на телефоне крутился другой рилс,
- * «Четыре подключения» от 25.09 (около 24 тыс.), а число 107 237 (на 26 сентября) по величине принадлежит этому, 06.09 (проверить по источнику).
+ * 30 ✦ · Один рилс: 118 тыс. просмотров. Объёмная цифра докручивается, рядом телефон с этим рилсом.
+ * Рилс «4 умных коннектора для Claude» (06.09): счётчик приложения Instagram на 5 октября, как на телефоне рядом (ревью 07.10, Б1:
+ * на слайде одна цифра, раньше было 116 тыс. из панели при 118 тыс. на телефоне). На плитке 10v у этого рилса 116 тыс. из панели
+ * статистики, там это подписано; по API 117 178. Раньше на телефоне крутился другой рилс, «Четыре подключения» от 25.09 (около 24 тыс.),
+ * а число 107 237 (на 26 сентября) по величине принадлежит этому, 06.09 (проверить по источнику).
  */
 export function M_Case107() {
   return (
@@ -67,7 +69,7 @@ export function M_Case107() {
           <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" views={nb("118 тыс.")} caption="4 умных коннектора для Claude" width="13.5cqw" showTop={false} />
         </motion.div>
       }>
-      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("116 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" accent={NUM_ACCENT} /></div>
+      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("118 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" accent={NUM_ACCENT} /></div>
       <Stagger i={4} base={0.6}><Lead style={{ marginTop: "2cqw", maxWidth: "34cqw" }}>Я записал видео, агент собрал графику, анимацию, субтитры и звук по моим правкам.</Lead></Stagger>
       <Note>Статистика Instagram на 5 октября 2026</Note>
     </Statement>
@@ -88,7 +90,7 @@ export function M_Want() {
 /** 32 · Кто выпустит первый ролик на этой неделе. Спокойный, один тезис. */
 export function M_WhoFirst() {
   return (
-    <Statement obj="lg-s32-hand" kicker="Честно" title={<>Кто выпустит первый ролик <Em>на этой неделе</Em>?</>} size="3cqw"
+    <Statement obj="lg-s32-hand" kicker="Что нужно для первого ролика" title={<>Кто выпустит первый ролик <Em>на этой неделе</Em>?</>} size="3cqw"
       lead="Первый ролик на этой неделе отличает тех, у кого получится. Напишите +, если готовы. Дальше покажу обучение, а потом урок 3: как просмотр сам становится заявкой." />
   );
 }
@@ -169,7 +171,7 @@ export function M_Anchor() {
         {/* Полная цена 250 000 ₸; цена участникам эфира 150 000 ₸ — следующим слайдом 39а (Александр, 04.10) */}
         <PricePlate delay={1.2} label="Vibe Production · полная цена" value={`${thousands(b)} ₸`} sub="Оплата один раз. Доступ к урокам 3 месяца, навык и конвейер остаются у вас" />
       </div>
-      <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц, Claude Max за $200 в месяц — хватает на 150 роликов. Список покажу дальше</Note></Stagger>
+      <Stagger i={6} base={1.6}><Note style={{ marginTop: "1.2cqw", maxWidth: "50cqw" }}>Плюс подписки на сервисы: на старт около $51 в месяц. Начать можно с подписки Claude от $20 в месяц. У меня Claude Max за $200: его хватает на 150 роликов в месяц. Список покажу дальше</Note></Stagger>
     </Statement>
   );
 }
@@ -207,8 +209,8 @@ export function M_Installments() {
 export function M_Discount() {
   const after = useCountUp(150000, 1, 1.3);
   return (
-    <Statement kicker="Только для участников эфира" title={<>Ваша цена — <Em>{nb("150 000 ₸")}</Em></>} size="3cqw"
-      lead="Вы здесь, вы смотрите практику вживую — для вас цена ниже. Напишите МОНТАЖ в чат, менеджер закрепит её за вами.">
+    <Statement kicker="Только для участников эфира" title={<>Ваша цена: <Em>{nb("150 000 ₸")}</Em></>} size="3cqw"
+      lead="Вы здесь и смотрите практику вживую, поэтому для вас цена ниже. Напишите МОНТАЖ в чат, менеджер закрепит её за вами.">
       <div className="flex items-center gap-[1.2cqw]">
         <Stagger i={0}>
           <div style={{ ...txt, fontSize: "0.9cqw", color: T.muted }}>Полная цена</div>
@@ -275,7 +277,7 @@ export function M_HowToBook() {
         <motion.div className="inline-flex" animate={{ boxShadow: [`0 0 0 0cqw ${T.gold}66`, `0 0 0 1cqw ${T.gold}00`] }} transition={{ delay: 1.2, duration: 1.6, repeat: Infinity, ease: "easeOut" }}
           style={{ ...goldButton, borderRadius: 999, padding: "1cqw 2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.2cqw" }}>МОНТАЖ в чат</motion.div>
       </Stagger>
-      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {nb("10 000 ₸")} входит в цену обучения. Остаток до <Fill>дата доплаты</Fill>. После эфира писать <Fill>куда</Fill></Note></Stagger>
+      <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {nb("10 000 ₸")} входит в цену обучения. Остаток вам пришлёт менеджер вместе со ссылкой. Вопросы: Telegram @futleid, WhatsApp {nb("+7 708 583 4575")}</Note></Stagger>
     </Statement>
   );
 }
@@ -285,7 +287,7 @@ export function M_HowToBook() {
 /** 52 · Цена бездействия: один тезис, под ним год из 52 недель, недели без роликов гаснут. */
 export function M_Inaction() {
   return (
-    <Statement kicker="Посчитайте" title={<>Сколько роликов вы <Em>не выпустили</Em> за этот год?</>} size="3.2cqw" lead="Вспомните ответ на опрос в начале. От 0 до 3 роликов в месяц — это до 36 за год. При 30 в месяц было бы 360. И сколько заявок с них не пришло.">
+    <Statement kicker="Посчитайте" title={<>Сколько роликов вы <Em>не выпустили</Em> за этот год?</>} size="3.2cqw" lead="Вспомните ответ на опрос в начале. От 0 до 3 роликов в месяц это до 36 за год. При 30 в месяц было бы 360. И сколько заявок с них не пришло.">
       <div className="grid gap-[0.35cqw]" style={{ gridTemplateColumns: "repeat(13, 1.6cqw)" }}>
         {Array.from({ length: 52 }, (_, i) => (
           <motion.div key={i} initial={{ opacity: 0, scale: 0.4, backgroundColor: T.gold }} animate={{ opacity: [0, 1, 1], scale: [0.4, 1, 1], backgroundColor: [T.gold, T.gold, T.card] }}
@@ -306,11 +308,13 @@ export function M_OneScreen() {
         {mods.map(([no, t, d, ic], i) => <Stagger key={no} i={i}><Card icon={ic} no={no} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
       </div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
-        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} вместо ${nb("250 000 ₸")} — участникам эфира`, `или от ${nb("6 250 ₸")} в месяц`, "первым 5 броням — 6 месяцев доступа"].map((c, i) => (
+        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${nb("150 000 ₸")} вместо ${nb("250 000 ₸")} для участников эфира`, `или от ${nb("6 250 ₸")} в месяц`, "первым 5 броням 6 месяцев доступа"].map((c, i) => (
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
         <Stagger i={8}><GoldChip>Разбор работ в общем чате потока</GoldChip></Stagger>
       </div>
+      {/* пакет двух курсов (07.10): отдельной строкой внизу, цены из prices.ts */}
+      <Stagger i={9} style={{ marginTop: "0.9cqw" }}><GoldChip size="1.1cqw">Оба курса вместе: {money(BUNDLE_PRICE)} вместо {money(SEPARATE_PRICE)}</GoldChip></Stagger>
     </Statement>
   );
 }
@@ -323,7 +327,7 @@ export function M_Doubts() {
     ["А если не залетит", "Охват не гарантирует никто. Есть данные первых 3 секунд и пробные рилсы.", "lg-i-phonearrow"],
   ];
   return (
-    <Statement kicker="Честные ответы" title={<>Три <Em>сомнения</Em></>} size="3.2cqw">
+    <Statement kicker="Три ответа" title={<>Три <Em>сомнения</Em></>} size="3.2cqw">
       <div className="grid grid-cols-3 gap-[1cqw]" style={{ maxWidth: "56cqw", perspective: "80cqw" }}>
         {d.map(([q, a, ic], i) => (
           <motion.div key={q} initial={{ opacity: 0, rotateY: -70 }} animate={{ opacity: 1, rotateY: 0 }} transition={{ delay: 0.35 + i * 0.12, duration: 0.6, ease: EASE }} style={{ transformOrigin: "left center" }}>
@@ -335,11 +339,11 @@ export function M_Doubts() {
   );
 }
 
-/** 55 · Подписки честно: строки по очереди, итог золотом. */
+/** 55 · Что ещё понадобится: подписки строками по очереди, итог золотом. */
 export function M_Subscriptions() {
   const rows = [["Claude Pro", "агент-монтажёр, модули 1 и 3", "$20"], ["Higgsfield", "реклама из фото", "$15"], ["SYNTX", "кадры и движение", "около $10"], ["ElevenLabs", "копия голоса", "$6"]];
   return (
-    <Statement kicker="Без сюрпризов" title={<>Что ещё понадобится, <Em>честно</Em></>} size="2.8cqw">
+    <Statement kicker="Без сюрпризов" title={<>Что ещё <Em>понадобится</Em></>} size="2.8cqw">
       <Stagger i={0} style={{ ...card, borderRadius: 22, padding: "1.2cqw 1.6cqw", maxWidth: "44cqw" }}>
         {rows.map(([n, d, p], i) => (
           <motion.div key={n} className="flex items-baseline gap-[1cqw]" initial={{ opacity: 0, x: "-1cqw" }} animate={{ opacity: 1, x: "0cqw" }}
@@ -354,7 +358,8 @@ export function M_Subscriptions() {
           <span style={{ marginLeft: "auto" }}><Num size="1.8cqw" color={T.brown}>около $51 в месяц</Num></span>
         </motion.div>
       </Stagger>
-      <Note>Claude Max за $200 в месяц — хватает на 150 роликов. Цены на 26 сентября 2026</Note>
+      <Note>Claude Max за $200 в месяц хватает на 150 роликов. Цены на 26 сентября 2026</Note>
+      <Note style={{ marginTop: "0.3cqw" }}>Для Vibe Coding PRO нужна подписка Claude от $20 в месяц</Note>
     </Statement>
   );
 }
@@ -371,7 +376,7 @@ export function M_Slots() {
   return (
     <Statement kicker="Условие эфира" title={<>Доступ 6 месяцев:<br />осталось <motion.span key={left} initial={{ opacity: 0, y: "-0.6cqw" }} animate={{ opacity: 1, y: "0cqw" }}
       style={{ display: "inline-block", color: T.brownLt, fontVariantNumeric: "tabular-nums" }}>{left}</motion.span>{" из 5"}</>} size="3cqw"
-      lead="Шестой получит стандартные 3 месяца доступа.">
+      lead="Доступ 6 месяцев первым 5 броням Vibe Production. Шестой получит стандартные 3 месяца доступа.">
       <div className="flex gap-[1cqw]">
         {Array.from({ length: 5 }, (_, i) => {
           const isTaken = i < taken;
@@ -405,6 +410,17 @@ export function M_FinalCTA() {
           </Stagger>
         ))}
       </div>
+      {/* слова для двух других выборов (07.10): под МОНТАЖ и его условиями, цены из prices.ts */}
+      <div className="flex flex-wrap gap-[0.8cqw]" style={{ marginTop: "1.5cqw", maxWidth: "52cqw" }}>
+        {([["ПРО", `от ${money(PRO_SOLO_PRICE)}`], ["ДВА", money(BUNDLE_PRICE)]] as const).map(([w, p], i) => (
+          <Stagger key={w} i={i} base={0.95}>
+            <span className="flex items-baseline" style={{ ...card, border: `1.5px solid ${T.gold2}`, borderRadius: 20, padding: "0.8cqw 1.4cqw", gap: "0.7cqw" }}>
+              <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.5cqw", lineHeight: 1, ...goldText }}>{w}:</span>
+              <span style={{ ...txt, fontWeight: 700, fontSize: "1.2cqw" }}>{p}</span>
+            </span>
+          </Stagger>
+        ))}
+      </div>
     </SlideLayout>
   );
 }
@@ -412,8 +428,8 @@ export function M_FinalCTA() {
 /** 57g ✦ · Бонус за игру: QR на Token Runner, код из игры снимает ещё 10 000 ₸. */
 export function M_GameBonus() {
   return (
-    <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру — ещё <Em><span style={{ whiteSpace: "nowrap" }}>{nb("−10 000 ₸")}</span></Em></>} size="3cqw"
-      lead={<>Игра Token Runner в Telegram. Пройди 3 испытания — получишь код: Vibe Production за {nb("140 000 ₸")} вместо {nb("150 000 ₸")}.</>}>
+    <Statement kicker="Бонус участникам эфира" title={<>Пройди мою игру и получи ещё <Em><span style={{ whiteSpace: "nowrap" }}>{nb("−10 000 ₸")}</span></Em></>} size="3cqw"
+      lead={<>Игра Token Runner в Telegram. Пройди 3 испытания и получишь код: Vibe Production за {nb("140 000 ₸")} вместо {nb("150 000 ₸")}.</>}>
       <Stagger i={0}>
         {/* плита QR остаётся белой: тёмные модули на стекле камера не прочитает */}
         <div style={{ ...card, background: LT.paper, borderRadius: 22, padding: "1cqw", width: "13cqw" }}>
