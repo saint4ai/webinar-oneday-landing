@@ -16,6 +16,9 @@
 html,body{background:var(--night);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Manrope',system-ui,sans-serif;color:var(--cream);font-size:16pt;line-height:1.4;font-weight:500;-webkit-font-smoothing:antialiased}
 .nb{white-space:nowrap}
+.usd{display:block;font-family:'Manrope',sans-serif;font-weight:800;font-size:16pt;line-height:1.2;letter-spacing:0;color:var(--cream);opacity:.88;margin-top:1.5mm;white-space:nowrap}
+.usdi{white-space:nowrap;font-weight:700}
+h1 .usdi{font-size:28pt;font-family:'Manrope',sans-serif;letter-spacing:0;color:var(--cream)}
 
 /* страница: одна секция = один лист A4 альбомный; шапка сверху, содержимое .stage по центру оставшегося места, подвал внизу */
 .page{position:relative;width:297mm;height:210mm;overflow:hidden;padding:17mm 24mm 0;display:flex;flex-direction:column;background-color:var(--night);background-size:100% 100%;background-repeat:no-repeat;break-after:page;page-break-after:always}
@@ -338,7 +341,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
     <h1 class="big">Два курса<br><em>вместе</em></h1>
     <p class="sub" style="max-width:150mm">Vibe Production<br>и Vibe Coding PRO<br>с кураторами</p>
     <div class="stats"><div class="stat"><b>13</b>модулей</div><div class="stat"><b>51</b>урок</div></div>
-    <p class="lead">Пакет <b class="nb">390&nbsp;000&nbsp;₸</b> до 23:59 по Алматы на следующий день после эфира.</p>
+    <p class="lead">Пакет <b class="nb">390&nbsp;000&nbsp;₸</b> <span class="usdi">(≈&nbsp;$871)</span> до 23:59 по Алматы на следующий день после эфира.</p>
   </div>
   <img class="obj" src="img/obj-cards.png" style="right:12mm;top:42mm;width:108mm" alt="">
   <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">01</span></footer>
@@ -398,21 +401,21 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
 <section class="page bgA">
   <div style="max-width:200mm">
     <div class="kick"><i></i>Цена пакета</div>
-    <h1><span class="nb">390&nbsp;000&nbsp;₸</span> и <em class="nb">50&nbsp;900&nbsp;₸</em> экономии</h1>
-    <p class="lead">Production и Vibe Coding PRO с кураторами вместо <span class="nb">440&nbsp;900&nbsp;₸</span>.</p>
+    <h1><span class="nb">390&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$871)</span> и <em class="nb">50&nbsp;900&nbsp;₸</em> <span class="usdi">(≈&nbsp;$114)</span> экономии</h1>
+    <p class="lead">Production и Vibe Coding PRO с кураторами вместо <span class="nb">440&nbsp;900&nbsp;₸</span> <span class="usdi">(≈&nbsp;$984)</span>.</p>
   </div>
   <img class="obj" src="img/obj-piggy.png" style="right:24mm;top:12mm;width:50mm" alt="">
   <div class="stage">
     <div class="sum">
-      <div><div class="v">150&nbsp;000&nbsp;₸</div><div class="l">Vibe Production</div></div>
+      <div><div class="v">150&nbsp;000&nbsp;₸<span class="usd">≈&nbsp;$335</span></div><div class="l">Vibe Production</div></div>
       <div class="op">+</div>
-      <div><div class="v">290&nbsp;900&nbsp;₸</div><div class="l">Vibe Coding PRO<br>с кураторами</div></div>
+      <div><div class="v">290&nbsp;900&nbsp;₸<span class="usd">≈&nbsp;$650</span></div><div class="l">Vibe Coding PRO<br>с кураторами</div></div>
       <div class="op">=</div>
-      <div><div class="old" style="font-size:24pt;line-height:1.1">440&nbsp;900&nbsp;₸</div><div class="l">по отдельности</div></div>
+      <div><div class="old" style="font-size:24pt;line-height:1.1">440&nbsp;900&nbsp;₸</div><div class="usd" style="margin-top:2mm">≈&nbsp;$984</div><div class="l">по отдельности</div></div>
     </div>
     <div class="save">
-      <div class="card dark p1"><div class="sec">Пакет участникам эфира</div><b>390&nbsp;000&nbsp;₸</b></div>
-      <div class="card p2"><div class="sec">Экономия</div><b>50&nbsp;900&nbsp;₸</b></div>
+      <div class="card dark p1"><div class="sec">Пакет участникам эфира</div><b>390&nbsp;000&nbsp;₸<span class="usd">≈&nbsp;$871</span></b></div>
+      <div class="card p2"><div class="sec">Экономия</div><b>50&nbsp;900&nbsp;₸<span class="usd">≈&nbsp;$114</span></b></div>
     </div>
     <p class="note" style="margin-top:7mm">Для участников эфира, до 23:59 по Алматы на следующий день после эфира.</p>
   </div>
@@ -428,9 +431,9 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
   </div>
   <div class="stage">
     <div class="tab tabh"><div class="sec">Если вы хотите</div><div class="sec">Вы берёте</div><div class="sec">Цена</div></div>
-    <div class="card tr tab" style="margin-top:3mm"><div class="t1">Делать рилсы и рекламу без монтажёра</div><div class="t2">Vibe Production</div><div class="t3"><span class="nb">150&nbsp;000&nbsp;₸</span></div></div>
-    <div class="card tr tab"><div class="t1">Собирать свои сервисы и сайты</div><div class="t2">Vibe Coding PRO</div><div class="t3">от <span class="nb">220&nbsp;000&nbsp;₸</span>, с кураторами <span class="nb">290&nbsp;900&nbsp;₸</span></div></div>
-    <div class="card gold tr tab"><div class="t1">И то и другое</div><div class="t2">Оба курса, PRO с кураторами</div><div class="t3"><span class="nb">390&nbsp;000&nbsp;₸</span> вместо <span class="nb">440&nbsp;900&nbsp;₸</span></div></div>
+    <div class="card tr tab" style="margin-top:3mm"><div class="t1">Делать рилсы и рекламу без монтажёра</div><div class="t2">Vibe Production</div><div class="t3"><span class="nb">150&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$335)</span></div></div>
+    <div class="card tr tab"><div class="t1">Собирать свои сервисы и сайты</div><div class="t2">Vibe Coding PRO</div><div class="t3">от <span class="nb">220&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$491)</span>, с кураторами <span class="nb">290&nbsp;900&nbsp;₸</span> <span class="usdi">(≈&nbsp;$650)</span></div></div>
+    <div class="card gold tr tab"><div class="t1">И то и другое</div><div class="t2">Оба курса, PRO с кураторами</div><div class="t3"><span class="nb">390&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$871)</span> вместо <span class="nb">440&nbsp;900&nbsp;₸</span> <span class="usdi">(≈&nbsp;$984)</span></div></div>
   </div>
   <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">05</span></footer>
 </section>
@@ -458,7 +461,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
   <div>
     <div class="kick"><i></i>Как оплатить пакет</div>
     <h1>Оплатите пакет <em>до 23:59</em></h1>
-    <p class="lead">Вносили предоплату <span class="nb">10&nbsp;000&nbsp;₸</span> на эфире? Она входит в цену, оплачиваете остаток. Не вносили и предложение подходит? Оплатите <span class="nb">390&nbsp;000&nbsp;₸</span> сразу.</p>
+    <p class="lead">Вносили предоплату <span class="nb">10&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$22)</span> на эфире? Она входит в цену, оплачиваете остаток. Не вносили и предложение подходит? Оплатите <span class="nb">390&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$871)</span> сразу.</p>
   </div>
   <div class="stage">
     <div class="steps3">

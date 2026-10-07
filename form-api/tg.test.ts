@@ -3227,3 +3227,202 @@ test("дым-тест на порту 4110: страница отдаётся, �
     await new Promise((r) => child.on("close", r));
   }
 });
+
+
+// ── Telegram для связи в заявке: необязательное поле, телефон обязателен ──
+
+import { normalizeTelegram, packUtm, unpackUtm } from "../lib/leads/telegram-nick";
+import { addWorkshopLeadTelegramNote, createWorkshopLead } from "../lib/amocrm/client";
+import { pushLeadToAmo } from "../lib/leads/process";
+
+test("Telegram в заявке: @ник, t.me/ник и https://t.me/ник приводятся к нику, мусор даёт пустую строку", () => {
+  for (const ok of ["nick_01", "@nick_01", "  @nick_01  ", "t.me/nick_01", "https://t.me/nick_01", "http://t.me/nick_01/", "https://www.t.me/nick_01", "https://telegram.me/nick_01", "t.me/@nick_01", "https://t.me/nick_01?start=x"]) {
+    assert.equal(normalizeTelegram(ok), "nick_01", ok);
+  }
+  assert.equal(normalizeTelegram("@Nick_01"), "Nick_01"); // регистр не трогаем
+  assert.equal(normalizeTelegram(" @ n i c k 1 "), "nick1"); // пробелы внутри убираются
+  assert.equal(normalizeTelegram("@" + "a".repeat(32)), "a".repeat(32));
+  for (const bad of ["", "   ", "@", "@abc", "t.me/", "@" + "a".repeat(33), "@ник_кириллицей", "@nick-dash", "https://t.me/+AbCdEfGh1234", "https://example.com/nick", "<b>nick</b>", "nick@mail.ru", "+77011112233", "tg://resolve?domain=nick", null, undefined, 42, {}, ["nick_01"]]) {
+    assert.equal(normalizeTelegram(bad), "", String(bad));
+  }
+  assert.equal(normalizeTelegram("x".repeat(100000)), ""); // длинная строка не ломает и не проходит
+});
+
+test("Telegram в заявке: ник едет в utm строки Supabase и возвращается обратно, чужой ключ telegram из меток вычищается", () => {
+  assert.deepEqual(packUtm({ utm_source: "ig" }, "nick_01"), { utm_source: "ig", telegram: "nick_01" });
+  assert.deepEqual(packUtm(undefined, "nick_01"), { telegram: "nick_01" });
+  assert.equal(packUtm(undefined, undefined), null); // метки пустые и ника нет: null, как раньше
+  assert.deepEqual(packUtm({ utm_source: "ig", telegram: "forged" }, undefined), { utm_source: "ig" });
+  assert.deepEqual(unpackUtm({ utm_source: "ig", telegram: "nick_01" }), { utm: { utm_source: "ig" }, telegram: "nick_01" });
+  assert.deepEqual(unpackUtm({ telegram: "nick_01" }), { telegram: "nick_01" });
+  assert.deepEqual(unpackUtm({ telegram: "<b>x</b>" }), {});
+  assert.deepEqual(unpackUtm(null), {});
+});
+
+test("регистрации в админке: @ник виден рядом с телефоном, без Telegram поле пустое, мусор из журнала не попадает", () => {
+  const { dir } = boot();
+  writeLeads(dir, [
+    { ...leadRow2("t1", iso(at7(10, 0)), "Анна", "+7 701 111 22 33"), telegram: "anna_p" },
+    leadRow2("t2", iso(at7(10, 5)), "Борис", "+7 702 222 33 44"),
+    { ...leadRow2("t3", iso(at7(10, 10)), "Виктор", "+7 705 555 66 77"), telegram: "<img src=x onerror=1>" },
+  ]);
+  const items = buildLeads(adminCtx(NOW), resolvePeriod("t", NOW), LQ).items;
+  assert.deepEqual(items.map((i) => [i.id, i.telegram]), [["t3", ""], ["t2", ""], ["t1", "anna_p"]]);
+  // страница показывает ник текстом (не разметкой) рядом с телефоном
+  const page = readFileSync(PAGE_FILE, "utf8");
+  assert.ok(page.includes("it.telegram ? h('span', { class: 'tgn', text: '@' + it.telegram }) : null"));
+});
+
+/** Подменяет fetch и console на время теста amoCRM: запросы записываются, ответы задаёт respond. */
+async function withFakeAmo<T>(
+  respond: (url: string, init: RequestInit) => { status?: number; json?: unknown } | Error,
+  run: (calls: { url: string; init: RequestInit }[], logs: string[]) => Promise<T>,
+): Promise<T> {
+  const realFetch = globalThis.fetch;
+  const { log, error, warn } = console;
+  const calls: { url: string; init: RequestInit }[] = [];
+  const logs: string[] = [];
+  const grab = (...a: unknown[]) => void logs.push(a.map(String).join(" "));
+  const savedEnv = { t: process.env.AMOCRM_ACCESS_TOKEN, d: process.env.AMOCRM_DOMAIN };
+  process.env.AMOCRM_ACCESS_TOKEN = "test-amo-token";
+  process.env.AMOCRM_DOMAIN = "amo-test";
+  globalThis.fetch = (async (input: unknown, init: RequestInit = {}) => {
+    const url = String(input);
+    if (!url.includes("amocrm.ru")) return realFetch(input as string, init);
+    calls.push({ url, init });
+    const r = respond(url, init);
+    if (r instanceof Error) throw r;
+    return new Response(JSON.stringify(r.json ?? {}), { status: r.status ?? 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  console.log = console.error = console.warn = grab;
+  try {
+    return await run(calls, logs);
+  } finally {
+    globalThis.fetch = realFetch;
+    Object.assign(console, { log, error, warn });
+    if (savedEnv.t === undefined) delete process.env.AMOCRM_ACCESS_TOKEN;
+    else process.env.AMOCRM_ACCESS_TOKEN = savedEnv.t;
+    if (savedEnv.d === undefined) delete process.env.AMOCRM_DOMAIN;
+    else process.env.AMOCRM_DOMAIN = savedEnv.d;
+  }
+}
+
+test("amoCRM: с Telegram сделка получает примечание «Telegram для связи», без Telegram запрос один, сбой примечания сделку не ломает", async () => {
+  const base = { name: "Анна", phone: "+7 701 111 22 33", source: "efir-1-okt-popup" };
+  const ok = (url: string) => (url.endsWith("/leads/complex") ? { json: [{ id: 555, contact_id: 7 }] } : { json: {} });
+  // с ником
+  await withFakeAmo(ok, async (calls, logs) => {
+    const r = await createWorkshopLead({ ...base, telegram: "anna_p" });
+    assert.deepEqual(r, { ok: true, leadId: 555 });
+    assert.deepEqual(calls.map((c) => c.url), ["https://amo-test.amocrm.ru/api/v4/leads/complex", "https://amo-test.amocrm.ru/api/v4/leads/555/notes"]);
+    assert.deepEqual(JSON.parse(String(calls[1].init.body)), [{ note_type: "common", params: { text: "Telegram для связи: @anna_p" } }]);
+    // сам запрос создания сделки ник не несёт: он идёт отдельным примечанием
+    assert.equal(String(calls[0].init.body).includes("anna_p"), false);
+    // в логах только факт, что Telegram указан
+    assert.equal(logs.some((l) => l.includes("anna_p")), false);
+    assert.ok(logs.some((l) => /Telegram указан/.test(l)));
+  });
+  // без ника: примечания нет
+  await withFakeAmo(ok, async (calls) => {
+    assert.deepEqual(await createWorkshopLead(base), { ok: true, leadId: 555 });
+    assert.equal(calls.length, 1);
+  });
+  // примечание не прошло (500) или запрос упал: сделка всё равно создана, повторного создания не будет
+  for (const fail of [{ status: 500 }, new Error("сеть")]) {
+    await withFakeAmo((url) => (url.endsWith("/leads/complex") ? { json: [{ id: 556, contact_id: 8 }] } : fail), async (calls, logs) => {
+      assert.deepEqual(await createWorkshopLead({ ...base, telegram: "anna_p" }), { ok: true, leadId: 556 });
+      assert.equal(calls.length, 2);
+      assert.equal(logs.some((l) => l.includes("anna_p")), false);
+    });
+  }
+  // отдельный вызов без ника или без токена ничего не отправляет
+  await withFakeAmo(ok, async (calls) => {
+    assert.equal(await addWorkshopLeadTelegramNote(1, ""), false);
+    delete process.env.AMOCRM_ACCESS_TOKEN;
+    assert.equal(await addWorkshopLeadTelegramNote(1, "anna_p"), false);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test("amoCRM: дедупликация по телефону работает как раньше; найденной сделке примечание с Telegram добавляется, дубля сделки нет", async () => {
+  const lead = { id: "L1", name: "Анна", phone: "+7 701 111 22 33", source: "efir-1-okt-popup" };
+  const found = (url: string) =>
+    url.includes("/leads?query=") ? { json: { _embedded: { leads: [{ id: 777, pipeline_id: 10882150, created_at: Math.floor(Date.now() / 1000) - 60 }] } } } : { json: {} };
+  await withFakeAmo(found, async (calls) => {
+    const r = await pushLeadToAmo({ ...lead, telegram: "anna_p" }, { probeFirst: true });
+    assert.deepEqual(r, { ok: true, leadId: 777, adopted: true });
+    assert.equal(calls.some((c) => c.url.endsWith("/leads/complex")), false); // сделку не создавали
+    const note = calls.find((c) => c.url.endsWith("/leads/777/notes"));
+    assert.ok(note);
+    assert.equal(JSON.parse(String(note.init.body))[0].params.text, "Telegram для связи: @anna_p");
+  });
+  await withFakeAmo(found, async (calls) => {
+    assert.equal((await pushLeadToAmo(lead, { probeFirst: true })).ok, true);
+    assert.equal(calls.length, 1); // только проба, без примечания
+  });
+  // обычная отправка без пробы: сделка создаётся, примечание следом
+  await withFakeAmo((url) => (url.endsWith("/leads/complex") ? { json: [{ id: 888, contact_id: 9 }] } : { json: {} }), async (calls) => {
+    assert.deepEqual(await pushLeadToAmo({ ...lead, telegram: "anna_p" }, { probeFirst: false }), { ok: true, leadId: 888 });
+    assert.deepEqual(calls.map((c) => c.url.split("/api/v4")[1]), ["/leads/complex", "/leads/888/notes"]);
+  });
+});
+
+test("POST /api/lead на порту 4112: без Telegram заявка проходит как раньше, ник в журнале нормализован, мусор отбрасывается, в логе ника нет", async () => {
+  const dir = tmp();
+  const bundle = join(dir, "server.js");
+  buildBundle("form-api/server.ts", bundle);
+  copyFileSync(seriesFile, join(dir, "tg-series.json"));
+  const wal = join(dir, "leads.jsonl");
+  const child = spawn(process.execPath, [bundle], {
+    env: childEnv({
+      PORT: "4112", DATA_DIR: join(dir, "data"), LEADS_LOG_PATH: wal, FORM_API_ENV: join(dir, "нет.env"), TG_SERIES_FILE: undefined, ADMIN_APP_HTML: undefined,
+      TG_BOT: undefined, TG_WORKSHOP_BOT_TOKEN: BOT_TOKEN, TG_WORKSHOP_WEBHOOK_SECRET: "lead-hook-secret-123456", TG_GO_SECRET: "lead-go-secret-12345678",
+      TG_LINK_OWNER_IDS: "900", SUPABASE_URL: undefined, SUPABASE_SERVICE_ROLE_KEY: undefined, AMOCRM_ACCESS_TOKEN: undefined, META_CAPI_TOKEN: undefined,
+    }),
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let log = "";
+  child.stdout.on("data", (d) => (log += d));
+  child.stderr.on("data", (d) => (log += d));
+  const base = "http://127.0.0.1:4112";
+  const post = (body: Record<string, unknown>) =>
+    fetch(`${base}/api/lead`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Анна", phone: "+7 701 111 22 33", consent: true, source: "efir-1-okt-popup", ...body }),
+    }).then(readJson);
+  try {
+    await waitFor(() => /listening on/.test(log), 8000);
+    const cases: [string, Record<string, unknown>, string][] = [
+      ["без поля telegram", {}, ""],
+      ["пустая строка", { telegram: "" }, ""],
+      ["@nick", { telegram: "@anna_nick" }, "anna_nick"],
+      ["t.me/nick", { telegram: "t.me/boris_nick" }, "boris_nick"],
+      ["https://t.me/nick", { telegram: "https://t.me/viktor_nick" }, "viktor_nick"],
+      ["мусор", { telegram: "!!! не ник ???" }, ""],
+      ["не строка", { telegram: { x: 1 } }, ""],
+    ];
+    for (const [label, extra] of cases) {
+      const r = await post({ ...extra, eventId: `ev-${label}` });
+      assert.equal(r.status, 200, label);
+      assert.equal(r.body.ok, true, label);
+    }
+    // без телефона заявка по-прежнему отклоняется, Telegram его не заменяет
+    assert.equal((await post({ phone: "", telegram: "@anna_nick" })).status, 422);
+    const rows = readFileSync(wal, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)).filter((e) => e.kind === "capture");
+    assert.equal(rows.length, cases.length);
+    cases.forEach(([label, , want], i) => {
+      assert.equal(rows[i].telegram, want || undefined, label);
+      assert.equal(rows[i].phone, "+7 701 111 22 33");
+    });
+    assert.equal("telegram" in rows[0], false); // без ника ключа нет, строка журнала как раньше
+    // лог: факт «Telegram указан» есть, самих ников нет
+    await waitFor(() => (log.match(/\[lead\]/g) || []).length >= cases.length, 5000);
+    assert.equal((log.match(/tg=yes/g) || []).length, 3);
+    assert.equal((log.match(/tg=no/g) || []).length, 4);
+    for (const nick of ["anna_nick", "boris_nick", "viktor_nick"]) assert.equal(log.includes(nick), false, nick);
+  } finally {
+    child.kill();
+    await new Promise((r) => child.on("close", r));
+  }
+});

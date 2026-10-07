@@ -17,6 +17,7 @@ import {
   bulkInsertIgnore,
   type LeadRow,
 } from "@/lib/supabase-rest";
+import { normalizeTelegram, packUtm } from "@/lib/leads/telegram-nick";
 
 const LOG_PATH = process.env.LEADS_LOG_PATH || "/var/lib/workshop/leads.jsonl";
 
@@ -28,6 +29,8 @@ export type CapturedLead = {
   source?: string;
   utm?: Record<string, string>;
   fbclid?: string;
+  /** Ник в Telegram для связи, уже проверенный (normalizeTelegram). Не указан: поля нет. */
+  telegram?: string;
 };
 
 /** Локальный write-ahead: одна строка JSON. Никогда не теряем сырьё. */
@@ -57,7 +60,8 @@ export async function captureLead(
     name: input.name,
     phone: input.phone,
     source: input.source ?? null,
-    utm: input.utm ?? null,
+    // В workshop_leads нет колонки под Telegram: ник едет в jsonb utm (ключ telegram), без миграции.
+    utm: packUtm(input.utm, input.telegram),
     fbclid: input.fbclid ?? null,
     status: "pending",
     retry_count: 0,
@@ -128,7 +132,7 @@ export async function ingestWalToSupabase(): Promise<number> {
       name: e.name as string,
       phone: e.phone as string,
       source: (e.source as string) ?? null,
-      utm: (e.utm as Record<string, string>) ?? null,
+      utm: packUtm((e.utm as Record<string, string>) ?? undefined, normalizeTelegram(e.telegram)),
       fbclid: (e.fbclid as string) ?? null,
       status: "pending",
       retry_count: 0,

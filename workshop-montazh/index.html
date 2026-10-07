@@ -192,6 +192,7 @@ section[id]{scroll-margin-top:84px}
 .form input::placeholder{color:#9E8F81}
 .form input:focus{outline:2px solid var(--gold);outline-offset:1px}
 .form .agree{color:#9E8F81;font-size:12px}
+.form .fld-hint{margin:-6px 4px 0;color:#9E8F81;font-size:12px;line-height:1.3}
 .form .err{color:#A6381F;font-size:13px;margin:0;line-height:1.35}
 .final .form .err{color:#FFB09B}
 .form button[disabled]{opacity:.65;cursor:progress}
@@ -380,6 +381,7 @@ footer{border-top:1px solid var(--line);padding:32px 0;color:var(--muted);font-s
 .modal-card .form input{height:54px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:0 16px;font:inherit;font-size:16px}
 .modal-card .form input:focus{outline:2px solid var(--brown);outline-offset:1px}
 .modal-card .form .agree{color:var(--muted);font-size:12px}
+.modal-card .form .fld-hint{color:var(--muted)}
 .modal-card .form .err{color:#A6381F}
 .modal-x{position:absolute;right:10px;top:10px;z-index:2;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:20px;line-height:1;cursor:pointer}
 .modal-x:hover{border-color:var(--gold2)}
@@ -695,7 +697,9 @@ src="https://www.facebook.com/tr?id=2241406289947143&ev=PageView&noscript=1"></n
         <span class="when"><span data-efir="WdDate">Каждый день</span>, <span data-efir="time">20:00</span> по Алматы. Ссылку пришлём в WhatsApp или Telegram.</span>
         <form class="form" data-source="efir-1-okt-popup" novalidate>
           <input name="name" type="text" placeholder="Имя" autocomplete="name" required aria-label="Имя">
-          <input name="phone" type="tel" placeholder="WhatsApp, +7" autocomplete="tel" required aria-label="WhatsApp">
+          <input name="phone" type="tel" placeholder="Номер телефона, +7" autocomplete="tel" required aria-label="Номер телефона">
+          <input name="telegram" type="text" placeholder="Telegram для связи, необязательно" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Telegram для связи, необязательно" aria-describedby="tg-hint">
+          <p class="fld-hint" id="tg-hint">@ник или ссылка t.me</p>
           <button class="btn btn-gold" type="submit">Записаться</button>
           <label class="agree-box"><input type="checkbox" name="consent" checked>
             <span>Согласен с <a href="https://onai.academy/offer" target="_blank" rel="noopener">договором оферты</a> и <a href="https://onai.academy/workshop-montazh/privacy" target="_blank" rel="noopener">политикой конфиденциальности</a></span>
@@ -874,7 +878,7 @@ function playBtn(box,on){
 
     f.addEventListener('submit',function(e){
       e.preventDefault();
-      var name=f.querySelector('[name=name]'), phone=f.querySelector('[name=phone]');
+      var name=f.querySelector('[name=name]'), phone=f.querySelector('[name=phone]'), tg=f.querySelector('[name=telegram]');
       note.hidden=true;
       if(name.value.trim().length<2){ name.focus(); fail('Напишите имя, чтобы мы знали, как обращаться.'); return; }
       if(phone.value.replace(/\D/g,'').length<10){ phone.focus(); fail('Проверьте номер: нужен код страны и десять цифр, например +7 701 234 56 78.'); return; }
@@ -889,6 +893,7 @@ function playBtn(box,on){
         body:JSON.stringify({
           name:name.value.trim(),
           phone:phone.value.trim(),
+          telegram:tg?tg.value.trim():'',
           consent:!!(f.querySelector('[name=consent]')||{checked:true}).checked,
           source:f.getAttribute('data-source'),
           eventId:id,

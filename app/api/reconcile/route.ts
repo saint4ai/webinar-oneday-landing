@@ -18,6 +18,7 @@ import {
   type CapturedLead,
 } from "@/lib/leads/store";
 import { pushLeadToAmo } from "@/lib/leads/process";
+import { unpackUtm } from "@/lib/leads/telegram-nick";
 import { sendOwnerAlert } from "@/lib/telegram/alert";
 
 export const dynamic = "force-dynamic";
@@ -45,14 +46,17 @@ export async function POST(req: NextRequest) {
 
   for (const row of rows) {
     if (!row.id) continue;
+    // Ник Telegram лежит в utm строки (ключ telegram): разделяем обратно на метки и ник.
+    const { utm, telegram } = unpackUtm(row.utm);
     const lead: CapturedLead = {
       id: row.id,
       eventId: row.event_id ?? undefined,
       name: row.name,
       phone: row.phone,
       source: row.source ?? undefined,
-      utm: row.utm ?? undefined,
+      utm,
       fbclid: row.fbclid ?? undefined,
+      ...(telegram ? { telegram } : {}),
     };
 
     const res = await pushLeadToAmo(lead, { probeFirst: true });

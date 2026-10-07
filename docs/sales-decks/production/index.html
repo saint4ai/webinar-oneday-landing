@@ -16,6 +16,9 @@
 html,body{background:var(--night);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Manrope',system-ui,sans-serif;color:var(--cream);font-size:16pt;line-height:1.4;font-weight:500;-webkit-font-smoothing:antialiased}
 .nb{white-space:nowrap}
+.usd{display:block;font-family:'Manrope',sans-serif;font-weight:800;font-size:16pt;line-height:1.2;letter-spacing:0;color:var(--cream);opacity:.88;margin-top:1.5mm;white-space:nowrap}
+.usdi{white-space:nowrap;font-weight:700}
+h1 .usdi{font-size:28pt;font-family:'Manrope',sans-serif;letter-spacing:0;color:var(--cream)}
 
 /* страница: одна секция = один лист A4 альбомный; шапка сверху, содержимое .stage по центру оставшегося места, подвал внизу */
 .page{position:relative;width:297mm;height:210mm;overflow:hidden;padding:17mm 24mm 0;display:flex;flex-direction:column;background-color:var(--night);background-size:100% 100%;background-repeat:no-repeat;break-after:page;page-break-after:always}
@@ -179,8 +182,8 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
 .old::after{content:"";position:absolute;left:-2mm;right:-2mm;top:50%;height:1.3mm;border-radius:1mm;background:#C0562A;transform:rotate(-4deg)}
 .bigprice{padding:7mm 12mm 8mm}
 .bigprice b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:50pt;line-height:1.1;color:var(--gold);white-space:nowrap;margin-top:2mm}
-.calc{margin-top:8mm;padding:6mm 9mm;display:flex;align-items:center;gap:8mm}
-.calc p{font-weight:800;font-size:19pt;white-space:nowrap}
+.calc{margin-top:8mm;padding:6mm 9mm;display:flex;align-items:center;gap:6mm}
+.calc p{font-weight:800;font-size:16pt;white-space:nowrap}
 .calc p em{font-style:normal;color:var(--gold)}
 .banks{display:flex;gap:4mm;margin-left:auto}
 .banks span{background:var(--cream);border-radius:3mm;padding:2mm 3.6mm;display:flex;align-items:center;height:12.5mm}
@@ -376,7 +379,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
       <div class="card pb">
         <div class="sec">Вакансия на hh.kz, Алматы</div>
         <h3 style="margin-top:3mm">Видеомонтажёр на CapCut</h3>
-        <div class="big">от&nbsp;300&nbsp;000&nbsp;₸</div>
+        <div class="big">от&nbsp;300&nbsp;000&nbsp;₸<span class="usd">≈&nbsp;$670</span></div>
         <p>на руки, в месяц</p>
       </div>
       <div class="card pb">
@@ -413,7 +416,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
 <section class="page bgA">
   <div>
     <div class="kick"><i></i>Результат автора</div>
-    <h1>795&nbsp;062 просмотра <em>за 30 дней</em></h1>
+    <h1>861&nbsp;248 просмотров <em>за 30 дней</em></h1>
     <p class="lead">Рилсы автора собирает агент.</p>
   </div>
   <div class="stage">
@@ -424,7 +427,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
       </div>
       <div>
         <div class="reels"><img class="first" src="img/reel-connectors.jpg" alt=""><img src="img/reel-gitingest.jpg" alt=""><img src="img/reel-artemis.jpg" alt=""></div>
-        <p class="note" style="margin-top:4mm;text-align:right">Три рилса автора. Instagram, данные на 05.10.2026.</p>
+        <p class="note" style="margin-top:4mm;text-align:right">Три рилса автора. Instagram, данные на 07.10.2026.</p>
       </div>
     </div>
   </div>
@@ -490,7 +493,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
         <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>10 модулей, 36 уроков</span></div>
       </div>
     </div>
-    <div class="card gold strip"><div class="ic"><svg><use href="#i-check"/></svg></div><p>Нужны оба курса? Пакет <span class="nb">390&nbsp;000&nbsp;₸</span> вместо <span class="nb">440&nbsp;900&nbsp;₸</span>.<br><span style="font-weight:600;font-size:16pt">В пакете Vibe Coding PRO с кураторами.</span></p></div>
+    <div class="card gold strip"><div class="ic"><svg><use href="#i-check"/></svg></div><p>Нужны оба курса? Пакет <span class="nb">390&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$871)</span> вместо <span class="nb">440&nbsp;900&nbsp;₸</span> <span class="usdi">(≈&nbsp;$984)</span>.<br><span style="font-weight:600;font-size:16pt">В пакете Vibe Coding PRO с кураторами.</span></p></div>
   </div>
   <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">08</span></footer>
 </section>
@@ -542,17 +545,17 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
 <section class="page bgA">
   <div style="max-width:200mm">
     <div class="kick"><i></i>Цена</div>
-    <h1><span class="nb">150&nbsp;000&nbsp;₸</span> вместо <em class="nb">250&nbsp;000&nbsp;₸</em></h1>
+    <h1><span class="nb">150&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$335)</span> вместо <em class="nb">250&nbsp;000&nbsp;₸</em> <span class="usdi">(≈&nbsp;$558)</span></h1>
     <p class="lead">Участникам эфира, с рассрочкой до 24 месяцев без переплаты.</p>
   </div>
   <img class="obj" src="img/obj-calendar.png" style="right:24mm;top:12mm;width:56mm" alt="">
   <div class="stage">
     <div class="pricerow">
-      <div><div class="t">Полная цена</div><div class="old">250&nbsp;000&nbsp;₸</div></div>
-      <div class="card dark bigprice"><div class="sec">Участникам эфира</div><b>150&nbsp;000&nbsp;₸</b></div>
+      <div><div class="t">Полная цена</div><div class="old">250&nbsp;000&nbsp;₸</div><div class="usd" style="margin-top:2mm">≈&nbsp;$558</div></div>
+      <div class="card dark bigprice"><div class="sec">Участникам эфира</div><b>150&nbsp;000&nbsp;₸<span class="usd">≈&nbsp;$335</span></b></div>
     </div>
     <div class="card calc">
-      <p><span class="nb">150&nbsp;000&nbsp;₸</span> на 24 месяца = <em class="nb">6&nbsp;250&nbsp;₸</em> в месяц</p>
+      <p><span class="nb">150&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$335)</span> на 24 месяца = <em class="nb">6&nbsp;250&nbsp;₸</em> <span class="usdi">(≈&nbsp;$14)</span> в месяц</p>
       <div class="banks"><span><img src="img/bank-kaspi.png" alt="Kaspi"></span><span><img src="img/bank-homecredit.png" alt="Home Credit"></span><span><img src="img/bank-halyk.png" alt="Halyk"></span></div>
     </div>
     <p class="note" style="margin-top:6mm">Рассрочка через Kaspi, Home Credit и Halyk. Для России, Узбекистана, Беларуси и Кыргызстана её подберёт Аяна.</p>
@@ -582,7 +585,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
   <div>
     <div class="kick"><i></i>Как оплатить</div>
     <h1>Оплатите остаток <em>или всю сумму</em></h1>
-    <p class="lead">Вносили предоплату <span class="nb">10&nbsp;000&nbsp;₸</span> на эфире? Она входит в цену, оплачиваете остаток. Не вносили и предложение подходит? Оплатите <span class="nb">150&nbsp;000&nbsp;₸</span> сразу.</p>
+    <p class="lead">Вносили предоплату <span class="nb">10&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$22)</span> на эфире? Она входит в цену, оплачиваете остаток. Не вносили и предложение подходит? Оплатите <span class="nb">150&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$335)</span> сразу.</p>
   </div>
   <div class="stage">
     <div class="steps3">
