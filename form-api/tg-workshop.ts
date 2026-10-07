@@ -94,7 +94,8 @@ const SEEN_UPDATES = 1000;
 // ───────────────────────── серия (tg-series.json) ─────────────────────────
 
 export type Button = { text: string; url?: string; callback?: string };
-export type Media = { type: "photo" | "video"; url: string; poster?: string; width?: number; height?: number; duration?: number };
+/** document: файл по ссылке (PDF презентации), уходит через sendDocument. */
+export type Media = { type: "photo" | "video" | "document"; url: string; poster?: string; width?: number; height?: number; duration?: number };
 export type SeriesMsg = {
   id: string;
   at: string;
@@ -151,7 +152,7 @@ export type Series = {
   messages: SeriesMsg[];
 };
 
-const AUDIENCES = ["all", "clicked", "notClicked", "notPaid"];
+const AUDIENCES = ["all", "clicked", "notClicked", "notPaid", "clickedNotPaid"];
 const LINK_KEYS = ["bizon", "manager", "managerName", "whatsapp", "whatsappPhone", "pay", "prepayKz", "prepayIntl", "cases", "game", "template"];
 const TEXT_VARS = ["hi", "dayWord", "dayWordLower", "TEMPLATE"];
 const URL_VARS = ["STREAM", "PAY", "PREPAY_KZ", "PREPAY_INTL", "MANAGER", "CASES", "GAME", "WHATSAPP_TEMPLATE"];
@@ -194,8 +195,11 @@ function checkText(s: unknown, where: string) {
 }
 
 function checkMedia(m: unknown, where: string) {
-  if (!isObj(m) || (m.type !== "photo" && m.type !== "video") || typeof m.url !== "string" || !/^https:\/\//.test(m.url)) {
-    throw new Error(`${where}: media должен быть { type: photo|video, url: https://... }`);
+  if (!isObj(m) || (m.type !== "photo" && m.type !== "video" && m.type !== "document") || typeof m.url !== "string" || !/^https:\/\//.test(m.url)) {
+    throw new Error(`${where}: media должен быть { type: photo|video|document, url: https://... }`);
+  }
+  if (m.type === "document" && !/^https:\/\/[^\s?#]+\.pdf$/i.test(m.url)) {
+    throw new Error(`${where}: у media document адрес должен быть https и оканчиваться на .pdf`);
   }
   if (m.poster !== undefined && typeof m.poster !== "string") throw new Error(`${where}: poster должен быть строкой`);
   for (const k of ["width", "height", "duration"]) {
@@ -662,7 +666,7 @@ export function verifyGoToken(token: string, secret: string = goSecret()): { cha
 export type Content = { media?: Media; text: string; buttons?: Button[][]; silent?: boolean };
 
 type PhotoSize = { file_id: string; width?: number; height?: number };
-type SentMessage = { photo?: PhotoSize[]; video?: { file_id?: string; cover?: PhotoSize[] } };
+type SentMessage = { photo?: PhotoSize[]; video?: { file_id?: string; cover?: PhotoSize[] }; document?: { file_id?: string } };
 
 /** file_id самого большого размера. */
 function largest(sizes: PhotoSize[] | undefined): string | undefined {
@@ -689,15 +693,17 @@ async function sendText(chatId: number, html: string, markup?: InlineButton[][],
 }
 
 /**
- * Картинка или видео. Первый раз по URL, из ответа берём file_id и кешируем в tg-state.json,
+ * Картинка, видео или документ (PDF). Первый раз по URL, из ответа берём file_id и кешируем в tg-state.json,
  * дальше шлём по file_id. Если file_id протух (400), пробуем по URL, для видео ещё и без обложки.
  * Видео уходит с supports_streaming и размерами из серии (width, height, duration).
+ * Документ уходит через sendDocument с подписью и кнопками, как фото.
  */
 async function sendMedia(chatId: number, media: Media, caption: string | undefined, markup: InlineButton[][] | undefined, silent: boolean | undefined, prio: Prio): Promise<SendResult> {
   const st = getStore();
   const isVideo = media.type === "video";
-  const method = isVideo ? "sendVideo" : "sendPhoto";
-  const field = isVideo ? "video" : "photo";
+  const isDoc = media.type === "document";
+  const method = isVideo ? "sendVideo" : isDoc ? "sendDocument" : "sendPhoto";
+  const field = isVideo ? "video" : isDoc ? "document" : "photo";
   const cachedRef = st.getMedia(media.url);
   const cachedCover = isVideo && media.poster ? st.getMedia(media.poster) : undefined;
 
@@ -732,7 +738,7 @@ async function sendMedia(chatId: number, media: Media, caption: string | undefin
   if (r.ok) {
     // Запоминаем только то, что отправили по URL: это новые file_id.
     if (used[0] === media.url) {
-      const id = isVideo ? r.result?.video?.file_id : largest(r.result?.photo);
+      const id = isVideo ? r.result?.video?.file_id : isDoc ? r.result?.document?.file_id : largest(r.result?.photo);
       if (id) st.setMedia(media.url, id);
     }
     if (isVideo && media.poster && used[1] === media.poster) {
@@ -777,9 +783,14 @@ export async function notifyOwnersHtml(text: string, markup?: InlineButton[][]):
 
 /** Одно предупреждение владельцам на каждое медиа за жизнь процесса. */
 const mediaWarned = new Set<string>();
-async function warnMedia(url: string, error: string | undefined) {
+async function warnMedia(media: Media, error: string | undefined) {
+  const url = media.url;
   if (mediaWarned.has(url)) return;
   mediaWarned.add(url);
+  if (media.type === "document") {
+    await notifyOwners(`Не отправился файл ${url}: ${error || "ошибка"}. Шлю тот же текст без него. Проверь, что файл выложен на сайт.`);
+    return;
+  }
   await notifyOwners(`Не отправилась картинка или видео ${url}: ${error || "ошибка"}. Шлю тот же текст без неё. Проверь, что файл выложен на сайт.`);
 }
 
@@ -799,7 +810,7 @@ export async function sendContent(c: Content, ctx: RenderCtx, opts: { prio?: Pri
   if (isGone(m)) return m;
   console.warn("[tg] медиа %s не ушло (%s), шлю текстом", c.media.url, m.error);
   noteRuntime("mediaFallback", { info: c.media.url });
-  void warnMedia(c.media.url, m.error);
+  void warnMedia(c.media, m.error);
   return sendText(ctx.chatId, html, kb, c.silent, prio);
 }
 
@@ -1123,7 +1134,13 @@ function onMemberUpdate(u: TgMemberUpdate, now: number) {
 
 // ───────────────────────── статистика и отчёты ─────────────────────────
 
-const AUD_LABEL: Record<Audience, string> = { all: "все", clicked: "нажавшим", notClicked: "не нажавшим", notPaid: "не оплатившим" };
+const AUD_LABEL: Record<Audience, string> = {
+  all: "все",
+  clicked: "нажавшим",
+  notClicked: "не нажавшим",
+  notPaid: "не оплатившим",
+  clickedNotPaid: "были на эфире, не оплатили",
+};
 
 /** Метка источника для /stats: ty_<uuid> группируется по префиксу до первого «_». */
 export const payloadGroup = (payload: string) => payload.split("_")[0] || "без метки";

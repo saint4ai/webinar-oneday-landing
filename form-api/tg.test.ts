@@ -96,6 +96,8 @@ const fake = {
           out = { ok: true, result: { message_id: 1, photo: [{ file_id: "p-small", width: 90, height: 90 }, { file_id: "p-big", width: 800, height: 800 }] } };
         } else if (method === "sendVideo") {
           out = { ok: true, result: { message_id: 2, video: { file_id: "v-1", cover: [{ file_id: "c-small", width: 90, height: 160 }, { file_id: "c-big", width: 720, height: 1280 }] } } };
+        } else if (method === "sendDocument") {
+          out = { ok: true, result: { message_id: 4, document: { file_id: "d-1" } } };
         } else if (method === "sendMessage") {
           out = { ok: true, result: { message_id: 3 } };
         }
@@ -341,6 +343,28 @@ test("клик привязан к дню D и пишется один раз н
   assert.equal(store.audienceOk("clicked", store.subs.get(1)!, D), true);
   const lines = readFileSync(join(store.dir, "tg-clicks.jsonl"), "utf8").trim().split("\n");
   assert.equal(lines.filter((l) => l.includes(`"day":"${D}"`)).length, 1);
+});
+
+test("аудитория clickedNotPaid: клик за день D и не оплатил", () => {
+  const { store } = boot();
+  const t0 = alm(2026, 10, 6, 10, 0);
+  for (const c of [1, 2, 3, 4]) sub(store, c, D, t0);
+  store.recordClick(1, D, iso(alm(2026, 10, 6, 20, 5)));                          // клик есть, не оплатил
+  store.recordClick(2, D, iso(alm(2026, 10, 6, 20, 5)));                          // клик есть, оплатил
+  store.recordEvent({ type: "paid", chat_id: 2, by: "self", ts: iso(alm(2026, 10, 6, 21, 30)) });
+  store.recordEvent({ type: "paid", chat_id: 3, by: "owner", ts: iso(alm(2026, 10, 6, 21, 30)) }); // клика нет, оплатил
+  store.recordClick(4, "2026-10-05", iso(alm(2026, 10, 5, 20, 5)));               // клик за другой день
+  const ok = (chat: number, day = D) => store.audienceOk("clickedNotPaid", store.subs.get(chat)!, day);
+  assert.equal(ok(1), true);
+  assert.equal(ok(2), false);
+  assert.equal(ok(3), false);
+  assert.equal(ok(4), false);
+  assert.equal(ok(1, "2026-10-05"), false); // клик 1 был за D, за другой день его нет
+  const m = { id: "cnp", at: "10:30", dayOffset: 1, audience: "clickedNotPaid" as const, text: "x" };
+  assert.deepEqual(pickRecipients(store, m, D, { plan: alm(2026, 10, 7, 10, 30) }).map((s) => s.chatId), [1]);
+  // «Я уже оплатил(а)» убирает человека из дожима сразу
+  store.recordEvent({ type: "paid", chat_id: 1, by: "self", ts: iso(alm(2026, 10, 7, 9, 0)) });
+  assert.deepEqual(pickRecipients(store, m, D, { plan: alm(2026, 10, 7, 10, 30) }).map((s) => s.chatId), []);
 });
 
 test("хранилище: повторный /start по правилам, состояние после рестарта то же", async () => {
@@ -709,6 +733,50 @@ test("tg-series.json в репозитории: проходит проверк�
   assert.equal(warn.includes("PREPAY"), false);
 });
 
+test("tg-series.json: дожим следующего дня follow-* и next-day-1100 (зов пропустивших на сегодня)", () => {
+  const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
+  const sr = validateSeries(raw);
+  const byId = new Map(sr.messages.map((m) => [m.id, m]));
+  const DECKS_URL = "https://onai.academy/workshop-montazh/assets/decks/";
+  const follow: Array<[string, string, string | null]> = [
+    ["follow-1030", "10:30", "Vibe-Production.pdf"],
+    ["follow-1500", "15:00", "Vibe-Production-plus-PRO.pdf"],
+    ["follow-2145", "21:45", null],
+  ];
+  for (const [id, at, pdf] of follow) {
+    const m = byId.get(id)!;
+    assert.ok(m, id);
+    assert.equal(m.at, at);
+    assert.equal(m.dayOffset, 1);
+    assert.equal(m.audience, "clickedNotPaid");
+    assert.notEqual(m.enabled, false);
+    if (pdf) assert.deepEqual(m.media, { type: "document", url: DECKS_URL + pdf });
+    else assert.equal(m.media, undefined);
+    const urls = m.buttons!.flat().map((b) => b.url).filter(Boolean) as string[];
+    assert.ok(urls.includes("{PREPAY_KZ}"), `${id}: кнопка оплаты Kaspi`);
+    assert.ok(m.buttons!.flat().some((b) => b.callback === "paid"), `${id}: «Я уже оплатил(а)»`);
+    // кнопки собираются целиком: ни одна не выпадает из-за пустой ссылки
+    const kb = buildKeyboard(m.buttons, ctxFor(sr))!;
+    assert.equal(kb.flat().length, m.buttons!.flat().length);
+  }
+  // PDF программы PRO, на который ведёт кнопка второго дожима
+  const pro = byId.get("follow-1500")!.buttons!.flat().find((b) => b.url?.endsWith(".pdf"))!;
+  assert.equal(pro.url, DECKS_URL + "Vibe-Coding-PRO.pdf");
+  // подпись к файлу влезает в 1024 даже с самым длинным именем
+  assert.deepEqual(seriesWarnings(sr).filter((w) => w.startsWith("follow-")), []);
+  // оба оффера действуют до 23:59 по Алматы следующего дня
+  for (const id of ["follow-1030", "follow-2145"]) assert.match(byId.get(id)!.text, /23:59 по Алматы \(21:59 по Москве\)/);
+  assert.match(byId.get("follow-1500")!.text, /до 23:59 сегодня/);
+
+  const nd = byId.get("next-day-1100")!;
+  assert.notEqual(nd.enabled, false);
+  assert.equal(nd.audience, "notClicked");
+  assert.equal(nd.dayOffset, 1);
+  assert.equal(nd.at, "11:00");
+  assert.deepEqual(nd.buttons, [[{ text: "Записаться на сегодня", callback: "rejoin" }]]);
+  assert.match(nd.text, /^Если вчера не получилось попасть на эфир, сегодня в 20:00 по Алматы \(18:00 по Москве\)/);
+});
+
 // ───────────────────────── отправка: подпись, медиа, тишина, обход ошибок ─────────────────────────
 
 test("подпись до 1024: одно сообщение; больше 1024: картинка отдельно, текст с кнопками следом", async () => {
@@ -811,6 +879,99 @@ test("медиа не ушло: тот же текст с кнопками об�
   const gone = await sendContent({ media: { type: "photo", url: "https://onai.academy/x/missing-2.jpg" }, text: "x" }, ctxFor(sr));
   assert.equal(gone.ok, false);
   assert.equal(fake.calls.length, 1);
+});
+
+test("документ (PDF): sendDocument с подписью и кнопками, file_id в кеше, длинная подпись делится как у фото", async () => {
+  const { store } = boot();
+  const sr = mkSeries([]);
+  const media = { type: "document" as const, url: "https://onai.academy/x/deck.pdf" };
+  const buttons = [[{ text: "Эфир", url: "{STREAM}" }], [{ text: "Я уже оплатил(а)", callback: "paid" }]];
+  const c = ctxFor(sr);
+
+  let r = await sendContent({ media, text: "Короткий текст", buttons, silent: true }, c);
+  assert.equal(r.ok, true);
+  assert.deepEqual(fake.calls.map((x) => x.method), ["sendDocument"]);
+  const first = fake.calls[0].body;
+  assert.equal(first.chat_id, 4242);
+  assert.equal(first.document, media.url);
+  assert.equal(first.caption, "Короткий текст");
+  assert.equal(first.parse_mode, "HTML");
+  assert.equal(first.disable_notification, true);
+  assert.ok(first.reply_markup.inline_keyboard[0][0].url.includes("/api/go/"));
+  assert.deepEqual(first.reply_markup.inline_keyboard[1], [{ text: "Я уже оплатил(а)", callback_data: "paid" }]);
+  assert.equal(first.supports_streaming, undefined); // это не видео
+  assert.equal(store.getMedia(media.url), "d-1");
+
+  // второй раз файл уходит по file_id, без повторной загрузки по ссылке
+  fake.reset();
+  await sendContent({ media, text: "Ещё раз", buttons }, c);
+  assert.equal(fake.calls[0].method, "sendDocument");
+  assert.equal(fake.calls[0].body.document, "d-1");
+
+  // протухший file_id (400): повтор по ссылке, новый file_id запоминается
+  fake.reset();
+  store.setMedia(media.url, "STALE");
+  fake.respond = (method, body) => (method === "sendDocument" && body.document === "STALE" ? { status: 400, json: { ok: false, error_code: 400, description: "Bad Request: wrong file identifier" } } : null);
+  r = await sendContent({ media, text: "Текст" }, c);
+  assert.equal(r.ok, true);
+  assert.deepEqual(fake.calls.map((x) => x.body.document), ["STALE", media.url]);
+  assert.equal(store.getMedia(media.url), "d-1");
+
+  // подпись длиннее 1024: файл отдельно, текст с кнопками следом; ровно 1024 влезает в подпись
+  fake.reset();
+  const long = "я".repeat(1025);
+  r = await sendContent({ media, text: long, buttons }, c);
+  assert.equal(r.ok, true);
+  assert.deepEqual(fake.calls.map((x) => x.method), ["sendDocument", "sendMessage"]);
+  assert.equal(fake.calls[0].body.caption, undefined);
+  assert.equal(fake.calls[0].body.reply_markup, undefined);
+  assert.equal(fake.calls[1].body.text, long);
+  assert.equal(fake.calls[1].body.reply_markup.inline_keyboard[1][0].text, "Я уже оплатил(а)");
+  fake.reset();
+  await sendContent({ media, text: "я".repeat(1024) }, c);
+  assert.deepEqual(fake.calls.map((x) => x.method), ["sendDocument"]);
+});
+
+test("документ не ушёл (Telegram не скачал файл): тот же текст с кнопками, mediaFallback, одно предупреждение про файл", async () => {
+  boot();
+  resetRuntime();
+  const sr = mkSeries([]);
+  const media = { type: "document" as const, url: "https://onai.academy/x/missing.pdf" };
+  fake.respond = (method) => (method === "sendDocument" ? { status: 400, json: { ok: false, error_code: 400, description: "Bad Request: failed to get HTTP URL content" } } : null);
+  const buttons = [[{ text: "Эфир", url: "{STREAM}" }], [{ text: "Я уже оплатил(а)", callback: "paid" }]];
+  const r = await sendContent({ media, text: "Текст дожима", buttons }, ctxFor(sr));
+  assert.equal(r.ok, true);
+  const mine = fake.of("sendMessage").filter((c) => c.body.chat_id === 4242);
+  assert.equal(mine.length, 1);
+  assert.equal(mine[0].body.text, "Текст дожима");
+  assert.equal(mine[0].body.reply_markup.inline_keyboard[0][0].text, "Эфир");
+  assert.deepEqual(mine[0].body.reply_markup.inline_keyboard[1], [{ text: "Я уже оплатил(а)", callback_data: "paid" }]);
+  assert.equal(runtime.events.filter((e) => e.type === "mediaFallback").length, 1);
+  assert.equal(runtime.events.find((e) => e.type === "mediaFallback")!.info, media.url);
+  await waitFor(() => fake.texts(900).length >= 1 && fake.texts(901).length >= 1);
+  assert.match(fake.texts(900)[0], /Не отправился файл https:\/\/onai\.academy\/x\/missing\.pdf/);
+  // человек заблокировал бота: второй отправки текстом нет, в mediaFallback не считается
+  fake.reset();
+  fake.respond = () => ({ status: 403, json: { ok: false, error_code: 403, description: "Forbidden: bot was blocked by the user" } });
+  const gone = await sendContent({ media: { type: "document", url: "https://onai.academy/x/missing-2.pdf" }, text: "x" }, ctxFor(sr));
+  assert.equal(gone.ok, false);
+  assert.equal(fake.calls.length, 1);
+  assert.equal(runtime.events.filter((e) => e.type === "mediaFallback").length, 1);
+});
+
+test("media document: в серии только https и адрес на .pdf", () => {
+  const withDoc = (url: unknown, type: string = "document") => () => mkSeries([msg("d", "10:00", { media: { type, url } })]);
+  const good = "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf";
+  assert.equal(withDoc(good)().messages[0].media!.type, "document");
+  assert.throws(withDoc("http://onai.academy/x/deck.pdf"), /media/);
+  assert.throws(withDoc("https://onai.academy/x/deck.jpg"), /\.pdf/);
+  assert.throws(withDoc("https://onai.academy/x/deck.pdf?v=2"), /\.pdf/);
+  assert.throws(withDoc("https://onai.academy/x/deck.pdf.exe"), /\.pdf/);
+  assert.throws(withDoc("https://onai.academy/x/deck"), /\.pdf/);
+  assert.throws(withDoc(42), /media/);
+  // фото с картинкой по-прежнему не обязано кончаться на .pdf, чужой тип не проходит
+  assert.doesNotThrow(withDoc("https://onai.academy/x/a.jpg", "photo"));
+  assert.throws(withDoc(good, "audio"), /media/);
 });
 
 test("сетевая ошибка: одна повторная попытка; 429: пауза и повтор", async () => {
@@ -963,6 +1124,114 @@ test("tick: вчерашний день эфира получает сообще
   const f = fakeDeps();
   assert.equal(await tick(alm(2026, 10, 7, 11, 5), f.deps), 1);
   assert.deepEqual(f.sent, [33]);
+});
+
+test("tick: дожим следующего дня идёт только кликнувшим неоплатившим; перешедшему по rejoin на сегодня вчерашний дожим не уходит", async () => {
+  const { store } = boot([msg("f1", "10:30", { dayOffset: 1, audience: "clickedNotPaid" })]);
+  const reg = alm(2026, 10, 6, 10, 0);
+  for (const c of [70, 71, 72, 73, 74]) sub(store, c, D, reg);
+  for (const c of [70, 71, 73, 74]) store.recordClick(c, D, iso(alm(2026, 10, 6, 20, 5)));
+  store.recordEvent({ type: "paid", chat_id: 71, by: "self", ts: iso(alm(2026, 10, 6, 21, 30)) });   // был и оплатил
+  // 72 клика не делал: на эфир не заходил
+  store.recordEvent({ type: "rejoin", chat_id: 73, streamDay: "2026-10-07", ts: iso(alm(2026, 10, 7, 9, 0)) }); // был, но утром перешёл на сегодня
+  store.recordEvent({ type: "blocked", chat_id: 74, ts: iso(alm(2026, 10, 7, 9, 30)) });              // был, но заблокировал бота
+  store.setSeriesEnabled(true);
+  const f = fakeDeps();
+  assert.equal(await tick(alm(2026, 10, 6, 10, 35), f.deps), 0);  // в сам день эфира дожима нет
+  assert.equal(await tick(alm(2026, 10, 7, 10, 20), f.deps), 0);  // до окна
+  assert.equal(await tick(alm(2026, 10, 7, 10, 35), f.deps), 1);
+  assert.deepEqual(f.sent, [70]);
+  assert.equal(await tick(alm(2026, 10, 7, 10, 36), f.deps), 0);  // повтора нет
+  assert.equal(store.hasSent("f1", D, 70), true);
+  assert.equal(store.hasSent("f1", D, 73), false);
+  // выключенная серия дожим не шлёт: он не essential
+  const { store: off } = boot([msg("f1", "10:30", { dayOffset: 1, audience: "clickedNotPaid" })]);
+  sub(off, 70, D, reg);
+  off.recordClick(70, D, iso(alm(2026, 10, 6, 20, 5)));
+  const f2 = fakeDeps();
+  assert.equal(await tick(alm(2026, 10, 7, 10, 35), f2.deps), 0);
+  assert.deepEqual(f2.sent, []);
+});
+
+test("серия из репозитория, следующий день: дожим только был-на-эфире-не-оплатил, next-day-1100 зовёт пропустивших, rejoin ведёт на сегодняшний эфир", async () => {
+  const { store } = boot(base.messages);
+  const reg = alm(2026, 10, 6, 10, 0);
+  sub(store, 80, D, reg);   // записан, на эфир не пришёл
+  sub(store, 81, D, reg);   // был на эфире, не оплатил
+  sub(store, 82, D, reg);   // был на эфире, оплатил
+  store.recordClick(81, D, iso(alm(2026, 10, 6, 20, 5)));
+  store.recordClick(82, D, iso(alm(2026, 10, 6, 20, 5)));
+  store.recordEvent({ type: "paid", chat_id: 82, by: "self", ts: iso(alm(2026, 10, 6, 21, 30)) });
+  store.setSeriesEnabled(true);
+
+  const T1 = "2026-10-07";
+  const log: string[] = [];
+  const f = fakeDeps({
+    send: async (s, m, day) => {
+      log.push(`${m.id}@${day}:${s.chatId}`);
+      // настоящая отправка (подставной Telegram): так видно файл, кнопки и ссылку эфира
+      return sendContent({ media: m.media, text: m.text, buttons: m.buttons, silent: m.silent }, { series: activeSeries(), now: f.deps.now(), chatId: s.chatId, firstName: s.firstName, day }, { prio: "lo" });
+    },
+  });
+  const run = async (now: number) => {
+    f.setNow(now);
+    return tick(now, f.deps);
+  };
+  const only = (re: RegExp) => log.filter((x) => re.test(x));
+
+  // 10:30 следующего дня: презентация файлом тому, кто был на эфире и не оплатил
+  assert.equal(await run(alm(2026, 10, 7, 10, 35)), 1);
+  assert.deepEqual(log, [`follow-1030@${D}:81`]);
+  const doc = fake.of("sendDocument");
+  assert.equal(doc.length, 1);
+  assert.equal(doc[0].body.chat_id, 81);
+  assert.equal(doc[0].body.document, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
+  assert.match(String(doc[0].body.caption), /^Доброе утро! Вчера ты был на эфире/);
+  assert.deepEqual(doc[0].body.reply_markup.inline_keyboard.map((r: any[]) => r[0].text), [
+    "Оплатить через Kaspi", "Другие страны и рассрочка: Аяна", "Написать Аяне в WhatsApp", "Я уже оплатил(а)",
+  ]);
+  assert.equal(doc[0].body.reply_markup.inline_keyboard[0][0].url, base.links.prepayKz);
+
+  // 11:00: пропустившему приходит зов на сегодняшний эфир, был на эфире не получает
+  assert.equal(await run(alm(2026, 10, 7, 11, 5)), 1);
+  assert.deepEqual(only(/next-day/), [`next-day-1100@${D}:80`]);
+  const call = fake.texts(80).at(-1)!;
+  assert.match(call, /^Если вчера не получилось попасть на эфир, сегодня в 20:00 по Алматы/);
+
+  // он нажимает «Записаться на сегодня»: день эфира сегодняшний, запись свежая
+  fake.reset();
+  await processUpdate(cb(80, "rejoin"), alm(2026, 10, 7, 11, 6));
+  assert.equal(store.subs.get(80)!.streamDay, T1);
+  assert.equal(store.subs.get(80)!.registeredAt, alm(2026, 10, 7, 11, 6));
+  assert.equal(fake.texts(80)[0], base.welcome.rejoinAck);
+
+  // 15:00: второй дожим только тому, кто был (вчерашний, для D), а перешедшему на сегодня нет
+  log.length = 0;
+  fake.reset();
+  assert.equal(await run(alm(2026, 10, 7, 15, 5)), 1);
+  assert.deepEqual(only(/follow/), [`follow-1500@${D}:81`]);
+  assert.equal(fake.of("sendDocument")[0].body.document, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production-plus-PRO.pdf");
+  assert.equal(fake.of("sendDocument")[0].body.reply_markup.inline_keyboard[2][0].url, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Coding-PRO.pdf");
+
+  // 19:50 сегодня: перешедший получает ссылку на сегодняшний эфир (день T1), был на вчерашнем эфире нет
+  log.length = 0;
+  fake.reset();
+  await run(alm(2026, 10, 7, 19, 55));
+  assert.deepEqual(only(/link-1950/), [`link-1950@${T1}:80`]);
+  const link = fake.of("sendMessage").find((c) => c.body.chat_id === 80 && /Через 10 минут стартуем/.test(String(c.body.text)))!;
+  assert.ok(link);
+  const goUrl = link.body.reply_markup.inline_keyboard[0][0].url as string;
+  assert.deepEqual(verifyGoToken(goUrl.split("/").pop()!), { chatId: 80, day: T1 });
+
+  // 21:45: последний дожим вчерашнего дня остаётся только у 81
+  log.length = 0;
+  await run(alm(2026, 10, 7, 21, 45));
+  assert.deepEqual(only(/follow/), [`follow-2145@${D}:81`]);
+  // оплатившему и пропустившему вчерашний дожим не шёл ни разу
+  for (const chat of [80, 82]) for (const id of ["follow-1030", "follow-1500", "follow-2145"]) assert.equal(store.hasSent(id, D, chat), false, `${id} для ${chat}`);
+
+  // /series показывает аудиторию понятной подписью
+  assert.match(buildSeriesText(store, activeSeries(), alm(2026, 10, 7, 22, 0)), /follow-2145 \(были на эфире, не оплатили\)/);
 });
 
 test("tick: tg-sent загружен до первого тика, повторный запуск на тех же данных ничего не дублирует", async () => {

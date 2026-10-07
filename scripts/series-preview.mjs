@@ -59,12 +59,17 @@ const AUD = {
   clicked: ["Кто зашёл на эфир", "a-all"],
   notClicked: ["Кто ещё не зашёл на эфир", "a-nc"],
   notPaid: ["Кто не оплатил", "a-np"],
+  clickedNotPaid: ["Были на эфире, не оплатили", "a-np"],
 };
 
 function bubble({ id, at, audience = "all", mediaSpec, text, buttons, note, enabled = true, dayOffset = 0, silent = false, essential = false }) {
-  const m = mediaSpec ? localMedia(mediaSpec.type === "video" ? mediaSpec.poster : mediaSpec.url) : null;
+  const isDoc = mediaSpec?.type === "document";
+  const m = mediaSpec && !isDoc ? localMedia(mediaSpec.type === "video" ? mediaSpec.poster : mediaSpec.url) : null;
   let mediaHtml = "";
-  if (mediaSpec) {
+  if (isDoc) {
+    // PDF уходит файлом (sendDocument): в ленте показываем плашку с именем файла
+    mediaHtml = `<figure class="media missing"><span>PDF-файл: ${esc(basename(mediaSpec.url))}</span></figure>`;
+  } else if (mediaSpec) {
     const ratio = mediaSpec.type === "video" ? "video" : "photo";
     mediaHtml = m && !m.missing
       ? `<figure class="media ${ratio}"><img src="media/${esc(m.name)}" alt="" loading="lazy">${mediaSpec.type === "video" ? '<span class="play" aria-hidden="true"></span><figcaption>видео, 720p</figcaption>' : ""}</figure>`
@@ -109,7 +114,10 @@ const NOTES = {
   "push-2130": "Дожим 1: что человек сделает за месяц, по модулям оферты.",
   "push-2230": "Дожим 2: если нет всей суммы. Рассрочка, предоплата, игра на минус 10 000 ₸.",
   "push-2330": "Дожим 3: дедлайн 23:59.",
-  "next-day-1100": "Возврат тех, кто не дошёл. Выключено, включим по твоему слову.",
+  "next-day-1100": "Возврат тех, кто записался, но не пришёл. Кнопка переводит человека на сегодняшний эфир, ссылка придёт в 19:50.",
+  "follow-1030": "Дожим на следующий день 1: презентация Vibe Production файлом PDF, условия до 23:59. Только тем, кто был на эфире и не оплатил.",
+  "follow-1500": "Дожим на следующий день 2: оба курса, презентация PDF. Только тем, кто был на эфире и не оплатил.",
+  "follow-2145": "Дожим на следующий день 3: честный вопрос «с нами или нет» до конца дня. Только тем, кто был на эфире и не оплатил.",
 };
 
 const msgs = series.messages.map((m) => ({ ...m, mediaSpec: m.media, note: NOTES[m.id] }));
