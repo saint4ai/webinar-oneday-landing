@@ -15,8 +15,19 @@ const imgDir = join(root, "workshop-montazh/assets/img");
 mkdirSync(outDir, { recursive: true });
 mkdirSync(reportDir, { recursive: true });
 
-const CARD_IDS = ["warm-edits", "warm-cases", "topic-p1", "topic-p2", "topic-p3", "training", "offer"];
+const CARD_IDS = [
+  "warm-edits", "warm-cases", "topic-p1", "topic-p2", "topic-p3", "training", "offer",
+  // карточки рассылки: до эфира, в эфире, последний звонок
+  "reg-bonus", "live-bonus", "t-minus-10", "live-now", "last-call",
+];
 const what = process.argv[2] || "all";
+// Третий аргумент: снять только перечисленные карточки, остальные не перезаписывать.
+// Пример: node docs/tg-media/render.mjs cards reg-bonus,live-bonus
+const onlyIds = process.argv[3] ? process.argv[3].split(",").map((s) => s.trim()).filter(Boolean) : null;
+if (onlyIds) {
+  const unknown = onlyIds.filter((id) => !CARD_IDS.includes(id));
+  if (unknown.length) throw new Error("Неизвестные id карточек: " + unknown.join(", "));
+}
 
 const fileUrl = (name, query = "") => pathToFileURL(join(here, name)).href + query;
 
@@ -50,9 +61,11 @@ async function shoot(name, query, w, h, scale = 1) {
   await ready(page);
   const info = await page.evaluate(() => {
     // проверка: ничего из .fit-блоков не вылезло за свои рамки
+    // data-fit="w": только по ширине (заголовок: запас шрифта по высоте не считается вылезанием)
     const bad = [];
     document.querySelectorAll("[data-fit]").forEach((el) => {
-      if (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1) bad.push(el.className || el.tagName);
+      const widthOnly = el.dataset.fit === "w";
+      if (el.scrollWidth > el.clientWidth + 1 || (!widthOnly && el.scrollHeight > el.clientHeight + 1)) bad.push(el.className || el.tagName);
     });
     return bad;
   });
@@ -72,7 +85,7 @@ if (what === "cover" || what === "all") {
 }
 
 if (what === "cards" || what === "all") {
-  for (const id of CARD_IDS) {
+  for (const id of onlyIds || CARD_IDS) {
     const { png, overflow } = await shoot("card.html", `?id=${id}`, 1080, 1350);
     const r = await toJpg(png, join(outDir, `${id}.jpg`), { quality: 88, maxBytes: 450 * 1024 });
     // превью 540x675, как в чате Telegram

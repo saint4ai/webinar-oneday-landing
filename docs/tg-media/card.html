@@ -44,6 +44,13 @@ html,body{width:1080px;height:1350px}
   filter:drop-shadow(0 20px 40px rgba(0,0,0,.35));opacity:.96}
 .topic .obj{position:absolute;display:block;filter:drop-shadow(0 34px 38px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(227,192,123,.18))}
 
+/* live-now: вместо цифры плашка LIVE с красной точкой */
+.live .onair{left:80px;top:392px;height:176px;display:flex;align-items:center;gap:36px;padding:0 66px 0 52px;border-radius:999px;
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:112px;line-height:1;letter-spacing:.02em;color:var(--cream);white-space:nowrap}
+.live .onair .dot{display:block;flex:none;width:76px;height:76px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#FF8A6B 0%,#E5472C 52%,#B02A18 100%);
+  box-shadow:0 0 0 14px rgba(229,71,44,.22),0 0 0 30px rgba(229,71,44,.09),0 0 64px rgba(255,98,64,.6)}
+
 /* training */
 .train .row{left:80px;width:920px;height:198px;display:flex;align-items:center;gap:34px;padding:0 44px 0 34px}
 .train .row .ic{width:144px;height:144px;flex:none;display:flex;align-items:center;justify-content:center}
@@ -66,13 +73,14 @@ html,body{width:1080px;height:1350px}
 const L = "../../public/montage/lego/";
 const X3 = "obj/";
 const LOGO = '<img class="logo" src="onai-logo-night.svg" alt="">';
-const head = (h, size) => `<h1 class="h" style="font-size:${size}px">${h}</h1>`;
+const head = (h, size) => `<h1 class="h" data-fit="w" style="font-size:${size}px">${h}</h1>`;
 const lab = (t) => `<div class="label"><i></i>${t}</div>`;
 
-const topic = (n, label, h, obj, objCss, floor, gx) => ({
+// digitCss: для двузначных цифр (10, 30) уменьшаем кегль, чтобы цифра не вышла за рамку
+const topic = (n, label, h, obj, objCss, floor, gx, digitCss) => ({
   cls: "topic", gx: gx || "78%", gy: "30%",
   html: `${lab(label)}${head(h, 76)}
-    <div class="digit">${n}</div>
+    <div class="digit" style="${digitCss || ""}">${n}</div>
     <div class="shadow-floor" style="${floor}"></div>
     <img class="obj" src="${obj}" style="${objCss}" alt="">${LOGO}`
 });
@@ -114,6 +122,26 @@ const cards = {
       <div class="shadow-floor" style="left:500px;top:1196px;width:520px;height:56px"></div>
       <img style="position:absolute;left:468px;top:708px;width:560px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${L}lg-s41-deadline.webp" alt="">${LOGO}`
   },
+
+  // Карточки рассылки (Telegram и WhatsApp): до эфира, в эфире, последний звонок
+  "reg-bonus": topic("2", "ЗА РЕГИСТРАЦИЮ", "Два бонуса<br>уже твои", X3 + "lg-i-box-x3.png",
+    "left:460px;top:740px;width:580px", "left:470px;top:1160px;width:560px;height:66px", "70%"),
+  "live-bonus": topic("2", "ТОЛЬКО НА ЭФИРЕ", "Ещё два бонуса<br>в конце эфира", X3 + "lg-s50-plan.png",
+    "left:490px;top:690px;width:540px", "left:490px;top:1160px;width:520px;height:62px", "70%"),
+  "t-minus-10": topic("10", "СЕГОДНЯ 20:00 ПО АЛМАТЫ", "Через 10 минут<br>начинаем", X3 + "lg-s41-alarm-x2.png",
+    "left:575px;top:725px;width:420px", "left:570px;top:1190px;width:440px;height:58px", "70%",
+    "font-size:560px;left:56px;top:340px"),
+  "live-now": {
+    cls: "live", gx: "72%", gy: "38%",
+    html: `${lab("ПРЯМОЙ ЭФИР")}${head("Мы в эфире,<br>заходи", 76)}
+      <div class="glass onair" data-fit><span class="dot"></span>LIVE</div>
+      <div class="light-floor" style="left:380px;top:620px;width:700px;height:640px;opacity:.5"></div>
+      <div class="shadow-floor" style="left:440px;top:1200px;width:580px;height:64px"></div>
+      <img class="obj" style="position:absolute;left:410px;top:555px;width:620px;filter:drop-shadow(0 34px 38px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(227,192,123,.18))" src="${X3}lg-i-camera-x3.png" alt="">${LOGO}`
+  },
+  "last-call": topic("30", "ДО 23:59 ПО АЛМАТЫ", "Осталось<br>30 минут", X3 + "lg-i-hourglass-x3.png",
+    "left:560px;top:560px;width:450px", "left:545px;top:1195px;width:480px;height:58px", "70%",
+    "font-size:520px;left:56px;top:350px"),
 };
 
 const id = new URLSearchParams(location.search).get("id") || "warm-edits";
