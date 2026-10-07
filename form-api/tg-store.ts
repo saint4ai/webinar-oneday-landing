@@ -301,6 +301,11 @@ export class TgStore {
     return [...this.regDays.keys()];
   }
 
+  /** chat_id всех, кто записывался на эфир дня D (по start и rejoin). Для мини-приложения админки. */
+  registeredOn(day: string): number[] {
+    return [...(this.regDays.get(day) ?? [])];
+  }
+
   /**
    * Метрики эфира дня D: записались (уникальные chat_id с этим днём), из них перешли по кнопке
    * эфира (уникальные, /api/go), из них нажали «Я уже оплатил(а)».

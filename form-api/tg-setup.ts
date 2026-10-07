@@ -7,7 +7,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { botCall, botToken, webhookSecret } from "./tg-workshop";
+import { adminAppIds, adminAppUrl, botCall, botToken, webhookSecret } from "./tg-workshop";
 
 const WEBHOOK_URL = "https://onai.academy/workshop/api/tg-workshop";
 const DESCRIPTION = "Бот бесплатного воркшопа «Вайб-продакшен». Пришлю ссылку на эфир, напоминания и условия для участников. Нажмите «Запустить».";
@@ -77,7 +77,7 @@ async function main() {
   report("3/6 setMyDescription", await botCall("setMyDescription", { description: DESCRIPTION }));
   report("4/6 setMyShortDescription", await botCall("setMyShortDescription", { short_description: SHORT_DESCRIPTION }));
   report(
-    "5/6 setMyCommands",
+    "5/7 setMyCommands",
     await botCall("setMyCommands", {
       commands: [
         { command: "start", description: "Записаться на воркшоп" },
@@ -86,9 +86,27 @@ async function main() {
     }),
   );
 
-  // 6. Итог: состояние вебхука и сам бот.
+  // 6. Кнопка меню «Админка» (мини-приложение) только в личных чатах из ADMIN_APP_IDS.
+  //    Остальным пользователям кнопка не ставится: у них остаётся обычное меню бота.
+  const appIds = adminAppIds();
+  if (!appIds.length) console.log("OK    6/7 setChatMenuButton: ADMIN_APP_IDS пуст, кнопка никому не ставится");
+  for (const id of appIds) {
+    const chatId = Number(id);
+    if (!Number.isInteger(chatId)) {
+      failures++;
+      console.log(`FAIL  6/7 setChatMenuButton: в ADMIN_APP_IDS не число: ${id}`);
+      continue;
+    }
+    report(
+      `6/7 setChatMenuButton ${chatId} «Админка»`,
+      await botCall("setChatMenuButton", { chat_id: chatId, menu_button: { type: "web_app", text: "Админка", web_app: { url: adminAppUrl() } } }),
+      adminAppUrl(),
+    );
+  }
+
+  // 7. Итог: состояние вебхука и сам бот.
   const wh = await botCall<Record<string, unknown>>("getWebhookInfo", {});
-  report("6/6 getWebhookInfo", wh);
+  report("7/7 getWebhookInfo", wh);
   if (wh.ok) {
     const w = wh.result;
     console.log(`      url: ${w.url}`);

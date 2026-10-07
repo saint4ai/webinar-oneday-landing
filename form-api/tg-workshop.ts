@@ -63,6 +63,20 @@ export function isOwner(userId: number | string | undefined): boolean {
   return userId !== undefined && ids.length > 0 && ids.includes(String(userId));
 }
 
+/**
+ * Кто может открыть мини-приложение админки: ADMIN_APP_IDS через запятую, не задан это Александр
+ * (789638302). Задан, но пустой: не пускаем никого.
+ */
+export function adminAppIds(): string[] {
+  const raw = process.env.ADMIN_APP_IDS;
+  return (raw === undefined ? "789638302" : raw).split(",").map((s) => s.trim()).filter(Boolean);
+}
+export function isAdminAppUser(userId: number | string | undefined): boolean {
+  return userId !== undefined && adminAppIds().includes(String(userId));
+}
+/** Публичный адрес мини-приложения (nginx: /workshop/api/X уходит на :4010/api/X). Переопределяется ADMIN_APP_URL. */
+export const adminAppUrl = () => env("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
+
 /** Публичный адрес перехода в эфир (nginx: /workshop/api/X уходит на :4010/api/X). */
 const GO_BASE = "https://onai.academy/workshop/api/go";
 /** Тело вебхука Telegram. Больше лимита: отвечаем 200 и выбрасываем. */
@@ -526,7 +540,7 @@ export function isGone(r: SendResult): boolean {
 
 // ───────────────────────── подстановки ─────────────────────────
 
-export type InlineButton = { text: string; url?: string; callback_data?: string };
+export type InlineButton = { text: string; url?: string; callback_data?: string; web_app?: { url: string } };
 
 export type RenderCtx = {
   series: Series;
@@ -836,12 +850,13 @@ type TgCallback = { id: string; from: TgUser; message?: { message_id?: number; c
 type TgMemberUpdate = { chat: TgChat; from?: TgUser; new_chat_member?: { status?: string } };
 export type TgUpdate = { update_id?: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate };
 
-const OWNER_CMDS = new Set(["stats", "admin", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
 
 /** Справка владельцу (/help). У остальных /help идёт как обычный текст: им отвечает welcome.other. */
 export const HELP_TEXT = [
   "Команды владельца:",
   "/admin: аналитика (заявки, бот, UTM по дням, ошибки), выбор периода и даты. /stats открывает то же",
+  "/app: мини-приложение админки (кнопка, вход по паролю): сводка, источники, регистрации, подписчики, эфиры, ошибки",
   "/series: расписание сообщений на сегодня",
   "/preview: прислать себе всю серию для проверки",
   "/fire <id>: отправить сообщение сейчас (сначала превью, потом кнопка «Отправить»)",
@@ -1223,6 +1238,14 @@ async function ownerCommand(cmd: string, args: string, m: TgMessage, now: number
     case "stats":
     case "admin":
       await plain(chatId, adminHomeText(st, sr(), now), menuKeyboard());
+      return;
+    case "app":
+      // Мини-приложение только для аккаунтов из ADMIN_APP_IDS; остальным владельцам коротко отказ без подробностей.
+      if (!isAdminAppUser(m.from?.id)) {
+        await plain(chatId, "Админка недоступна для этого аккаунта.");
+        return;
+      }
+      await plain(chatId, "Админка воркшопа. Откроется внутри Telegram, вход по паролю.", [[{ text: "Открыть админку", web_app: { url: adminAppUrl() } }]]);
       return;
     case "series":
       await plain(chatId, buildSeriesText(st, sr(), now));

@@ -29,7 +29,7 @@ fi
 
 echo "== распаковка"
 tar -xzf "$PKG" -C "$TMP"
-for f in form/server.js form/tg-setup.js form/tg-series.json form/VERSION landing/thank-you.html landing/efir.js landing/index.html static/thank-you.html secrets.env; do
+for f in form/server.js form/tg-setup.js form/tg-series.json form/admin-app.html form/VERSION landing/thank-you.html landing/efir.js landing/index.html static/thank-you.html secrets.env; do
   test -s "$TMP/$f" || { echo "нет $f в архиве"; exit 1; }
 done
 
@@ -37,6 +37,7 @@ echo "== бэкапы в $B"
 mkdir -p "$B"
 cp -a "$W" "$B/workshop-montazh"
 cp -a "$F/server.js" "$F/.env" "$B/"
+[[ -f "$F/admin-app.html" ]] && cp -a "$F/admin-app.html" "$B/" || true
 cp -a "$S/thank-you.html" "$B/static-thank-you.html"
 # Старые *.bak.* лежали внутри корня сайта и отдавались наружу: переносим их в бэкапы.
 mkdir -p /var/backups/workshop-montazh-old
@@ -54,6 +55,8 @@ echo "переменных TG_WORKSHOP_ и TG_GO_: $(grep -c -E '^(TG_WORKSHOP_|
 echo "== пробный запуск нового server.js на 4011 без бота"
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/tg-series.json" "$F/tg-series.json"
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/VERSION" "$F/VERSION"
+# Страница мини-приложения админки лежит рядом с server.js; пароль и ключ сессий (ADMIN_APP_PIN, ADMIN_APP_SECRET) в .env дописываются отдельно.
+install -o onaiapp -g onaiapp -m 644 "$TMP/form/admin-app.html" "$F/admin-app.html"
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/server.js" "$F/server.next.js"
 install -d -o onaiapp -g onaiapp -m 700 "$F/data"
 ( cd "$F" && runuser -u onaiapp -- env PORT=4011 TG_BOT=off FORM_API_ENV="$F/.env" node server.next.js >"$TMP/trial.log" 2>&1 & echo $! >"$TMP/trial.pid" )
@@ -68,6 +71,10 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -m 2 -X POST -H 'Content-Type: app
 [[ "$code" =~ ^4 ]] || trial_fail "/api/lead с пустым телом ответил $code, ждали 4xx"
 code=$(curl -s -o /dev/null -w '%{http_code}' -m 2 http://127.0.0.1:4011/api/go/bad || true)
 [[ "$code" == 302 ]] || trial_fail "/api/go/bad ответил $code"
+code=$(curl -s -o /dev/null -w '%{http_code}' -m 2 http://127.0.0.1:4011/api/admin-app || true)
+[[ "$code" == 200 ]] || trial_fail "/api/admin-app ответил $code"
+code=$(curl -s -o /dev/null -w '%{http_code}' -m 2 http://127.0.0.1:4011/api/admin/summary || true)
+[[ "$code" == 403 || "$code" == 503 ]] || trial_fail "/api/admin/summary без initData ответил $code, ждали 403 или 503"
 trial_stop
 sleep 0.5
 echo "пробный запуск: ок"

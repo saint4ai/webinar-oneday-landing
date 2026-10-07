@@ -38,6 +38,16 @@ import {
 } from "./tg-admin";
 import { adminCtx } from "./tg-workshop";
 import { adminDaily } from "./tg-scheduler";
+import { createHmac } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { copyFileSync } from "node:fs";
+import { adminAppIds, adminAppUrl, isAdminAppUser } from "./tg-workshop";
+import {
+  buildErrors, buildLeads, buildSubscribers, buildSummary, handleAdminApp, handleAdminData, handleAdminLogin, INIT_MAX_AGE_SEC,
+  LOGIN_MAX_FAILS, LOGIN_WINDOW_MS, loginLockedFor, noteLoginFail, pinMatches, resetAdminAppState, SESSION_TTL_MS, signSession,
+  verifyInitData, verifySession, type ListQuery,
+} from "./tg-miniapp";
+import { periodFromDates } from "./tg-admin";
 
 process.env.TG_WORKSHOP_BOT_TOKEN = "TESTTOKEN:abc123";
 process.env.TG_WORKSHOP_WEBHOOK_SECRET = "test-webhook-secret-0123";
@@ -255,7 +265,7 @@ test("dayWord, dateLabel: Сегодня, Завтра, дата; границы
 });
 
 test("исходники tg-*.ts: без Intl, локальных геттеров Date, toLocale и длинного тире", () => {
-  for (const f of ["tg-time.ts", "tg-store.ts", "tg-workshop.ts", "tg-scheduler.ts", "tg-setup.ts", "tg-admin.ts"]) {
+  for (const f of ["tg-time.ts", "tg-store.ts", "tg-workshop.ts", "tg-scheduler.ts", "tg-setup.ts", "tg-admin.ts", "tg-miniapp.ts"]) {
     const p = join(REPO, "form-api", f);
     const src = readFileSync(p, "utf8");
     assert.equal(/\bIntl\./.test(src), false, `${f}: Intl`);
@@ -2148,4 +2158,716 @@ test("ежедневный отчёт: время из adminDailyReportAt, ид�
   assert.throws(() => validateSeries(rawSeries([msg("a", "10:00")], { adminDailyReportAt: 900 })), /adminDailyReportAt/);
   assert.doesNotThrow(() => validateSeries(rawSeries([msg("a", "10:00")], { adminDailyReportAt: "09:00" })));
   assert.equal(validateSeries(rawSeries([msg("a", "10:00")])).adminDailyReportAt, undefined); // по умолчанию 09:00 берёт планировщик
+});
+
+// ───────────────────────── мини-приложение админки (Telegram Mini App) ─────────────────────────
+
+const APP_PIN = "test-pin-4821";
+const APP_SECRET = "test-app-secret-0123456789abcdef";
+process.env.ADMIN_APP_PIN = APP_PIN;
+process.env.ADMIN_APP_SECRET = APP_SECRET;
+process.env.ADMIN_APP_IDS = "900"; // 900 админ приложения; 901 тоже владелец бота, но в приложение не допущен
+const BOT_TOKEN = process.env.TG_WORKSHOP_BOT_TOKEN as string;
+const PAGE_FILE = join(REPO, "form-api", "admin-app.html");
+const LQ: ListQuery = { q: "", utm: "", inbot: "", flag: "", offset: 0, limit: 50 };
+
+/** initData по официальной схеме Telegram, собранная независимо от кода сервера. */
+function signInit(fields: Record<string, string>, token = BOT_TOKEN, order: "asc" | "desc" = "asc"): string {
+  const keys = Object.keys(fields).sort();
+  const dcs = keys.map((k) => `${k}=${fields[k]}`).join("\n");
+  const secret = createHmac("sha256", "WebAppData").update(token).digest();
+  const hash = createHmac("sha256", secret).update(dcs).digest("hex");
+  const ordered = order === "asc" ? keys : [...keys].reverse();
+  return [...ordered.map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(fields[k])}`), `hash=${hash}`].join("&");
+}
+const userJson = (id: number) => JSON.stringify({ id, first_name: "Александр", username: "saint4ai", language_code: "ru" });
+const initFor = (id: number, o: { ageSec?: number; now?: number; token?: string } = {}) => {
+  const now = o.now ?? Date.now();
+  return signInit({ auth_date: String(Math.floor(now / 1000) - (o.ageSec ?? 0)), query_id: "AAHdF6IQAAAAAN0XohDhrOrc", user: userJson(id) }, o.token);
+};
+
+test("initData: верная подпись, подделка, чужой токен, старый auth_date, будущее, мусор, порядок полей", () => {
+  const now = Math.floor(Date.now() / 1000) * 1000; // целые секунды: граница в 24 часа проверяется точно
+  assert.deepEqual(verifyInitData(initFor(900, { now }), BOT_TOKEN, now), { ok: true, userId: 900, authDate: Math.floor(now / 1000) });
+  // порядок полей в строке не важен, дополнительные поля входят в подпись
+  const base = { auth_date: String(Math.floor(now / 1000)), query_id: "Q", user: userJson(900), start_param: "x y" };
+  assert.equal(verifyInitData(signInit(base, BOT_TOKEN, "desc"), BOT_TOKEN, now).ok, true);
+  // подделка: user.id заменён при прежней подписи; поле дописано; подпись испорчена; чужой токен бота
+  const p = new URLSearchParams(initFor(900, { now }));
+  p.set("user", userJson(901));
+  assert.deepEqual(verifyInitData(p.toString(), BOT_TOKEN, now), { ok: false, reason: "hash" });
+  const q = new URLSearchParams(initFor(900, { now }));
+  q.set("start_param", "evil");
+  assert.deepEqual(verifyInitData(q.toString(), BOT_TOKEN, now), { ok: false, reason: "hash" });
+  const good = initFor(900, { now });
+  assert.deepEqual(verifyInitData(good.slice(0, -1) + (good.endsWith("0") ? "1" : "0"), BOT_TOKEN, now), { ok: false, reason: "hash" });
+  assert.deepEqual(verifyInitData(good, "123:OTHER", now), { ok: false, reason: "hash" });
+  assert.deepEqual(verifyInitData(initFor(900, { now, token: "123:OTHER" }), BOT_TOKEN, now), { ok: false, reason: "hash" });
+  // мусор и пустое
+  for (const bad of ["", "hash=abc", "auth_date=1&user=%7B%7D", "x".repeat(9000)]) assert.equal(verifyInitData(bad, BOT_TOKEN, now).ok, false, bad.slice(0, 20));
+  assert.equal(verifyInitData(good, "", now).ok, false);
+  const noHash = new URLSearchParams(good);
+  noHash.delete("hash");
+  assert.deepEqual(verifyInitData(noHash.toString(), BOT_TOKEN, now), { ok: false, reason: "format" });
+  // auth_date: ровно 24 часа ещё можно, на секунду старше нельзя; будущее до 5 минут терпим
+  assert.equal(INIT_MAX_AGE_SEC, 86400);
+  assert.equal(verifyInitData(initFor(900, { now, ageSec: INIT_MAX_AGE_SEC }), BOT_TOKEN, now).ok, true);
+  assert.deepEqual(verifyInitData(initFor(900, { now, ageSec: INIT_MAX_AGE_SEC + 1 }), BOT_TOKEN, now), { ok: false, reason: "expired" });
+  assert.equal(verifyInitData(initFor(900, { now, ageSec: -200 }), BOT_TOKEN, now).ok, true);
+  assert.deepEqual(verifyInitData(initFor(900, { now, ageSec: -400 }), BOT_TOKEN, now), { ok: false, reason: "expired" });
+  // нет пользователя, id не число
+  const noUser = signInit({ auth_date: String(Math.floor(now / 1000)), query_id: "Q" });
+  assert.deepEqual(verifyInitData(noUser, BOT_TOKEN, now), { ok: false, reason: "user" });
+  const strId = signInit({ auth_date: String(Math.floor(now / 1000)), user: JSON.stringify({ id: "900" }) });
+  assert.deepEqual(verifyInitData(strId, BOT_TOKEN, now), { ok: false, reason: "user" });
+  // сравнение подписи за константное время
+  assert.match(readFileSync(join(REPO, "form-api", "tg-miniapp.ts"), "utf8"), /timingSafeEqual\(given, want\)/);
+});
+
+test("токен сессии: подпись, срок 12 часов, чужой user.id, подделка", () => {
+  const now = Date.now();
+  const t = signSession(900, now, APP_SECRET);
+  assert.equal(SESSION_TTL_MS, 12 * 3600 * 1000);
+  assert.equal(verifySession(t, 900, now, APP_SECRET), true);
+  assert.equal(verifySession(t, 901, now, APP_SECRET), false);
+  assert.equal(verifySession(t, 900, now + SESSION_TTL_MS - 1, APP_SECRET), true);
+  assert.equal(verifySession(t, 900, now + SESSION_TTL_MS, APP_SECRET), false);
+  assert.equal(verifySession(t, 900, now, "другой-ключ-0123456789abcdef"), false);
+  const [payload, sig] = t.split(".");
+  const evil = Buffer.from(JSON.stringify({ u: 900, e: now + 10 * SESSION_TTL_MS })).toString("base64url");
+  assert.equal(verifySession(`${evil}.${sig}`, 900, now, APP_SECRET), false);
+  assert.equal(verifySession(`${payload}.${sig.slice(0, -2)}AA`, 900, now, APP_SECRET), false);
+  for (const bad of ["", "мусор", "a.b", ".", `${payload}.`, "x".repeat(500)]) assert.equal(verifySession(bad, 900, now, APP_SECRET), false);
+  assert.equal(verifySession(t, 900, now, ""), false);
+});
+
+test("пароль: сравнение без утечки длины, лимит 5 ошибок за 10 минут на user.id", () => {
+  resetAdminAppState();
+  assert.equal(pinMatches(APP_PIN, APP_PIN), true);
+  assert.equal(pinMatches(` ${APP_PIN} `, APP_PIN), true);
+  for (const bad of ["", "153", APP_PIN + "0", APP_PIN.slice(0, -1), "x".repeat(200), 4821, null, undefined]) assert.equal(pinMatches(bad, APP_PIN), false);
+  assert.equal(pinMatches(APP_PIN, ""), false);
+  const t0 = 1_000_000_000_000;
+  assert.equal(LOGIN_MAX_FAILS, 5);
+  assert.equal(loginLockedFor(900, t0), 0);
+  for (let i = 1; i <= 5; i++) assert.equal(noteLoginFail(900, t0 + i * 1000), 5 - i);
+  assert.ok(loginLockedFor(900, t0 + 6000) > 0);
+  assert.equal(loginLockedFor(901, t0 + 6000), 0); // чужой user.id не затронут
+  // блок держится, пока первая из пяти ошибок не выйдет из окна в 10 минут
+  assert.ok(loginLockedFor(900, t0 + 1000 + LOGIN_WINDOW_MS - 1) > 0);
+  assert.equal(loginLockedFor(900, t0 + 1000 + LOGIN_WINDOW_MS), 0);
+  resetAdminAppState();
+});
+
+// ── HTTP: те же маршруты, что в server.ts ──
+
+async function startAdminApi() {
+  process.env.ADMIN_APP_HTML = PAGE_FILE;
+  const server = createServer((req, res) => {
+    const url = (req.url || "").split("?")[0].replace(/\/+$/, "") || "/";
+    const method = req.method || "GET";
+    if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
+    if (method === "POST" && url === "/api/admin/login") return void handleAdminLogin(req, res);
+    if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
+    res.writeHead(404);
+    res.end();
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  return { server, base: `http://127.0.0.1:${(server.address() as { port: number }).port}` };
+}
+const stopAdminApi = (s: Server) => new Promise<void>((r) => s.close(() => r()));
+const readJson = async (r: Response) => ({ status: r.status, headers: r.headers, body: (await r.json()) as any });
+
+function captureLogs() {
+  const out: string[] = [];
+  const orig = { log: console.log, warn: console.warn, error: console.error, info: console.info };
+  for (const k of ["log", "warn", "error", "info"] as const) console[k] = (...a: unknown[]) => void out.push(a.map(String).join(" "));
+  return { out, restore: () => Object.assign(console, orig) };
+}
+
+test("страница: HTML отдаётся, CSP только свой origin и telegram.org, nonce другой на каждый запрос, no-store", async () => {
+  const { server, base } = await startAdminApi();
+  try {
+    const a = await fetch(`${base}/api/admin-app`);
+    const html = await a.text();
+    assert.equal(a.status, 200);
+    assert.match(a.headers.get("content-type") || "", /^text\/html/);
+    assert.equal(a.headers.get("cache-control"), "no-store");
+    assert.equal(a.headers.get("x-content-type-options"), "nosniff");
+    const csp = a.headers.get("content-security-policy") || "";
+    const nonce = /script-src 'nonce-([^']+)'/.exec(csp)?.[1] || "";
+    assert.ok(nonce.length >= 16);
+    assert.match(csp, /default-src 'self'/);
+    assert.match(csp, /connect-src 'self'/);
+    assert.match(csp, /script-src 'nonce-[^']+' https:\/\/telegram\.org(;|$)/);
+    // кроме своего origin разрешён только telegram.org
+    const hosts = [...csp.matchAll(/https?:\/\/([^\s;]+)/g)].map((m) => m[1]);
+    assert.ok(hosts.length > 0 && hosts.every((h) => h === "telegram.org" || h === "*.telegram.org"), hosts.join(","));
+    assert.equal(/unsafe-eval/.test(csp), false);
+    assert.equal(html.includes("__NONCE__"), false);
+    assert.ok(html.includes(`nonce="${nonce}"`));
+    assert.ok(html.includes("Админка воркшопа"));
+    const b = await fetch(`${base}/api/admin-app`);
+    await b.text();
+    assert.notEqual(/script-src 'nonce-([^']+)'/.exec(b.headers.get("content-security-policy") || "")?.[1], nonce);
+    const head = await fetch(`${base}/api/admin-app`, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), "");
+    // файла страницы нет рядом с тестовым бандлом: 404 вместо падения
+    process.env.ADMIN_APP_HTML = join(tmp(), "нет.html");
+    const miss = await fetch(`${base}/api/admin-app`);
+    assert.ok(miss.status === 404 || miss.status === 200);
+  } finally {
+    process.env.ADMIN_APP_HTML = PAGE_FILE;
+    await stopAdminApi(server);
+  }
+});
+
+test("admin-app.html: без длинного тире, без innerHTML, скрипты и стили по nonce, внешний адрес один", () => {
+  const html = readFileSync(PAGE_FILE, "utf8");
+  assert.equal(html.includes("—"), false, "длинное тире");
+  assert.equal(html.includes("–"), false, "среднее тире");
+  assert.equal(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(|new Function/.test(html), false);
+  assert.equal(/\sstyle\s*=/.test(html), false, "inline-стили в разметке");
+  const scripts = [...html.matchAll(/<script\b([^>]*)>/g)].map((m) => m[1]);
+  assert.equal(scripts.length, 2);
+  assert.ok(scripts.some((s) => s.includes('src="https://telegram.org/js/telegram-web-app.js"')));
+  assert.ok(scripts.some((s) => s.includes('nonce="__NONCE__"')));
+  assert.ok([...html.matchAll(/<style\b([^>]*)>/g)].every((m) => m[1].includes('nonce="__NONCE__"')));
+  const hosts = new Set([...html.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]));
+  assert.deepEqual([...hosts].sort(), ["telegram.org", "www.w3.org"]);
+  // тема Telegram и ширина экрана
+  assert.match(html, /themeParams/);
+  assert.match(html, /name="viewport"/);
+});
+
+test("вход: initData, чужой user.id, пароль, лимит попыток, no-store, в логах нет пароля и данных", async () => {
+  resetAdminAppState();
+  const { server, base } = await startAdminApi();
+  const cap = captureLogs();
+  const post = (body: unknown, headers: Record<string, string> = {}) =>
+    fetch(`${base}/api/admin/login`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: typeof body === "string" ? body : JSON.stringify(body) }).then(readJson);
+  try {
+    const init = initFor(900);
+    // нет initData, подделка, старая, чужой токен бота, чужой user.id: везде один и тот же 403 без подробностей
+    const denies = [
+      await post({ pin: APP_PIN }),
+      await post({ initData: "hash=" + "0".repeat(64), pin: APP_PIN }),
+      await post({ initData: initFor(900, { ageSec: INIT_MAX_AGE_SEC + 60 }), pin: APP_PIN }),
+      await post({ initData: initFor(900, { token: "1:EVIL" }), pin: APP_PIN }),
+      await post({ initData: initFor(901), pin: APP_PIN }),
+      await post({ initData: initFor(5), pin: APP_PIN }),
+      await post("не json"),
+    ];
+    for (const d of denies) {
+      assert.equal(d.status, 403);
+      assert.deepEqual(d.body, { ok: false, error: "forbidden" });
+      assert.equal(d.headers.get("cache-control"), "no-store");
+    }
+    // неверный пароль: 401 и сколько осталось
+    const lefts: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const r = await post({ initData: init, pin: "000" + i });
+      assert.equal(r.status, 401);
+      assert.equal(r.headers.get("cache-control"), "no-store");
+      lefts.push(r.body.left);
+    }
+    assert.deepEqual(lefts, [4, 3, 2, 1, 0]);
+    // шестая попытка, даже с верным паролем: 429 с Retry-After
+    const locked = await post({ initData: init, pin: APP_PIN });
+    assert.equal(locked.status, 429);
+    assert.equal(locked.body.error, "too_many");
+    assert.ok(Number(locked.headers.get("retry-after")) > 0 && locked.body.retryAfter > 0);
+    assert.equal(locked.body.token, undefined);
+    // чужой user.id блок не затрагивает: 901 не админ, ему по-прежнему 403, а не 429
+    assert.equal((await post({ initData: initFor(901), pin: "x" })).status, 403);
+    // после снятия блокировки верный пароль даёт токен; initData можно прислать заголовком
+    resetAdminAppState();
+    const ok = await post({ pin: APP_PIN }, { "X-Tg-Init-Data": init });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers.get("cache-control"), "no-store");
+    assert.equal(verifySession(ok.body.token, 900, Date.now(), APP_SECRET), true);
+    assert.ok(Math.abs(ok.body.expiresAt - (Date.now() + SESSION_TTL_MS)) < 5000);
+    assert.match(ok.body.meta.today, /^\d{4}-\d{2}-\d{2}$/);
+    // успешный вход обнуляет счётчик ошибок
+    await post({ initData: init, pin: "bad" });
+    await post({ initData: init, pin: APP_PIN });
+    assert.equal((await post({ initData: init, pin: "bad" })).body.left, 4);
+    // логи: ни пароля, ни initData, ни токена
+    const logs = cap.out.join("\n");
+    assert.ok(logs.length > 0);
+    for (const secret of [APP_PIN, init, ok.body.token, "hash=", APP_SECRET, BOT_TOKEN]) assert.equal(logs.includes(secret), false, `в логах: ${secret.slice(0, 12)}`);
+  } finally {
+    cap.restore();
+    resetAdminAppState();
+    await stopAdminApi(server);
+  }
+});
+
+test("приложение не настроено (нет пароля, ключа сессий или токена бота): 503, а не открытая дверь", async () => {
+  const { server, base } = await startAdminApi();
+  try {
+    for (const key of ["ADMIN_APP_PIN", "ADMIN_APP_SECRET", "TG_WORKSHOP_BOT_TOKEN"]) {
+      const saved = process.env[key];
+      delete process.env[key];
+      const r = await fetch(`${base}/api/admin/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData: initFor(900), pin: APP_PIN }) });
+      assert.equal(r.status, 503, key);
+      assert.equal(r.headers.get("cache-control"), "no-store");
+      assert.equal((await fetch(`${base}/api/admin/summary`)).status, 503, key);
+      process.env[key] = saved;
+    }
+    // слишком короткий ключ сессий считается ненастроенным
+    const savedSecret = process.env.ADMIN_APP_SECRET;
+    process.env.ADMIN_APP_SECRET = "short";
+    assert.equal((await fetch(`${base}/api/admin/summary`)).status, 503);
+    process.env.ADMIN_APP_SECRET = savedSecret;
+    // список допущенных пуст: никому
+    const savedIds = process.env.ADMIN_APP_IDS;
+    process.env.ADMIN_APP_IDS = "";
+    assert.equal((await fetch(`${base}/api/admin/summary`)).status, 503);
+    process.env.ADMIN_APP_IDS = savedIds;
+  } finally {
+    await stopAdminApi(server);
+  }
+});
+
+test("ADMIN_APP_IDS: по умолчанию Александр, список через запятую, пустой никого не пускает", () => {
+  const saved = process.env.ADMIN_APP_IDS;
+  delete process.env.ADMIN_APP_IDS;
+  assert.deepEqual(adminAppIds(), ["789638302"]);
+  assert.equal(isAdminAppUser(789638302), true);
+  assert.equal(isAdminAppUser(900), false);
+  process.env.ADMIN_APP_IDS = " 1 , 2,,";
+  assert.deepEqual(adminAppIds(), ["1", "2"]);
+  process.env.ADMIN_APP_IDS = "";
+  assert.deepEqual(adminAppIds(), []);
+  assert.equal(isAdminAppUser(undefined), false);
+  process.env.ADMIN_APP_IDS = saved;
+});
+
+// ── данные ──
+
+const at7 = (h: number, m = 0) => alm(2026, 10, 7, h, m);
+const leadRow2 = (id: string, isoTs: string, name: string, phone: string, x: { eventId?: string; source?: string; utm?: Record<string, string> } = {}) => ({
+  kind: "capture", id, name, phone, eventId: x.eventId, source: x.source ?? "efir-1-okt-hero", utm: x.utm, ts: isoTs,
+});
+const IG = { utm_source: "Instagram", utm_medium: "paid_social", utm_campaign: "efir_0710" };
+const IG_KEY = "instagram / paid_social / efir_0710";
+
+/** Четыре заявки с разными именами и телефонами и четыре подписчика: для поиска и фильтров. */
+function filterScenario() {
+  const { store, dir } = boot([msg("warm-1200", "12:00")]);
+  writeLeads(dir, [
+    leadRow2("a1", iso(at7(10, 0)), "Анна Петрова", "+7 701 111 22 33", { eventId: "A", utm: IG }),
+    leadRow2("a2", iso(at7(10, 5)), "Борис", "+7 702 222 33 44", { eventId: "B", utm: IG, source: "efir-1-okt-popup" }),
+    leadRow2("a3", iso(at7(10, 10)), "Виктор Анненков", "8 (705) 555-66-77", { eventId: "C", utm: { utm_referrer: "https://l.instagram.com/?u=1" }, source: "efir-1-okt-dock" }),
+    leadRow2("a4", iso(at7(10, 15)), "Галина", "+7 777 000 11 22", { eventId: "D" }),
+  ]);
+  sub(store, 11, TODAY, at7(10, 30), { payload: "pp_A", first: "Анна", username: "anna_p" });
+  sub(store, 12, TODAY, at7(11, 0), { payload: "ty_C", first: "Виктор" });
+  sub(store, 13, TODAY, at7(12, 0), { payload: "2gis", first: "Игорь", username: "igor2gis" });
+  sub(store, 14, "2026-10-08", at7(13, 0), { payload: "", first: "Дарья", username: "dasha" }); // записана на завтрашний эфир
+  return { store, dir };
+}
+
+test("сводка: карточки, прошлый период, по часам, источники, эфиры считаются теми же правилами, что отчёт в чате", () => {
+  adminScenario();
+  const ctx = adminCtx(NOW);
+  const day = resolvePeriod("t", NOW);
+  const s = buildSummary(ctx, day, "reg");
+  assert.equal(s.ok, true);
+  assert.deepEqual(s.meta, { today: "2026-10-07", updated: "18:00", tz: "Asia/Almaty" });
+  assert.deepEqual([s.period.from, s.period.to, s.period.days], ["2026-10-07", "2026-10-07", 1]);
+  assert.deepEqual([s.prevPeriod.from, s.prevPeriod.to], ["2026-10-06", "2026-10-06"]);
+  // то же, что в отчёте чата: заявки 6, в боте 7, заявка → бот 2 из 6 (33%), TG 2, WA 1, перешли 1, оплатили 1, заблокировали 1
+  assert.deepEqual(s.cards, { leads: 6, bot: 7, reached: 2, conv: 33, wa: 1, tg: 2, clicked: 1, paid: 1, blocked: 1 });
+  assert.match(renderReport(ctx, "t"), /Заявка → бот: 2 из 6 \(33%\)/);
+  // прошлый такой же период: вчера 1 заявка, дошла до бота, 1 подписчик
+  assert.deepEqual(s.prev, { leads: 1, bot: 1, reached: 1, conv: 100, wa: 0, tg: 0, clicked: 0, paid: 0, blocked: 0 });
+  // по дням эфира: записались на 7 октября 7, перешли 1, оплатили 1; прошлый день: 1
+  const st = buildSummary(ctx, day, "stream");
+  assert.deepEqual([st.cards.bot, st.cards.clicked, st.cards.paid, st.prev.bot], [7, 1, 1, 1]);
+  assert.equal(st.basis, "stream");
+  // один день: по часам Алматы, заявки в 00:00, 10:00, 11:00, 12:00 (две), 13:00
+  assert.equal(s.hourly?.length, 24);
+  assert.deepEqual(s.hourly?.filter((r) => r.leads).map((r) => [r.h, r.leads]), [[0, 1], [10, 1], [11, 1], [12, 2], [13, 1]]);
+  assert.deepEqual(s.daily.map((r) => [r.day, r.leads, r.reached, r.conv, r.bot, r.tg, r.wa]), [["2026-10-07", 6, 2, 33, 7, 2, 1]]);
+  // несколько дней: без почасовых данных, по строке на день
+  const w = buildSummary(ctx, resolvePeriod("7", NOW), "reg");
+  assert.equal(w.hourly, null);
+  assert.equal(w.daily.length, 7);
+  assert.deepEqual(w.daily.slice(-2).map((r) => [r.day, r.leads, r.bot]), [["2026-10-06", 1, 1], ["2026-10-07", 6, 7]]);
+  assert.deepEqual(w.prevPeriod, { from: "2026-09-24", to: "2026-09-30", label: "24 сентября - 30 сентября" });
+  // источники: UTM, без метки по referrer, метка бота вне сайта
+  const src = Object.fromEntries(s.sources.map((r) => [r.key, r]));
+  assert.equal(s.sources.length, 7);
+  assert.deepEqual([src[IG_KEY].kind, src[IG_KEY].leads, src[IG_KEY].bot, src[IG_KEY].pct], ["utm", 1, 1, 100]);
+  assert.deepEqual([src["saint4aibio"].leads, src["saint4aibio"].bot], [1, 1]);
+  const li = src["без метки: l.instagram.com"];
+  assert.deepEqual([li.kind, li.leads, li.bot, li.pct], ["none", 1, 0, 0]);
+  assert.ok(src["без метки: google (gclid)"] && src["без метки: прямой заход"] && src["без метки: instagram.com"]);
+  assert.deepEqual(src["2gis"], { key: "2gis", label: "метка бота: 2gis", kind: "tag", leads: 0, bot: 2, pct: 0 });
+  // эфиры: записались, перешли, оплатили, какие сообщения серии ушли
+  assert.equal(s.streams.length, 1);
+  const e = s.streams[0] as any;
+  assert.deepEqual([e.day, e.registered, e.clicked, e.pct, e.paid, e.sentOk, e.sentBad], ["2026-10-07", 7, 1, 14, 1, 3, 2]);
+  assert.deepEqual(e.messages.map((m: any) => [m.id, m.at, m.ok, m.bad]), [["warm-1200", "12:00", 3, 1], ["link-1950", "", 0, 1]]);
+  assert.deepEqual(s.totals, { subscribers: 8, active: 7, paid: 1 }); // один из восьми заблокировал бота
+  // имена и телефоны в сводку не попадают
+  const json = JSON.stringify(s);
+  assert.equal(json.includes(SECRET_NAME), false);
+  assert.equal(json.includes("7011112233"), false);
+});
+
+test("сводка: заявки недоступны не роняют бота, период из дат, лишний диапазон отвергается", () => {
+  const { dir } = adminScenario();
+  process.env.LEADS_LOG_PATH = join(dir, "нет-такого-файла.jsonl");
+  const s = buildSummary(adminCtx(NOW), resolvePeriod("t", NOW), "reg");
+  assert.equal(s.leadsOk, false);
+  assert.match(s.leadsError, /файл заявок не найден/);
+  assert.equal(s.cards.leads, 0);
+  assert.equal(s.cards.bot, 7);
+  assert.equal(periodFromDates("2026-10-01", "2026-10-07")?.days.length, 7);
+  assert.equal(periodFromDates("2026-10-07", "2026-10-07")?.label, "7 октября");
+  assert.equal(periodFromDates("2026-10-08", "2026-10-07"), null);
+  assert.equal(periodFromDates("2026-13-01", "2026-13-02"), null);
+  assert.equal(periodFromDates("2025-01-01", "2026-10-07"), null); // больше 366 дней
+  assert.equal(periodFromDates("2025-10-06", "2026-10-07"), null); // 367 дней
+  assert.equal(periodFromDates("2025-10-07", "2026-10-07")?.days.length, 366);
+});
+
+test("регистрации: поиск по имени и телефону, фильтры по UTM и «в боте», подгрузка по 50", () => {
+  filterScenario();
+  const ctx = adminCtx(NOW);
+  const day = resolvePeriod("t", NOW);
+  const ids = (q: Partial<ListQuery>) => buildLeads(ctx, day, { ...LQ, ...q }).items.map((i) => i.id);
+  assert.deepEqual(ids({}), ["a4", "a3", "a2", "a1"]); // новые сверху
+  const first = buildLeads(ctx, day, LQ).items[3];
+  assert.deepEqual([first.name, first.phone, first.t, first.place, first.utm, first.inBot], ["Анна Петрова", "+7 701 111 22 33", "07.10 10:00", "hero", IG_KEY, true]);
+  // имя без учёта регистра, часть слова
+  assert.deepEqual(ids({ q: "АНН" }), ["a3", "a1"]);
+  assert.deepEqual(ids({ q: "борис" }), ["a2"]);
+  // телефон: цифры, с пробелами и скобками, формат ввода не важен; одна цифра в поиск по телефону не идёт
+  assert.deepEqual(ids({ q: "7011" }), ["a1"]);
+  assert.deepEqual(ids({ q: "+7 701 111" }), ["a1"]);
+  assert.deepEqual(ids({ q: "555-66" }), ["a3"]);
+  assert.deepEqual(ids({ q: "8 (705)" }), ["a3"]);
+  assert.deepEqual(ids({ q: "7" }), []);
+  assert.deepEqual(ids({ q: "нет такого" }), []);
+  // UTM: точная метка без учёта регистра; «без метки» все без UTM; конкретный referrer
+  assert.deepEqual(ids({ utm: IG_KEY }), ["a2", "a1"]);
+  assert.deepEqual(ids({ utm: "Instagram / Paid_Social / EFIR_0710" }), ["a2", "a1"]);
+  assert.deepEqual(ids({ utm: "без метки" }), ["a4", "a3"]);
+  assert.deepEqual(ids({ utm: "без метки: l.instagram.com" }), ["a3"]);
+  assert.deepEqual(ids({ utm: "instagram" }), []); // метка целиком, не часть
+  // в боте и не в боте, вместе с поиском
+  assert.deepEqual(ids({ inbot: "1" }), ["a3", "a1"]);
+  assert.deepEqual(ids({ inbot: "0" }), ["a4", "a2"]);
+  assert.deepEqual(ids({ inbot: "1", q: "анн", utm: "без метки" }), ["a3"]);
+  // подгрузка: 120 заявок, страницы по 50
+  const { dir } = boot();
+  const many = Array.from({ length: 120 }, (_, i) => leadRow2(`p${i}`, iso(at7(1, 0) + i * 60_000), `Клиент ${i}`, `+7 700 000 ${String(i).padStart(4, "0")}`));
+  writeLeads(dir, many);
+  const p1 = buildLeads(adminCtx(NOW), day, LQ);
+  assert.deepEqual([p1.items.length, p1.total, p1.hasMore, p1.items[0].id], [50, 120, true, "p119"]);
+  const p3 = buildLeads(adminCtx(NOW), day, { ...LQ, offset: 100 });
+  assert.deepEqual([p3.items.length, p3.hasMore, p3.items[19].id], [20, false, "p0"]);
+  assert.equal(new Set([...p1.items, ...buildLeads(adminCtx(NOW), day, { ...LQ, offset: 50 }).items, ...p3.items].map((i) => i.id)).size, 120);
+});
+
+test("подписчики: период по дню регистрации и по дню эфира, откуда пришёл, фильтры и поиск", () => {
+  const { store } = filterScenario();
+  store.recordClick(11, TODAY, iso(at7(17)));
+  store.recordEvent({ type: "paid", chat_id: 11, by: "self", ts: iso(at7(17, 30)) });
+  store.recordEvent({ type: "paid", chat_id: 12, by: "owner", ts: iso(at7(18, 0)) });
+  store.recordEvent({ type: "blocked", chat_id: 13, ts: iso(at7(17, 40)) });
+  const ctx = adminCtx(NOW);
+  const day = resolvePeriod("t", NOW);
+  const idOf = (name: string) => ({ "Анна": 11, "Виктор": 12, "Игорь": 13, "Дарья": 14 } as Record<string, number>)[name];
+  const ids = (q: Partial<ListQuery>, basis: "reg" | "stream" = "reg", p = day) => buildSubscribers(ctx, p, basis, { ...LQ, ...q }).items.map((i) => idOf(i.name));
+  // день регистрации 7 октября: все четверо, новые сверху
+  assert.deepEqual(ids({}), [14, 13, 12, 11]);
+  // день эфира 7 октября: Дарья записана на 8-е, её нет; на 8-е она одна
+  assert.deepEqual(ids({}, "stream"), [13, 12, 11]);
+  assert.deepEqual(ids({}, "stream", resolvePeriod("2026-10-08", NOW)), [14]);
+  const row = (name: string) => buildSubscribers(ctx, day, "reg", LQ).items.find((i) => i.name === name) as any;
+  const a = row("Анна");
+  assert.deepEqual([a.origin, a.kind, a.src, a.clicked, a.paid, a.username, a.dayLabel], ["окно на сайте", "pp", IG_KEY, true, true, "anna_p", "07.10"]);
+  const v = row("Виктор");
+  assert.deepEqual([v.origin, v.src, v.paid, v.clicked], ["страница «Спасибо»", "без метки: l.instagram.com", true, false]);
+  const i = row("Игорь");
+  assert.deepEqual([i.origin, i.tag, i.blocked], ["метка: 2gis", "2gis", true]);
+  assert.equal(row("Дарья").origin, "прямой /start");
+  assert.equal(row("Дарья").dayLabel, "08.10");
+  // фильтры: метка бота, метка заявки, без метки, имя и @username, флаги
+  assert.deepEqual(ids({ utm: "2gis" }), [13]);
+  assert.deepEqual(ids({ utm: IG_KEY }), [11]);
+  assert.deepEqual(ids({ utm: "без метки" }), [12]);
+  assert.deepEqual(ids({ q: "@igor" }), [13]);
+  assert.deepEqual(ids({ q: "АННА" }), [11]);
+  assert.deepEqual(ids({ flag: "clicked" }), [11]);
+  assert.deepEqual(ids({ flag: "noclick" }), [14, 13, 12]);
+  assert.deepEqual(ids({ flag: "paid" }), [12, 11]);
+  assert.deepEqual(ids({ flag: "blocked" }), [13]);
+  const page = buildSubscribers(ctx, day, "reg", { ...LQ, limit: 2 });
+  assert.deepEqual([page.items.length, page.total, page.hasMore], [2, 4, true]);
+});
+
+test("ошибки: неудачные отправки, группы, последние, заблокировали, счётчики процесса, версия; номера чатов затираются", () => {
+  const { store } = adminScenario();
+  store.recordSent({ msg: "warm-1200", day: TODAY, chat_id: 5551234509, ts: iso(at7(19, 0)), ok: false, err: "400 Bad Request: chat 5551234509 not found" });
+  noteRuntime("skipLate", { msg: "link-1950" });
+  noteRuntime("mediaFallback", { info: "x" });
+  runtime.webhookRejected = 3;
+  const e = buildErrors(adminCtx(NOW), resolvePeriod("t", NOW));
+  assert.deepEqual([e.sentTotal, e.sentOk, e.failed, e.blocked], [6, 3, 3, 1]);
+  assert.deepEqual(e.runtime, { skipLate: 1, skipLateIds: ["link-1950"], mediaFallback: 1, tickError: 0, webhookRejected: 3 });
+  assert.ok(e.groups.some((g) => g.text === "400 Bad Request: chat # not found" && g.n === 1));
+  assert.equal(e.last[0].err, "400 Bad Request: chat # not found"); // самая свежая сверху
+  assert.deepEqual(Object.keys(e.last[0]), ["t", "msg", "err"]);
+  assert.match(e.last[0].t, /^07\.10 \d\d:\d\d$/);
+  assert.match(e.uptime, /ч/);
+  assert.ok(e.version.length > 0 && e.uptimeSec >= 0);
+  assert.equal(JSON.stringify(e).includes("5551234509"), false);
+});
+
+// ── данные по HTTP: три слоя доступа ──
+
+test("данные: initData на каждый запрос, токен сессии, чужой user.id, срок токена и initData, no-store, период и лимиты", async () => {
+  resetAdminAppState();
+  adminScenario();
+  const { server, base } = await startAdminApi();
+  const q = "from=2026-10-07&to=2026-10-07";
+  const get = (path: string, headers: Record<string, string> = {}) => fetch(`${base}${path}`, { headers }).then(readJson);
+  const init = initFor(900);
+  const token = signSession(900, Date.now(), APP_SECRET);
+  const auth = { "X-Tg-Init-Data": init, Authorization: `Bearer ${token}` };
+  const cap = captureLogs();
+  try {
+    for (const ep of ["summary", "leads", "subscribers", "errors"]) {
+      const none = await get(`/api/admin/${ep}?${q}`);
+      assert.equal(none.status, 403, ep); // нет initData
+      assert.deepEqual(none.body, { ok: false, error: "forbidden" });
+      assert.equal((await get(`/api/admin/${ep}?${q}`, { "X-Tg-Init-Data": init })).status, 401, ep); // initData есть, токена нет
+      assert.equal((await get(`/api/admin/${ep}?${q}`, { Authorization: `Bearer ${token}` })).status, 403, ep); // токен есть, initData нет
+      const ok = await get(`/api/admin/${ep}?${q}`, auth);
+      assert.equal(ok.status, 200, ep);
+      assert.equal(ok.headers.get("cache-control"), "no-store", ep);
+      assert.equal(ok.body.ok, true);
+    }
+    // 401 и 403 тоже no-store и без подробностей
+    const e401 = await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": init });
+    assert.equal(e401.headers.get("cache-control"), "no-store");
+    assert.deepEqual(e401.body, { ok: false, error: "session" });
+    // токен другого пользователя, просроченный, подделанный, без Bearer
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": init, Authorization: `Bearer ${signSession(901, Date.now(), APP_SECRET)}` })).status, 401);
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": init, Authorization: `Bearer ${signSession(900, Date.now() - SESSION_TTL_MS - 1000, APP_SECRET)}` })).status, 401);
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": init, Authorization: `Bearer ${token}x` })).status, 401);
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": init, Authorization: token })).status, 401);
+    // чужой user.id (владелец бота, но не админ приложения), старая и поддельная initData: 403 даже с верным токеном
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": initFor(901), Authorization: `Bearer ${token}` })).status, 403);
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": initFor(900, { ageSec: INIT_MAX_AGE_SEC + 5 }), Authorization: `Bearer ${token}` })).status, 403);
+    assert.equal((await get(`/api/admin/summary?${q}`, { "X-Tg-Init-Data": initFor(900, { token: "1:EVIL" }), Authorization: `Bearer ${token}` })).status, 403);
+    // период: плохие даты 400, неизвестный раздел 404, явные даты и ключи периода
+    assert.equal((await get("/api/admin/summary?from=2026-13-40&to=2026-13-41", auth)).status, 400);
+    assert.equal((await get("/api/admin/summary?from=2026-10-09&to=2026-10-07", auth)).status, 400);
+    assert.equal((await get("/api/admin/zzz", auth)).status, 404);
+    assert.equal((await get("/api/admin/summary?period=7", auth)).body.period.days, 7);
+    assert.equal((await get("/api/admin/summary", auth)).body.period.days, 1); // по умолчанию сегодня
+    // данные возвращаются: сводка с карточками, регистрации с именами и телефонами для админа
+    const sum = await get(`/api/admin/summary?${q}&basis=stream`, auth);
+    assert.deepEqual([sum.body.basis, sum.body.cards.leads, sum.body.cards.bot], ["stream", 6, 7]);
+    const leads = await get(`/api/admin/leads?${q}&limit=500`, auth);
+    assert.equal(leads.body.total, 6);
+    assert.ok(leads.body.items.length <= 100);
+    assert.equal((await get(`/api/admin/leads?${q}`, auth)).body.items.length, 6); // без limit: страница по 50, а не одна запись
+    assert.equal((await get(`/api/admin/leads?${q}&limit=2&offset=4`, auth)).body.items.length, 2);
+    assert.equal((await get(`/api/admin/leads?${q}&limit=0`, auth)).body.items.length, 1); // нижняя граница 1
+    assert.ok(leads.body.items.every((i: any) => i.name === SECRET_NAME && i.phone === SECRET_PHONE));
+    assert.equal((await get(`/api/admin/leads?${q}&inbot=1`, auth)).body.total, 2);
+    assert.equal((await get(`/api/admin/leads?${q}&q=${encodeURIComponent("нет такого")}`, auth)).body.total, 0);
+    assert.equal((await get(`/api/admin/subscribers?${q}&flag=clicked`, auth)).body.total, 1);
+    assert.equal((await get(`/api/admin/errors?${q}`, auth)).body.failed, 2);
+    // в логах нет ни телефонов, ни имён, ни initData, ни токена
+    const logs = cap.out.join("\n");
+    for (const secret of [SECRET_PHONE, "77011112233", SECRET_NAME, init, token, "hash="]) assert.equal(logs.includes(secret), false, `в логах: ${secret.slice(0, 10)}`);
+  } finally {
+    cap.restore();
+    await stopAdminApi(server);
+  }
+});
+
+test("бот выключен (серия не загружена): данные отвечают 503, процесс жив", async () => {
+  resetAdminAppState();
+  const { server, base } = await startAdminApi();
+  try {
+    const auth = { "X-Tg-Init-Data": initFor(900), Authorization: `Bearer ${signSession(900, Date.now(), APP_SECRET)}` };
+    process.env.TG_BOT = "off";
+    initTgWorkshop({ dir: tmp() });
+    const off = await fetch(`${base}/api/admin/summary`, { headers: auth }).then(readJson);
+    assert.equal(off.status, 503);
+    assert.equal(off.body.error, "bot_off");
+    assert.equal(off.headers.get("cache-control"), "no-store");
+  } finally {
+    delete process.env.TG_BOT;
+    await stopAdminApi(server);
+  }
+});
+
+// ── кнопка в боте: /app и tg-setup ──
+
+test("/app: кнопка web_app у администратора, отказ другому владельцу, тишина для чужих", async () => {
+  boot();
+  assert.equal(adminAppUrl(), "https://onai.academy/workshop/api/admin-app");
+  await processUpdate(upd(900, "/app"), NOW);
+  const mine = fake.of("sendMessage").filter((c) => c.body.chat_id === 900);
+  assert.equal(mine.length, 1);
+  assert.deepEqual(mine[0].body.reply_markup.inline_keyboard, [[{ text: "Открыть админку", web_app: { url: "https://onai.academy/workshop/api/admin-app" } }]]);
+  fake.reset();
+  await processUpdate(upd(901, "/app"), NOW); // владелец бота, но не в ADMIN_APP_IDS
+  assert.deepEqual(fake.texts(901), ["Админка недоступна для этого аккаунта."]);
+  assert.equal(fake.of("sendMessage")[0].body.reply_markup, undefined);
+  fake.reset();
+  await processUpdate(upd(5, "/app"), NOW); // не владелец: как у остальных команд, молчим
+  assert.equal(fake.calls.length, 0);
+  // команда есть в справке
+  fake.reset();
+  await processUpdate(upd(900, "/help"), NOW);
+  assert.match(fake.texts(900)[0], /\/app: мини-приложение админки/);
+  // адрес можно переопределить
+  process.env.ADMIN_APP_URL = "https://example.test/admin";
+  fake.reset();
+  await processUpdate(upd(900, "/app"), NOW);
+  assert.equal(fake.of("sendMessage")[0].body.reply_markup.inline_keyboard[0][0].web_app.url, "https://example.test/admin");
+  delete process.env.ADMIN_APP_URL;
+});
+
+function buildBundle(entry: string, outfile: string) {
+  const esbuildBin = join(REPO, "node_modules", "esbuild", "bin", "esbuild");
+  execFileSync(process.execPath, [esbuildBin, entry, "--bundle", "--platform=node", "--target=node20", "--format=cjs", `--outfile=${outfile}`, "--log-level=error"], { cwd: REPO, stdio: "pipe" });
+}
+
+/** Окружение дочернего процесса: текущее плюс правки; undefined убирает переменную. */
+function childEnv(over: Record<string, string | undefined>): NodeJS.ProcessEnv {
+  const e: Record<string, string> = {};
+  for (const [k, v] of Object.entries({ ...process.env, ...over })) if (v !== undefined) e[k] = v;
+  return e;
+}
+
+function runNode(file: string, env: Record<string, string | undefined>): Promise<{ code: number | null; out: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [file], { env: childEnv(env), stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (out += d));
+    child.on("close", (code) => resolve({ code, out }));
+  });
+}
+
+test("tg-setup: шаг setChatMenuButton ставит «Админка» только чатам из ADMIN_APP_IDS, токен не печатается", async () => {
+  const dir = tmp();
+  const out = join(dir, "tg-setup.js");
+  buildBundle("form-api/tg-setup.ts", out);
+  const env = { FORM_API_ENV: join(dir, "нет.env"), BOT_AVATAR_FILE: join(dir, "нет.jpg") };
+  const menu = () => fake.of("setChatMenuButton").map((c) => c.body);
+
+  fake.reset();
+  const r1 = await runNode(out, { ...env, ADMIN_APP_IDS: "900,901" });
+  assert.deepEqual(menu().map((b) => b.chat_id), [900, 901]);
+  for (const b of menu()) assert.deepEqual(b.menu_button, { type: "web_app", text: "Админка", web_app: { url: "https://onai.academy/workshop/api/admin-app" } });
+  assert.match(r1.out, /OK\s+6\/7 setChatMenuButton 900 «Админка»/);
+  assert.equal(r1.out.includes(BOT_TOKEN), false);
+  // порядок шагов: кнопка после команд и до итоговой проверки вебхука
+  const order = fake.calls.map((c) => c.method);
+  assert.ok(order.indexOf("setMyCommands") < order.indexOf("setChatMenuButton") && order.indexOf("setChatMenuButton") < order.indexOf("getWebhookInfo"));
+
+  // не задан: по умолчанию Александр, одному чату
+  fake.reset();
+  await runNode(out, { ...env, ADMIN_APP_IDS: undefined });
+  assert.deepEqual(menu().map((b) => b.chat_id), [789638302]);
+
+  // пустой список: никому, шаг не падает
+  fake.reset();
+  const r3 = await runNode(out, { ...env, ADMIN_APP_IDS: "" });
+  assert.equal(menu().length, 0);
+  assert.match(r3.out, /6\/7 setChatMenuButton: ADMIN_APP_IDS пуст/);
+
+  // Telegram отказал: FAIL в отчёте шага и код выхода 1, остальные шаги выполнены
+  fake.reset();
+  fake.respond = (method) => (method === "setChatMenuButton" ? { status: 400, json: { ok: false, error_code: 400, description: "Bad Request: chat not found" } } : null);
+  const r4 = await runNode(out, { ...env, ADMIN_APP_IDS: "900" });
+  assert.match(r4.out, /FAIL\s+6\/7 setChatMenuButton 900/);
+  assert.equal(r4.code, 1);
+  assert.ok(fake.of("getWebhookInfo").length === 1);
+});
+
+test("дым-тест на порту 4110: страница отдаётся, вход по подставной initData с тестовым токеном проходит, данные возвращаются", async () => {
+  const dir = tmp();
+  const bundle = join(dir, "server.js");
+  buildBundle("form-api/server.ts", bundle);
+  copyFileSync(PAGE_FILE, join(dir, "admin-app.html"));
+  copyFileSync(seriesFile, join(dir, "tg-series.json"));
+  // данные: две заявки и два подписчика, записанные тем же хранилищем, что у бота
+  const data = join(dir, "data");
+  const st = new TgStore(data);
+  sub(st, 21, TODAY, at7(10, 30), { payload: "pp_S1", first: "Тест Один", username: "t_one" });
+  sub(st, 22, TODAY, at7(11, 0), { payload: "2gis", first: "Тест Два" });
+  const leadsFile = join(dir, "leads.jsonl");
+  writeFileSync(leadsFile, [
+    leadRow2("s1", iso(at7(10, 0)), "Тест Один", "+7 700 111 11 11", { eventId: "S1", utm: IG }),
+    leadRow2("s2", iso(at7(10, 5)), "Тест Три", "+7 700 333 33 33"),
+  ].map((r) => JSON.stringify(r)).join("\n") + "\n");
+  const child = spawn(process.execPath, [bundle], {
+    // страница и серия лежат рядом с бандлом, как на сервере; Telegram подменён подставным сервером этого теста
+    env: childEnv({
+      PORT: "4110", DATA_DIR: data, LEADS_LOG_PATH: leadsFile, FORM_API_ENV: join(dir, "нет.env"), TG_SERIES_FILE: undefined, ADMIN_APP_HTML: undefined,
+      TG_BOT: undefined, TG_WORKSHOP_BOT_TOKEN: BOT_TOKEN, TG_WORKSHOP_WEBHOOK_SECRET: "smoke-hook-secret-123456", TG_GO_SECRET: "smoke-go-secret-1234567",
+      TG_LINK_OWNER_IDS: "900", ADMIN_APP_PIN: APP_PIN, ADMIN_APP_SECRET: APP_SECRET, ADMIN_APP_IDS: "900",
+    }),
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let log = "";
+  child.stdout.on("data", (d) => (log += d));
+  child.stderr.on("data", (d) => (log += d));
+  const base = "http://127.0.0.1:4110";
+  try {
+    await waitFor(() => /listening on/.test(log), 8000);
+    // старое осталось на месте
+    const health = await fetch(`${base}/api/health`).then(readJson);
+    assert.equal(health.status, 200);
+    assert.equal(health.body.ok, true);
+    assert.equal((await fetch(`${base}/api/go/bad`, { redirect: "manual" })).status, 302);
+    // страница с CSP, найденная рядом с бандлом
+    const page = await fetch(`${base}/api/admin-app`);
+    const html = await page.text();
+    assert.equal(page.status, 200);
+    assert.ok(html.includes("Админка воркшопа") && !html.includes("__NONCE__"));
+    assert.match(page.headers.get("content-security-policy") || "", /telegram\.org/);
+    // вход: подставная initData, подписанная тестовым токеном бота
+    const init = initFor(900);
+    const jsonPost = (body: unknown) => fetch(`${base}/api/admin/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    assert.equal((await jsonPost({ initData: initFor(900, { token: "9:НЕТ" }), pin: APP_PIN })).status, 403);
+    const wrong = await jsonPost({ initData: init, pin: "0000" }).then(readJson);
+    assert.deepEqual([wrong.status, wrong.body.left], [401, 4]);
+    const login = await jsonPost({ initData: init, pin: APP_PIN }).then(readJson);
+    assert.equal(login.status, 200);
+    const auth = { "X-Tg-Init-Data": init, Authorization: `Bearer ${login.body.token}` };
+    // данные возвращаются
+    const q = "from=2026-10-07&to=2026-10-07";
+    const sum = await fetch(`${base}/api/admin/summary?${q}`, { headers: auth }).then(readJson);
+    assert.equal(sum.status, 200);
+    assert.equal(sum.headers.get("cache-control"), "no-store");
+    assert.deepEqual([sum.body.cards.leads, sum.body.cards.bot, sum.body.cards.reached], [2, 2, 1]);
+    const leads = await fetch(`${base}/api/admin/leads?${q}`, { headers: auth }).then(readJson);
+    assert.deepEqual(leads.body.items.map((i: any) => i.name), ["Тест Три", "Тест Один"]);
+    const subs = await fetch(`${base}/api/admin/subscribers?${q}`, { headers: auth }).then(readJson);
+    assert.equal(subs.body.total, 2);
+    assert.equal((await fetch(`${base}/api/admin/errors?${q}`, { headers: auth })).status, 200);
+    assert.equal((await fetch(`${base}/api/admin/summary?${q}`)).status, 403);
+    // в логах процесса ни пароля, ни телефонов, ни initData
+    for (const secret of [APP_PIN, "700 111 11 11", "7001111111", init, login.body.token, "Тест Один"]) assert.equal(log.includes(secret), false, `в логе: ${secret.slice(0, 10)}`);
+  } finally {
+    child.kill();
+    await new Promise((r) => child.on("close", r));
+  }
 });

@@ -21,6 +21,11 @@ var env = (k) => (process.env[k] || "").trim();
 var botToken = () => env("TG_WORKSHOP_BOT_TOKEN");
 var webhookSecret = () => env("TG_WORKSHOP_WEBHOOK_SECRET");
 var apiBase = () => env("TG_API_BASE").replace(/\/+$/, "") || "https://api.telegram.org";
+function adminAppIds() {
+  const raw = process.env.ADMIN_APP_IDS;
+  return (raw === void 0 ? "789638302" : raw).split(",").map((s) => s.trim()).filter(Boolean);
+}
+var adminAppUrl = () => env("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
 var MAX_UPDATE_BODY = 64 * 1024;
 var API_TIMEOUT_MS = 1e4;
 var OTHER_THROTTLE_MS = 10 * 6e4;
@@ -57,6 +62,7 @@ async function botCall(method, params, timeoutMs = API_TIMEOUT_MS) {
 var HELP_TEXT = [
   "\u041A\u043E\u043C\u0430\u043D\u0434\u044B \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:",
   "/admin: \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 (\u0437\u0430\u044F\u0432\u043A\u0438, \u0431\u043E\u0442, UTM \u043F\u043E \u0434\u043D\u044F\u043C, \u043E\u0448\u0438\u0431\u043A\u0438), \u0432\u044B\u0431\u043E\u0440 \u043F\u0435\u0440\u0438\u043E\u0434\u0430 \u0438 \u0434\u0430\u0442\u044B. /stats \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0442\u043E \u0436\u0435",
+  "/app: \u043C\u0438\u043D\u0438-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0430\u0434\u043C\u0438\u043D\u043A\u0438 (\u043A\u043D\u043E\u043F\u043A\u0430, \u0432\u0445\u043E\u0434 \u043F\u043E \u043F\u0430\u0440\u043E\u043B\u044E): \u0441\u0432\u043E\u0434\u043A\u0430, \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0438, \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438, \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u0438, \u044D\u0444\u0438\u0440\u044B, \u043E\u0448\u0438\u0431\u043A\u0438",
   "/series: \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F",
   "/preview: \u043F\u0440\u0438\u0441\u043B\u0430\u0442\u044C \u0441\u0435\u0431\u0435 \u0432\u0441\u044E \u0441\u0435\u0440\u0438\u044E \u0434\u043B\u044F \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438",
   "/fire <id>: \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0439\u0447\u0430\u0441 (\u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0440\u0435\u0432\u044C\u044E, \u043F\u043E\u0442\u043E\u043C \u043A\u043D\u043E\u043F\u043A\u0430 \xAB\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C\xBB)",
@@ -128,7 +134,7 @@ async function main() {
   report("3/6 setMyDescription", await botCall("setMyDescription", { description: DESCRIPTION }));
   report("4/6 setMyShortDescription", await botCall("setMyShortDescription", { short_description: SHORT_DESCRIPTION }));
   report(
-    "5/6 setMyCommands",
+    "5/7 setMyCommands",
     await botCall("setMyCommands", {
       commands: [
         { command: "start", description: "\u0417\u0430\u043F\u0438\u0441\u0430\u0442\u044C\u0441\u044F \u043D\u0430 \u0432\u043E\u0440\u043A\u0448\u043E\u043F" },
@@ -136,8 +142,23 @@ async function main() {
       ]
     })
   );
+  const appIds = adminAppIds();
+  if (!appIds.length) console.log("OK    6/7 setChatMenuButton: ADMIN_APP_IDS \u043F\u0443\u0441\u0442, \u043A\u043D\u043E\u043F\u043A\u0430 \u043D\u0438\u043A\u043E\u043C\u0443 \u043D\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F");
+  for (const id of appIds) {
+    const chatId = Number(id);
+    if (!Number.isInteger(chatId)) {
+      failures++;
+      console.log(`FAIL  6/7 setChatMenuButton: \u0432 ADMIN_APP_IDS \u043D\u0435 \u0447\u0438\u0441\u043B\u043E: ${id}`);
+      continue;
+    }
+    report(
+      `6/7 setChatMenuButton ${chatId} \xAB\u0410\u0434\u043C\u0438\u043D\u043A\u0430\xBB`,
+      await botCall("setChatMenuButton", { chat_id: chatId, menu_button: { type: "web_app", text: "\u0410\u0434\u043C\u0438\u043D\u043A\u0430", web_app: { url: adminAppUrl() } } }),
+      adminAppUrl()
+    );
+  }
   const wh = await botCall("getWebhookInfo", {});
-  report("6/6 getWebhookInfo", wh);
+  report("7/7 getWebhookInfo", wh);
   if (wh.ok) {
     const w = wh.result;
     console.log(`      url: ${w.url}`);

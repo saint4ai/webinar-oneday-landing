@@ -98,6 +98,9 @@ export function resetAdminCache() {
 export type Lead = {
   id: string;
   eventId: string;
+  /** Имя и телефон из заявки. Только для мини-приложения владельца: в текстовые отчёты чата не попадают. */
+  name: string;
+  phone: string;
   /** Место на странице: hero, popup, dock, header, final. */
   place: string;
   utmSource: string;
@@ -162,6 +165,8 @@ export function readLeads(ctx: AdminCtx): { leads: Lead[] | null; error: string 
     leads.push({
       id,
       eventId: String(row.eventId ?? "").trim(),
+      name: String(row.name ?? "").trim().slice(0, 120),
+      phone: String(row.phone ?? "").trim().slice(0, 40),
       place: placeOf(String(row.source ?? "")),
       utmSource: low(u.utm_source),
       utmMedium: low(u.utm_medium),
@@ -250,13 +255,25 @@ export function resolvePeriod(key: string, now: number, firstDataDay?: string): 
   return { key, from, to, days: daysBetween(from, to), label };
 }
 
+/**
+ * Период по явным датам YYYY-MM-DD (обе границы включительно), для мини-приложения.
+ * Не дата, перевёрнутые границы или больше RANGE_MAX_DAYS дней: null.
+ */
+export function periodFromDates(from: string, to: string): Period | null {
+  if (!isDayKey(from) || !isDayKey(to) || from > to) return null;
+  const days = daysBetween(from, to);
+  if (days.length >= RANGE_MAX_DAYS && days[days.length - 1] !== to) return null;
+  const label = from === to ? dateLabel(from) : `${dateLabel(from)} - ${dateLabel(to)}`;
+  return { key: "r", from, to, days, label };
+}
+
 export const inPeriod = (p: Period, ms: number) => {
   const d = dayKeyOf(ms);
   return d >= p.from && d <= p.to;
 };
 
 /** Самый ранний день, по которому есть данные (для «Весь период»). */
-function firstDataDay(ctx: AdminCtx): string | undefined {
+export function firstDataDay(ctx: AdminCtx): string | undefined {
   let min = Infinity;
   for (const s of ctx.store.subs.values()) min = Math.min(min, s.firstStartAt);
   const { leads } = readLeads(ctx);
@@ -290,7 +307,7 @@ export type Gathered = {
   blockedEvents: number;
 };
 
-function gather(ctx: AdminCtx, p: Period): Gathered {
+export function gather(ctx: AdminCtx, p: Period): Gathered {
   const { leads, error } = readLeads(ctx);
   const all = leads || [];
   const leadByEid = new Map<string, Lead>();
@@ -344,7 +361,7 @@ function gather(ctx: AdminCtx, p: Period): Gathered {
   };
 }
 
-const linked = (g: Gathered, l: Lead) => !!l.eventId && g.linkedEids.has(l.eventId);
+export const linked = (g: Gathered, l: Lead) => !!l.eventId && g.linkedEids.has(l.eventId);
 
 // ───────────────────────── сборка сообщения ─────────────────────────
 

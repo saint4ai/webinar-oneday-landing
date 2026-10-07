@@ -24,9 +24,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // form-api/server.ts
 var import_node_http = require("node:http");
-var import_node_crypto4 = require("node:crypto");
-var import_node_fs7 = require("node:fs");
-var import_node_path7 = require("node:path");
+var import_node_crypto5 = require("node:crypto");
+var import_node_fs8 = require("node:fs");
+var import_node_path8 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -729,6 +729,10 @@ var TgStore = class _TgStore {
   regDayKeys() {
     return [...this.regDays.keys()];
   }
+  /** chat_id всех, кто записывался на эфир дня D (по start и rejoin). Для мини-приложения админки. */
+  registeredOn(day) {
+    return [...this.regDays.get(day) ?? []];
+  }
   /**
    * Метрики эфира дня D: записались (уникальные chat_id с этим днём), из них перешли по кнопке
    * эфира (уникальные, /api/go), из них нажали «Я уже оплатил(а)».
@@ -1120,6 +1124,8 @@ function readLeads(ctx) {
     leads.push({
       id,
       eventId: String(row.eventId ?? "").trim(),
+      name: String(row.name ?? "").trim().slice(0, 120),
+      phone: String(row.phone ?? "").trim().slice(0, 40),
       place: placeOf(String(row.source ?? "")),
       utmSource: low(u.utm_source),
       utmMedium: low(u.utm_medium),
@@ -1181,6 +1187,13 @@ function resolvePeriod(key, now, firstDataDay2) {
   }
   if (key === "t") label = `\u0421\u0435\u0433\u043E\u0434\u043D\u044F, ${dateLabel(today)}`;
   return { key, from, to, days: daysBetween(from, to), label };
+}
+function periodFromDates(from, to) {
+  if (!isDayKey(from) || !isDayKey(to) || from > to) return null;
+  const days = daysBetween(from, to);
+  if (days.length >= RANGE_MAX_DAYS && days[days.length - 1] !== to) return null;
+  const label = from === to ? dateLabel(from) : `${dateLabel(from)} - ${dateLabel(to)}`;
+  return { key: "r", from, to, days, label };
 }
 var inPeriod = (p, ms) => {
   const d = dayKeyOf(ms);
@@ -1468,7 +1481,7 @@ function renderUtmByDay(ctx, periodKey) {
   const colCell = (day, col) => col === null ? rest.reduce((a, k) => add(a, cells.get(`${day}|${k}`) || zero()), zero()) : cells.get(`${day}|${col}`) || zero();
   const keys = [...cols, ...rest.length ? [null] : []];
   const fmt = (c) => c.leads || c.bot ? `${c.leads}(${c.bot})` : ".";
-  const header = ["\u0434\u0430\u0442\u0430", ...keys.map((k) => k === null ? "\u043F\u0440\u043E\u0447\u0438\u0435" : k.length > 12 ? k.slice(0, 11) + "\u2026" : k), "\u0432\u0441\u0435\u0433\u043E"];
+  const header2 = ["\u0434\u0430\u0442\u0430", ...keys.map((k) => k === null ? "\u043F\u0440\u043E\u0447\u0438\u0435" : k.length > 12 ? k.slice(0, 11) + "\u2026" : k), "\u0432\u0441\u0435\u0433\u043E"];
   const table = p.days.map((d) => {
     const cs = keys.map((k) => colCell(d, k));
     return [ddmm(d), ...cs.map(fmt), fmt(cs.reduce(add, zero()))];
@@ -1478,9 +1491,9 @@ function renderUtmByDay(ctx, periodKey) {
   const note = "\u0432 \u0441\u043A\u043E\u0431\u043A\u0430\u0445 \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0438\u0437 \u043D\u0438\u0445 \u0434\u043E\u0448\u043B\u0438 \u0434\u043E \u0431\u043E\u0442\u0430; \u043C\u0435\u0442\u043A\u0438 \u0432\u0440\u043E\u0434\u0435 2gis \u0438\u0434\u0443\u0442 \u0441\u0440\u0430\u0437\u0443 \u0432 \u0431\u043E\u0442\u0430";
   const build = (from2) => {
     const rows = table.slice(from2);
-    const w = header.map((h, i) => Math.max(h.length, footer[i].length, ...rows.map((r) => r[i].length)));
+    const w = header2.map((h, i) => Math.max(h.length, footer[i].length, ...rows.map((r) => r[i].length)));
     const ln = (r) => r.map((c, i) => c.padEnd(w[i])).join("  ").trimEnd();
-    const pre = [ln(header), ...rows.map(ln), ln(footer)].map(esc2).join("\n");
+    const pre = [ln(header2), ...rows.map(ln), ln(footer)].map(esc2).join("\n");
     const cut = from2 > 0 ? `
 \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 ${rows.length} \u0434\u043D. \u0438\u0437 ${table.length}` : "";
     return `${head}
@@ -1596,6 +1609,14 @@ function isOwner(userId) {
   const ids = ownerIds();
   return userId !== void 0 && ids.length > 0 && ids.includes(String(userId));
 }
+function adminAppIds() {
+  const raw = process.env.ADMIN_APP_IDS;
+  return (raw === void 0 ? "789638302" : raw).split(",").map((s) => s.trim()).filter(Boolean);
+}
+function isAdminAppUser(userId) {
+  return userId !== void 0 && adminAppIds().includes(String(userId));
+}
+var adminAppUrl = () => env("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
 var GO_BASE = "https://onai.academy/workshop/api/go";
 var MAX_UPDATE_BODY = 64 * 1024;
 var API_TIMEOUT_MS = 1e4;
@@ -2121,10 +2142,11 @@ async function sendGreeting(sub, now) {
     noteSendResult(sub.chatId, r2, now);
   }
 }
-var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
 var HELP_TEXT = [
   "\u041A\u043E\u043C\u0430\u043D\u0434\u044B \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:",
   "/admin: \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 (\u0437\u0430\u044F\u0432\u043A\u0438, \u0431\u043E\u0442, UTM \u043F\u043E \u0434\u043D\u044F\u043C, \u043E\u0448\u0438\u0431\u043A\u0438), \u0432\u044B\u0431\u043E\u0440 \u043F\u0435\u0440\u0438\u043E\u0434\u0430 \u0438 \u0434\u0430\u0442\u044B. /stats \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0442\u043E \u0436\u0435",
+  "/app: \u043C\u0438\u043D\u0438-\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0430\u0434\u043C\u0438\u043D\u043A\u0438 (\u043A\u043D\u043E\u043F\u043A\u0430, \u0432\u0445\u043E\u0434 \u043F\u043E \u043F\u0430\u0440\u043E\u043B\u044E): \u0441\u0432\u043E\u0434\u043A\u0430, \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0438, \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438, \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u0438, \u044D\u0444\u0438\u0440\u044B, \u043E\u0448\u0438\u0431\u043A\u0438",
   "/series: \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F",
   "/preview: \u043F\u0440\u0438\u0441\u043B\u0430\u0442\u044C \u0441\u0435\u0431\u0435 \u0432\u0441\u044E \u0441\u0435\u0440\u0438\u044E \u0434\u043B\u044F \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438",
   "/fire <id>: \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0439\u0447\u0430\u0441 (\u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0440\u0435\u0432\u044C\u044E, \u043F\u043E\u0442\u043E\u043C \u043A\u043D\u043E\u043F\u043A\u0430 \xAB\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C\xBB)",
@@ -2444,6 +2466,13 @@ async function ownerCommand(cmd, args, m, now) {
     case "stats":
     case "admin":
       await plain(chatId, adminHomeText(st, sr(), now), menuKeyboard());
+      return;
+    case "app":
+      if (!isAdminAppUser(m.from?.id)) {
+        await plain(chatId, "\u0410\u0434\u043C\u0438\u043D\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0434\u043B\u044F \u044D\u0442\u043E\u0433\u043E \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430.");
+        return;
+      }
+      await plain(chatId, "\u0410\u0434\u043C\u0438\u043D\u043A\u0430 \u0432\u043E\u0440\u043A\u0448\u043E\u043F\u0430. \u041E\u0442\u043A\u0440\u043E\u0435\u0442\u0441\u044F \u0432\u043D\u0443\u0442\u0440\u0438 Telegram, \u0432\u0445\u043E\u0434 \u043F\u043E \u043F\u0430\u0440\u043E\u043B\u044E.", [[{ text: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0430\u0434\u043C\u0438\u043D\u043A\u0443", web_app: { url: adminAppUrl() } }]]);
       return;
     case "series":
       await plain(chatId, buildSeriesText(st, sr(), now));
@@ -2974,10 +3003,558 @@ function startScheduler() {
   };
 }
 
+// form-api/tg-miniapp.ts
+var import_node_crypto4 = require("node:crypto");
+var import_node_fs7 = require("node:fs");
+var import_node_path7 = require("node:path");
+var env2 = (k) => (process.env[k] || "").trim();
+var MIN_SECRET = 16;
+var appPin = () => env2("ADMIN_APP_PIN");
+var appSecret = () => env2("ADMIN_APP_SECRET");
+function appConfigured() {
+  return !!botToken() && !!appPin() && appSecret().length >= MIN_SECRET && adminAppIds().length > 0;
+}
+var INIT_MAX_AGE_SEC = 24 * 3600;
+var SESSION_TTL_MS = 12 * 3600 * 1e3;
+var LOGIN_MAX_FAILS = 5;
+var LOGIN_WINDOW_MS = 10 * 6e4;
+var MAX_LOGIN_BODY = 4096;
+var PAGE_SIZE = 50;
+var PAGE_MAX = 100;
+function verifyInitData(initData, token, nowMs, maxAgeSec = INIT_MAX_AGE_SEC) {
+  if (!token || typeof initData !== "string" || !initData || initData.length > 8192) return { ok: false, reason: "format" };
+  let params;
+  try {
+    params = new URLSearchParams(initData);
+  } catch {
+    return { ok: false, reason: "format" };
+  }
+  const hash = params.get("hash");
+  if (!hash || !/^[0-9a-f]{64}$/i.test(hash)) return { ok: false, reason: "format" };
+  const pairs = [];
+  for (const [k, v] of params) if (k !== "hash") pairs.push([k, v]);
+  pairs.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+  const dataCheck = pairs.map(([k, v]) => `${k}=${v}`).join("\n");
+  const secretKey = (0, import_node_crypto4.createHmac)("sha256", "WebAppData").update(token).digest();
+  const want = (0, import_node_crypto4.createHmac)("sha256", secretKey).update(dataCheck).digest();
+  const given = Buffer.from(hash, "hex");
+  if (given.length !== want.length || !(0, import_node_crypto4.timingSafeEqual)(given, want)) return { ok: false, reason: "hash" };
+  const authDate = Number(params.get("auth_date"));
+  if (!Number.isInteger(authDate) || authDate <= 0) return { ok: false, reason: "format" };
+  const ageSec = nowMs / 1e3 - authDate;
+  if (ageSec > maxAgeSec || ageSec < -300) return { ok: false, reason: "expired" };
+  let userId = 0;
+  try {
+    const u = JSON.parse(params.get("user") || "null");
+    if (u && typeof u.id === "number" && Number.isSafeInteger(u.id) && u.id > 0) userId = u.id;
+  } catch {
+  }
+  if (!userId) return { ok: false, reason: "user" };
+  return { ok: true, userId, authDate };
+}
+var signSessionPart = (payload, secret) => (0, import_node_crypto4.createHmac)("sha256", secret).update(`admin-app-session:${payload}`).digest("base64url");
+function signSession(userId, nowMs, secret, ttlMs = SESSION_TTL_MS) {
+  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowMs + ttlMs })).toString("base64url");
+  return `${payload}.${signSessionPart(payload, secret)}`;
+}
+function verifySession(token, userId, nowMs, secret) {
+  if (!secret || typeof token !== "string" || token.length > 400) return false;
+  const dot = token.indexOf(".");
+  if (dot < 1) return false;
+  const payload = token.slice(0, dot);
+  const given = Buffer.from(token.slice(dot + 1));
+  const want = Buffer.from(signSessionPart(payload, secret));
+  if (given.length !== want.length || !(0, import_node_crypto4.timingSafeEqual)(given, want)) return false;
+  try {
+    const o = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return o.u === userId && typeof o.e === "number" && o.e > nowMs;
+  } catch {
+    return false;
+  }
+}
+function pinMatches(given, pin) {
+  if (!pin || typeof given !== "string" || given.length > 64) return false;
+  return (0, import_node_crypto4.timingSafeEqual)((0, import_node_crypto4.createHash)("sha256").update(given.trim()).digest(), (0, import_node_crypto4.createHash)("sha256").update(pin).digest());
+}
+var loginFails = /* @__PURE__ */ new Map();
+function recentFails(userId, now) {
+  const list = (loginFails.get(userId) || []).filter((t) => now - t < LOGIN_WINDOW_MS);
+  if (list.length) loginFails.set(userId, list);
+  else loginFails.delete(userId);
+  return list;
+}
+function loginLockedFor(userId, now) {
+  const list = recentFails(userId, now);
+  return list.length >= LOGIN_MAX_FAILS ? Math.max(1, Math.ceil((list[0] + LOGIN_WINDOW_MS - now) / 1e3)) : 0;
+}
+function noteLoginFail(userId, now) {
+  const list = recentFails(userId, now);
+  list.push(now);
+  loginFails.set(userId, list);
+  if (loginFails.size > 500) {
+    for (const k of loginFails.keys()) if (!recentFails(k, now).length) loginFails.delete(k);
+  }
+  return Math.max(0, LOGIN_MAX_FAILS - list.length);
+}
+var pct3 = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
+var inc2 = (m, k, n = 1) => void m.set(k, (m.get(k) || 0) + n);
+var WD = ["\u0432\u0441", "\u043F\u043D", "\u0432\u0442", "\u0441\u0440", "\u0447\u0442", "\u043F\u0442", "\u0441\u0431"];
+function weekday(day) {
+  const [y, m, d] = day.split("-").map(Number);
+  return WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+}
+var stamp = (ms) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
+function aux(ctx) {
+  const paths = ctx.store.paths();
+  const clickChats = /* @__PURE__ */ new Set();
+  for (const r of readJsonlCached(paths.clicks).rows) if (typeof r.chat_id === "number") clickChats.add(r.chat_id);
+  const selfPaid = /* @__PURE__ */ new Set();
+  for (const r of readJsonlCached(paths.subs).rows) if (r.type === "paid" && r.by === "self" && typeof r.chat_id === "number") selfPaid.add(r.chat_id);
+  return { clickChats, selfPaid };
+}
+function funnel(ctx, g, basis, a) {
+  if (basis === "stream") {
+    let registered = 0;
+    let clicked2 = 0;
+    let paid2 = 0;
+    for (const d of g.p.days) {
+      const m = ctx.store.dayMetrics(d);
+      registered += m.registered;
+      clicked2 += m.clicked;
+      paid2 += m.paid;
+    }
+    return { registered, clicked: clicked2, paid: paid2 };
+  }
+  let clicked = 0;
+  let paid = 0;
+  for (const s of g.newSubs) {
+    if (a.clickChats.has(s.chatId)) clicked++;
+    if (a.selfPaid.has(s.chatId)) paid++;
+  }
+  return { registered: g.newSubs.length, clicked, paid };
+}
+function cardsOf(ctx, g, basis, a) {
+  const f = funnel(ctx, g, basis, a);
+  const reached = g.leads.filter((l) => linked(g, l)).length;
+  return {
+    leads: g.leads.length,
+    bot: f.registered,
+    reached,
+    conv: pct3(reached, g.leads.length),
+    wa: g.ty.filter((r) => r.ch === "wa").length,
+    tg: g.ty.filter((r) => r.ch === "tg").length,
+    clicked: f.clicked,
+    paid: f.paid,
+    blocked: g.blockedEvents
+  };
+}
+var leadKey = (l) => hasUtm(l) ? utmLabel(l) : `\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438: ${noUtmLabel(l)}`;
+function dailyOf(ctx, g, basis) {
+  const leads = /* @__PURE__ */ new Map();
+  const reached = /* @__PURE__ */ new Map();
+  const subs = /* @__PURE__ */ new Map();
+  const wa = /* @__PURE__ */ new Map();
+  const tg = /* @__PURE__ */ new Map();
+  for (const l of g.leads) {
+    inc2(leads, l.day);
+    if (linked(g, l)) inc2(reached, l.day);
+  }
+  for (const s of g.newSubs) inc2(subs, dayKeyOf(s.firstStartAt));
+  for (const r of g.ty) inc2(r.ch === "wa" ? wa : tg, r.day);
+  return g.p.days.map((d) => {
+    const n = leads.get(d) || 0;
+    const r = reached.get(d) || 0;
+    return {
+      day: d,
+      label: ddmm(d),
+      wd: weekday(d),
+      leads: n,
+      reached: r,
+      conv: pct3(r, n),
+      bot: basis === "stream" ? ctx.store.registeredOn(d).length : subs.get(d) || 0,
+      wa: wa.get(d) || 0,
+      tg: tg.get(d) || 0
+    };
+  });
+}
+function hourlyOf(g) {
+  const rows = Array.from({ length: 24 }, (_, h) => ({ h, leads: 0, bot: 0 }));
+  for (const l of g.leads) rows[partsInTZ(l.ts).hour].leads++;
+  for (const s of g.newSubs) rows[partsInTZ(s.firstStartAt).hour].bot++;
+  return rows;
+}
+function sourcesOf(g) {
+  const rows = /* @__PURE__ */ new Map();
+  for (const l of g.leads) {
+    const key = leadKey(l);
+    let r = rows.get(key);
+    if (!r) rows.set(key, r = { key, label: key, kind: hasUtm(l) ? "utm" : "none", leads: 0, bot: 0, pct: 0 });
+    r.leads++;
+    if (linked(g, l)) r.bot++;
+  }
+  for (const s of g.newSubs) {
+    const o = classifyPayload(s.payload);
+    if (o.kind !== "tag") continue;
+    const key = `tag:${o.tag}`;
+    let r = rows.get(key);
+    if (!r) rows.set(key, r = { key: o.tag, label: `\u043C\u0435\u0442\u043A\u0430 \u0431\u043E\u0442\u0430: ${o.tag}`, kind: "tag", leads: 0, bot: 0, pct: 0 });
+    r.bot++;
+  }
+  for (const r of rows.values()) r.pct = r.kind === "tag" ? 0 : pct3(r.bot, r.leads);
+  return [...rows.values()].sort((a, b) => b.leads - a.leads || b.bot - a.bot || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0)).slice(0, 200);
+}
+function streamsOf(ctx, p) {
+  const sentBy = /* @__PURE__ */ new Map();
+  for (const r of readJsonlCached(ctx.store.paths().sent).rows) {
+    const day = String(r.day ?? "");
+    if (!isDayKey(day) || day < p.from || day > p.to || typeof r.msg !== "string") continue;
+    let per = sentBy.get(day);
+    if (!per) sentBy.set(day, per = /* @__PURE__ */ new Map());
+    const c = per.get(r.msg) || { ok: 0, bad: 0 };
+    if (r.ok === true) c.ok++;
+    else c.bad++;
+    per.set(r.msg, c);
+  }
+  const order = /* @__PURE__ */ new Map();
+  try {
+    activeSeries().messages.forEach((m, i) => order.set(m.id, { at: m.at, off: m.dayOffset ?? 0, i }));
+  } catch {
+  }
+  const out = [];
+  for (const d of p.days) {
+    const m = ctx.store.dayMetrics(d);
+    const per = sentBy.get(d);
+    if (!m.registered && !per) continue;
+    const messages = [...per?.entries() ?? []].map(([id, c]) => ({ id, at: order.get(id)?.at ?? "", off: order.get(id)?.off ?? 0, ok: c.ok, bad: c.bad, i: order.get(id)?.i ?? 999 })).sort((x, y) => Number(x.i === 999) - Number(y.i === 999) || x.off - y.off || x.at.localeCompare(y.at) || x.id.localeCompare(y.id)).map(({ i: _i, ...rest }) => rest);
+    out.push({
+      day: d,
+      label: ddmm(d),
+      wd: weekday(d),
+      registered: m.registered,
+      clicked: m.clicked,
+      pct: pct3(m.clicked, m.registered),
+      paid: m.paid,
+      sentOk: messages.reduce((n, x) => n + x.ok, 0),
+      sentBad: messages.reduce((n, x) => n + x.bad, 0),
+      messages
+    });
+  }
+  return out.reverse();
+}
+var meta = (ctx) => ({ today: dayKeyOf(ctx.now), updated: hhmmOf(ctx.now), tz: "Asia/Almaty" });
+function buildSummary(ctx, p, basis) {
+  const a = aux(ctx);
+  const g = gather(ctx, p);
+  const prevP = periodFromDates(addDays(p.from, -p.days.length), addDays(p.from, -1));
+  const gPrev = gather(ctx, prevP);
+  let active = 0;
+  let paid = 0;
+  for (const s of ctx.store.subs.values()) {
+    if (ctx.store.isActive(s)) active++;
+    if (s.paid) paid++;
+  }
+  return {
+    ok: true,
+    meta: meta(ctx),
+    period: { key: p.key, from: p.from, to: p.to, label: p.label, days: p.days.length },
+    prevPeriod: { from: prevP.from, to: prevP.to, label: prevP.label },
+    basis,
+    leadsOk: g.leadsOk,
+    leadsError: g.leadsOk ? "" : g.leadsError.slice(0, 120),
+    cards: cardsOf(ctx, g, basis, a),
+    prev: cardsOf(ctx, gPrev, basis, a),
+    daily: dailyOf(ctx, g, basis),
+    hourly: p.days.length === 1 ? hourlyOf(g) : null,
+    sources: sourcesOf(g),
+    streams: streamsOf(ctx, p),
+    totals: { subscribers: ctx.store.subs.size, active, paid }
+  };
+}
+function page(rows, q) {
+  const items = rows.slice(q.offset, q.offset + q.limit);
+  return { items, total: rows.length, offset: q.offset, hasMore: q.offset + items.length < rows.length };
+}
+function buildLeads(ctx, p, q) {
+  const g = gather(ctx, p);
+  const needle = q.q.trim().toLowerCase();
+  const digits = needle.replace(/\D/g, "");
+  const utm = q.utm.trim().toLowerCase();
+  const rows = g.leads.filter((l) => {
+    const inBot = linked(g, l);
+    if (q.inbot === "1" && !inBot) return false;
+    if (q.inbot === "0" && inBot) return false;
+    if (utm) {
+      const key = leadKey(l).toLowerCase();
+      if (utm === "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438" ? hasUtm(l) : key !== utm) return false;
+    }
+    if (needle) {
+      const byName = l.name.toLowerCase().includes(needle);
+      const byPhone = digits.length >= 2 && l.phone.replace(/\D/g, "").includes(digits);
+      if (!byName && !byPhone) return false;
+    }
+    return true;
+  }).sort((x, y) => y.ts - x.ts).map((l) => ({
+    id: l.id,
+    ts: l.ts,
+    t: stamp(l.ts),
+    name: l.name,
+    phone: l.phone,
+    place: l.place,
+    utm: leadKey(l),
+    inBot: linked(g, l)
+  }));
+  return { ok: true, meta: meta(ctx), leadsOk: g.leadsOk, leadsError: g.leadsOk ? "" : g.leadsError.slice(0, 120), ...page(rows, q) };
+}
+function originLabel(kind, tag) {
+  if (kind === "pp") return "\u043E\u043A\u043D\u043E \u043D\u0430 \u0441\u0430\u0439\u0442\u0435";
+  if (kind === "ty") return "\u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB";
+  if (kind === "tag") return `\u043C\u0435\u0442\u043A\u0430: ${tag}`;
+  return "\u043F\u0440\u044F\u043C\u043E\u0439 /start";
+}
+function buildSubscribers(ctx, p, basis, q) {
+  const g = gather(ctx, p);
+  const a = aux(ctx);
+  let cohort;
+  if (basis === "stream") {
+    const seen = /* @__PURE__ */ new Set();
+    cohort = [];
+    for (const d of p.days) {
+      for (const chat of ctx.store.registeredOn(d)) {
+        const s = ctx.store.subs.get(chat);
+        if (s && !seen.has(chat)) {
+          seen.add(chat);
+          cohort.push(s);
+        }
+      }
+    }
+  } else cohort = g.newSubs;
+  const needle = q.q.trim().toLowerCase().replace(/^@/, "");
+  const utm = q.utm.trim().toLowerCase();
+  const rows = cohort.map((s) => {
+    const o = classifyPayload(s.payload);
+    const lead = o.eid ? g.leadByEid.get(o.eid) : void 0;
+    return { s, o, src: lead ? leadKey(lead) : "" };
+  }).filter(({ s, o, src }) => {
+    if (utm && !(o.tag && o.tag === utm) && src.toLowerCase() !== utm && !(utm === "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438" && !!src && src.startsWith("\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438"))) return false;
+    if (needle && !s.firstName.toLowerCase().includes(needle) && !s.username.toLowerCase().includes(needle)) return false;
+    if (q.flag === "blocked" && !s.blocked) return false;
+    if (q.flag === "paid" && !s.paid) return false;
+    if (q.flag === "clicked" && !a.clickChats.has(s.chatId)) return false;
+    if (q.flag === "noclick" && a.clickChats.has(s.chatId)) return false;
+    return true;
+  }).sort((x, y) => y.s.firstStartAt - x.s.firstStartAt).map(({ s, o, src }) => ({
+    ts: s.firstStartAt,
+    t: stamp(s.firstStartAt),
+    name: s.firstName,
+    username: s.username,
+    origin: originLabel(o.kind, o.tag),
+    kind: o.kind,
+    tag: o.tag,
+    src,
+    day: s.streamDay,
+    dayLabel: ddmm(s.streamDay),
+    clicked: a.clickChats.has(s.chatId),
+    paid: s.paid,
+    blocked: s.blocked,
+    stopped: s.stopped
+  }));
+  return { ok: true, meta: meta(ctx), basis, ...page(rows, q) };
+}
+var uptimeText2 = (sec) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor(sec % 3600 / 60);
+  return h >= 24 ? `${Math.floor(h / 24)} \u0434\u043D. ${h % 24} \u0447` : `${h} \u0447 ${m} \u043C\u0438\u043D`;
+};
+function buildErrors(ctx, p) {
+  const g = gather(ctx, p);
+  const bad = g.sent.filter((e) => !e.ok);
+  const groups = /* @__PURE__ */ new Map();
+  for (const e of bad) inc2(groups, String(e.err ?? "\u0431\u0435\u0437 \u0442\u0435\u043A\u0441\u0442\u0430").replace(/\d{5,}/g, "#").slice(0, 70));
+  const last = [...bad].sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts)).slice(0, 10).map((e) => ({ t: stamp(Date.parse(e.ts)), msg: String(e.msg).slice(0, 40), err: String(e.err ?? "").replace(/\d{5,}/g, "#").slice(0, 100) }));
+  const rt = runtime.events;
+  const skipped = rt.filter((e) => e.type === "skipLate");
+  const uptimeSec = Math.floor(process.uptime());
+  return {
+    ok: true,
+    meta: meta(ctx),
+    sentTotal: g.sent.length,
+    sentOk: g.sent.length - bad.length,
+    failed: bad.length,
+    groups: [...groups.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1)).slice(0, 8).map(([text, n]) => ({ text, n })),
+    last,
+    blocked: g.blockedEvents,
+    runtime: {
+      skipLate: skipped.length,
+      skipLateIds: [...new Set(skipped.map((e) => e.msg || "?"))].slice(0, 8),
+      mediaFallback: rt.filter((e) => e.type === "mediaFallback").length,
+      tickError: rt.filter((e) => e.type === "tickError").length,
+      webhookRejected: runtime.webhookRejected
+    },
+    uptimeSec,
+    uptime: uptimeText2(uptimeSec),
+    version: (ctx.version ?? adminVersion()).slice(0, 60)
+  };
+}
+function send(res, status, body, extra = {}) {
+  const payload = JSON.stringify(body);
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Length": Buffer.byteLength(payload),
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    ...extra
+  });
+  res.end(payload);
+}
+var FORBIDDEN = { ok: false, error: "forbidden" };
+function header(req, name) {
+  const v = req.headers[name];
+  return (Array.isArray(v) ? v[0] : v) || "";
+}
+function readLimited2(req, max) {
+  return new Promise((resolve) => {
+    let size = 0;
+    let over = false;
+    const chunks = [];
+    req.on("data", (c) => {
+      if (over) return;
+      size += c.length;
+      if (size > max) {
+        over = true;
+        chunks.length = 0;
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on("end", () => resolve(over ? null : Buffer.concat(chunks).toString("utf8")));
+    req.on("error", () => resolve(null));
+  });
+}
+function gateInit(initData) {
+  if (!appConfigured()) return { ok: false, status: 503, body: { ok: false, error: "not_configured" } };
+  const v = verifyInitData(initData, botToken(), Date.now());
+  if (!v.ok || !isAdminAppUser(v.userId)) return { ok: false, status: 403, body: FORBIDDEN };
+  return { ok: true, userId: v.userId };
+}
+async function handleAdminLogin(req, res) {
+  const raw = await readLimited2(req, MAX_LOGIN_BODY);
+  let body = {};
+  try {
+    if (raw) body = JSON.parse(raw);
+  } catch {
+    body = {};
+  }
+  const initData = typeof body.initData === "string" && body.initData ? body.initData : header(req, "x-tg-init-data");
+  const gate = gateInit(initData);
+  if (!gate.ok) return send(res, gate.status, gate.body);
+  const now = Date.now();
+  const wait = loginLockedFor(gate.userId, now);
+  if (wait > 0) {
+    console.warn("[admin-app] \u0432\u0445\u043E\u0434 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D: \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u043C\u043D\u043E\u0433\u043E \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0445 \u043F\u0430\u0440\u043E\u043B\u0435\u0439");
+    return send(res, 429, { ok: false, error: "too_many", retryAfter: wait }, { "Retry-After": String(wait) });
+  }
+  if (!pinMatches(body.pin, appPin())) {
+    const left = noteLoginFail(gate.userId, now);
+    console.warn("[admin-app] \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C, \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043F\u044B\u0442\u043E\u043A: %d", left);
+    return send(res, 401, { ok: false, error: "bad_pin", left });
+  }
+  loginFails.delete(gate.userId);
+  console.log("[admin-app] \u0432\u0445\u043E\u0434 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D");
+  send(res, 200, {
+    ok: true,
+    token: signSession(gate.userId, now, appSecret()),
+    expiresAt: now + SESSION_TTL_MS,
+    meta: { today: dayKeyOf(now), updated: hhmmOf(now), tz: "Asia/Almaty" }
+  });
+}
+function periodOf(qs, ctx) {
+  const from = qs.get("from") || "";
+  const to = qs.get("to") || "";
+  if (from || to) return periodFromDates(from, to || from);
+  const key = (qs.get("period") || "t").slice(0, 10);
+  return resolvePeriod(key, ctx.now, key === "all" ? firstDataDay(ctx) : void 0);
+}
+function listQuery(qs) {
+  const num = (k, def) => {
+    const raw = qs.get(k);
+    if (raw === null || raw === "") return def;
+    const n = Number(raw);
+    return Number.isInteger(n) && n >= 0 ? n : def;
+  };
+  const limit = Math.min(PAGE_MAX, Math.max(1, num("limit", PAGE_SIZE)));
+  return {
+    q: (qs.get("q") || "").slice(0, 100),
+    utm: (qs.get("utm") || "").slice(0, 160),
+    inbot: qs.get("inbot") === "1" ? "1" : qs.get("inbot") === "0" ? "0" : "",
+    flag: ["blocked", "paid", "clicked", "noclick"].includes(qs.get("flag") || "") ? qs.get("flag") : "",
+    offset: num("offset", 0),
+    limit
+  };
+}
+function handleAdminData(req, res, path) {
+  const gate = gateInit(header(req, "x-tg-init-data"));
+  if (!gate.ok) return send(res, gate.status, gate.body);
+  const m = /^Bearer\s+(\S+)$/i.exec(header(req, "authorization"));
+  if (!m || !verifySession(m[1], gate.userId, Date.now(), appSecret())) return send(res, 401, { ok: false, error: "session" });
+  const what = path.replace(/^\/api\/admin\//, "");
+  if (!["summary", "leads", "subscribers", "errors"].includes(what)) return send(res, 404, { ok: false, error: "not_found" });
+  if (!botEnabled()) return send(res, 503, { ok: false, error: "bot_off" });
+  try {
+    const ctx = adminCtx(Date.now());
+    const qs = new URL(req.url || "/", "http://localhost").searchParams;
+    const p = periodOf(qs, ctx);
+    if (!p) return send(res, 400, { ok: false, error: "bad_period" });
+    const basis = qs.get("basis") === "stream" ? "stream" : "reg";
+    if (what === "summary") return send(res, 200, buildSummary(ctx, p, basis));
+    if (what === "leads") return send(res, 200, buildLeads(ctx, p, listQuery(qs)));
+    if (what === "subscribers") return send(res, 200, buildSubscribers(ctx, p, basis, listQuery(qs)));
+    return send(res, 200, buildErrors(ctx, p));
+  } catch (e) {
+    console.error("[admin-app] \u043E\u0448\u0438\u0431\u043A\u0430 \u0441\u0431\u043E\u0440\u043A\u0438 \u0434\u0430\u043D\u043D\u044B\u0445:", String(e?.message || e).slice(0, 200));
+    if (!res.headersSent) send(res, 500, { ok: false, error: "internal" });
+  }
+}
+function readPage() {
+  const candidates = [env2("ADMIN_APP_HTML"), (0, import_node_path7.join)(__dirname, "admin-app.html"), (0, import_node_path7.join)(__dirname, "..", "admin-app.html")].filter(Boolean);
+  for (const f of candidates) {
+    try {
+      return (0, import_node_fs7.readFileSync)(f, "utf8");
+    } catch {
+    }
+  }
+  return null;
+}
+function handleAdminApp(req, res) {
+  const html = readPage();
+  if (html === null) return send(res, 404, { ok: false, error: "not_found" });
+  const nonce = (0, import_node_crypto4.randomBytes)(16).toString("base64");
+  const body = html.split("__NONCE__").join(nonce);
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": Buffer.byteLength(body),
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": [
+      "default-src 'self'",
+      `script-src 'nonce-${nonce}' https://telegram.org`,
+      `style-src 'nonce-${nonce}'`,
+      "style-src-attr 'unsafe-inline'",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+      "base-uri 'none'",
+      "form-action 'none'",
+      "object-src 'none'",
+      "frame-ancestors https://telegram.org https://*.telegram.org"
+    ].join("; "),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer"
+  });
+  res.end(req.method === "HEAD" ? void 0 : body);
+}
+
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs7.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path7.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs8.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path8.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -3050,7 +3627,7 @@ async function handleLead(req, res) {
   const forwarded = req.headers["x-forwarded-for"];
   const clientIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
   const userAgent = req.headers["user-agent"] || void 0;
-  const metaEventId = eventId || (0, import_node_crypto4.randomUUID)();
+  const metaEventId = eventId || (0, import_node_crypto5.randomUUID)();
   const fbclid = fbc ? fbc.split(".").slice(3).join(".") || void 0 : void 0;
   const captured = await captureLead({
     eventId: metaEventId,
@@ -3130,7 +3707,7 @@ function secretOk2(provided) {
   const a = Buffer.from(provided);
   const b = Buffer.from(TG_SECRET);
   if (a.length !== b.length) return false;
-  return (0, import_node_crypto4.timingSafeEqual)(a, b);
+  return (0, import_node_crypto5.timingSafeEqual)(a, b);
 }
 function webhookReply(res, chatId, text) {
   return json(res, 200, { method: "sendMessage", chat_id: chatId, text, disable_web_page_preview: true });
@@ -3199,7 +3776,7 @@ function handleCalendar(res) {
 }
 function readVersion() {
   try {
-    return (0, import_node_fs7.readFileSync)((0, import_node_path7.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+    return (0, import_node_fs8.readFileSync)((0, import_node_path8.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
   } catch {
     return "dev";
   }
@@ -3231,6 +3808,9 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
     if (method === "POST" && url === "/api/tg-workshop") return await handleTgWorkshop(req, res);
     if (method === "POST" && url === "/api/ty-click") return await handleTyClick(req, res);
     if ((method === "GET" || method === "HEAD") && url.startsWith("/api/go/")) return handleGo(req, res, url.slice("/api/go/".length));
+    if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
+    if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
+    if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);
     return json(res, 404, { ok: false, error: "not_found" });
   } catch (err) {
