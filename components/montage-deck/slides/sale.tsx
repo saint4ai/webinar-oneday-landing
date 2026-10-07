@@ -36,7 +36,7 @@ export const BigWord = ({ word, size = "9cqw" }: { word: string; size?: string }
 /** Цена на тёмной плашке сайта: #2A211C, сумма золотом. */
 export const PricePlate = ({ label, value, usd, sub, delay = 0 }: { label: string; value: string; usd?: string; sub?: string; delay?: number }) => (
   <motion.div initial={{ opacity: 0, x: "3cqw", scale: 0.96 }} animate={{ opacity: 1, x: "0cqw", scale: 1 }} transition={{ delay, duration: 0.55, ease: EASE }}
-    style={{ ...pricePlate, padding: "1.6cqw 1.8cqw", border: `1.5px solid ${T.gold2}`, minWidth: "max-content" }}>
+    style={{ ...pricePlate, padding: "1.6cqw 1.8cqw", border: `1.5px solid ${T.gold2}`, minWidth: "min-content" }}>
     <div style={{ ...txt, fontSize: "0.95cqw", fontWeight: 700, color: T.gold }}>{label}</div>
     <div style={{ marginTop: "0.8cqw" }}><Num size="2.8cqw" color={T.gold}>{value}</Num></div>
     {usd && <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", color: T.nightMuted, marginTop: "0.45cqw", whiteSpace: "nowrap" }}>{usd}</div>}

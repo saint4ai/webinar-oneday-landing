@@ -5,7 +5,7 @@ import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { VoxelField } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { LT, T, goldText } from "../theme";
-import { EASE, H, Kicker, Lead, Px, RISE_DUR, STEP } from "../ui";
+import { EASE, H, Kicker, Lead, NIGHT_HALO, Px, RISE_DUR, STEP, nightScrim } from "../ui";
 
 /**
  * Экран урока или главы, ночной: фоном поле столбиков (гаснет к зоне камеры), огромная золотая цифра
@@ -17,7 +17,7 @@ export function M_Chapter({ big, kicker, title, sub, bigSize = "16cqw", obj }: {
   };
   const after = 0.45; // заголовок — сразу за цифрой
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /></MontageBg>} contentMinWidth={0}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /><div aria-hidden style={nightScrim("27% 72%", "58%", "32%")} /></MontageBg>} contentMinWidth={0}>
       <style>{`@keyframes ch-shine { from { background-position: 160% 0; } to { background-position: -60% 0; } }`}</style>
       <div className="flex items-end gap-[1.6cqw]">
         <motion.div className="relative" initial={{ opacity: 0, y: "3cqw", scale: 0.9 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
@@ -35,12 +35,12 @@ export function M_Chapter({ big, kicker, title, sub, bigSize = "16cqw", obj }: {
       </div>
       <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.4, delay: after - STEP, ease: EASE }}
         style={{ width: "6cqw", height: "0.2cqw", background: T.gold2, margin: "2.2cqw 0 1.6cqw", borderRadius: 2, transformOrigin: "left" }} />
-      <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after, ease: EASE }}>
+      <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after, ease: EASE }} style={{ textShadow: NIGHT_HALO }}>
         {kicker && <Kicker color={T.gold}>{kicker}</Kicker>}
         <H size="3.4cqw" color={T.nightText} style={{ maxWidth: "50cqw" }}>{title}</H>
       </motion.div>
       {sub && (
-        <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after + STEP, ease: EASE }}>
+        <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after + STEP, ease: EASE }} style={{ textShadow: NIGHT_HALO }}>
           <Lead color={T.nightMuted} style={{ marginTop: "1.2cqw", maxWidth: "46cqw" }}>{sub}</Lead>
         </motion.div>
       )}

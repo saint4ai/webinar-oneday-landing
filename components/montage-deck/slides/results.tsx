@@ -173,7 +173,7 @@ export function M_Inquiries() {
     <Statement kicker="Результаты · заявки" title={<>Обращения за 30 дней: <Em>контент приводит клиентов</Em></>} size="2.6cqw">
       <div className="grid items-center" style={{ gridTemplateColumns: "minmax(0, 1fr) 19cqw", gap: "2.4cqw", maxWidth: "50cqw" }}>
         <div>
-          <MainStat value={q.total} label={q.label} size="9cqw" />
+          <MainStat value={q.total} label={q.label} size="7.6cqw" />
           <In i={3}><Note style={{ marginTop: "1.6cqw" }}>{q.source}</Note></In>
         </div>
         <In i={2}>

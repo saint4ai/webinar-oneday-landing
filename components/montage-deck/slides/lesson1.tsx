@@ -281,7 +281,7 @@ export function M_Styles() {
     <Statement kicker="Шаг 2 · Формат и стиль" title={<>6 форматов и <Em>9 стилей</Em></>} size="2.9cqw" lead="Выбираете по живым примерам, а не по описанию. Это мои ролики, их смонтировал агент."
       leftSize="31cqw" leftOverflow="visible"
       left={
-        <div className="grid grid-cols-3" style={{ gap: "0.6cqw", width: "28.8cqw" }}>
+        <div className="grid grid-cols-3" style={{ gap: "0.6cqw", width: "28cqw", marginLeft: "2cqw" }}>
           {reels.map((r, i) => (
             <motion.div key={r.video} className="relative overflow-hidden" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.15 + (i % 3) * 0.06 + Math.floor(i / 3) * 0.06, duration: 0.4, ease: EASE }}

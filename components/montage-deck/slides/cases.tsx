@@ -238,7 +238,7 @@ export function M_Cases({ kicker, title = "Что я собрал для биз�
 
         <div className="relative" style={{ aspectRatio: "16 / 11.4", perspective: "90cqw" }}>
           {/* Стопка карточек: пустое стекло и следующий кейс веером выглядывают сзади — видно, что решений много */}
-          <div className="absolute inset-0" style={{ ...glass("1.4cqw"), transform: "translate(2.6cqw, 1.5cqw) rotate(7deg) scale(0.88)", opacity: 0.75 }}><Rim sheen={0.2} /></div>
+          <div className="absolute inset-0" style={{ ...glass("1.4cqw"), position: "absolute", transform: "translate(2.6cqw, 1.5cqw) rotate(7deg) scale(0.88)", opacity: 0.75 }}><Rim sheen={0.2} /></div>
           {n > 1 && (
             <div className="absolute inset-0" style={{ transform: "translate(1.4cqw, 0.8cqw) rotate(3.5deg) scale(0.94)", opacity: 0.7, filter: "saturate(.8) brightness(.9)" }}>
               <Window c={next} />

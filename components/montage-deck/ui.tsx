@@ -54,6 +54,15 @@ export function glueNode(n: ReactNode): ReactNode {
 /** 107237 → «107 237» с неразрывным пробелом. */
 export const thousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+/** Тёмный ореол вокруг текста на экране с полем столбиков (главы, подводка к практике): золотые грани под буквами не съедают контраст. */
+export const NIGHT_HALO = "0 0 0.7cqw rgba(15,11,9,.92), 0 0 1.8cqw rgba(15,11,9,.8)";
+
+/** Затемнение под текстом на экранах с полем столбиков: мягкий овал, края растворяются, сами столбики остаются видны вокруг. */
+export const nightScrim = (at: string, rx: string, ry: string, alpha = 0.6): CSSProperties => ({
+  position: "absolute", inset: 0, pointerEvents: "none",
+  background: `radial-gradient(ellipse ${rx} ${ry} at ${at}, rgba(15,11,9,${alpha}), rgba(15,11,9,${alpha / 2}) 58%, rgba(15,11,9,0) 100%)`,
+});
+
 export const EASE = [0.23, 1, 0.32, 1] as const;
 
 /** Ритм въезда: шаг 70 мс, въезд элемента 0,42 с — слайд собирается за ~0,6 с. */

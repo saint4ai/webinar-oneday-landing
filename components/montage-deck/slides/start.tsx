@@ -129,10 +129,11 @@ export function M_Guides({ kicker, title, lead }: { kicker: string; title: strin
     ["Контент-план на месяц", "И схема выкладки: что и когда публиковать", "lg-i-calfilm"],
     ["30 хуков под вашу нишу", "Первые фразы, с которых ролик не пролистывают", "lg-i-hook"],
   ];
-  const fan = [{ x: -12, r: -11, ry: 16, y: 1.2 }, { x: 0, r: 0, ry: 0, y: -0.6 }, { x: 12, r: 11, ry: -16, y: 1.2 }];
+  // Обложки раздвинуты на ширину карточки: средняя не закрывает заголовок крайних (раньше шаг 12cqw при ширине 15cqw)
+  const fan = [{ x: -15.4, r: -8, ry: 12, y: 1.2 }, { x: 0, r: 0, ry: 0, y: -0.6 }, { x: 15.4, r: 8, ry: -12, y: 1.2 }];
   return (
     <Statement kicker={kicker} title={title} lead={lead} size="2.8cqw">
-      <div className="relative" style={{ width: "44cqw", height: "22cqw", perspective: "1600px", marginTop: "0.6cqw" }}>
+      <div className="relative" style={{ width: "44cqw", height: "22cqw", perspective: "1600px", marginTop: "0.6cqw", marginLeft: "3.6cqw" }}>
         {guides.map(([t, d, ic], i) => (
           <motion.div key={t} className="absolute top-0" style={{ left: "50%", marginLeft: "-7.5cqw", width: "15cqw", height: "20cqw", zIndex: i === 1 ? 3 : 1, transformOrigin: "50% 100%" }}
             initial={{ opacity: 0, x: "0cqw", y: "3cqw", rotate: 0, rotateY: 0 }}

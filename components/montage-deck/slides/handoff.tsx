@@ -5,7 +5,7 @@ import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { VoxelField } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { T } from "../theme";
-import { EASE, Em, H, Kicker, Px, RISE_DUR, STEP, glueNode } from "../ui";
+import { EASE, Em, H, Kicker, NIGHT_HALO, Px, RISE_DUR, STEP, glueNode, nightScrim } from "../ui";
 
 /**
  * pr · Подводка к живой практике (Александр, 07.10 вечером). После практик 2 и 3 на этом слайде Александр переключает экран в OBS
@@ -15,17 +15,17 @@ import { EASE, Em, H, Kicker, Px, RISE_DUR, STEP, glueNode } from "../ui";
 export function M_ToPractice() {
   const after = 0.3;
   return (
-    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /></MontageBg>} contentMinWidth={0}>
+    <SlideLayout className="bg-transparent" background={<MontageBg tone="night"><VoxelField /><div aria-hidden style={nightScrim("30% 74%", "60%", "40%")} /></MontageBg>} contentMinWidth={0}>
       <Px name="lg-s59-desk" size="17cqw" delay={0.1} style={{ marginLeft: "-0.9cqw" }} />
       <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.4, delay: after - STEP, ease: EASE }}
         style={{ width: "6cqw", height: "0.2cqw", background: T.gold2, margin: "2.2cqw 0 1.6cqw", borderRadius: 2, transformOrigin: "left" }} />
-      <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after, ease: EASE }}>
+      <motion.div initial={{ opacity: 0, x: "-1.5cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ duration: RISE_DUR, delay: after, ease: EASE }} style={{ textShadow: NIGHT_HALO }}>
         <Kicker color={T.gold}>Три практики подряд</Kicker>
         <H size="3.6cqw" color={T.nightText} style={{ maxWidth: "50cqw" }}>
           {glueNode(<>Теперь приступаем <Em night>к практике</Em></>)}
         </H>
       </motion.div>
-      <div style={{ display: "grid", gap: "0.9cqw", marginTop: "1.8cqw", maxWidth: "50cqw" }}>
+      <div style={{ display: "grid", gap: "0.9cqw", marginTop: "1.8cqw", maxWidth: "50cqw", textShadow: NIGHT_HALO }}>
         {[
           ["1", "Рилс без знаний монтажа", "агент собирает графику, субтитры и звук по голосу"],
           ["2", "Презентация по брифу", "структура, тексты и слайды без дизайнера"],
@@ -42,7 +42,7 @@ export function M_ToPractice() {
         ))}
       </div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: RISE_DUR, delay: after + 0.25 + 3 * STEP, ease: EASE }}
-        style={{ marginTop: "1.6cqw", fontSize: "1.15cqw", color: T.nightText, opacity: 0.72 }}>
+        style={{ marginTop: "1.6cqw", fontSize: "1.15cqw", color: T.nightText, opacity: 0.72, textShadow: NIGHT_HALO }}>
         Смотрите, как это делаю я, и повторяйте у себя.
       </motion.div>
     </SlideLayout>

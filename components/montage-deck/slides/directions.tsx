@@ -65,7 +65,7 @@ function Conveyor({ no, lessons, start }: { no: number; lessons: string[]; start
               transition={{ delay: t, duration: 0.3, ease: EASE }}
               style={{ flex: 1, minWidth: 0, alignSelf: "stretch", borderRadius: 14, borderWidth: 1.5, borderStyle: "solid", padding: "0.55cqw 0.75cqw" }}>
               <div style={unb("0.72cqw", last ? LT.ink : T.brownLt)}>{no}.{i + 1}</div>
-              <div style={{ ...txt, fontSize: "0.88cqw", fontWeight: 700, lineHeight: 1.25, marginTop: "0.3cqw" }}>{l}</div>
+              <div style={{ ...txt, fontSize: "0.88cqw", fontWeight: 700, lineHeight: 1.25, marginTop: "0.3cqw", ...(last ? { color: LT.ink } : null) }}>{l}</div>
             </motion.div>
             {!last && <motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: t + 0.12, duration: 0.15 }}
               style={{ width: "0.55cqw", height: 2, background: T.gold2, transformOrigin: "left", flexShrink: 0 }} />}
@@ -163,7 +163,7 @@ export function M_ShopReel() {
             </div>
           </motion.div>
           {["графика", "субтитры", "звук"].map((t, i) => (
-            <motion.span key={t} className="absolute" style={{ right: "9.9cqw", top: `${8.4 + i * 3.6}cqw` }}
+            <motion.span key={t} className="absolute" style={{ right: "11.6cqw", top: `${8.4 + i * 3.6}cqw` }}
               initial={{ opacity: 0, x: "-1.6cqw", scale: 0.8 }} animate={{ opacity: 1, x: "0cqw", scale: 1 }} transition={{ delay: 1.2 + i * 0.2, type: "spring", stiffness: 320, damping: 18 }}>
               <span style={{ display: "inline-block", borderRadius: 999, padding: "0.45cqw 0.95cqw", whiteSpace: "nowrap", ...goldButton, ...unb("0.8cqw", LT.ink) }}>{t}</span>
             </motion.span>
@@ -265,7 +265,7 @@ export function M_ShopLead() {
           <motion.div className="absolute" style={{ left: "12.6cqw", top: "1.4cqw" }} initial={{ opacity: 0, x: "-0.6cqw" }} animate={{ opacity: 1, x: "0cqw" }} transition={{ delay: 1.35, duration: 0.3, ease: EASE }}>
             <Arrow color={T.gold2} size="1.4cqw" />
           </motion.div>
-          <motion.div className="absolute" style={{ right: 0, top: "3.4cqw", width: "8.6cqw", ...card, borderRadius: 16, padding: "0.8cqw 0.9cqw", border: `1.5px solid ${T.gold2}` }}
+          <motion.div className="absolute" style={{ ...card, position: "absolute", right: 0, top: "3.4cqw", width: "8.6cqw", borderRadius: 16, padding: "0.8cqw 0.9cqw", border: `1.5px solid ${T.gold2}` }}
             initial={{ opacity: 0, y: "-2.6cqw", scale: 0.92 }}
             animate={{ opacity: 1, y: "0cqw", scale: 1, boxShadow: [`0 0 0 0cqw ${GOLD(0.55)}`, `0 0 0 0.9cqw ${GOLD(0)}`] }}
             transition={{ delay: 1.5, type: "spring", stiffness: 160, damping: 16, boxShadow: { delay: 1.8, duration: 1.2 } }}>
