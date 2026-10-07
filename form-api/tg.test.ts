@@ -41,7 +41,7 @@ import { adminDaily } from "./tg-scheduler";
 import { createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { copyFileSync } from "node:fs";
-import { adminAppIds, adminAppUrl, isAdminAppUser } from "./tg-workshop";
+import { adminAppIds, adminAppUrl, isAdminAppUser, privacyUrl } from "./tg-workshop";
 import {
   buildErrors, buildLeads, buildSubscribers, buildSummary, handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk, INIT_MAX_AGE_SEC,
   LOGIN_MAX_FAILS, LOGIN_WINDOW_MS, loginLockedFor, noteLoginFail, pinMatches, resetAdminAppState, SESSION_TTL_MS, signSession,
@@ -2803,6 +2803,24 @@ test("/app: кнопка web_app у администратора, отказ д�
   await processUpdate(upd(900, "/app"), NOW);
   assert.equal(fake.of("sendMessage")[0].body.reply_markup.inline_keyboard[0][0].web_app.url, "https://example.test/admin");
   delete process.env.ADMIN_APP_URL;
+});
+
+// ── /privacy: ссылка на политику для всех ──
+
+test("/privacy: ссылка на политику и обычному человеку, и владельцу; адрес переопределяется", async () => {
+  boot();
+  const line = "Политика конфиденциальности: https://onai.academy/workshop-montazh/privacy";
+  assert.equal(privacyUrl(), "https://onai.academy/workshop-montazh/privacy");
+  await processUpdate(upd(5, "/privacy"), NOW); // не владелец
+  assert.deepEqual(fake.texts(5), [line]);
+  fake.reset();
+  await processUpdate(upd(900, "/privacy"), NOW); // владелец
+  assert.deepEqual(fake.texts(900), [line]);
+  fake.reset();
+  process.env.PRIVACY_URL = "https://example.test/p";
+  await processUpdate(upd(5, "/privacy"), NOW);
+  assert.deepEqual(fake.texts(5), ["Политика конфиденциальности: https://example.test/p"]);
+  delete process.env.PRIVACY_URL;
 });
 
 function buildBundle(entry: string, outfile: string) {

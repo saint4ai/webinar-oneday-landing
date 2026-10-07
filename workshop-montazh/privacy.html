@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Политика конфиденциальности · воркшоп «Вайб-продакшен»</title>
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#FFFFFF">
+<!-- Шрифты со своего сервера: без лишних запросов к Google на слабой сети -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/manrope-cyrillic.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/unbounded-cyrillic.woff2" crossorigin>
+<style>
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 700;font-display:swap;src:url(assets/fonts/manrope-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 700;font-display:swap;src:url(assets/fonts/manrope-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 700;font-display:swap;src:url(assets/fonts/manrope-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:600 700;font-display:swap;src:url(assets/fonts/unbounded-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:600 700;font-display:swap;src:url(assets/fonts/unbounded-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:600 700;font-display:swap;src:url(assets/fonts/unbounded-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
+<style>
+:root{--ink:#2A211C;--muted:#6E5F53;--paper:#FFFFFF;--card:#FBF3E4;--brown:#A0532A;--accent:#8B5E3C;--gold2:#C9A05A;--line:rgba(160,83,42,.20)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100dvh;display:flex;flex-direction:column}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--brown)}
+.page{flex:1;display:flex;flex-direction:column}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px;width:100%}
+.top{border-bottom:1px solid var(--line);background:rgba(255,255,255,.9)}
+.top-in{max-width:1000px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.top a{display:block}
+.top img{height:20px}
+.top .back{color:var(--muted);font-size:14px;text-decoration:none;white-space:nowrap}
+.top .back:hover{color:var(--brown)}
+main{flex:1;padding:44px 0 56px}
+.doc{max-width:720px;margin:0 auto;padding:0 24px;width:100%;overflow-wrap:anywhere}
+h1{font-family:'Unbounded',sans-serif;font-weight:700;letter-spacing:-.035em;line-height:1.12;font-size:clamp(24px,4vw,38px);color:var(--brown);margin:0 0 14px}
+h2{font-family:'Unbounded',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.2;font-size:clamp(17px,2.4vw,21px);margin:40px 0 12px}
+.date{color:var(--muted);font-size:14px;margin:0 0 20px}
+p{margin:0 0 14px}
+ul{margin:0 0 14px;padding-left:22px}
+li{margin:0 0 8px}
+strong{font-weight:700}
+footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-size:14px}
+.foot{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+.foot a{color:var(--muted)}
+@media (max-width:640px){
+  main{padding:28px 0 40px}
+  .wrap,.top-in,.doc{padding-left:16px;padding-right:16px}
+  .top-in{padding-top:8px;padding-bottom:8px}
+  .top img{height:18px}
+  h2{margin-top:32px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="top">
+  <div class="top-in">
+    <a href="./"><img src="assets/logos/onai-logo-gold.svg" alt="onAI Academy"></a>
+    <a class="back" href="./">На главную</a>
+  </div>
+</header>
+
+<main>
+<article class="doc">
+<h1>Политика конфиденциальности воркшопа «Вайб-продакшен»</h1>
+<p class="date">Редакция от 7 октября 2026 г.</p>
+<p>Этот документ объясняет, какие данные мы получаем, когда вы записываетесь на бесплатный воркшоп «Вайб-продакшен» на сайте onai.academy/workshop-montazh, пользуетесь нашим Telegram-ботом @workshop_aiprod_bot или пишете менеджеру, зачем они нужны и что вы можете с ними сделать.</p>
+<h2>1. Кто оператор данных</h2>
+<p>ТОО «onAI Academy» (далее «Оператор»), БИН 250240029481, сайт onai.academy.<br>
+Вопросы о ваших данных: WhatsApp +7 708 583 4575.</p>
+<h2>2. Какие данные мы получаем</h2>
+<p><strong>Заявка на сайте.</strong> Имя, номер телефона (WhatsApp), отметка о согласии, время заявки, страница и рекламная метка, с которой вы пришли (utm-метки, идентификатор клика Facebook).</p>
+<p><strong>Страница «Спасибо» и окно записи.</strong> Какую кнопку вы нажали, WhatsApp или Telegram, вместе с номером заявки.</p>
+<p><strong>Telegram-бот @workshop_aiprod_bot.</strong> Ваш Telegram ID, имя и имя пользователя из профиля, язык интерфейса. Мы сохраняем, на какой эфир вы записаны и откуда пришли, нажимали ли кнопку перехода на эфир и кнопку «Я уже оплатил(а)», какие сообщения бот вам отправил и дошли ли они. Бот не получает номер телефона и не сохраняет ваши сообщения.</p>
+<p><strong>WhatsApp-сообщество и переписка с менеджером.</strong> Ваше имя и номер в WhatsApp видят участники и администраторы сообщества. Переписку с менеджером видит менеджер.</p>
+<p><strong>Технические данные.</strong> На сайте работает Meta Pixel: он фиксирует посещение и отправку заявки (cookie, IP-адрес, тип браузера и устройства).</p>
+<p><strong>Оплата.</strong> Предоплату и оплату вы проводите на стороне Kaspi или платёжного сервиса по ссылке. Данные банковской карты мы не получаем. Мы видим имя, телефон и сумму из чека, который вы присылаете менеджеру.</p>
+<h2>3. Зачем нам эти данные</h2>
+<ul>
+<li>Прислать ссылку на эфир, напоминания, обещанные материалы и условия обучения для участников.</li>
+<li>Связаться с вами по заявке, ответить на вопросы, помочь с оплатой.</li>
+<li>Не присылать лишнее: например, не напоминать об оплате тем, кто уже оплатил, и не звать на эфир тех, кто уже на нём.</li>
+<li>Считать обезличенную статистику (сколько людей записалось и пришло на эфир) и оценивать работу рекламы.</li>
+</ul>
+<h2>4. На каком основании</h2>
+<p>Ваше согласие: отметка при заявке на сайте и нажатие «Запустить» в Telegram-боте (ст. 7 Закона Республики Казахстан «О персональных данных и их защите» от 21 мая 2013 года № 94-V). Согласие можно отозвать в любой момент (раздел 7).</p>
+<h2>5. Кому мы передаём данные</h2>
+<p>Мы не продаём ваши данные. Передаём только сервисам, без которых запись на воркшоп не работает:</p>
+<ul>
+<li><strong>Supabase и amoCRM:</strong> хранение заявок и работа менеджера.</li>
+<li><strong>Meta Platforms (Facebook, Instagram):</strong> номер телефона в виде необратимого хеша SHA-256 и технические идентификаторы, чтобы оценивать рекламу и показывать её похожим людям. Открытый номер не передаётся.</li>
+<li><strong>Telegram:</strong> через него бот отправляет сообщения.</li>
+<li><strong>WhatsApp:</strong> сообщество воркшопа и переписка с менеджером.</li>
+<li><strong>Kaspi и платёжный сервис для оплаты из других стран:</strong> только когда вы сами проводите оплату.</li>
+</ul>
+<p>Часть этих сервисов хранит данные на серверах за пределами Республики Казахстан. Оставляя заявку или запуская бота, вы соглашаетесь на такую трансграничную передачу.</p>
+<h2>6. Сколько мы храним данные</h2>
+<p>До отзыва согласия. По вашему запросу удаляем данные в течение 10 рабочих дней из всех наших систем, кроме данных, которые закон обязывает хранить дольше (например, сведения об оплате).</p>
+<h2>7. Что вы можете сделать со своими данными</h2>
+<ul>
+<li>Узнать, какие данные о вас у нас есть.</li>
+<li>Исправить неточности.</li>
+<li>Удалить данные и отозвать согласие.</li>
+<li>Перестать получать сообщения: в Telegram-боте отправьте команду /stop или заблокируйте бота; из WhatsApp-сообщества можно выйти в любой момент.</li>
+</ul>
+<p>Для любого из этих действий напишите в WhatsApp +7 708 583 4575. Ответим в течение 1 рабочего дня.</p>
+<h2>8. Как мы защищаем данные</h2>
+<p>Сайт и бот работают по HTTPS. Данные бота и заявок хранятся на сервере Оператора, доступ к нему и к CRM есть только у команды. Панель статистики бота открывается только владельцу: вход через Telegram и пароль.</p>
+<h2>9. Изменения политики</h2>
+<p>Новую редакцию мы публикуем на этой странице с датой. Если изменения существенные, сообщим в Telegram-боте или WhatsApp-сообществе.</p>
+<h2>Реквизиты Оператора</h2>
+<p>ТОО «onAI Academy», БИН 250240029481.</p>
+</article>
+</main>
+
+<footer>
+  <div class="wrap foot"><span>© onAI Academy</span><a href="./">На главную</a></div>
+</footer>
+</div>
+</body>
+</html>

@@ -1617,6 +1617,7 @@ function isAdminAppUser(userId) {
   return userId !== void 0 && adminAppIds().includes(String(userId));
 }
 var adminAppUrl = () => env("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
+var privacyUrl = () => env("PRIVACY_URL") || "https://onai.academy/workshop-montazh/privacy";
 var GO_BASE = "https://onai.academy/workshop/api/go";
 var MAX_UPDATE_BODY = 64 * 1024;
 var API_TIMEOUT_MS = 1e4;
@@ -2216,6 +2217,10 @@ async function onMessage(m, now) {
   const c = parseCommand(text);
   if (c?.cmd === "start") return onStart(m, cleanPayload(c.args), now);
   if (c?.cmd === "stop") return onStop(m, now);
+  if (c?.cmd === "privacy") {
+    await plain(m.chat.id, `\u041F\u043E\u043B\u0438\u0442\u0438\u043A\u0430 \u043A\u043E\u043D\u0444\u0438\u0434\u0435\u043D\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438: ${privacyUrl()}`);
+    return;
+  }
   if (c?.cmd === "help" && isOwner(m.from.id)) {
     await plain(m.chat.id, HELP_TEXT);
     return;

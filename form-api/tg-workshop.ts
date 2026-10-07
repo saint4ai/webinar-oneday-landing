@@ -77,6 +77,9 @@ export function isAdminAppUser(userId: number | string | undefined): boolean {
 /** Публичный адрес мини-приложения (nginx: /workshop/api/X уходит на :4010/api/X). Переопределяется ADMIN_APP_URL. */
 export const adminAppUrl = () => env("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
 
+/** Страница политики конфиденциальности воркшопа (nginx отдаёт $uri.html). Переопределяется PRIVACY_URL. */
+export const privacyUrl = () => env("PRIVACY_URL") || "https://onai.academy/workshop-montazh/privacy";
+
 /** Публичный адрес перехода в эфир (nginx: /workshop/api/X уходит на :4010/api/X). */
 const GO_BASE = "https://onai.academy/workshop/api/go";
 /** Тело вебхука Telegram. Больше лимита: отвечаем 200 и выбрасываем. */
@@ -940,6 +943,11 @@ async function onMessage(m: TgMessage, now: number) {
   const c = parseCommand(text);
   if (c?.cmd === "start") return onStart(m, cleanPayload(c.args), now);
   if (c?.cmd === "stop") return onStop(m, now);
+  if (c?.cmd === "privacy") {
+    // Политика нужна любому человеку, не только владельцам.
+    await plain(m.chat.id, `Политика конфиденциальности: ${privacyUrl()}`);
+    return;
+  }
   if (c?.cmd === "help" && isOwner(m.from.id)) {
     await plain(m.chat.id, HELP_TEXT);
     return;
