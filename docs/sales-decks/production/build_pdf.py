@@ -1,6 +1,6 @@
 # Сборка PDF «Vibe Production» из index.html по регламенту methods/pdf_from_html.md (Playwright + Chromium, A4 альбомный).
 # Запуск: python docs/sales-decks/pro/build_pdf.py [--no-pdf] [--shots <папка>]
-#   1. проверяет вёрстку: шрифты, размеры текста (14 pt текст, 28 pt заголовок), вылет за страницу, наезд объектов на текст;
+#   1. проверяет вёрстку: шрифты, размеры текста (16 pt основной текст, 14 pt только метки и сноски, 28 pt заголовок), вылет за страницу, наезд объектов на текст;
 #   2. печатает PDF, выбрасывает пустые страницы, сверяет число страниц;
 #   3. по желанию снимает PNG каждой страницы (--shots) для просмотра глазами.
 # Перед запуском взять общий замок тяжёлых процессов (C:\Проекты\_общее\heavy.ps1), после окончания снять.
@@ -23,7 +23,8 @@ SHOTS = os.path.abspath(sys.argv[sys.argv.index("--shots") + 1]) if "--shots" in
 
 # проверка вёрстки в браузере: возвращает список замечаний
 CHECK_JS = """() => {
-  const MIN_TEXT = 18.6, MIN_H1 = 37.3;          // 14 pt и 28 pt в пикселях
+  const MIN_TEXT = 21.3, MIN_LABEL = 18.6, MIN_H1 = 37.3;   // 16 pt, 14 pt и 28 pt в пикселях
+  const LABEL = ".kick, .note, .sec, .num, .chip, .tag, .small, .badge, .mc .no, .les .no, .floor .no, .big-card .no, .band .no";   // метки и мелкие сноски: 14 pt
   const out = {fonts: [], pages: 0, problems: []};
   for (const f of ["Unbounded", "Manrope"]) out.fonts.push(f + ": " + document.fonts.check("700 20px " + f));
   const secs = [...document.querySelectorAll("section.page")];
@@ -39,7 +40,8 @@ CHECK_JS = """() => {
       if (!t) continue;
       const el = node.parentElement, fs = parseFloat(getComputedStyle(el).fontSize);
       if (el.closest("h1")) { if (fs < MIN_H1) prob("заголовок " + fs.toFixed(1) + "px < 28pt: " + t.slice(0, 30)); }
-      else if (fs < MIN_TEXT) prob("текст " + fs.toFixed(1) + "px < 14pt: " + t.slice(0, 30));
+      else if (el.closest(LABEL)) { if (fs < MIN_LABEL) prob("метка " + fs.toFixed(1) + "px < 14pt: " + t.slice(0, 30)); }
+      else if (fs < MIN_TEXT) prob("текст " + fs.toFixed(1) + "px < 16pt: " + t.slice(0, 30));
       const r = document.createRange(); r.selectNodeContents(node);
       for (const rc of r.getClientRects()) {
         if (rc.width < 1) continue;
