@@ -1,6 +1,6 @@
 {
   "_about": "Серия бота @workshop_aiprod_bot для ежедневного воркшопа «Вайб-продакшен». Время по Алматы (UTC+5), день эфира D. Тексты пишет Opus по правилам arsenal/_copywriting/rules.md, без длинных тире. До эфира и после него голос Александра от первого лица; во время эфира бот ведёт ленту «Сейчас на эфире» о нём в третьем лице (решение Александра: «написать, что Александр рассказывает про обучение»). Тайминги правятся здесь или командой /at в боте.",
-  "version": "2026-10-07.2",
+  "version": "2026-10-07.3",
   "timezone": "Asia/Almaty",
   "utcOffsetMinutes": 300,
   "firstDay": "2026-10-07",
@@ -300,7 +300,7 @@
         [
           {
             "text": "Написать Аяне в Telegram",
-            "url": "{MANAGER}"
+            "url": "https://onai.academy/workshop-montazh/tg-vaib"
           }
         ],
         [
@@ -422,7 +422,7 @@
         [
           {
             "text": "Написать Аяне в Telegram",
-            "url": "{MANAGER}"
+            "url": "https://onai.academy/workshop-montazh/tg-dva"
           }
         ],
         [
