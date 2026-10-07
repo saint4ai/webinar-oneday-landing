@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Vibe Coding PRO</title>
+<style>
+/* Шрифты репозитория: те же, что у карточек рассылки (docs/tg-media/base.css) */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;src:url(../../../workshop-montazh/assets/fonts/unbounded-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;src:url(../../../workshop-montazh/assets/fonts/unbounded-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;src:url(../../../workshop-montazh/assets/fonts/unbounded-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+:root{--night:#14100E;--gold:#E3C07B;--gold2:#C9A05A;--cream:#FBF3E4;--ink:#2A211C;--muted:rgba(251,243,228,.78)}
+@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--night);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Manrope',system-ui,sans-serif;color:var(--cream);font-size:15pt;line-height:1.38;font-weight:500;-webkit-font-smoothing:antialiased}
+.nb{white-space:nowrap}
+
+/* страница: одна секция = один лист A4 альбомный; шапка сверху, содержимое .stage по центру оставшегося места, подвал внизу */
+.page{position:relative;width:297mm;height:210mm;overflow:hidden;padding:15mm 20mm 0;display:flex;flex-direction:column;background-color:var(--night);background-size:100% 100%;background-repeat:no-repeat;break-after:page;page-break-after:always}
+.page:last-of-type{break-after:auto;page-break-after:auto}
+.page::after{content:"";position:absolute;inset:5mm;border:.3mm solid rgba(227,192,123,.2);border-radius:9mm;pointer-events:none}
+.bgA{background-image:url(img/bg-a.jpg)}
+.bgB{background-image:url(img/bg-b.jpg)}
+.bgC{background-image:url(img/bg-c.jpg)}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding-bottom:25mm}
+
+/* подвал: логотип слева, номер страницы справа */
+.foot{position:absolute;left:20mm;right:20mm;bottom:11mm;display:flex;align-items:center;justify-content:space-between;z-index:5}
+.foot img{height:8mm;width:auto;display:block}
+.num{font-family:'Unbounded',sans-serif;font-weight:700;font-size:14pt;color:var(--gold);letter-spacing:.04em}
+
+/* шапка слайда */
+.kick{display:flex;align-items:center;gap:4mm;font-weight:800;font-size:14pt;line-height:1;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.kick i{display:block;width:12mm;height:.6mm;background:var(--gold)}
+h1{font-family:'Unbounded',sans-serif;font-weight:700;font-size:29pt;line-height:1.14;letter-spacing:-.015em;color:var(--cream);margin-top:5mm;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.lead{font-size:16pt;line-height:1.42;font-weight:500;color:rgba(251,243,228,.9);margin-top:4.5mm;text-wrap:balance}
+.note{font-size:14pt;line-height:1.4;color:var(--muted)}
+
+/* стеклянная карточка с золотой кромкой (без градиентов: в PDF они тяжёлые на телефонах) */
+.card{background:rgba(251,243,228,.075);border:.35mm solid rgba(227,192,123,.5);border-radius:6mm;box-shadow:0 5mm 12mm rgba(0,0,0,.35),inset 0 .3mm 0 rgba(255,236,200,.28)}
+.card.gold{background:var(--gold);border-color:var(--gold2);color:var(--ink)}
+.card.dark{background:rgba(20,16,14,.72);border:.5mm solid var(--gold)}
+
+/* значок в плитке */
+.ic{width:13mm;height:13mm;border-radius:3.4mm;display:flex;align-items:center;justify-content:center;flex:none;background:rgba(227,192,123,.13);border:.3mm solid rgba(227,192,123,.42)}
+.ic svg{width:58%;height:58%;fill:none;stroke:var(--gold);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.gold .ic{background:rgba(20,16,14,.12);border-color:rgba(20,16,14,.3)}
+.gold .ic svg{stroke:var(--ink)}
+
+h3{font-weight:800;font-size:17pt;line-height:1.26}
+.obj{position:absolute;display:block;filter:drop-shadow(0 5mm 6mm rgba(0,0,0,.5))}
+
+/* 1 · обложка */
+.cover h1.big{font-size:52pt;line-height:1.06;margin-top:0;letter-spacing:-.025em;text-wrap:wrap}
+.cover .sub{font-family:'Unbounded',sans-serif;font-weight:600;font-size:22pt;line-height:1.25;color:var(--cream);margin-top:8mm}
+.cover .stats{display:flex;gap:9mm;margin-top:11mm}
+.cover .stat{display:flex;align-items:baseline;gap:3mm;font-weight:800;font-size:20pt;color:var(--cream)}
+.cover .stat b{font-family:'Unbounded',sans-serif;font-weight:700;font-size:40pt;line-height:1;color:var(--gold)}
+.cover .lead{max-width:124mm;margin-top:10mm}
+
+/* 2 · для кого */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.who{padding:8mm 8mm 9mm;display:flex;flex-direction:column;gap:7mm}
+.who .ic{width:17mm;height:17mm;border-radius:4.4mm}
+.who h3{font-size:19pt;line-height:1.27}
+.strip{margin-top:7mm;padding:6mm 8mm;display:flex;align-items:center;gap:6mm}
+.strip p{font-weight:800;font-size:18pt;line-height:1.3}
+
+/* 3 · что вы получаете */
+.rows{display:flex;flex-direction:column;gap:3mm}
+.row{display:flex;align-items:center;gap:6mm;padding:3.3mm 7mm 3.3mm 4.5mm}
+.row h3{width:100mm;flex:none;font-size:18pt}
+.row p{font-size:16pt;line-height:1.3;color:var(--muted)}
+
+/* 4 · путь */
+.floors{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm}
+.floor{display:flex;flex-direction:column}
+.fhead{background:var(--gold);color:var(--ink);border-radius:6mm 6mm 1.5mm 1.5mm;padding:4mm 5.5mm;font-family:'Unbounded',sans-serif;font-weight:700;font-size:14pt;line-height:1.2}
+.fbody{flex:1;margin-top:1.2mm;border-radius:1.5mm 1.5mm 6mm 6mm;padding:1.5mm 5.5mm;display:flex;flex-direction:column}
+.mod{flex:1;display:flex;align-items:center;gap:4mm;padding:3mm 0;border-bottom:.25mm solid rgba(227,192,123,.22)}
+.mod:last-child{border-bottom:0}
+.mod .n{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;color:var(--gold);width:7mm;flex:none;text-align:center}
+.mod .t{display:block;font-weight:800;font-size:15pt;line-height:1.2}
+.mod .l{display:block;font-size:14pt;line-height:1.3;color:var(--muted);font-weight:600;margin-top:.8mm}
+
+/* 5 · метод onAI */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8mm}
+.big-card{position:relative;padding:9mm 9mm 10mm;min-height:96mm;overflow:hidden}
+.big-card .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15pt;color:var(--gold);letter-spacing:.06em}
+.big-card h2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:23pt;line-height:1.2;margin-top:5mm;color:var(--cream)}
+.big-card p{font-size:18pt;line-height:1.4;margin-top:6mm;color:rgba(251,243,228,.92);max-width:66mm}
+
+/* 6 · цепочка */
+.chain{display:flex;align-items:stretch}
+.step{flex:1;padding:9mm 8mm 10mm}
+.step .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:54pt;line-height:1;color:var(--gold)}
+.step h3{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19pt;line-height:1.22;margin-top:7mm}
+.step .l{margin-top:5mm;font-size:16pt;color:var(--muted);font-weight:700}
+.arrow{width:13mm;flex:none;display:flex;align-items:center;justify-content:center}
+.arrow svg{width:9mm;height:9mm;fill:none;stroke:var(--gold);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.around{display:flex;justify-content:space-between;gap:8mm;margin-top:9mm}
+.around .note{font-size:15pt}
+.around .note b{color:var(--cream);font-weight:800}
+
+/* 7 · кейсы */
+.cases{display:grid;grid-template-columns:1.75fr 1fr 1fr 1fr;gap:5mm}
+.case{padding:3mm 3mm 5mm;display:flex;flex-direction:column}
+.case>img{width:100%;height:26mm;object-fit:cover;object-position:top left;border-radius:3.4mm;display:block;border:.25mm solid rgba(227,192,123,.3)}
+.case .art{height:26mm;border-radius:3.4mm;border:.25mm solid rgba(227,192,123,.3);background:rgba(227,192,123,.1);display:flex;align-items:center;justify-content:center}
+.case .art img{height:22mm;width:auto;display:block;filter:drop-shadow(0 2mm 3mm rgba(0,0,0,.5))}
+.case h3{font-weight:800;font-size:15pt;line-height:1.2;margin:4mm 2mm 0;color:var(--gold);white-space:nowrap}
+.case .cl{margin:2.4mm 2mm 0;font-size:14pt;line-height:1.3;font-weight:800}
+.case .cm{margin:2.4mm 2mm 0;font-size:14pt;line-height:1.3;color:var(--muted)}
+.cases-note{margin-top:5mm}
+
+/* 8 · автор */
+.portrait{position:absolute;right:20mm;top:30mm;width:84mm;height:134mm;overflow:hidden}
+.portrait img{position:absolute;left:50%;bottom:0;width:106%;height:auto;transform:translateX(-50%)}
+.portrait .glow{position:absolute;left:-30%;right:-30%;top:4%;bottom:-20%;background:radial-gradient(closest-side,rgba(227,192,123,.5),rgba(227,192,123,0))}
+.author{width:158mm}
+.stats2{display:flex;gap:6mm}
+.stat2{padding:6mm 7mm;flex:1}
+.stat2 b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:32pt;line-height:1.05;color:var(--gold)}
+.stat2 span{display:block;margin-top:3mm;font-size:15pt;line-height:1.3;font-weight:700}
+
+/* 9 · тарифы */
+.plans{display:flex;align-items:flex-end;gap:9mm}
+.plan{flex:1;padding:10mm 10mm 11mm}
+.plan.pro{padding:14mm 10mm 15mm}
+.plan .pname{font-family:'Unbounded',sans-serif;font-weight:700;font-size:18pt;line-height:1.2;color:var(--muted)}
+.plan .price{font-family:'Unbounded',sans-serif;font-weight:700;font-size:40pt;line-height:1;margin-top:8mm;color:var(--cream);white-space:nowrap}
+.plan .ptag{font-weight:800;font-size:17pt;line-height:1.3;margin-top:8mm}
+.plan.pro .pname,.plan.pro .price{color:var(--gold)}
+.shared{margin-top:9mm;font-size:15pt}
+
+/* 10 · разница */
+.versus{display:flex;align-items:flex-end;gap:8mm}
+.col{flex:1;padding:9mm 9mm 10mm}
+.col.pro{padding:12mm 9mm 13mm}
+.col .cname{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19pt;line-height:1.2;color:var(--muted)}
+.col.pro .cname{color:var(--gold)}
+.li{display:flex;align-items:flex-start;gap:4mm;margin-top:5.6mm;font-weight:800;font-size:17pt;line-height:1.3}
+.li svg{flex:none;width:6.4mm;height:6.4mm;margin-top:1.2mm;fill:none;stroke:var(--gold);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.li.off{color:var(--muted);font-weight:700}
+.li.off svg{stroke:var(--muted)}
+
+/* 11 · условия */
+.terms{display:flex;flex-direction:column;gap:4.5mm;max-width:182mm}
+.term{display:flex;align-items:center;gap:6mm;padding:5mm 7mm 5mm 5mm}
+.term h3{font-size:17pt;line-height:1.3}
+
+/* 12 · что выбрать */
+.choose{display:flex;gap:8mm}
+.pick{flex:1;padding:10mm 10mm 11mm;display:flex;flex-direction:column;min-height:92mm}
+.pick .if{font-weight:800;font-size:14pt;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.pick .want{font-family:'Unbounded',sans-serif;font-weight:700;font-size:22pt;line-height:1.22;margin-top:4mm}
+.pick .take{margin-top:auto;padding-top:9mm}
+.pick .take .tn{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;line-height:1.2;color:var(--gold)}
+.pick .take .tp{font-family:'Unbounded',sans-serif;font-weight:700;font-size:30pt;line-height:1.1;margin-top:3mm;white-space:nowrap}
+.pick.gold .if{color:rgba(42,33,28,.8)}
+.pick.gold .take .tn{color:var(--ink)}
+
+/* 13 · вопросы */
+.faq{display:flex;flex-direction:column;gap:4mm;max-width:198mm}
+.qa{padding:5mm 8mm 5.5mm}
+.qa .q{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15pt;line-height:1.25;color:var(--gold)}
+.qa .a{font-size:15.5pt;line-height:1.38;margin-top:2.4mm;color:rgba(251,243,228,.92)}
+
+/* 14 · как начать */
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.s3{padding:7mm 8mm 8mm}
+.s3 .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:30pt;line-height:1;color:var(--gold)}
+.s3 p{font-weight:800;font-size:16pt;line-height:1.32;margin-top:4mm;text-wrap:balance}
+.btns{display:grid;grid-template-columns:auto auto;justify-content:start;gap:4mm 5mm;margin-top:9mm}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:3mm;padding:4mm 7mm;border-radius:999px;font-weight:800;font-size:15pt;line-height:1.1;text-decoration:none;white-space:nowrap}
+.btn.g{background:var(--gold);color:var(--ink);border:.35mm solid var(--gold2)}
+.btn.o{background:rgba(251,243,228,.07);color:var(--cream);border:.5mm solid var(--gold)}
+.btn svg{width:5.5mm;height:5.5mm;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.contacts{margin-top:8mm;max-width:188mm}
+.contacts b{color:var(--cream);font-weight:800}
+.contacts a{color:var(--gold);font-weight:700;text-decoration:none}
+</style></head>
+<body>
+
+<!-- значки: общий набор, подключается через <use> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-site" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9.5h18M6.6 7h.01M9.2 7h.01"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.3"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="10" rx="1.6"/><path d="M2.5 19h19M9.6 19l.5-2h3.8l.5 2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l9 4.5-9 4.5L3 8z"/><path d="M3 12.2l9 4.5 9-4.5M3 16.4l9 4.5 9-4.5"/></symbol>
+  <symbol id="i-pay" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10.5h18M7 15h3.2"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h6M9.5 16h6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><rect x="3" y="7" width="8" height="10" rx="2"/><rect x="13" y="7" width="8" height="10" rx="2"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17 8.7 4.7 4.7 0 0 1 17.5 18z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+</svg>
+
+<main>
+
+<!-- 1 · обложка -->
+<section class="page bgA cover">
+  <div class="kick"><i></i>Обучение onAI Academy</div>
+  <div class="stage">
+    <h1 class="big">Vibe Coding<br><em>PRO</em></h1>
+    <p class="sub">Свой AI-сервис в интернете</p>
+    <div class="stats"><div class="stat"><b>10</b>модулей</div><div class="stat"><b>36</b>уроков</div></div>
+    <p class="lead">Вы собираете сервисы и сайты вместе с <span class="nb">ИИ-агентом</span>. Знать программирование не нужно.</p>
+  </div>
+  <img class="obj" src="img/obj-phones.png" style="right:5mm;top:44mm;width:128mm" alt="">
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">01</span></footer>
+</section>
+
+<!-- 2 · для кого -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Для кого</div>
+    <h1>Для тех, кто хочет <em>вайбкодить всерьёз</em></h1>
+    <p class="lead">Рилсы и реклама остались в Vibe Production. PRO про свои сервисы и сайты: от первого запуска до работающего продукта.</p>
+  </div>
+  <div class="stage">
+    <div class="grid3">
+      <div class="card who"><div class="ic"><svg><use href="#i-site"/></svg></div><h3>Свои сервисы и сайты без команды программистов</h3></div>
+      <div class="card who"><div class="ic"><svg><use href="#i-gear"/></svg></div><h3>Рабочая рутина, которую берёт на себя агент</h3></div>
+      <div class="card who"><div class="ic"><svg><use href="#i-laptop"/></svg></div><h3>Личная среда вайбкодинга на вашем компьютере</h3></div>
+    </div>
+    <div class="card gold strip"><div class="ic"><svg><use href="#i-check"/></svg></div><p>Знать программирование не нужно: вы описываете задачу словами, код пишет агент.</p></div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">02</span></footer>
+</section>
+
+<!-- 3 · что вы получаете -->
+<section class="page bgC">
+  <div>
+    <div class="kick"><i></i>Что вы получаете</div>
+    <h1>На выходе у вас <em><span class="nb">свой AI-сервис</span></em> в интернете</h1>
+  </div>
+  <div class="stage">
+    <div class="rows">
+      <div class="card row"><div class="ic"><svg><use href="#i-site"/></svg></div><h3>Свой AI-сервис в интернете</h3><p>Портфолио или старт SaaS</p></div>
+      <div class="card row"><div class="ic"><svg><use href="#i-laptop"/></svg></div><h3>Личная среда вайбкодинга</h3><p>Настроена на вашем компьютере</p></div>
+      <div class="card row"><div class="ic"><svg><use href="#i-layers"/></svg></div><h3>Система памяти агента</h3><p>Метод onAI: агент помнит ваш проект</p></div>
+      <div class="card row"><div class="ic"><svg><use href="#i-pay"/></svg></div><h3>Приём оплат с уведомлениями</h3><p>Сервис принимает оплаты и присылает уведомления</p></div>
+      <div class="card row"><div class="ic"><svg><use href="#i-star"/></svg></div><h3>OPUS.CLUB на 12 месяцев</h3><p>Входит в тариф Вайбкодер Pro</p></div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">03</span></footer>
+</section>
+
+<!-- 4 · путь -->
+<section class="page bgA">
+  <div>
+    <div class="kick"><i></i>Программа</div>
+    <h1>Путь: от запуска среды до <em>боевого продукта</em></h1>
+    <p class="lead">Сначала среда, потом правила для агента, затем база данных и боевой запуск.</p>
+  </div>
+  <div class="stage">
+    <div class="floors">
+      <div class="floor">
+        <div class="fhead">Основа, 15 уроков</div>
+        <div class="card fbody">
+          <div class="mod"><span class="n">1</span><span><span class="t">Запуск двигателя</span><span class="l">5 уроков</span></span></div>
+          <div class="mod"><span class="n">2</span><span><span class="t">Язык агента</span><span class="l">5 уроков</span></span></div>
+          <div class="mod"><span class="n">3</span><span><span class="t">Резервная копия с GitHub</span><span class="l">3 урока</span></span></div>
+          <div class="mod"><span class="n">4</span><span><span class="t">Конституция проекта, метод onAI</span><span class="l">2 урока</span></span></div>
+        </div>
+      </div>
+      <div class="floor">
+        <div class="fhead">Продукт, 11 уроков</div>
+        <div class="card fbody">
+          <div class="mod"><span class="n">5</span><span><span class="t">Прокачка агента</span><span class="l">5 уроков</span></span></div>
+          <div class="mod"><span class="n">6</span><span><span class="t">База данных продукта</span><span class="l">2 урока</span></span></div>
+          <div class="mod"><span class="n">7</span><span><span class="t">Боевой запуск</span><span class="l">3 урока</span></span></div>
+          <div class="mod"><span class="n">8</span><span><span class="t">Армия агентов</span><span class="l">1 урок</span></span></div>
+        </div>
+      </div>
+      <div class="floor">
+        <div class="fhead">Деньги и бонус</div>
+        <div class="card fbody">
+          <div class="mod"><span class="n">9</span><span><span class="t">Деньги в продукте</span><span class="l">5 уроков</span></span></div>
+          <div class="mod"><span class="n"><svg viewBox="0 0 24 24" style="width:6.4mm;height:6.4mm;fill:none;stroke:var(--gold);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-star"/></svg></span><span><span class="t">Бонус: «Эра агентов на вашем компьютере»</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">04</span></footer>
+</section>
+
+<!-- 5 · метод onAI -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Метод onAI</div>
+    <h1>Агент <em>помнит ваш проект</em> и не додумывает</h1>
+    <p class="lead">Метод onAI это система памяти агента. Её вы собираете в модулях 3 и 4.</p>
+  </div>
+  <div class="stage">
+    <div class="pair">
+      <div class="card big-card">
+        <div class="no">МОДУЛЬ 3</div>
+        <h2>Резервная копия с GitHub</h2>
+        <p>Проект не теряется: его копия хранится на GitHub.</p>
+        <img class="obj" src="img/obj-box.png" style="right:6mm;bottom:6mm;width:44mm" alt="">
+      </div>
+      <div class="card big-card">
+        <div class="no">МОДУЛЬ 4</div>
+        <h2>Конституция проекта</h2>
+        <p>Агент работает по вашим правилам и не додумывает.</p>
+        <div class="ic" style="position:absolute;right:9mm;bottom:9mm;width:22mm;height:22mm;border-radius:5.5mm"><svg><use href="#i-doc"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">05</span></footer>
+</section>
+
+<!-- 6 · от базы данных до запуска -->
+<section class="page bgC">
+  <div style="max-width:205mm">
+    <div class="kick"><i></i>Программа</div>
+    <h1>От базы данных до <em>боевого запуска</em> за три модуля</h1>
+    <p class="lead">Здесь сервис получает базу данных и выходит в интернет.</p>
+  </div>
+  <img class="obj" src="img/obj-rocket.png" style="right:26mm;top:15mm;height:42mm;width:auto" alt="">
+  <div class="stage">
+    <div class="chain">
+      <div class="card step"><div class="no">6</div><h3>База данных продукта</h3><p class="l">2 урока</p></div>
+      <div class="arrow"><svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card step"><div class="no">7</div><h3>Боевой запуск</h3><p class="l">3 урока</p></div>
+      <div class="arrow"><svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card step"><div class="no">8</div><h3>Армия агентов</h3><p class="l">1 урок</p></div>
+    </div>
+    <div class="around">
+      <p class="note"><b>Перед этим:</b> модуль 5 «Прокачка агента»</p>
+      <p class="note"><b>После этого:</b> модуль 9 «Деньги в продукте»</p>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">06</span></footer>
+</section>
+
+<!-- 7 · кейсы -->
+<section class="page bgA">
+  <div>
+    <div class="kick"><i></i>Кейсы</div>
+    <h1>Методом onAI собраны <em>четыре работающих продукта</em></h1>
+  </div>
+  <div class="stage" style="padding-bottom:18mm">
+    <div class="cases">
+      <article class="card case"><div class="art"><img src="img/obj-robot.png" alt=""></div><h3>Erickson Central Asia</h3><p class="cl">Платформа обучения коучей: уроки, практика, AI-куратор и запись к ментору</p><p class="cm">Пять кабинетов: студент, куратор, тренер, ментор, администратор. AI-куратор отвечает по урокам на русском и казахском. От первого созвона до запуска 2&nbsp;месяца, сейчас учатся 6&nbsp;групп.</p></article>
+      <article class="card case"><img src="img/case-academy.jpg" alt=""><h3>onAI Academy</h3><p class="cl">AI-наставник отвечает по каждому уроку</p><p class="cm">1000+ выпускников</p></article>
+      <article class="card case"><img src="img/case-assistant.jpg" alt=""><h3>AI&#8209;ассистент</h3><p class="cl">Комментарий под роликом становится заявкой</p><p class="cm">2&nbsp;117 человек получили материал, 66&nbsp;кодовых слов</p></article>
+      <article class="card case"><img src="img/case-targetolog.jpg" alt=""><h3>AI&#8209;Таргетолог</h3><p class="cl">Сам запускает рекламу и присылает отчёты</p><p class="cm">Клиенты: RocketGo, NNN&nbsp;Detailing, KardanKraft</p></article>
+    </div>
+    <p class="note cases-note">Erickson Central Asia: представительство Erickson Coaching International, готовит коучей по стандарту ICF. Цифры на 04.10.2026, AI-ассистент работает с 06.09.2026. Кадры двух последних кейсов на <span class="nb">демо-данных</span>.</p>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">07</span></footer>
+</section>
+
+<!-- 8 · автор -->
+<section class="page bgB">
+  <div class="portrait card"><div class="glow"></div><img src="img/alex.png" alt="Александр"></div>
+  <div class="author">
+    <div class="kick"><i></i>Автор курса</div>
+    <h1>Ведёт тот, кто сам собирает продукты <em class="nb">с ИИ-агентами</em></h1>
+    <p class="lead">Александр, основатель onAI Academy. Разработчик без знаний программирования: собирает IT-решения для бизнеса с&nbsp;ИИ-агентами.</p>
+  </div>
+  <div class="stage author">
+    <div class="stats2">
+      <div class="card stat2"><b>1000+</b><span>выпускников за два года по внедрению ИИ в бизнес</span></div>
+      <div class="card stat2"><b>16&nbsp;403</b><span>подписчика в Instagram @saint4ai</span></div>
+    </div>
+    <p class="note" style="margin-top:5mm">Подписчики по данным Instagram на 05.10.2026</p>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">08</span></footer>
+</section>
+
+<!-- 9 · тарифы -->
+<section class="page bgC">
+  <div>
+    <div class="kick"><i></i>Тарифы</div>
+    <h1>Два тарифа: сами <em class="nb">или с кураторами</em></h1>
+    <p class="lead">Программа и материалы одинаковые. Отличается сопровождение.</p>
+  </div>
+  <div class="stage">
+    <div class="plans">
+      <div class="card plan"><div class="pname">Вайб Solo</div><div class="price">220&nbsp;000&nbsp;₸</div><div class="ptag">Идёте по программе сами</div></div>
+      <div class="card dark plan pro"><div class="pname">Вайбкодер Pro</div><div class="price">290&nbsp;900&nbsp;₸</div><div class="ptag">Идёте с кураторами</div></div>
+    </div>
+    <p class="note shared">В обоих тарифах одинаково: все 10 модулей, материалы, промпты и AI-наставник на платформе.</p>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">09</span></footer>
+</section>
+
+<!-- 10 · разница -->
+<section class="page bgA">
+  <div>
+    <div class="kick"><i></i>В чём разница</div>
+    <h1>Программа одна, в Pro <em>ещё и кураторы</em></h1>
+  </div>
+  <div class="stage">
+    <div class="versus">
+      <div class="card col">
+        <div class="cname">Вайб Solo</div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Все модули, материалы и промпты</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>AI-наставник на платформе</span></div>
+        <div class="li off"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg><span>Без обратной связи, проходите сами</span></div>
+      </div>
+      <div class="card dark col pro">
+        <div class="cname">Вайбкодер Pro</div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Все модули, материалы и промпты</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>AI-наставник на платформе</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Кураторы разбирают ваши работы</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Можно двумя платежами по <span class="nb">145&nbsp;450&nbsp;₸</span></span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>OPUS.CLUB на 12 месяцев</span></div>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">10</span></footer>
+</section>
+
+<!-- 11 · условия -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Условия</div>
+    <h1>Платить можно частями: <em>рассрочка или два платежа</em></h1>
+  </div>
+  <div class="stage">
+    <div class="terms">
+      <div class="card term"><div class="ic"><svg><use href="#i-pay"/></svg></div><h3>Предоплата <span class="nb">10&nbsp;000&nbsp;₸</span> входит в цену тарифа</h3></div>
+      <div class="card term"><div class="ic"><svg><use href="#i-calendar"/></svg></div><h3>Рассрочка до 24 месяцев через менеджера</h3></div>
+      <div class="card term"><div class="ic"><svg><use href="#i-split"/></svg></div><h3>Вайбкодер Pro можно оплатить двумя платежами по <span class="nb">145&nbsp;450&nbsp;₸</span></h3></div>
+      <div class="card term"><div class="ic"><svg><use href="#i-cloud"/></svg></div><h3>Подписка Claude от <span class="nb">$20</span> в месяц оплачивается отдельно</h3></div>
+    </div>
+  </div>
+  <img class="obj" src="img/obj-calendar.png" style="right:16mm;top:66mm;width:70mm" alt="">
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">11</span></footer>
+</section>
+
+<!-- 12 · что выбрать -->
+<section class="page bgC">
+  <div>
+    <div class="kick"><i></i>Что выбрать</div>
+    <h1>Идёте сами: Solo. Нужен куратор: <em>Pro</em></h1>
+    <p class="lead">Программа одна и та же, отличается сопровождение. Сомневаетесь, напишите менеджеру, и она поможет выбрать.</p>
+  </div>
+  <div class="stage">
+    <div class="choose">
+      <div class="card pick">
+        <div class="if">Если хотите</div>
+        <div class="want">Идти по программе сами</div>
+        <div class="take"><div class="tn">Вайб Solo</div><div class="tp">220&nbsp;000&nbsp;₸</div></div>
+      </div>
+      <div class="card gold pick">
+        <div class="if">Если нужен</div>
+        <div class="want">Куратор, который смотрит ваши работы</div>
+        <div class="take"><div class="tn">Вайбкодер Pro</div><div class="tp">290&nbsp;900&nbsp;₸</div></div>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">12</span></footer>
+</section>
+
+<!-- 13 · вопросы -->
+<section class="page bgA">
+  <div>
+    <div class="kick"><i></i>Частые вопросы</div>
+    <h1>Ответы на три вопроса <em>перед покупкой</em></h1>
+  </div>
+  <div class="stage">
+    <div class="faq">
+      <div class="card qa"><div class="q">Я не программист. Мне подойдёт?</div><p class="a">Да. Знать программирование не нужно: вы описываете задачу словами, код пишет агент. Автор курса сам разработчик без знаний программирования.</p></div>
+      <div class="card qa"><div class="q">Нужен ли Claude и сколько он стоит?</div><p class="a">Нужна подписка Claude, от <span class="nb">$20</span> в месяц. Она оплачивается отдельно от курса.</p></div>
+      <div class="card qa"><div class="q">Что, если не получится?</div><p class="a">В тарифе Вайбкодер Pro кураторы разбирают ваши работы, в Вайб Solo с вами AI-наставник на платформе. Доход мы не обещаем: курс даёт навык и собранный вами сервис.</p></div>
+    </div>
+  </div>
+  <img class="obj" src="img/obj-botchat.png" style="right:24mm;top:62mm;width:46mm" alt="">
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">13</span></footer>
+</section>
+
+<!-- 14 · как начать -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Как начать</div>
+    <h1>Напишите <em>«ПРО»</em> менеджеру и внесите предоплату</h1>
+  </div>
+  <div class="stage">
+    <div class="steps3">
+      <div class="card s3"><div class="no">1</div><p>Выберите тариф: Вайб&nbsp;Solo или <span class="nb">Вайбкодер Pro</span></p></div>
+      <div class="card s3"><div class="no">2</div><p>Напишите менеджеру Аяне слово «ПРО» и название тарифа</p></div>
+      <div class="card s3"><div class="no">3</div><p>Внесите предоплату <span class="nb">10&nbsp;000&nbsp;₸</span>, она входит в цену</p></div>
+    </div>
+    <div class="btns">
+      <a class="btn g" href="https://wa.me/77085834575">Написать в WhatsApp <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg></a>
+      <a class="btn g" href="https://t.me/futleid">Написать в Telegram <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg></a>
+      <a class="btn o" href="https://pay.kaspi.kz/pay/ub82mpkc">Предоплата через Kaspi</a>
+      <a class="btn o" href="https://pay.rrllc.ru/onai.academy">Предоплата из России и других стран</a>
+    </div>
+    <p class="note contacts"><b>Аяна</b>, менеджер. Telegram <a href="https://t.me/futleid">@futleid</a>, WhatsApp <a href="https://wa.me/77085834575" class="nb">+7&nbsp;708&nbsp;583&nbsp;4575</a>. Рассрочку и оплату двумя платежами она объяснит.</p>
+  </div>
+  <img class="obj" src="img/obj-codeword.png" style="right:12mm;top:118mm;width:62mm" alt="">
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">14</span></footer>
+</section>
+
+</main>
+</body></html>

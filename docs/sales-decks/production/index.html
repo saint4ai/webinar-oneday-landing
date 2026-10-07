@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Vibe Production</title>
+<style>
+/* Шрифты репозитория: те же, что у карточек рассылки (docs/tg-media/base.css) */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;src:url(../../../workshop-montazh/assets/fonts/unbounded-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;src:url(../../../workshop-montazh/assets/fonts/unbounded-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 900;src:url(../../../workshop-montazh/assets/fonts/unbounded-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+:root{--night:#14100E;--gold:#E3C07B;--gold2:#C9A05A;--cream:#FBF3E4;--ink:#2A211C;--muted:rgba(251,243,228,.78)}
+@page{size:297mm 210mm;margin:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--night);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Manrope',system-ui,sans-serif;color:var(--cream);font-size:15pt;line-height:1.38;font-weight:500;-webkit-font-smoothing:antialiased}
+.nb{white-space:nowrap}
+
+/* страница: одна секция = один лист A4 альбомный; шапка сверху, содержимое .stage по центру оставшегося места, подвал внизу */
+.page{position:relative;width:297mm;height:210mm;overflow:hidden;padding:15mm 20mm 0;display:flex;flex-direction:column;background-color:var(--night);background-size:100% 100%;background-repeat:no-repeat;break-after:page;page-break-after:always}
+.page:last-of-type{break-after:auto;page-break-after:auto}
+.page::after{content:"";position:absolute;inset:5mm;border:.3mm solid rgba(227,192,123,.2);border-radius:9mm;pointer-events:none}
+.bgA{background-image:url(img/bg-a.jpg)}
+.bgB{background-image:url(img/bg-b.jpg)}
+.bgC{background-image:url(img/bg-c.jpg)}
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding-bottom:25mm}
+
+/* подвал: логотип слева, номер страницы справа */
+.foot{position:absolute;left:20mm;right:20mm;bottom:11mm;display:flex;align-items:center;justify-content:space-between;z-index:5}
+.foot img{height:8mm;width:auto;display:block}
+.num{font-family:'Unbounded',sans-serif;font-weight:700;font-size:14pt;color:var(--gold);letter-spacing:.04em}
+
+/* шапка слайда */
+.kick{display:flex;align-items:center;gap:4mm;font-weight:800;font-size:14pt;line-height:1;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.kick i{display:block;width:12mm;height:.6mm;background:var(--gold)}
+h1{font-family:'Unbounded',sans-serif;font-weight:700;font-size:29pt;line-height:1.14;letter-spacing:-.015em;color:var(--cream);margin-top:5mm;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.lead{font-size:16pt;line-height:1.42;font-weight:500;color:rgba(251,243,228,.9);margin-top:4.5mm;text-wrap:balance}
+.note{font-size:14pt;line-height:1.4;color:var(--muted)}
+
+/* стеклянная карточка с золотой кромкой (без градиентов: в PDF они тяжёлые на телефонах) */
+.card{background:rgba(251,243,228,.075);border:.35mm solid rgba(227,192,123,.5);border-radius:6mm;box-shadow:0 5mm 12mm rgba(0,0,0,.35),inset 0 .3mm 0 rgba(255,236,200,.28)}
+.card.gold{background:var(--gold);border-color:var(--gold2);color:var(--ink)}
+.card.dark{background:rgba(20,16,14,.72);border:.5mm solid var(--gold)}
+
+/* значок в плитке */
+.ic{width:13mm;height:13mm;border-radius:3.4mm;display:flex;align-items:center;justify-content:center;flex:none;background:rgba(227,192,123,.13);border:.3mm solid rgba(227,192,123,.42)}
+.ic svg{width:58%;height:58%;fill:none;stroke:var(--gold);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.gold .ic{background:rgba(20,16,14,.12);border-color:rgba(20,16,14,.3)}
+.gold .ic svg{stroke:var(--ink)}
+
+h3{font-weight:800;font-size:17pt;line-height:1.26}
+.obj{position:absolute;display:block;filter:drop-shadow(0 5mm 6mm rgba(0,0,0,.5))}
+
+/* 1 · обложка */
+.cover h1.big{font-size:52pt;line-height:1.06;margin-top:0;letter-spacing:-.025em;text-wrap:wrap}
+.cover .sub{font-family:'Unbounded',sans-serif;font-weight:600;font-size:22pt;line-height:1.25;color:var(--cream);margin-top:8mm}
+.cover .stats{display:flex;gap:9mm;margin-top:11mm}
+.cover .stat{display:flex;align-items:baseline;gap:3mm;font-weight:800;font-size:20pt;color:var(--cream)}
+.cover .stat b{font-family:'Unbounded',sans-serif;font-weight:700;font-size:40pt;line-height:1;color:var(--gold)}
+.cover .lead{max-width:124mm;margin-top:10mm}
+
+/* 2 · для кого */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.who{padding:8mm 8mm 9mm;display:flex;flex-direction:column;gap:7mm}
+.who .ic{width:17mm;height:17mm;border-radius:4.4mm}
+.who h3{font-size:19pt;line-height:1.27}
+.strip{margin-top:7mm;padding:6mm 8mm;display:flex;align-items:center;gap:6mm}
+.strip p{font-weight:800;font-size:18pt;line-height:1.3}
+
+/* 3 · что вы получаете */
+.rows{display:flex;flex-direction:column;gap:3mm}
+.row{display:flex;align-items:center;gap:6mm;padding:3.3mm 7mm 3.3mm 4.5mm}
+.row h3{width:100mm;flex:none;font-size:18pt}
+.row p{font-size:16pt;line-height:1.3;color:var(--muted)}
+
+/* 4 · путь */
+.floors{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm}
+.floor{display:flex;flex-direction:column}
+.fhead{background:var(--gold);color:var(--ink);border-radius:6mm 6mm 1.5mm 1.5mm;padding:4mm 5.5mm;font-family:'Unbounded',sans-serif;font-weight:700;font-size:14pt;line-height:1.2}
+.fbody{flex:1;margin-top:1.2mm;border-radius:1.5mm 1.5mm 6mm 6mm;padding:1.5mm 5.5mm;display:flex;flex-direction:column}
+.mod{flex:1;display:flex;align-items:center;gap:4mm;padding:3mm 0;border-bottom:.25mm solid rgba(227,192,123,.22)}
+.mod:last-child{border-bottom:0}
+.mod .n{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;color:var(--gold);width:7mm;flex:none;text-align:center}
+.mod .t{display:block;font-weight:800;font-size:15pt;line-height:1.2}
+.mod .l{display:block;font-size:14pt;line-height:1.3;color:var(--muted);font-weight:600;margin-top:.8mm}
+
+/* 5 · метод onAI */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8mm}
+.big-card{position:relative;padding:9mm 9mm 10mm;min-height:96mm;overflow:hidden}
+.big-card .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15pt;color:var(--gold);letter-spacing:.06em}
+.big-card h2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:23pt;line-height:1.2;margin-top:5mm;color:var(--cream)}
+.big-card p{font-size:18pt;line-height:1.4;margin-top:6mm;color:rgba(251,243,228,.92);max-width:66mm}
+
+/* 6 · цепочка */
+.chain{display:flex;align-items:stretch}
+.step{flex:1;padding:9mm 8mm 10mm}
+.step .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:54pt;line-height:1;color:var(--gold)}
+.step h3{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19pt;line-height:1.22;margin-top:7mm}
+.step .l{margin-top:5mm;font-size:16pt;color:var(--muted);font-weight:700}
+.arrow{width:13mm;flex:none;display:flex;align-items:center;justify-content:center}
+.arrow svg{width:9mm;height:9mm;fill:none;stroke:var(--gold);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.around{display:flex;justify-content:space-between;gap:8mm;margin-top:9mm}
+.around .note{font-size:15pt}
+.around .note b{color:var(--cream);font-weight:800}
+
+/* 7 · кейсы */
+.cases{display:grid;grid-template-columns:1.75fr 1fr 1fr 1fr;gap:5mm}
+.case{padding:3mm 3mm 5mm;display:flex;flex-direction:column}
+.case>img{width:100%;height:26mm;object-fit:cover;object-position:top left;border-radius:3.4mm;display:block;border:.25mm solid rgba(227,192,123,.3)}
+.case .art{height:26mm;border-radius:3.4mm;border:.25mm solid rgba(227,192,123,.3);background:rgba(227,192,123,.1);display:flex;align-items:center;justify-content:center}
+.case .art img{height:22mm;width:auto;display:block;filter:drop-shadow(0 2mm 3mm rgba(0,0,0,.5))}
+.case h3{font-weight:800;font-size:15pt;line-height:1.2;margin:4mm 2mm 0;color:var(--gold);white-space:nowrap}
+.case .cl{margin:2.4mm 2mm 0;font-size:14pt;line-height:1.3;font-weight:800}
+.case .cm{margin:2.4mm 2mm 0;font-size:14pt;line-height:1.3;color:var(--muted)}
+.cases-note{margin-top:5mm}
+
+/* 8 · автор */
+.portrait{position:absolute;right:20mm;top:30mm;width:84mm;height:134mm;overflow:hidden}
+.portrait img{position:absolute;left:50%;bottom:0;width:106%;height:auto;transform:translateX(-50%)}
+.portrait .glow{position:absolute;left:-30%;right:-30%;top:4%;bottom:-20%;background:radial-gradient(closest-side,rgba(227,192,123,.5),rgba(227,192,123,0))}
+.author{width:158mm}
+.stats2{display:flex;gap:6mm}
+.stat2{padding:6mm 7mm;flex:1}
+.stat2 b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:32pt;line-height:1.05;color:var(--gold)}
+.stat2 span{display:block;margin-top:3mm;font-size:15pt;line-height:1.3;font-weight:700}
+
+/* 9 · тарифы */
+.plans{display:flex;align-items:flex-end;gap:9mm}
+.plan{flex:1;padding:10mm 10mm 11mm}
+.plan.pro{padding:14mm 10mm 15mm}
+.plan .pname{font-family:'Unbounded',sans-serif;font-weight:700;font-size:18pt;line-height:1.2;color:var(--muted)}
+.plan .price{font-family:'Unbounded',sans-serif;font-weight:700;font-size:40pt;line-height:1;margin-top:8mm;color:var(--cream);white-space:nowrap}
+.plan .ptag{font-weight:800;font-size:17pt;line-height:1.3;margin-top:8mm}
+.plan.pro .pname,.plan.pro .price{color:var(--gold)}
+.shared{margin-top:9mm;font-size:15pt}
+
+/* 10 · разница */
+.versus{display:flex;align-items:flex-end;gap:8mm}
+.col{flex:1;padding:9mm 9mm 10mm}
+.col.pro{padding:12mm 9mm 13mm}
+.col .cname{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19pt;line-height:1.2;color:var(--muted)}
+.col.pro .cname{color:var(--gold)}
+.li{display:flex;align-items:flex-start;gap:4mm;margin-top:5.6mm;font-weight:800;font-size:17pt;line-height:1.3}
+.li svg{flex:none;width:6.4mm;height:6.4mm;margin-top:1.2mm;fill:none;stroke:var(--gold);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.li.off{color:var(--muted);font-weight:700}
+.li.off svg{stroke:var(--muted)}
+
+/* 11 · условия */
+.terms{display:flex;flex-direction:column;gap:4.5mm;max-width:182mm}
+.term{display:flex;align-items:center;gap:6mm;padding:5mm 7mm 5mm 5mm}
+.term h3{font-size:17pt;line-height:1.3}
+
+/* 12 · что выбрать */
+.choose{display:flex;gap:8mm}
+.pick{flex:1;padding:10mm 10mm 11mm;display:flex;flex-direction:column;min-height:92mm}
+.pick .if{font-weight:800;font-size:14pt;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.pick .want{font-family:'Unbounded',sans-serif;font-weight:700;font-size:22pt;line-height:1.22;margin-top:4mm}
+.pick .take{margin-top:auto;padding-top:9mm}
+.pick .take .tn{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;line-height:1.2;color:var(--gold)}
+.pick .take .tp{font-family:'Unbounded',sans-serif;font-weight:700;font-size:30pt;line-height:1.1;margin-top:3mm;white-space:nowrap}
+.pick.gold .if{color:rgba(42,33,28,.8)}
+.pick.gold .take .tn{color:var(--ink)}
+
+/* 13 · вопросы */
+.faq{display:flex;flex-direction:column;gap:4mm;max-width:198mm}
+.qa{padding:5mm 8mm 5.5mm}
+.qa .q{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15pt;line-height:1.25;color:var(--gold)}
+.qa .a{font-size:15.5pt;line-height:1.38;margin-top:2.4mm;color:rgba(251,243,228,.92)}
+
+/* 14 · как начать */
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.s3{padding:7mm 8mm 8mm}
+.s3 .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:30pt;line-height:1;color:var(--gold)}
+.s3 p{font-weight:800;font-size:16pt;line-height:1.32;margin-top:4mm;text-wrap:balance}
+.btns{display:grid;grid-template-columns:auto auto;justify-content:start;gap:4mm 5mm;margin-top:9mm}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:3mm;padding:4mm 7mm;border-radius:999px;font-weight:800;font-size:15pt;line-height:1.1;text-decoration:none;white-space:nowrap}
+.btn.g{background:var(--gold);color:var(--ink);border:.35mm solid var(--gold2)}
+.btn.o{background:rgba(251,243,228,.07);color:var(--cream);border:.5mm solid var(--gold)}
+.btn svg{width:5.5mm;height:5.5mm;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.contacts{margin-top:8mm;max-width:188mm}
+.contacts b{color:var(--cream);font-weight:800}
+.contacts a{color:var(--gold);font-weight:700;text-decoration:none}
+
+/* добавочные блоки презентаций Vibe Production и «Два курса вместе» (база та же, что у PRO) */
+.chip{display:inline-block;padding:1.1mm 3.2mm;border-radius:999px;font-weight:800;font-size:14pt;line-height:1.1;letter-spacing:.03em;white-space:nowrap}
+.chip.me{background:var(--gold);color:var(--ink);border:.3mm solid var(--gold2)}
+.chip.ag{background:rgba(251,243,228,.08);color:var(--cream);border:.4mm solid var(--gold)}
+.sec{font-weight:800;font-size:14pt;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+
+/* кому подходит */
+.who4{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.w4{display:flex;gap:6mm;padding:7mm 8mm;align-items:flex-start}
+.w4 .n{font-family:'Unbounded',sans-serif;font-weight:700;font-size:34pt;line-height:1;color:var(--gold);width:11mm;flex:none}
+.w4 h3{font-size:19pt;line-height:1.25}
+.w4 p{font-size:16pt;line-height:1.35;color:var(--muted);margin-top:2.4mm}
+
+/* сравнение двух курсов */
+.cmp{display:flex;align-items:stretch;gap:8mm}
+.cmp .col{flex:1;padding:6mm 9mm 6.5mm}
+.cmp .cname{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19pt;line-height:1.2;color:var(--muted)}
+.cmp .col.pro .cname{color:var(--gold)}
+.cmp .sub{font-weight:800;font-size:16pt;line-height:1.25;margin-top:2mm;color:var(--cream)}
+.cmp .li{margin-top:3mm;font-size:15.5pt}
+.cmp .li svg{margin-top:.8mm}
+
+/* проблема */
+.pair2{display:grid;grid-template-columns:1fr 1fr;gap:8mm}
+.pb{padding:7mm 8mm 8mm}
+.pb .big{font-family:'Unbounded',sans-serif;font-weight:700;font-size:38pt;line-height:1.1;color:var(--gold);margin-top:5mm;white-space:nowrap}
+.pb h3{margin-top:3mm;font-size:19pt}
+.pb p{font-size:16pt;line-height:1.35;color:var(--muted);margin-top:3mm}
+
+/* пайплайн */
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm 9mm}
+.ps{position:relative;padding:4mm 5mm 4.5mm;display:flex;flex-direction:column;gap:2.2mm}
+.ps .top{display:flex;align-items:center;justify-content:space-between;gap:3mm}
+.ps .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:22pt;line-height:1;color:var(--gold)}
+.ps .tags{display:flex;gap:2mm}
+.ps h3{font-size:15pt;line-height:1.22}
+.ps .sub{font-size:14pt;line-height:1.3;color:var(--muted);font-weight:600}
+.ps .ar{position:absolute;right:-8mm;top:50%;margin-top:-3.5mm;width:7mm;height:7mm;fill:none;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.endrow{margin-top:5mm;padding:4.5mm 8mm;display:flex;align-items:center;gap:7mm}
+.endrow .u2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;line-height:1.2;white-space:nowrap}
+.endrow p{font-weight:800;font-size:16pt;line-height:1.3}
+
+/* вы и агент */
+.duo{display:flex;gap:8mm;align-items:flex-start}
+.duo .col{flex:1;padding:8mm 9mm 9mm}
+.duo .cname{font-family:'Unbounded',sans-serif;font-weight:700;font-size:21pt;line-height:1.2;color:var(--cream)}
+.duo .gold .cname{color:var(--ink)}
+.card.gold .li svg{stroke:var(--ink)}
+.duo .li{margin-top:5mm;font-size:17pt}
+
+/* программа */
+.mods{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.mc{padding:5.5mm 6mm 6mm;display:flex;flex-direction:column}
+.mc .no{font-family:'Unbounded',sans-serif;font-weight:700;font-size:14pt;color:var(--gold);letter-spacing:.06em}
+.mc h2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;line-height:1.2;margin-top:2mm;min-height:15mm}
+.mc .ls{margin-top:2mm;border-top:.3mm solid rgba(227,192,123,.3);margin-bottom:4mm}
+.mc .l{display:flex;gap:3mm;padding:1.3mm 0;border-bottom:.25mm solid rgba(227,192,123,.2);font-weight:700;font-size:14pt;line-height:1.25}
+.mc .l b{color:var(--gold);min-width:7mm;font-weight:800}
+.mc .res{margin-top:auto;padding:3.2mm 4mm;border-radius:3.4mm;background:var(--gold);color:var(--ink);font-weight:800;font-size:14pt;line-height:1.28}
+
+/* результат автора */
+.res2{display:grid;grid-template-columns:105mm 1fr;gap:10mm;align-items:center}
+.reels{display:flex;gap:4mm;justify-content:flex-end}
+.reels img{width:43mm;height:76.5mm;object-fit:cover;border-radius:4mm;border:.4mm solid rgba(227,192,123,.5);box-shadow:0 4mm 8mm rgba(0,0,0,.45)}
+.reels img.first{border-color:var(--gold)}
+.sc{padding:4mm 7mm 4.5mm;margin-top:4mm}
+.sc:first-child{margin-top:0}
+.sc b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:28pt;line-height:1.1;color:var(--gold);white-space:nowrap}
+.sc span{display:block;margin-top:1.6mm;font-size:14pt;line-height:1.3;font-weight:700}
+
+/* карточки 2 на 2 */
+.q4{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.qc{padding:6.5mm 8mm 7mm}
+.qc h3{font-size:18pt;line-height:1.25}
+.qc p{font-size:15pt;line-height:1.35;color:var(--muted);margin-top:2.4mm}
+.qc.gold p{color:rgba(42,33,28,.85)}
+
+/* как проходит обучение */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.nm{padding:6mm 8mm 6.5mm}
+.nm b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:34pt;line-height:1.05;color:var(--gold);white-space:nowrap}
+.nm h3{margin-top:2.4mm;font-size:17pt}
+.nm p{margin-top:1.4mm;font-size:14pt;color:var(--muted);font-weight:600}
+.nm.gold b,.nm.gold p{color:var(--ink)}
+.help3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6mm;margin-top:6mm}
+.hp{padding:5mm 7mm 5.5mm}
+.hp h3{font-size:16pt;line-height:1.28}
+.hp p{margin-top:2mm;font-size:14pt;line-height:1.35;color:var(--muted);font-weight:600}
+
+/* подписки */
+.subs{padding:2mm 8mm}
+.sr{display:flex;align-items:baseline;gap:6mm;padding:2.6mm 0;border-bottom:.3mm solid rgba(227,192,123,.25)}
+.sr:last-child{border-bottom:0}
+.sr .a{width:48mm;flex:none;font-weight:800;font-size:17pt}
+.sr .b{flex:1;font-size:15pt;color:var(--muted);font-weight:600}
+.sr .c{font-weight:800;font-size:17pt;white-space:nowrap}
+.sr.tot .a{color:var(--gold);width:auto;flex:1}
+.sr.tot .c{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19pt;color:var(--gold)}
+
+/* цена */
+.pricerow{display:flex;align-items:center;gap:12mm}
+.pricerow .t{font-weight:700;font-size:14pt;color:var(--muted);margin-bottom:3mm}
+.old{position:relative;display:inline-block;white-space:nowrap;font-family:'Unbounded',sans-serif;font-weight:600;font-size:30pt;color:rgba(251,243,228,.55);letter-spacing:-.01em}
+.old::after{content:"";position:absolute;left:-2mm;right:-2mm;top:50%;height:1.3mm;border-radius:1mm;background:#C0562A;transform:rotate(-4deg)}
+.bigprice{padding:6mm 11mm 7mm}
+.bigprice b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:50pt;line-height:1.1;color:var(--gold);white-space:nowrap;margin-top:2mm}
+.calc{margin-top:7mm;padding:5mm 8mm;display:flex;align-items:center;gap:8mm}
+.calc p{font-weight:800;font-size:19pt;white-space:nowrap}
+.calc p em{font-style:normal;color:var(--gold)}
+.banks{display:flex;gap:4mm;margin-left:auto}
+.banks span{background:var(--cream);border-radius:3mm;padding:2mm 3.6mm;display:flex;align-items:center;height:12.5mm}
+.banks img{height:7.4mm;width:auto;display:block}
+
+/* сомнения */
+.doubts{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}
+.db{padding:7mm 7mm 8mm}
+.db h3{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;line-height:1.25;color:var(--gold);min-height:21.5mm}
+.db p{font-size:16pt;line-height:1.38;margin-top:3mm}
+
+/* пакет */
+.pk2{display:flex;align-items:stretch;gap:0}
+.pk2 .col{flex:1;padding:7mm 8mm 8mm}
+.pk2 .mid{flex:none;width:19mm;display:flex;align-items:center;justify-content:center}
+.pk2 .mid svg{width:12mm;height:12mm;fill:none;stroke:var(--gold);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pk2 .tt{font-family:'Unbounded',sans-serif;font-weight:700;font-size:18pt;line-height:1.2;margin-top:2mm}
+.pk2 .rs{margin-top:4mm;border-top:.3mm solid rgba(227,192,123,.3)}
+.pk2 .r{display:flex;gap:4mm;padding:2.4mm 0;border-bottom:.25mm solid rgba(227,192,123,.2);font-weight:700;font-size:15pt;line-height:1.3}
+.pk2 .r:last-child{border-bottom:0}
+.pk2 .r b{color:var(--gold);min-width:6mm}
+.inside{display:grid;grid-template-columns:86mm 1fr;gap:6mm}
+.inside .col{padding:5.5mm 7mm 5.5mm}
+.inside .tt{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15pt;line-height:1.2;margin-top:1.6mm;white-space:nowrap}
+.inside .rs{margin-top:3mm;border-top:.3mm solid rgba(227,192,123,.3)}
+.inside .r{display:flex;gap:3.4mm;padding:1.6mm 0;border-bottom:.25mm solid rgba(227,192,123,.2);font-weight:700;font-size:14pt;line-height:1.25}
+.inside .r:last-child{border-bottom:0}
+.inside .r b{color:var(--gold);min-width:6mm}
+.two{display:grid;grid-template-columns:1fr 1fr;column-gap:7mm}
+.total{margin-top:5mm;padding:4mm 8mm;display:flex;align-items:center;gap:6mm}
+.total .u2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17pt;color:var(--gold)}
+.total p{font-weight:800;font-size:16pt}
+.sum{display:flex;align-items:flex-start;gap:7mm}
+.sum .v{font-family:'Unbounded',sans-serif;font-weight:700;font-size:24pt;line-height:1.1;white-space:nowrap}
+.sum .l{margin-top:2mm;font-size:14pt;line-height:1.3;color:var(--muted);font-weight:600}
+.sum .op{font-family:'Unbounded',sans-serif;font-weight:700;font-size:24pt;color:var(--gold);line-height:1.1}
+.save{display:flex;align-items:stretch;gap:8mm;margin-top:9mm}
+.save .p1{padding:6mm 10mm 7mm}
+.save .p1 b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:54pt;line-height:1.1;color:var(--gold);white-space:nowrap;margin-top:2mm}
+.save .p2{padding:6mm 9mm 7mm;display:flex;flex-direction:column;justify-content:center}
+.save .p2 b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:28pt;line-height:1.15;white-space:nowrap;margin-top:2mm}
+.tab{display:grid;grid-template-columns:96mm 66mm 1fr;column-gap:7mm;align-items:center}
+.tabh{padding:0 8mm}
+.tr{padding:5mm 8mm;margin-top:4mm}
+.tr .t1{font-weight:800;font-size:17pt;line-height:1.28}
+.tr .t2{font-family:'Unbounded',sans-serif;font-weight:700;font-size:16pt;line-height:1.2;color:var(--gold)}
+.tr .t3{font-weight:800;font-size:16pt;line-height:1.3}
+.tr.gold .t2{color:var(--ink)}
+.t4{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.tm{padding:6mm 8mm 7mm}
+.tm h3{margin-top:2.4mm;font-size:18pt;line-height:1.28}
+.tm p{margin-top:2mm;font-size:15pt;line-height:1.35;color:var(--muted)}
+.tm.gold .sec{color:var(--ink)}
+.tm.gold p{color:rgba(42,33,28,.85)}
+.dl{display:flex;gap:7mm;align-items:stretch}
+.dl .big{padding:7mm 11mm 8mm}
+.dl .big b{display:block;font-family:'Unbounded',sans-serif;font-weight:700;font-size:60pt;line-height:1.05;color:var(--gold);margin-top:2mm}
+.dl .side{flex:1;display:flex;flex-direction:column;gap:5mm}
+.dl .side .card{padding:5mm 8mm 5.5mm;flex:1}
+.dl .side h3{margin-top:2mm;font-size:17pt;line-height:1.3}
+.cover .sub{max-width:118mm}
+</style></head>
+<body>
+
+<!-- значки: общий набор, подключается через <use> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-site" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9.5h18M6.6 7h.01M9.2 7h.01"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.3"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></symbol>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="10" rx="1.6"/><path d="M2.5 19h19M9.6 19l.5-2h3.8l.5 2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l9 4.5-9 4.5L3 8z"/><path d="M3 12.2l9 4.5 9-4.5M3 16.4l9 4.5 9-4.5"/></symbol>
+  <symbol id="i-pay" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10.5h18M7 15h3.2"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h6M9.5 16h6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><rect x="3" y="7" width="8" height="10" rx="2"/><rect x="13" y="7" width="8" height="10" rx="2"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17 8.7 4.7 4.7 0 0 1 17.5 18z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+</svg>
+
+<main>
+
+<!-- 1 · обложка -->
+<section class="page bgA cover">
+  <div class="kick"><i></i>Обучение onAI Academy</div>
+  <div class="stage">
+    <h1 class="big">Vibe<br><em>Production</em></h1>
+    <p class="sub">Ваш ИИ-агент собирает рилсы</p>
+    <div class="stats"><div class="stat"><b>3</b>модуля</div><div class="stat"><b>15</b>уроков</div><div class="stat"><b>1</b>месяц</div></div>
+    <p class="lead">Что в программе, какой результат у автора, сколько стоит и как начать.</p>
+    <p class="note" style="margin-top:6mm;max-width:124mm">Автор обучения: Александр, @saint4ai, основатель onAI Academy.</p>
+  </div>
+  <img class="obj" src="img/obj-robotfilm.png" style="right:10mm;top:34mm;width:118mm" alt="">
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">01</span></footer>
+</section>
+
+<!-- 2 · для кого -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Для кого</div>
+    <h1>Обучение подходит <em>четырём типам людей</em></h1>
+    <p class="lead">Знания монтажа не нужны. Найдите себя в одной из строк.</p>
+  </div>
+  <div class="stage">
+    <div class="who4">
+      <div class="card w4"><div class="n">1</div><div><h3>Эксперт со своим продуктом</h3><p>Ролики и реклама своего продукта без команды</p></div></div>
+      <div class="card w4"><div class="n">2</div><div><h3>Не хотите сниматься сами</h3><p>Ролики без камеры: формат без лица и ваш голос</p></div></div>
+      <div class="card w4"><div class="n">3</div><div><h3>SMM, делаете рилсы клиентам</h3><p>Монтаж клиентам собирает агент, вы утверждаете кадры</p></div></div>
+      <div class="card w4"><div class="n">4</div><div><h3>Хотите брать заказы на монтаж</h3><p>Ролики на заказ для клиентов</p></div></div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">02</span></footer>
+</section>
+
+<!-- 3 · чем отличается от Vibe Coding PRO -->
+<section class="page bgC">
+  <div>
+    <div class="kick"><i></i>Чем отличается от Vibe Coding PRO</div>
+    <h1>PRO про сервисы и сайты, <em>Production про контент и продажи</em></h1>
+  </div>
+  <div class="stage">
+    <div class="cmp">
+      <div class="card col">
+        <div class="cname">Vibe Coding PRO</div>
+        <p class="sub">Сервисы, сайты и приложения</p>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Свои сервисы, сайты и приложения с агентом</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>От первого запуска до боевого продукта</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>10 модулей, 36 уроков</span></div>
+        <div class="li off"><svg viewBox="0 0 24 24"><use href="#i-chat"/></svg><span>Уроков по монтажу роликов и рекламе нет</span></div>
+      </div>
+      <div class="card dark col pro">
+        <div class="cname">Vibe Production</div>
+        <p class="sub">Контент и продажи</p>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Ролики по голосу, реклама из фото, копия голоса</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>ИИ-менеджер в директе и WhatsApp, раздача материалов по кодовому слову</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Документы и контент-завод от ролика до заявки</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>3 модуля, 15 уроков, 1 месяц</span></div>
+      </div>
+    </div>
+    <div class="card gold strip" style="margin-top:6mm"><div class="ic"><svg><use href="#i-check"/></svg></div><p>Общее: оба курса идут на агенте Claude. Если вы уже вайбкодите, вам будет проще стартовать: агент и рабочее место знакомы.</p></div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">03</span></footer>
+</section>
+
+<!-- 4 · проблема -->
+<section class="page bgA">
+  <div style="max-width:196mm">
+    <div class="kick"><i></i>Проблема</div>
+    <h1>Монтаж забирает либо <em>деньги, либо ваши вечера</em></h1>
+    <p class="lead">Рилсы нужны, а монтаж стал узким местом: платить монтажёру каждый месяц или самому учить программы.</p>
+  </div>
+  <img class="obj" src="img/obj-editor.png" style="right:20mm;top:12mm;width:54mm" alt="">
+  <div class="stage">
+    <div class="pair2">
+      <div class="card pb">
+        <div class="sec">Вакансия на hh.kz, Алматы</div>
+        <h3 style="margin-top:3mm">Видеомонтажёр на CapCut</h3>
+        <div class="big">от&nbsp;300&nbsp;000&nbsp;₸</div>
+        <p>на руки, в месяц</p>
+      </div>
+      <div class="card pb">
+        <div class="sec">Или самому</div>
+        <h3 style="margin-top:3mm">Вечер уходит на один ролик</h3>
+        <p style="margin-top:6mm">Premiere и CapCut учить месяцами. Сложные программы и ручная работа над каждым роликом.</p>
+      </div>
+    </div>
+    <p class="note" style="margin-top:6mm">Вакансия на hh.kz, Алматы, 26.09.2026.</p>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">04</span></footer>
+</section>
+
+<!-- 5 · пайплайн -->
+<section class="page bgB">
+  <div style="max-width:205mm">
+    <div class="kick"><i></i>Как это работает</div>
+    <h1>От голоса до заявки: <em>вы решаете, агент делает</em></h1>
+  </div>
+  <img class="obj" src="img/obj-robot.png" style="right:24mm;top:10mm;height:38mm;width:auto" alt="">
+  <div class="stage">
+    <div class="pipe">
+      <div class="card ps"><div class="top"><span class="no">1</span><span class="tags"><span class="chip me">вы</span></span></div><h3>Голос или видео</h3><svg class="ar" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card ps"><div class="top"><span class="no">2</span><span class="tags"><span class="chip ag">агент</span></span></div><h3>Расшифровка</h3><svg class="ar" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card ps"><div class="top"><span class="no">3</span><span class="tags"><span class="chip ag">агент</span><span class="chip me">вы</span></span></div><h3>Сценарий и формат</h3><p class="sub">Агент предлагает, вы утверждаете</p><svg class="ar" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card ps"><div class="top"><span class="no">4</span><span class="tags"><span class="chip ag">агент</span></span></div><h3>Сборка: графика, субтитры, звук</h3></div>
+      <div class="card ps"><div class="top"><span class="no">5</span><span class="tags"><span class="chip me">вы</span></span></div><h3>Проверка кадров и черновика</h3><svg class="ar" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card ps"><div class="top"><span class="no">6</span><span class="tags"><span class="chip ag">агент</span></span></div><h3>Публикация</h3><svg class="ar" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card ps"><div class="top"><span class="no">7</span><span class="tags"><span class="chip ag">агент</span></span></div><h3>Кодовое слово в комментариях и материал в директ</h3><svg class="ar" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></div>
+      <div class="card ps"><div class="top"><span class="no">8</span><span class="tags"><span class="chip ag">агент</span></span></div><h3>ИИ-менеджер отвечает и передаёт заявку</h3></div>
+    </div>
+    <div class="card gold endrow"><div class="u2">Заявка у вас</div><p>Агент не собирает финал, пока вы не одобрите сценарий, кадры и черновик.</p></div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">05</span></footer>
+</section>
+
+<!-- 6 · вы и агент -->
+<section class="page bgC">
+  <div style="max-width:226mm">
+    <div class="kick"><i></i>Кто что делает</div>
+    <h1>Вы записываете и утверждаете, <em>агент делает остальное</em></h1>
+  </div>
+  <img class="obj" src="img/obj-camera.png" style="right:22mm;top:12mm;height:36mm;width:auto" alt="">
+  <div class="stage">
+    <div class="duo">
+      <div class="card gold col">
+        <div class="cname">Вы</div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Записываете голос или видео</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Выбираете стиль</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Утверждаете сценарий, кадры и черновик</span></div>
+      </div>
+      <div class="card dark col">
+        <div class="cname" style="color:var(--gold)">Агент</div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Расшифровка голоса</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Графика, субтитры и звук</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Сборка и серия роликов</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Ответы в директе</span></div>
+        <div class="li"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>Раздача материалов по кодовому слову</span></div>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">06</span></footer>
+</section>
+
+<!-- 7 · результат автора -->
+<section class="page bgA">
+  <div>
+    <div class="kick"><i></i>Результат автора</div>
+    <h1>Рилсы собирает агент. <em>Вот их просмотры</em></h1>
+  </div>
+  <div class="stage">
+    <div class="res2">
+      <div>
+        <div class="card sc"><b>795&nbsp;062</b><span>просмотра в Instagram за 30 дней</span></div>
+        <div class="card sc"><b>8</b><span>публикаций набрали больше 10 тысяч просмотров за два месяца</span></div>
+        <div class="card gold sc"><b style="color:var(--ink)">117 тысяч</b><span>просмотров у лучшего рилса</span></div>
+      </div>
+      <div>
+        <div class="reels"><img class="first" src="img/reel-connectors.jpg" alt=""><img src="img/reel-gitingest.jpg" alt=""><img src="img/reel-artemis.jpg" alt=""></div>
+        <p class="note" style="margin-top:4mm;text-align:right">Три рилса автора. По данным Instagram на 05.10.2026.</p>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">07</span></footer>
+</section>
+
+<!-- 8 · программа -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Программа</div>
+    <h1>3 модуля, 15 уроков, <em>3 результата</em></h1>
+  </div>
+  <div class="stage" style="padding-bottom:22mm">
+    <div class="mods">
+      <div class="card mc"><div class="no">МОДУЛЬ 1</div><h2>AI-монтаж</h2><div class="ls"><div class="l"><b>1.1</b><span>Рабочее место</span></div><div class="l"><b>1.2</b><span>Сценарий и 3 секунды</span></div><div class="l"><b>1.3</b><span>Выбор стиля</span></div><div class="l"><b>1.4</b><span>Сборка ролика</span></div><div class="l"><b>1.5</b><span>Серия роликов</span></div></div><div class="res">Результат: первые ролики и план выпуска на месяц</div></div>
+      <div class="card mc"><div class="no">МОДУЛЬ 2</div><h2>AI-креатор</h2><div class="ls"><div class="l"><b>2.1</b><span>Сценарий и два кадра</span></div><div class="l"><b>2.2</b><span>Движение между кадрами</span></div><div class="l"><b>2.3</b><span>Реклама по шаблону</span></div><div class="l"><b>2.4</b><span>Предметная motion-реклама</span></div><div class="l"><b>2.5</b><span>Сборка и копия голоса</span></div></div><div class="res">Результат: рекламный ролик 9:16 вашего товара</div></div>
+      <div class="card dark mc"><div class="no">МОДУЛЬ 3</div><h2>Ассистенты и автоматизация</h2><div class="ls"><div class="l"><b>3.1</b><span>Вайбкодинг в личных делах</span></div><div class="l"><b>3.2</b><span>ИИ-менеджер в WhatsApp и Instagram</span></div><div class="l"><b>3.3</b><span>Автоматизация процессов</span></div><div class="l"><b>3.4</b><span>Документы и презентации</span></div><div class="l"><b>3.5</b><span>Контент-завод целиком</span></div></div><div class="res">Результат: воронка от ролика до заявки</div></div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">08</span></footer>
+</section>
+
+<!-- 9 · что остаётся у вас -->
+<section class="page bgC">
+  <div style="max-width:170mm">
+    <div class="kick"><i></i>Что остаётся у вас</div>
+    <h1>После обучения у вас остаётся <em>свой контент-завод</em></h1>
+    <p class="lead">Ролик приводит заявку, агент отвечает в директе. Навык и движок остаются у вас после обучения.</p>
+  </div>
+  <img class="obj" src="img/obj-factory.png" style="right:20mm;top:12mm;width:78mm" alt="">
+  <div class="stage">
+    <div class="q4">
+      <div class="card qc"><h3>9 стилей и 6 форматов роликов</h3><p>Стиль выбираете по живым примерам, а не по описанию</p></div>
+      <div class="card qc"><h3>Бот по кодовому слову</h3><p>Комментарий под роликом превращается в заявку</p></div>
+      <div class="card qc"><h3>ИИ-менеджер</h3><p>Отвечает людям в WhatsApp и Instagram</p></div>
+      <div class="card gold qc"><h3>Реклама из фото</h3><p>Рекламный ролик 9:16 вашего товара без камеры и студии</p></div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">09</span></footer>
+</section>
+
+<!-- 10 · как проходит обучение и помощь с настройкой -->
+<section class="page bgA">
+  <div style="max-width:200mm">
+    <div class="kick"><i></i>Как проходит обучение</div>
+    <h1>Один месяц, несколько часов в неделю и <em>помощь с настройкой</em></h1>
+  </div>
+  <img class="obj" src="img/obj-hourglass.png" style="right:24mm;top:10mm;height:38mm;width:auto" alt="">
+  <div class="stage">
+    <div class="nums">
+      <div class="card nm"><b>1</b><h3>месяц обучения</h3><p>3 модуля, 15 уроков</p></div>
+      <div class="card nm"><b>3 или 4</b><h3>часа в неделю</h3><p>в течение месяца</p></div>
+      <div class="card gold nm"><b>3</b><h3>месяца доступа</h3><p>к урокам</p></div>
+    </div>
+    <div class="help3">
+      <div class="card hp"><h3>Первый урок «Рабочее место» настраивает всё по шагам</h3><p>Агент сам ставит всё нужное и ведёт вас.</p></div>
+      <div class="card hp"><h3>Вопросы в Telegram-группе потока</h3><p>С обратной связью.</p></div>
+      <div class="card hp" style="border-color:rgba(227,192,123,.28)"><h3 style="color:var(--gold)">Чего нет</h3><p>Личных консультаций и проверки домашних заданий.</p></div>
+    </div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">10</span></footer>
+</section>
+
+<!-- 11 · подписки -->
+<section class="page bgB">
+  <div style="max-width:190mm">
+    <div class="kick"><i></i>Кроме курса</div>
+    <h1>На сервисы уйдёт около <em>$51 в месяц</em> на старте</h1>
+    <p class="lead">Начать можно с одной подписки: Claude от $20 в месяц.</p>
+  </div>
+  <img class="obj" src="img/obj-coins.png" style="right:20mm;top:12mm;width:58mm" alt="">
+  <div class="stage">
+    <div class="card subs">
+        <div class="sr"><span class="a">Claude Pro</span><span class="b">агент-монтажёр, модули 1 и 3</span><span class="c">$20</span></div>
+        <div class="sr"><span class="a">Higgsfield</span><span class="b">реклама из фото</span><span class="c">$15</span></div>
+        <div class="sr"><span class="a">SYNTX</span><span class="b">кадры и движение</span><span class="c">около $10</span></div>
+        <div class="sr"><span class="a">ElevenLabs</span><span class="b">копия голоса</span><span class="c">$6</span></div>
+        <div class="sr tot"><span class="a">На старт</span><span class="b"></span><span class="c">около $51 в месяц</span></div>
+    </div>
+    <div class="card gold strip" style="margin-top:5mm"><div class="ic"><svg><use href="#i-check"/></svg></div><p>Если Claude Pro уже есть для вайбкодинга, отдельно его не покупаете.</p></div>
+    <p class="note" style="margin-top:4mm">У автора Claude Max за $200 в месяц: его хватает на 150 роликов. Цены на 26.09.2026.</p>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">11</span></footer>
+</section>
+
+<!-- 12 · цена и рассрочка -->
+<section class="page bgC">
+  <div style="max-width:200mm">
+    <div class="kick"><i></i>Цена для участников эфира</div>
+    <h1><span class="nb">150&nbsp;000&nbsp;₸</span> сразу или <em>от&nbsp;6&nbsp;250&nbsp;₸ в месяц</em></h1>
+    <p class="lead">Рассрочка до 24 месяцев без переплаты. Предоплата <span class="nb">10&nbsp;000&nbsp;₸</span> входит в цену.</p>
+  </div>
+  <img class="obj" src="img/obj-calendar.png" style="right:20mm;top:12mm;width:56mm" alt="">
+  <div class="stage">
+    <div class="pricerow">
+      <div><div class="t">Полная цена</div><div class="old">250&nbsp;000&nbsp;₸</div></div>
+      <div class="card dark bigprice"><div class="sec">Участникам эфира</div><b>150&nbsp;000&nbsp;₸</b></div>
+    </div>
+    <div class="card calc">
+      <p><span class="nb">150&nbsp;000&nbsp;₸</span> на 24 месяца = <em class="nb">6&nbsp;250&nbsp;₸</em> в месяц</p>
+      <div class="banks"><span><img src="img/bank-kaspi.png" alt="Kaspi"></span><span><img src="img/bank-homecredit.png" alt="Home Credit"></span><span><img src="img/bank-halyk.png" alt="Halyk"></span></div>
+    </div>
+    <p class="note" style="margin-top:5mm">Рассрочка через Kaspi, Home Credit и Halyk. Для России, Узбекистана, Беларуси и Кыргызстана её подберёт менеджер.</p>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">12</span></footer>
+</section>
+
+<!-- 13 · три сомнения -->
+<section class="page bgA">
+  <div>
+    <div class="kick"><i></i>Сомнения</div>
+    <h1>Три частых сомнения <em>и что мы отвечаем</em></h1>
+  </div>
+  <div class="stage">
+    <div class="doubts">
+      <div class="card db"><h3>Я не технарь</h3><p>Агент ведёт по шагам и сам ставит всё нужное. Вы пишете словами.</p></div>
+      <div class="card db"><h3>Нет времени</h3><p>От 3 до 4 часов в неделю. Монтаж занимает время агента, не ваше.</p></div>
+      <div class="card db"><h3>А если не залетит</h3><p>Охват не гарантирует никто. Есть данные первых 3 секунд и пробные рилсы.</p></div>
+    </div>
+    <div class="card gold strip" style="margin-top:7mm"><div class="ic"><svg><use href="#i-check"/></svg></div><p>Доход не обещаем: обучение даёт навык.</p></div>
+  </div>
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">13</span></footer>
+</section>
+
+<!-- 14 · как начать -->
+<section class="page bgB">
+  <div>
+    <div class="kick"><i></i>Как начать</div>
+    <h1>Напишите <em>«МОНТАЖ»</em> менеджеру и внесите предоплату</h1>
+    <p class="lead">Предоплата <span class="nb">10&nbsp;000&nbsp;₸</span> входит в цену. Если обучение не подойдёт, предоплату вернём.</p>
+  </div>
+  <div class="stage">
+    <div class="steps3">
+      <div class="card s3"><div class="no">1</div><p>Напишите менеджеру Аяне слово «МОНТАЖ»</p></div>
+      <div class="card s3"><div class="no">2</div><p>Внесите предоплату <span class="nb">10&nbsp;000&nbsp;₸</span>, она входит в цену</p></div>
+      <div class="card s3"><div class="no">3</div><p>Вы в потоке: остаток объяснит менеджер</p></div>
+    </div>
+    <div class="btns">
+      <a class="btn g" href="https://onai.academy/workshop-montazh/ayana">Написать в WhatsApp <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg></a>
+      <a class="btn g" href="https://t.me/futleid">Написать в Telegram <svg viewBox="0 0 24 24"><use href="#i-arrow"/></svg></a>
+      <a class="btn o" href="https://pay.kaspi.kz/pay/ub82mpkc">Предоплата через Kaspi</a>
+      <a class="btn o" href="https://pay.rrllc.ru/onai.academy">Предоплата из России и других стран</a>
+    </div>
+    <p class="note contacts"><b>Аяна</b>, менеджер. Telegram <a href="https://t.me/futleid">@futleid</a>, WhatsApp <a href="https://wa.me/77085834575" class="nb">+7&nbsp;708&nbsp;583&nbsp;4575</a>.</p>
+  </div>
+  <img class="obj" src="img/obj-codeword.png" style="right:12mm;top:118mm;width:62mm" alt="">
+  <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">14</span></footer>
+</section>
+
+</main>
+</body></html>
