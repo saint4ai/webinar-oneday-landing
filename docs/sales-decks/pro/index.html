@@ -16,6 +16,9 @@
 html,body{background:var(--night);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font-family:'Manrope',system-ui,sans-serif;color:var(--cream);font-size:16pt;line-height:1.4;font-weight:500;-webkit-font-smoothing:antialiased}
 .nb{white-space:nowrap}
+.usd{display:block;font-family:'Manrope',sans-serif;font-weight:800;font-size:16pt;line-height:1.2;letter-spacing:0;color:var(--cream);opacity:.88;margin-top:1.5mm;white-space:nowrap}
+.usdi{white-space:nowrap;font-weight:700}
+h1 .usdi{font-size:28pt;font-family:'Manrope',sans-serif;letter-spacing:0;color:var(--cream)}
 
 /* страница: одна секция = один лист A4 альбомный; шапка сверху, содержимое .stage по центру оставшегося места, подвал внизу */
 .page{position:relative;width:297mm;height:210mm;overflow:hidden;padding:17mm 24mm 0;display:flex;flex-direction:column;background-color:var(--night);background-size:100% 100%;background-repeat:no-repeat;break-after:page;page-break-after:always}
@@ -241,7 +244,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
 .bonus p{font-weight:800;font-size:18pt;line-height:1.3}
 
 /* PRO: кейсы: слева большой кейс со скриншотом, справа три компактных */
-.cgrid{display:grid;grid-template-columns:106mm 1fr;gap:6mm;align-items:stretch}
+.cgrid{display:grid;grid-template-columns:76mm 1fr;gap:6mm;align-items:stretch}
 .hero{padding:3mm 3mm 5mm}
 .hero img.shot{width:100%;aspect-ratio:1.6;object-fit:cover;border-radius:3.4mm;display:block;border:.25mm solid rgba(227,192,123,.3)}
 .hero .hh{display:flex;align-items:center;justify-content:space-between;margin:4mm 3mm 0}
@@ -251,8 +254,8 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
 .hero .brand,.crow .brand{flex:none;height:10.5mm;background:var(--cream);border-radius:2.6mm;display:flex;align-items:center;padding:1.6mm 3.4mm}
 .hero .brand img{height:7.4mm;width:auto;display:block}
 .crows{display:flex;flex-direction:column;gap:3.5mm}
-.crow{flex:1;display:flex;align-items:center;gap:5mm;padding:2.6mm 5mm 2.6mm 2.6mm}
-.crow img.shot{width:26mm;height:16.25mm;flex:none;object-fit:cover;border-radius:2.4mm;display:block;border:.25mm solid rgba(227,192,123,.3)}
+.crow{flex:1;display:flex;align-items:center;gap:4mm;padding:2.6mm 5mm 2.6mm 2.6mm}
+.crow img.shot{width:20mm;height:12.5mm;flex:none;object-fit:cover;border-radius:2.4mm;display:block;border:.25mm solid rgba(227,192,123,.3)}
 .crow .tx{flex:1}
 .crow h3{font-weight:800;font-size:17pt;line-height:1.2;color:var(--gold)}
 .crow p{margin-top:.8mm;font-size:16pt;line-height:1.3;font-weight:500}
@@ -430,16 +433,16 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
     <div class="kick"><i></i>Кейсы</div>
     <h1>Четыре рабочих <em>продукта onAI</em></h1>
   </div>
-  <div class="stage" style="padding-bottom:22mm">
+  <div class="stage" style="padding-bottom:20mm">
     <div class="cgrid">
       <article class="card hero"><img class="shot" src="img/case-erickson.jpg" alt=""><div class="hh"><h3>Erickson Central Asia</h3><div class="brand"><img src="img/erickson-logo.svg" alt="Erickson"></div></div><p><b>Платформа обучения коучей</b>, запуск за 2&nbsp;месяца</p></article>
       <div class="crows">
         <article class="card crow"><img class="shot" src="img/case-academy.jpg" alt=""><div class="tx"><h3>onAI Academy</h3><p><b>AI-наставник по каждому уроку</b>, 1000+ выпускников</p></div></article>
-        <article class="card crow"><img class="shot" src="img/case-assistant.jpg" alt=""><div class="tx"><h3>AI&#8209;ассистент</h3><p><b>Комментарий становится заявкой</b>, 2&nbsp;117 человек получили материал</p></div></article>
+        <article class="card crow"><img class="shot" src="img/case-assistant.jpg" alt=""><div class="tx"><h3>AI&#8209;ассистент Instagram</h3><p><b>Вместо SendPulse и ManyChat:</b> раздаёт материалы по кодовому слову, помогает в директе, AI-РОП передаёт горячих клиентов. 2&nbsp;423 человека получили материал, 129&nbsp;разговоров разобрал AI-РОП <span class="nb">(06.09–07.10.2026)</span></p></div></article>
         <article class="card crow"><img class="shot" src="img/case-targetolog.jpg" alt=""><div class="tx"><h3>AI&#8209;Таргетолог</h3><p><b>Сам запускает рекламу и шлёт отчёты</b></p><p class="cm">Клиенты: RocketGo, NNN&nbsp;Detailing, KardanKraft</p></div></article>
       </div>
     </div>
-    <p class="note cases-note">Erickson Central Asia: представительство Erickson Coaching International, готовит коучей по стандарту ICF. Пять кабинетов, AI-куратор отвечает на русском и казахском, сейчас учатся 6&nbsp;групп (на 04.10.2026). AI-ассистент работает с 06.09.2026. Кадры двух последних кейсов на демо-данных.</p>
+    <p class="note cases-note">Erickson Central Asia: представительство Erickson Coaching International, готовит коучей по стандарту ICF. Пять кабинетов, AI-куратор на русском и казахском, учатся 6&nbsp;групп (на 04.10.2026). Кадры двух последних кейсов на демо-данных.</p>
   </div>
   <footer class="foot"><img src="img/onai-logo-night.svg" alt="onAI"><span class="num">06</span></footer>
 </section>
@@ -471,8 +474,8 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
   </div>
   <div class="stage">
     <div class="plans">
-      <div class="card plan"><div class="pname">Вайб Solo</div><div class="price">220&nbsp;000&nbsp;₸</div><div class="ptag">Идёте по программе сами</div></div>
-      <div class="card dark plan pro"><span class="badge">С кураторами</span><div class="pname">Вайбкодер Pro</div><div class="price">290&nbsp;900&nbsp;₸</div><div class="ptag">Кураторы разбирают ваши работы</div></div>
+      <div class="card plan"><div class="pname">Вайб Solo</div><div class="price">220&nbsp;000&nbsp;₸<span class="usd">≈&nbsp;$491</span></div><div class="ptag">Идёте по программе сами</div></div>
+      <div class="card dark plan pro"><span class="badge">С кураторами</span><div class="pname">Вайбкодер Pro</div><div class="price">290&nbsp;900&nbsp;₸<span class="usd">≈&nbsp;$650</span></div><div class="ptag">Кураторы разбирают ваши работы</div></div>
     </div>
     <p class="shared">В обоих тарифах: 10 модулей, материалы, промпты и AI-наставник на платформе.</p>
   </div>
@@ -490,7 +493,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
   <div class="stage">
     <div class="rows" style="max-width:176mm">
       <div class="card row"><div class="ic"><svg><use href="#i-calendar"/></svg></div><h3>Рассрочка до 24 месяцев через менеджера</h3></div>
-      <div class="card row"><div class="ic"><svg><use href="#i-split"/></svg></div><h3>Вайбкодер Pro: два платежа по <span class="nb">145&nbsp;450&nbsp;₸</span></h3></div>
+      <div class="card row"><div class="ic"><svg><use href="#i-split"/></svg></div><h3>Вайбкодер Pro: два платежа по <span class="nb">145&nbsp;450&nbsp;₸</span> <span class="usdi">(≈&nbsp;$325)</span></h3></div>
       <div class="card row"><div class="ic"><svg><use href="#i-cloud"/></svg></div><h3>Подписка Claude от <span class="nb">$20</span> в месяц оплачивается отдельно</h3></div>
     </div>
   </div>
@@ -520,7 +523,7 @@ h3{font-weight:800;font-size:18pt;line-height:1.26}
   <div>
     <div class="kick"><i></i>Как оплатить</div>
     <h1>Выберите тариф <em>и оплатите</em></h1>
-    <p class="lead">Вносили предоплату <span class="nb">10&nbsp;000&nbsp;₸</span> на эфире? Она входит в цену, оплачиваете остаток. Не вносили и предложение подходит? Оплатите сразу.</p>
+    <p class="lead">Вносили предоплату <span class="nb">10&nbsp;000&nbsp;₸</span> <span class="usdi">(≈&nbsp;$22)</span> на эфире? Она входит в цену, оплачиваете остаток. Не вносили и предложение подходит? Оплатите сразу.</p>
   </div>
   <div class="stage">
     <div class="steps3">
