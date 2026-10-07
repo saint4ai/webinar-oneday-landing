@@ -138,7 +138,7 @@ export function M_VcTariffs() {
           <PlanRow>Можно двумя платежами по {money(PRO_HALF)}</PlanRow>
         </Stagger>
       </div>
-      <Stagger i={5}><Note style={{ marginTop: "1.2cqw", maxWidth: "54cqw" }}>Рассрочка до 24 месяцев через менеджера. Подписка Claude от $20 в месяц оплачивается отдельно. В тариф входит OPUS.CLUB на 12 месяцев</Note></Stagger>
+      <Stagger i={5}><Note style={{ marginTop: "1.2cqw", maxWidth: "54cqw" }}>Рассрочка до 24 месяцев через менеджера. Подписка Claude от $20 в месяц оплачивается отдельно</Note></Stagger>
     </Statement>
   );
 }
