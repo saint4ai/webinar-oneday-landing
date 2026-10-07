@@ -2390,6 +2390,20 @@ test("admin-app.html: без длинного тире, без innerHTML, скр
   assert.match(html, /name="viewport"/);
 });
 
+test("admin-app.html: экран входа с цифровой клавиатурой, 12 кнопок data-key, поле пароля без системной клавиатуры", () => {
+  const html = readFileSync(PAGE_FILE, "utf8");
+  const keys = [...html.matchAll(/<button\b[^>]*\bdata-key="([^"]+)"[^>]*>/g)].map((m) => m[1]);
+  assert.equal(keys.length, 12);
+  assert.deepEqual([...keys].sort(), ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "back", "clear"]);
+  for (const m of html.matchAll(/<button\b[^>]*\bdata-key="[^"]+"[^>]*>/g)) assert.match(m[0], /type="button"/, "кнопка клавиатуры не должна отправлять форму");
+  assert.match(html, /data-key="back"[^>]*aria-label="Удалить цифру"/);
+  const pin = /<input\b[^>]*\bid="pin"[^>]*>/.exec(html)?.[0] || "";
+  assert.match(pin, /inputmode="none"/);
+  assert.match(pin, /maxlength="8"/);
+  assert.match(pin, /autocomplete="off"/);
+  assert.equal(/\son(click|keydown|input|submit)\s*=/.test(html), false, "инлайн-обработчики в разметке");
+});
+
 test("вход: initData, чужой user.id, пароль, лимит попыток, no-store, в логах нет пароля и данных", async () => {
   resetAdminAppState();
   const { server, base } = await startAdminApi();

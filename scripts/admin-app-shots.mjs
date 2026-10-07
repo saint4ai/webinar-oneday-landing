@@ -23,7 +23,7 @@ const OUT = join(ROOT, "docs", "reports", "admin-app-1007");
 const PORT = 4111;
 const BASE = `http://127.0.0.1:${PORT}`;
 const BOT_TOKEN = "1234567890:TEST-token-for-screenshots-only";
-const PIN = "test-pin-4821";
+const PIN = "48210937"; // пароль цифровой, поле входа принимает только цифры (до 8)
 const SECRET = "test-secret-for-screenshots-0123456789";
 const USER_ID = 789638302;
 
