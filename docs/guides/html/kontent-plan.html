@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Контент-план на месяц и схема выкладки</title>
+<link rel="stylesheet" href="common.css">
+<style>
+/* цвета рубрик: общие для карточек и календаря */
+.r1{--rc:var(--c-gold);--rt:var(--ink)}
+.r2{--rc:var(--c-brown);--rt:#fff}
+.r3{--rc:var(--c-wine);--rt:#fff}
+.r4{--rc:var(--c-sage);--rt:#fff}
+.r5{--rc:var(--c-slate);--rt:#fff}
+
+/* стр. 2: карта */
+.map6{position:relative;display:flex;gap:16px;margin-top:46px}
+.map6::before{content:"";position:absolute;left:76px;right:76px;top:27px;border-top:3px dashed var(--gold2)}
+.map6 .st{position:relative;flex:1;min-width:0;text-align:center}
+.map6 .st .no{position:relative;z-index:1;margin:0 auto}
+.map6 .st .cd{margin-top:-28px;padding:46px 12px 24px;border-radius:22px;background:var(--cream);border:1.5px solid rgba(160,83,42,.18);min-height:330px}
+.map6 .st img{height:150px;width:128px;object-fit:contain;margin:14px auto 22px}
+.map6 .st .t{font-weight:800;font-size:23px;line-height:1.25;color:var(--brown)}
+
+/* стр. 3: 14 рилсов */
+.mini{display:flex;gap:10px;align-items:flex-end;margin-top:74px}
+.mini .m{position:relative;flex:none;width:62px;height:140px;border-radius:12px;background:#E6D9C2;border:1.5px solid #D6C6AB;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
+.mini .m i{display:block;width:0;height:0;border-left:15px solid #B9A88F;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:5px}
+.mini .m b{display:block;width:34px;height:5px;border-radius:3px;background:#C9B99F}
+.mini .m.hit{background:var(--gold);border:2.5px solid var(--brown);height:160px}
+.mini .m.hit i{border-left-color:var(--night)}
+.mini .m.hit b{background:rgba(42,33,28,.45)}
+.mini .m.hit .tg{position:absolute;left:50%;top:-44px;transform:translateX(-50%);background:var(--brown);color:#fff;font-weight:800;font-size:16px;line-height:1;padding:7px 12px 8px;border-radius:9px;white-space:nowrap}
+.mini .m.hit .tg::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid var(--brown)}
+.covers5{display:flex;gap:10px}
+.covers5 .rl{position:relative;width:122px;height:196px;border-radius:13px;overflow:hidden;border:2px solid var(--gold2);background:#000}
+.covers5 .rl img{width:122px;height:196px;object-fit:cover;object-position:top}
+
+/* стр. 4: поток */
+.flow{display:flex;align-items:stretch;gap:0;margin-top:22px}
+.flow .fs{flex:1;position:relative;background:#fff;border:1.5px solid rgba(160,83,42,.22);border-radius:22px;padding:18px 20px 20px}
+.flow .fs .no{margin-bottom:12px}
+.flow .fs .tx{font-size:22px;line-height:1.36;font-weight:500}
+.flow .fs .tx b{font-weight:800;color:var(--brown)}
+.flow .fa{flex:none;width:32px;display:flex;align-items:center;justify-content:center}
+.flow .fa svg{width:24px;height:24px}
+.phone{flex:none;width:168px;height:236px;border-radius:30px;background:#2c231e;border:3px solid #4a3c33;padding:14px 12px;position:relative}
+.phone .nt{position:absolute;left:50%;top:8px;margin-left:-28px;width:56px;height:7px;border-radius:4px;background:#14100E}
+.phone .scr{margin-top:14px;background:var(--cream);border-radius:16px;height:100%;padding:14px 12px;display:flex;flex-direction:column;gap:12px}
+.phone .ln{height:8px;border-radius:4px;background:#D9C9AC}
+.phone .tg{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 9px;border-radius:12px;background:#fff;border:2px solid var(--gold2);font-size:13px;font-weight:800;color:var(--ink);line-height:1.15}
+.phone .sw{flex:none;width:34px;height:20px;border-radius:12px;background:var(--gold);position:relative}
+.phone .sw::after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+
+/* стр. 5: рубрики */
+.cats{display:flex;gap:14px;margin-top:22px}
+.cats .ct{flex:1;min-width:0;background:#fff;border:1.5px solid rgba(160,83,42,.2);border-radius:22px;padding:0 14px 16px;overflow:hidden}
+.cats .ct .bar{height:10px;margin:0 -14px 14px;background:var(--rc)}
+.cats .ct .nm{display:flex;gap:9px;align-items:flex-start;min-height:98px}
+.cats .ct .nn{flex:none;width:32px;height:32px;border-radius:50%;background:var(--rc);color:var(--rt);font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.cats .ct .nm b{font-size:20px;line-height:1.22;color:var(--ink);font-weight:800}
+.cats .ct .why{margin-top:6px;min-height:84px;font-size:19px;line-height:1.3;font-weight:700;color:var(--brown)}
+.cats .ct .sep{margin:12px 0 10px}
+.cats .ct .tg{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cats .ct .ex{margin:4px 0 14px;font-size:20px;line-height:1.3;font-weight:600}
+.cats .ct .ex:last-child{margin-bottom:0}
+.sixper{display:inline-flex;align-items:center;gap:12px;margin-top:22px;padding:12px 24px;border-radius:999px;background:var(--gold);font-weight:800;font-size:22px;color:var(--night)}
+
+/* стр. 6: календарь, 6 рядов по 5 дней, рубрики по кругу */
+.calw{display:flex;gap:34px;margin-top:20px;align-items:flex-start}
+.cal{flex:none;width:540px}
+.cal .g{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cal .c{height:64px;border-radius:13px;padding:8px 11px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:18px;line-height:1;background:var(--rc);color:var(--rt)}
+.leg{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;width:540px}
+.leg span{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:var(--ink)}
+.leg span i{display:block;width:16px;height:16px;border-radius:5px;background:var(--rc)}
+.rh{flex:1;min-width:0}
+.cyc{display:flex;flex-wrap:wrap;align-items:center;gap:10px 8px}
+.cyc .pl{display:inline-block;padding:7px 16px 8px;border-radius:999px;background:var(--rc);color:var(--rt);font-weight:800;font-size:20px;line-height:1.1}
+.cyc .ar{flex:none;width:22px;height:22px}
+.cyc .gp{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.cyc-cap{margin-top:16px;font-size:21px;line-height:1.4;font-weight:600}
+.over{margin-top:16px;padding:14px 18px;border:2px dashed var(--gold2);border-radius:14px;font-size:18px;line-height:1.38;font-weight:700;color:var(--brown);background:#fff}
+.stamp{display:inline-block;padding:6px 14px 7px;border:2px dashed var(--gold2);border-radius:10px;font-size:16px;font-weight:800;color:var(--brown);background:#fff}
+.how{padding:20px 26px 22px;margin-top:16px}
+.how .h{font-family:'Unbounded',sans-serif;font-weight:700;font-size:19px;color:var(--gold)}
+.how .p{margin-top:8px;font-size:20px;line-height:1.38;color:var(--cream)}
+
+/* стр. 7: воронка */
+.fun{padding:28px 28px 26px;width:626px;flex:none}
+.fun .st{margin:0 auto 8px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 18px;font-weight:800;font-size:21px;line-height:1.2}
+.fun .st:last-child{margin-bottom:0}
+.nums{flex:1;padding:24px 26px;border-radius:26px;background:#fff;border:1.5px solid rgba(160,83,42,.22);display:flex;flex-direction:column}
+.nums .big{font-family:'Unbounded',sans-serif;font-weight:700;font-size:54px;line-height:1;color:var(--brown)}
+.nums .lb{font-size:21px;font-weight:700;margin-top:6px}
+.nums .dn{margin:14px 0}
+.rl3{display:flex;gap:16px;margin-top:18px}
+.rl3 .rr{flex:1;display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border-radius:20px;background:var(--cream);border:1.5px solid rgba(160,83,42,.2);font-size:21px;line-height:1.35;font-weight:700}
+
+/* стр. 8: плакат */
+.big6{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:30px}
+.big6 .bc{position:relative;padding:22px 24px 26px;border-radius:24px;background:var(--night2);border:1.5px solid rgba(227,192,123,.3);min-height:230px}
+.big6 .bc .n{font-family:'Unbounded',sans-serif;font-weight:700;font-size:64px;line-height:1;color:var(--gold)}
+.big6 .bc .t{margin-top:16px;font-size:27px;line-height:1.28;font-weight:700;color:var(--cream)}
+</style></head>
+<body>
+
+<!-- 1. Обложка -->
+<section class="page cover">
+  <img class="glow bleed" src="img/glow-gold.png" style="left:-260px;top:-240px;width:760px;opacity:.55" alt="">
+  <img class="glow bleed" src="img/glow-brown.png" style="left:-200px;bottom:-380px;width:760px;opacity:.7" alt="">
+  <img class="logo" src="img/logo-night.svg" alt="onAI">
+  <div class="txt">
+    <div class="kicker">Гайд 2 из 3 · Бонус воркшопа <span style="white-space:nowrap">«Вайб-продакшен»</span></div>
+    <h1 style="font-size:44px">Контент-план на месяц и схема выкладки</h1>
+    <p class="sub">30 рилсов за месяц: что снимать, когда выкладывать и что показывать подписчикам</p>
+  </div>
+  <div class="sig">Александр, основатель onAI Academy · <a href="https://www.instagram.com/saint4ai/">@saint4ai</a></div>
+  <div class="art bleed"><img src="img/cover-plan.jpg" style="left:-215px" alt=""></div>
+</section>
+
+<!-- 2. Что будет через месяц -->
+<section class="page">
+  <div class="kicker">Что будет через месяц</div>
+  <h1 style="font-size:34px;line-height:1.2;margin-top:16px;max-width:990px">30 опубликованных рилсов, понятные рубрики и правило, какие ролики показывать подписчикам.</h1>
+  <div class="map6">
+    <div class="st"><span class="no">1</span><div class="cd"><img src="img/lg-i-camera.png" alt=""><div class="t">Почему 30</div></div></div>
+    <div class="st"><span class="no">2</span><div class="cd"><img src="img/lg-i-phonearrow.png" alt=""><div class="t">Схема выкладки</div></div></div>
+    <div class="st"><span class="no">3</span><div class="cd"><img src="img/lg-i-cards.png" alt=""><div class="t">Рубрики</div></div></div>
+    <div class="st"><span class="no">4</span><div class="cd"><img src="img/lg-i-calendar.png" alt=""><div class="t">Календарь</div></div></div>
+    <div class="st"><span class="no">5</span><div class="cd"><img src="img/lg-i-chatkey.png" alt=""><div class="t">Кодовое слово</div></div></div>
+    <div class="st"><span class="no">6</span><div class="cd"><img src="img/lg-i-box.png" alt=""><div class="t">Шпаргалка</div></div></div>
+  </div>
+</section>
+
+<!-- 3. Почему 30 -->
+<section class="page cream">
+  <div class="kicker">Почему 30 роликов, а не четыре</div>
+  <h1>Из 14 рилсов залетел 1</h1>
+  <div class="mini">
+    <div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div>
+    <div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m hit"><span class="tg">залетел</span><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div>
+    <div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div><div class="m"><i></i><b></b></div>
+  </div>
+  <div class="row" style="gap:26px;margin-top:34px;align-items:flex-start">
+    <div style="flex:none;width:330px">
+      <p class="lead" style="font-size:23px;line-height:1.5">Охват никто не гарантирует. Количество по системе повышает шансы: чем больше пробных роликов, тем чаще среди них появляется тот, что полетит.</p>
+    </div>
+    <div class="covers5">
+      <div class="rl"><img src="../../../public/montage/reels/app-1.jpg" alt=""><span class="vw">__EYE__135 тыс.</span></div>
+      <div class="rl"><img src="../../../public/montage/reels/app-2.jpg" alt=""><span class="vw">__EYE__118 тыс.</span></div>
+      <div class="rl"><img src="../../../public/montage/reels/app-3.jpg" alt=""><span class="vw">__EYE__63,8 тыс.</span></div>
+      <div class="rl"><img src="../../../public/montage/reels/app-4.jpg" alt=""><span class="vw">__EYE__62,2 тыс.</span></div>
+      <div class="rl"><img src="../../../public/montage/reels/app-5.jpg" alt=""><span class="vw">__EYE__23,6 тыс.</span></div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:18px">Мои рилсы, счётчики из приложения Instagram на 5 октября 2026.</div>
+  <div class="note" style="margin-top:6px">14 рилсов на 19 сентября 2026.</div>
+</section>
+
+<!-- 4. Схема выкладки -->
+<section class="page">
+  <div class="kicker">Гайд 2 из 3</div>
+  <h1 style="font-size:33px">Схема выкладки: каждый день один ролик</h1>
+  <div class="flow">
+    <div class="fs"><span class="no">1</span><div class="tx"><b>Каждый день</b> 1 ролик.</div></div>
+    <div class="fa"><svg viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="fs"><span class="no">2</span><div class="tx"><b>Сначала пробным рилсом:</b> его видят только неподписчики.</div></div>
+    <div class="fa"><svg viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="fs"><span class="no">3</span><div class="tx"><b>Через 72 часа:</b> сильный показываете подписчикам.</div></div>
+    <div class="fa"><svg viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <div class="fs"><span class="no">4</span><div class="tx"><b>Залетевший</b> перезаливаете пробным ещё раз.</div></div>
+  </div>
+  <div class="row" style="gap:24px;margin-top:22px;align-items:stretch">
+    <div class="nb nb2" style="flex:none;width:664px;padding:22px 26px 22px 30px;display:flex;gap:26px;align-items:center">
+      <img class="glow" src="img/glow-gold.png" style="right:-220px;top:-260px;opacity:.4" alt="">
+      <div class="grow"><div class="u" style="font-size:20px;color:var(--gold)">Где это в Instagram</div><p style="margin-top:12px;font-size:21px;line-height:1.42;color:var(--cream)">При публикации включите «Пробный рилс». Через 72 часа откройте статистику ролика и решите, показывать ли его подписчикам.</p></div>
+      <div class="phone"><span class="nt"></span><div class="scr"><div class="ln" style="width:60%"></div><div class="tg"><span>Пробный рилс</span><span class="sw"></span></div><div class="ln" style="width:90%"></div><div class="ln" style="width:70%"></div></div></div>
+    </div>
+    <div class="grow col" style="justify-content:center"><div class="rule" style="flex-direction:column;align-items:flex-start;gap:14px;padding:22px 24px"><span class="mk"></span><span>Подписчики видят только лучшее. Неподписчики проверяют всё.</span></div></div>
+  </div>
+</section>
+
+<!-- 5. Рубрики -->
+<section class="page cream">
+  <div class="kicker">Рубрики</div>
+  <h1>Из чего собрать 30 роликов: 5 рубрик</h1>
+  <div class="cats">
+    <div class="ct r1"><div class="bar"></div><div class="nm"><span class="nn">1</span><b>Инструмент или приём</b></div><div class="why">Польза за минуту</div><div class="sep"></div><div class="tg">Салон красоты</div><div class="ex">Как продлить стойкость укладки</div><div class="tg">Онлайн-школа</div><div class="ex">Как запомнить 20 слов за вечер</div></div>
+    <div class="ct r2"><div class="bar"></div><div class="nm"><span class="nn">2</span><b>Кейс: было и стало</b></div><div class="why">Доверие через результат клиента</div><div class="sep"></div><div class="tg">Салон красоты</div><div class="ex">Сложное окрашивание: до и после</div><div class="tg">Онлайн-школа</div><div class="ex">Ученица заговорила за месяц</div></div>
+    <div class="ct r3"><div class="bar"></div><div class="nm"><span class="nn">3</span><b>Ошибка в вашей нише</b></div><div class="why">Экспертность</div><div class="sep"></div><div class="tg">Салон красоты</div><div class="ex">Ошибка, которая портит волосы после покраски</div><div class="tg">Онлайн-школа</div><div class="ex">Почему зубрёжка не работает</div></div>
+    <div class="ct r4"><div class="bar"></div><div class="nm"><span class="nn">4</span><b>Ответ на вопрос из директа</b></div><div class="why">Снимает возражения</div><div class="sep"></div><div class="tg">Салон красоты</div><div class="ex">Сколько держится наращивание</div><div class="tg">Онлайн-школа</div><div class="ex">Можно ли учиться без репетитора</div></div>
+    <div class="ct r5"><div class="bar"></div><div class="nm"><span class="nn">5</span><b>Закулисье и личная история</b></div><div class="why">Люди покупают у людей</div><div class="sep"></div><div class="tg">Салон красоты</div><div class="ex">Утро мастера до первого клиента</div><div class="tg">Онлайн-школа</div><div class="ex">Почему я открыл школу</div></div>
+  </div>
+  <div class="sixper"><svg viewBox="0 0 24 24" width="24" height="24" fill="#14100E"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>6 роликов на рубрику = 30 в месяц.</div>
+</section>
+
+<!-- 6. Календарь -->
+<section class="page">
+  <div class="row jb ctr"><div><div class="kicker">Гайд 2 из 3</div><h1>Календарь на 30 дней</h1></div><span class="stamp">Шаблон. Подставьте темы своей ниши.</span></div>
+  <div class="calw">
+    <div>
+      <div class="cal"><div class="g" id="grid"></div></div>
+      <div class="leg">
+        <span class="r1"><i></i>Инструмент</span><span class="r2"><i></i>Кейс</span><span class="r3"><i></i>Ошибка</span><span class="r4"><i></i>Вопрос из директа</span><span class="r5"><i></i>Закулисье</span>
+      </div>
+    </div>
+    <div class="rh">
+      <div class="cyc">
+        <span class="gp"><span class="pl r1">инструмент</span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="gp"><span class="pl r2">кейс</span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="gp"><span class="pl r3">ошибка</span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="gp"><span class="pl r4">вопрос из директа</span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><span class="gp"><span class="pl r5">закулисье</span><svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><svg class="ar" style="width:28px;height:28px" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4"/></svg>
+      </div>
+      <p class="cyc-cap">Один круг 5 дней, 6 кругов = 30 роликов, по 6 на рубрику.</p>
+      <div class="over">Залетевший ролик перезаливайте пробным сверх плана, в 30 он не входит.</div>
+      <div class="nb nb2 how"><img class="glow" src="img/glow-gold.png" style="right:-240px;top:-300px;opacity:.4" alt=""><div class="h">Как успевать</div><p class="p">Записывайте голос на неделю вперёд за один подход: 7 коротких записей. Монтаж делает агент, вы утверждаете черновики.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Воронка -->
+<section class="page cream">
+  <div class="kicker">Кодовое слово</div>
+  <h1>Каждый рилс ведёт к заявке: <span style="white-space:nowrap">кодовое слово</span></h1>
+  <div class="row" style="gap:24px;margin-top:22px;align-items:stretch">
+    <div class="nb fun">
+      <img class="glow" src="img/glow-gold.png" style="right:-260px;top:-300px;opacity:.45" alt="">
+      <div class="st" style="width:570px;background:#E3C07B;color:var(--night)">Просмотры</div>
+      <div class="st" style="width:506px;background:#D6B06F;color:var(--night)">Кодовое слово в комментарии</div>
+      <div class="st" style="width:442px;background:#C9A05A;color:var(--night)">Бот присылает материал в директ</div>
+      <div class="st" style="width:378px;background:#B8793F;color:#fff">Диалог</div>
+      <div class="st" style="width:314px;background:#A0532A;color:#fff">Заявка</div>
+    </div>
+    <div class="nums">
+      <div class="big">1 773</div><div class="lb">просмотра</div>
+      <svg class="dn" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+      <div class="big">68</div><div class="lb">комментариев с кодовым словом</div>
+      <div class="note" style="margin-top:auto">Статистика Instagram, сентябрь 2026</div>
+    </div>
+  </div>
+  <div class="rl3">
+    <div class="rr"><span class="no sm">1</span><span>Одно кодовое слово на ролик</span></div>
+    <div class="rr"><span class="no sm">2</span><span>Материал и ответ бота готовы до публикации</span></div>
+    <div class="rr"><span class="no sm">3</span><span>Слово звучит голосом и стоит на экране в конце</span></div>
+  </div>
+</section>
+
+<!-- 8. Шпаргалка -->
+<section class="page night">
+  <img class="glow bleed" src="img/glow-gold.png" style="right:-200px;top:-260px;width:760px;opacity:.5" alt="">
+  <div class="kicker">6 правил</div>
+  <h1 style="font-size:36px">Шпаргалка месяца</h1>
+  <div class="big6">
+    <div class="bc"><div class="n">1</div><div class="t">Каждый день один ролик.</div></div>
+    <div class="bc"><div class="n">2</div><div class="t">Новый ролик сначала пробным.</div></div>
+    <div class="bc"><div class="n">3</div><div class="t">Решение через 72 часа.</div></div>
+    <div class="bc"><div class="n">4</div><div class="t">Залетевший перезалить пробным ещё раз.</div></div>
+    <div class="bc"><div class="n">5</div><div class="t">Пять рубрик по шесть роликов.</div></div>
+    <div class="bc"><div class="n">6</div><div class="t">В каждом ролике кодовое слово.</div></div>
+  </div>
+</section>
+
+<script src="common.js"></script>
+<script>
+  // календарь: 30 дней, 6 рядов по 5, рубрики идут по кругу (колонка = рубрика)
+  const cls = ["r1","r2","r3","r4","r5"];
+  const g = document.getElementById("grid");
+  for (let d = 1; d <= 30; d++) g.insertAdjacentHTML("beforeend", `<div class="c ${cls[(d - 1) % 5]}">${d}</div>`);
+  // плашка просмотров: подставляем значок глаза
+  const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="#E3C07B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>';
+  document.querySelectorAll(".vw").forEach((v) => { v.innerHTML = v.innerHTML.replace("__EYE__", EYE); });
+</script>
+</body></html>

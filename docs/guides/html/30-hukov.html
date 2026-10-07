@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>30 хуков под вашу нишу</title>
+<link rel="stylesheet" href="common.css">
+<style>
+/* стр. 2: как пользоваться */
+.sch{display:flex;align-items:stretch;gap:12px;margin-top:22px}
+.sch .bx{flex:1;border-radius:22px;padding:22px 24px 24px;min-height:136px;background:#fff;border:2px solid var(--brown);display:flex;flex-direction:column;justify-content:center}
+.sch .bx .k{font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--brown)}
+.sch .bx .v{margin-top:10px;font-size:26px;line-height:1.38;font-weight:700}
+.sch .bx.g{background:var(--gold);border-color:var(--gold)}
+.sch .bx.g .k{color:var(--night)}
+.sch .bx.n{background:var(--night);border-color:var(--night);color:var(--cream)}
+.sch .bx.n .k{color:var(--gold)}
+.sch .op{flex:none;width:30px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:700;font-size:34px;color:var(--brown)}
+.lg{margin-top:22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lg .lb{flex:0 0 100%;font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.lg .chip{font-size:22px}
+.ex{margin-top:22px;padding:22px 28px;border-radius:22px;background:var(--cream);border:1.5px solid rgba(160,83,42,.2)}
+.ex .lb{font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.ex .fl{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;font-size:24px;font-weight:600}
+.ex .ar{flex:none;width:30px;height:30px}
+.ex .nich{flex:none;padding:3px 14px 4px;border-radius:999px;background:var(--night);color:var(--gold);font-weight:800;font-size:19px}
+.ex .res{font-weight:800;font-size:26px;line-height:1.5}
+
+/* стр. 3-8: формулы, одна группа (5 штук) на страницу, крупно */
+.fp{margin-top:14px;display:flex;flex-direction:column}
+.fr{display:flex;gap:20px;align-items:flex-start;padding:10px 0 11px;border-bottom:1.5px solid var(--line)}
+.fr:last-child{border-bottom:0}
+.fr .no{flex:none;width:58px;height:58px;font-size:22px;margin-top:2px}
+.fr .bd{flex:1;min-width:0}
+.fr .fm{font-size:29px;line-height:1.4;font-weight:600;color:var(--ink)}
+.fr .fm .chip{font-size:27px;padding:1px 11px 3px;border-radius:11px}
+.fr .eg{margin-top:4px;font-size:34px;line-height:1.22;font-weight:800;color:var(--brown)}
+.fr .eg svg{display:inline-block;width:28px;height:28px;vertical-align:-3px;margin-right:9px}
+.fr .nc{display:inline-block;margin-left:12px;font-size:19px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+
+/* стр. 6: проверка хука */
+.ab{display:flex;gap:30px;margin-top:20px;align-items:stretch}
+.phs{flex:none;width:430px;display:flex;gap:26px;justify-content:center;align-items:flex-start;padding-top:6px}
+.ph{width:190px}
+.ph .tp{font-family:'Unbounded',sans-serif;font-weight:700;font-size:20px;color:var(--brown);text-align:center;margin-bottom:10px}
+.ph .bd{height:300px;border-radius:30px;background:#2c231e;border:3px solid #4a3c33;padding:14px 12px;position:relative}
+.ph .scr{height:100%;border-radius:18px;background:var(--night);padding:16px 12px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.ph .hk{margin-top:6px;background:var(--gold);color:var(--night);border-radius:12px;padding:12px 10px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:21px;line-height:1.15;text-align:center;width:100%}
+.ph .ln{height:9px;border-radius:5px;background:#4a3c33;width:100%}
+.ph .tb{margin-top:auto;font-size:13px;font-weight:800;color:var(--gold);border:1.5px solid var(--gold2);border-radius:999px;padding:4px 10px 5px;white-space:nowrap}
+.stk{flex:1;display:flex;flex-direction:column;gap:12px}
+.stk .sp{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:20px;background:#fff;border:1.5px solid rgba(160,83,42,.22);font-size:22px;line-height:1.36;font-weight:600;min-height:92px}
+.stk .sp b{font-weight:800;color:var(--brown)}
+.stk .dn{align-self:center;width:24px;height:24px;margin:-4px 0}
+.cmpb{padding:24px 28px}
+.cmpb .it{display:flex;align-items:center;gap:18px;margin-top:14px}
+.cmpb .it .l{flex:none;width:110px;font-weight:800;font-size:21px;color:var(--cream)}
+.cmpb .it .br{height:42px;border-radius:11px;display:flex;align-items:center;justify-content:flex-end;padding:0 14px;font-weight:800;font-size:17px}
+.cmpb .ttl{font-family:'Unbounded',sans-serif;font-weight:700;font-size:18px;color:var(--gold)}
+.cmpb .wn{display:flex;align-items:center;gap:6px}
+
+/* стр. 7: плакат */
+.five{margin-top:30px;display:flex;flex-direction:column}
+.five .fv{display:flex;align-items:center;gap:28px;padding:16px 0;border-bottom:1px solid rgba(227,192,123,.26)}
+.five .fv:last-child{border-bottom:0}
+.five .fv .n{flex:none;width:70px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:56px;line-height:1;color:var(--gold)}
+.five .fv .t{font-size:32px;line-height:1.28;font-weight:700;color:var(--cream)}
+.endb{margin-top:24px;padding:20px 28px;border-radius:20px;border:2px solid var(--gold2);background:rgba(227,192,123,.1);font-size:24px;line-height:1.4;font-weight:700;color:var(--cream)}
+</style></head>
+<body>
+
+<!-- 1. Обложка -->
+<section class="page cover">
+  <img class="glow bleed" src="img/glow-gold.png" style="left:-260px;top:-240px;width:760px;opacity:.55" alt="">
+  <img class="glow bleed" src="img/glow-brown.png" style="left:-200px;bottom:-380px;width:760px;opacity:.7" alt="">
+  <img class="logo" src="img/logo-night.svg" alt="onAI">
+  <div class="txt">
+    <div class="kicker">Гайд 3 из 3 · Бонус воркшопа <span style="white-space:nowrap">«Вайб-продакшен»</span></div>
+    <h1>30 хуков под вашу нишу</h1>
+    <p class="sub">Формулы первой фразы с примерами: подставьте свою нишу и проверьте по статистике</p>
+  </div>
+  <div class="sig">Александр, основатель onAI Academy · <a href="https://www.instagram.com/saint4ai/">@saint4ai</a></div>
+  <div class="art bleed"><img src="img/cover-hooks.jpg" style="left:-130px" alt=""></div>
+</section>
+
+<!-- 2. Как пользоваться -->
+<section class="page">
+  <div class="kicker">Гайд 3 из 3</div>
+  <h1>Как пользоваться</h1>
+  <div class="sch">
+    <div class="bx"><div class="k">Формула</div><div class="v"><span class="chip ch-gold">Результат</span> без <span class="chip ch-wine">боль</span></div></div>
+    <div class="op">+</div>
+    <div class="bx"><div class="v" style="margin-top:0;font-size:26px">Ваша ниша</div></div>
+    <div class="op">=</div>
+    <div class="bx n"><div class="v" style="margin-top:0">Фраза на экране (4–6 слов) и голосом</div></div>
+  </div>
+  <div class="lg"><span class="lb">Легенда подстановок</span>
+    <span class="chip ch-gold">результат</span><span class="chip ch-brown">срок</span><span class="chip ch-wine">боль</span><span class="chip ch-sage">клиент</span><span class="chip ch-ink">число</span><span class="chip ch-line">кого</span><span class="chip ch-line">что</span><span class="chip ch-line">действие</span>
+  </div>
+  <div class="ex">
+    <div class="lb">Пример разбора</div>
+    <div class="fl">
+      <span>формула <span class="chip ch-gold">Результат</span> без <span class="chip ch-wine">боль</span></span>
+      <svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <span class="nich">салон красоты</span>
+      <svg class="ar" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <span class="res"><span class="chip ch-gold" style="font-weight:800">Запись на месяц</span> без <span class="chip ch-wine" style="font-weight:800">администратора</span></span>
+    </div>
+  </div>
+  <div class="rule" style="margin-top:20px;font-size:24px"><span class="mk"></span><span>Хук обещает то, что зритель хочет получить. Не «привет», не «сегодня расскажу».</span></div>
+</section>
+
+<!-- 3-8. Формулы: одна группа на страницу -->
+<section class="page cream"><div class="row jb" style="align-items:flex-end"><div><div class="kicker" id="k0"></div><h1 id="h0"></h1></div><div class="note" style="width:400px;font-size:16px;padding-bottom:6px">Примеры показывают, как подставить нишу. Цифры в примерах условные: ставьте свои.</div></div><div class="fp" data-g="0"></div></section>
+<section class="page cream"><div class="row jb" style="align-items:flex-end"><div><div class="kicker" id="k1"></div><h1 id="h1"></h1></div></div><div class="fp" data-g="1"></div></section>
+<section class="page cream"><div class="row jb" style="align-items:flex-end"><div><div class="kicker" id="k2"></div><h1 id="h2"></h1></div></div><div class="fp" data-g="2"></div></section>
+<section class="page cream"><div class="row jb" style="align-items:flex-end"><div><div class="kicker" id="k3"></div><h1 id="h3"></h1></div></div><div class="fp" data-g="3"></div></section>
+<section class="page cream"><div class="row jb" style="align-items:flex-end"><div><div class="kicker" id="k4"></div><h1 id="h4"></h1></div></div><div class="fp" data-g="4"></div></section>
+<section class="page cream"><div class="row jb" style="align-items:flex-end"><div><div class="kicker" id="k5"></div><h1 id="h5"></h1></div></div><div class="fp" data-g="5"></div></section>
+
+<!-- 6. Как проверить хук -->
+<section class="page">
+  <div class="kicker">Проверка</div>
+  <h1>Как проверить хук</h1>
+  <div class="ab">
+    <div class="phs">
+      <div class="ph"><div class="tp">Хук А</div><div class="bd"><div class="scr"><div class="hk">Хук А</div><div class="ln"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:90%"></div><span class="tb">Пробный рилс</span></div></div></div>
+      <div class="ph"><div class="tp">Хук Б</div><div class="bd"><div class="scr"><div class="hk">Хук Б</div><div class="ln"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:90%"></div><span class="tb">Пробный рилс</span></div></div></div>
+    </div>
+    <div class="stk">
+      <div class="sp"><span class="no">1</span><span><b>Хук А и Хук Б</b> на одном и том же ролике, оба пробными рилсами.</span></div>
+      <svg class="dn" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+      <div class="sp"><span class="no">2</span><span><b>Через 72 часа</b> сравнить долю тех, кто пролистал сразу.</span></div>
+      <svg class="dn" viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+      <div class="sp"><span class="no">3</span><span><b>Оставить победителя.</b></span></div>
+    </div>
+  </div>
+  <div class="row" style="gap:24px;margin-top:22px;align-items:stretch">
+    <div class="nb nb2 cmpb" style="flex:none;width:610px">
+      <img class="glow" src="img/glow-gold.png" style="right:-240px;top:-300px;opacity:.4" alt="">
+      <div class="ttl">Доля тех, кто пролистал сразу</div>
+      <div class="it"><span class="l">Хук А</span><div class="br" style="width:360px;background:#6E5F53;color:var(--cream)"></div></div>
+      <div class="it"><span class="l">Хук Б</span><div class="br" style="width:200px;background:var(--gold);color:var(--night)"><span class="wn"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#14100E" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>победитель</span></div></div>
+    </div>
+    <div class="grow col" style="justify-content:center"><div class="rule" style="flex-direction:column;align-items:flex-start;gap:12px;padding:20px 24px"><span class="mk"></span><span>Побеждает хук, который реже пролистывают. Не тот, что больше нравится вам.</span></div></div>
+  </div>
+</section>
+
+<!-- 7. Шпаргалка -->
+<section class="page night">
+  <img class="glow bleed" src="img/glow-gold.png" style="right:-200px;top:-260px;width:760px;opacity:.5" alt="">
+  <div class="kicker">Шпаргалка</div>
+  <h1 style="font-size:36px">Шпаргалка: 5 правил хука</h1>
+  <div class="five">
+    <div class="fv"><span class="n">1</span><span class="t">4–6 слов на экране, крупно.</span></div>
+    <div class="fv"><span class="n">2</span><span class="t">Обещает результат, который хочет зритель.</span></div>
+    <div class="fv"><span class="n">3</span><span class="t">Без «привет» и «сегодня расскажу».</span></div>
+    <div class="fv"><span class="n">4</span><span class="t">Конкретно: ниша, число, срок.</span></div>
+    <div class="fv"><span class="n">5</span><span class="t">Следующая фраза сразу выполняет обещание.</span></div>
+  </div>
+  <div class="endb">Соберите 30 хуков на месяц вперёд и раздайте их рубрикам из второго гайда.</div>
+</section>
+
+<script src="common.js"></script>
+<script>
+  // 30 формул: [формула, пример, ниша]. Группы по 5.
+  const GROUPS = ["Результат и срок", "Ошибка и запрет", "Контраст: было и стало", "Цифра и факт", "Вопрос и боль", "История и закулисье"];
+  const F = [
+    ["[Результат] без [боль]", "Запись на месяц без администратора", "салон красоты"],
+    ["[Результат] за [срок]", "Сайт для кафе за один вечер", "кафе"],
+    ["[Число] [заявок] из одного ролика", "12 записей из одного рилса", "фитнес"],
+    ["Сделайте это до [событие]", "Сделайте это до первого урока", "онлайн-школа"],
+    ["[Результат], пока вы спите", "Заказы, пока вы спите", "доставка"],
+    ["Не [действие], если хотите [результат]", "Не снижайте цену, если хотите клиентов", "салон"],
+    ["Главная ошибка [кого] в [чём]", "Главная ошибка риелторов в объявлениях", "недвижимость"],
+    ["Хватит [действие]", "Хватит отвечать в директ вручную", "любая"],
+    ["Почему ваши [что] не [результат]", "Почему ваши сторис не продают", "эксперт"],
+    ["[Привычка] убивает [результат]", "Долгий ответ убивает заявку", "стоматология"],
+    ["Было [плохо], стало [хорошо]", "Было пусто, стало на месяц вперёд", "салон"],
+    ["[Старый способ] против [новый способ]", "Таргетолог против ИИ-агента", "маркетинг"],
+    ["Раньше [срок], теперь [срок]", "Раньше неделя на сайт, теперь вечер", "любая"],
+    ["Одна [мелочь] вернула [результат]", "Одна кнопка в профиле вернула клиентов", "кафе"],
+    ["Не [привычное], а [неожиданное]", "Не реклама, а отзывы приводят клиентов", "стоматология"],
+    ["[Число] [чего] за месяц без [кого]", "30 рилсов за месяц без монтажёра", "эксперт"],
+    ["[Число] вопросов, которые задаёт каждый [клиент]", "5 вопросов, которые задаёт каждый пациент", "стоматология"],
+    ["[Что] дешевле, чем [привычное]", "Свой бот дешевле одного менеджера", "онлайн-школа"],
+    ["Я проверил [число] [чего]", "Я проверил 14 своих рилсов", "эксперт"],
+    ["[Число] секунды решают [что]", "3 секунды решают, досмотрят ли вас", "любая"],
+    ["Вам тоже [боль]?", "Вам тоже пишут и пропадают?", "любая"],
+    ["Что делать, если [боль]", "Что делать, если клиент ушёл думать", "продажи"],
+    ["Почему [клиенты] уходят после [чего]", "Почему ученики бросают после первого урока", "онлайн-школа"],
+    ["Сколько на самом деле стоит [что]", "Сколько на самом деле стоит заявка", "маркетинг"],
+    ["Как [результат], если [ограничение]", "Как снимать рилсы, если не хочешь в кадр", "эксперт"],
+    ["Как мы [решили проблему]", "Как мы перестали терять заявки ночью", "онлайн-школа"],
+    ["Показываю [процесс] изнутри", "Показываю, как собираем букет за 10 минут", "цветы"],
+    ["[Клиент] пришёл с [проблемой]. Вот что сделали", "Клиентка пришла с жалобой. Вот что сделали", "салон"],
+    ["Один день [кого]", "Один день владельца кофейни", "кафе"],
+    ["Я ошибся с [чем]. Вот вывод", "Я ошибся с ценой. Вот вывод", "любая"],
+  ];
+  // цвет плашки по смыслу подстановки; остальные подстановки: пунктирная рамка
+  const COLOR = { "результат": "ch-gold", "срок": "ch-brown", "боль": "ch-wine", "ошибка": "ch-slate", "клиент": "ch-sage", "клиенты": "ch-sage", "число": "ch-ink" };
+  const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const chips = (t) => t.split(/(\[[^\]]+\])/).map((p) => {
+    const m = p.match(/^\[([^\]]+)\]$/);
+    return m ? `<span class="chip ${COLOR[m[1].toLowerCase()] || "ch-line"}">${esc(m[1])}</span>` : esc(p);
+  }).join("");
+  const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="#A0532A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  document.querySelectorAll(".fp").forEach((box) => {
+    const g = +box.dataset.g;
+    document.getElementById("k" + g).textContent = `Формулы ${g * 5 + 1}–${g * 5 + 5}`;
+    document.getElementById("h" + g).textContent = GROUPS[g];
+    let html = "";
+    for (let k = 0; k < 5; k++) {
+      const i = g * 5 + k, [f, e, n] = F[i];
+      html += `<div class="fr"><span class="no">${i + 1}</span><div class="bd"><div class="fm">${chips(f)}</div><div class="eg">${ARROW}${esc(e)}<span class="nc">${esc(n)}</span></div></div></div>`;
+    }
+    box.innerHTML = html;
+  });
+</script>
+</body></html>

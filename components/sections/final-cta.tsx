@@ -10,7 +10,6 @@ import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
 import { pushWorkshopLead } from "@/lib/gtm";
-import { buildStaticEasybotUrl } from "@/lib/easybot/redirect";
 import { getNextWorkshop } from "@/lib/workshop-date";
 
 /**
@@ -57,9 +56,10 @@ const BONUSES: BonusCard[] = [
   },
 ];
 
-// Форма POST /api/lead → лид в amoCRM + Meta CAPI, в ответе redirect.
-// Redirect воронки переключается через ENV FUNNEL_REDIRECT: easybot
-// (персональная ссылка EasyBot) либо WhatsApp-сообщество (по умолчанию).
+// Форма POST /api/lead → лид в amoCRM + Meta CAPI.
+// Куда вести после заявки: если сервер вернул redirect (form-api, ENV FUNNEL_REDIRECT) — туда;
+// иначе на /thank-you, где кнопка в WhatsApp-сообщество. EasyBot больше не запасной вариант:
+// после его отключения Next-приёмник заявок redirect не отдаёт, и все уходили в EasyBot вместо группы (06.10.2026).
 
 export const FinalCTA = () => {
   const [name, setName] = useState("");
@@ -106,9 +106,9 @@ export const FinalCTA = () => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Лид принят. Редирект в EasyBot (персональная ссылка с кодом → бот активирует скрипты).
+      // Лид принят. Если сервер отдал redirect — идём туда, иначе на /thank-you: там кнопка и авто-переход в WhatsApp-сообщество.
       const data = (await res.json().catch(() => ({}))) as { redirect?: string };
-      const dest = data.redirect || buildStaticEasybotUrl(meta.utm);
+      const dest = data.redirect || withBase("/thank-you");
       setBotDest(dest);
       // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);

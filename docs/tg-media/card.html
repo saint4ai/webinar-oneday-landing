@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Карточка серии 1080x1350</title>
+<link rel="stylesheet" href="base.css">
+<style>
+html,body{width:1080px;height:1350px}
+.card{position:relative;width:1080px;height:1350px;overflow:hidden;
+  --gx:80%;--gy:16%;
+  background:
+    radial-gradient(900px 720px at var(--gx) var(--gy),rgba(227,192,123,.30),rgba(227,192,123,.08) 55%,transparent 75%),
+    radial-gradient(820px 700px at 6% 104%,rgba(160,83,42,.30),transparent 70%),
+    radial-gradient(1000px 800px at 0% 0%,#2b221c 0%,transparent 65%),
+    linear-gradient(165deg,#211A16 0%,#14100E 72%)}
+.frame{position:absolute;inset:26px;border-radius:36px;border:1px solid rgba(227,192,123,.17);pointer-events:none}
+.label{position:absolute;left:80px;top:84px;display:flex;align-items:center;gap:18px;font-weight:700;font-size:27px;letter-spacing:.16em;color:var(--gold);white-space:nowrap}
+.label i{display:block;width:44px;height:2px;background:var(--gold)}
+.logo{position:absolute;left:80px;bottom:68px;height:52px;width:auto}
+.h{position:absolute;left:80px;top:150px;width:920px;font-family:'Unbounded',sans-serif;font-weight:700;color:var(--cream);letter-spacing:-.015em;line-height:1.1}
+.h em{font-style:normal;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.glass{border-radius:34px}
+.shadow-floor{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);filter:blur(6px)}
+.light-floor{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(227,192,123,.35),transparent)}
+
+/* warm-edits */
+.edits .shot{left:98px;top:404px;width:884px;padding:12px}
+.edits .shot .in{position:relative;width:100%;aspect-ratio:1700/1510;border-radius:24px;overflow:hidden;background:#111}
+.edits .shot img{position:absolute;left:0;top:0;width:100%;display:block}
+
+/* warm-cases */
+.cases .f{left:80px;top:344px;width:920px;padding:12px}
+.cases .f .in{position:relative;width:100%;aspect-ratio:1.6;border-radius:24px;overflow:hidden;background:#111}
+.cases .f .in img{width:100%;height:100%;object-fit:cover;display:block}
+.cases .cap{position:absolute;left:80px;top:956px;width:920px;font-weight:600;font-size:29px;line-height:1.34;color:rgba(251,243,228,.92)}
+.cases .cap b{font-weight:800;color:var(--gold)}
+.cases .plaque{left:80px;top:1070px;width:920px;height:124px;display:flex;align-items:center;gap:26px;padding:0 40px 0 30px;border-radius:30px}
+.cases .plaque .ic{width:104px;height:104px;flex:none;display:flex;align-items:center;justify-content:center}
+.cases .plaque .ic img{max-width:104px;max-height:104px;display:block;filter:drop-shadow(0 10px 12px rgba(0,0,0,.45))}
+.cases .plaque .t{font-weight:600;font-size:28px;line-height:1.32;color:rgba(251,243,228,.92)}
+.cases .plaque .t b{font-weight:800;color:var(--gold)}
+
+/* topic */
+.topic .digit{position:absolute;left:62px;top:326px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:760px;line-height:1;letter-spacing:-.04em;
+  background:linear-gradient(180deg,#F0D49A 0%,#E3C07B 40%,rgba(160,83,42,.75) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 20px 40px rgba(0,0,0,.35));opacity:.96}
+.topic .obj{position:absolute;display:block;filter:drop-shadow(0 34px 38px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(227,192,123,.18))}
+
+/* live-now: вместо цифры плашка LIVE с красной точкой */
+.live .onair{left:80px;top:392px;height:176px;display:flex;align-items:center;gap:36px;padding:0 66px 0 52px;border-radius:999px;
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:112px;line-height:1;letter-spacing:.02em;color:var(--cream);white-space:nowrap}
+.live .onair .dot{display:block;flex:none;width:76px;height:76px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#FF8A6B 0%,#E5472C 52%,#B02A18 100%);
+  box-shadow:0 0 0 14px rgba(229,71,44,.22),0 0 0 30px rgba(229,71,44,.09),0 0 64px rgba(255,98,64,.6)}
+
+/* training */
+.train .row{left:80px;width:920px;height:198px;display:flex;align-items:center;gap:34px;padding:0 44px 0 34px}
+.train .row .ic{width:144px;height:144px;flex:none;display:flex;align-items:center;justify-content:center}
+.train .row .ic img{max-width:144px;max-height:144px;display:block;filter:drop-shadow(0 12px 14px rgba(0,0,0,.45))}
+.train .row .t{font-weight:700;font-size:42px;line-height:1.18;color:var(--cream)}
+
+/* offer */
+.offer .old{position:absolute;left:80px;top:166px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:64px;line-height:1;color:rgba(251,243,228,.55);letter-spacing:-.01em;white-space:nowrap}
+.offer .old::after{content:"";position:absolute;left:-14px;right:-14px;top:50%;height:6px;border-radius:3px;background:#C0562A;transform:rotate(-4deg);box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.offer .price{position:absolute;left:74px;top:246px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:136px;line-height:1.05;letter-spacing:-.035em;white-space:nowrap;
+  background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 10px 34px rgba(227,192,123,.28))}
+.offer .inst{position:absolute;left:80px;top:436px;width:620px;font-weight:600;font-size:44px;line-height:1.3;color:rgba(251,243,228,.9)}
+.offer .until{position:absolute;left:80px;top:604px;display:inline-flex;align-items:center;gap:18px;height:92px;padding:0 42px;border-radius:999px;
+  border:2px solid var(--gold);background:linear-gradient(135deg,rgba(227,192,123,.22),rgba(227,192,123,.06));font-weight:800;font-size:40px;color:var(--cream);box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.offer .until b{display:block;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 7px rgba(227,192,123,.2)}
+</style></head>
+<body>
+<div class="card" id="card"></div>
+<script>
+const L = "../../public/montage/lego/";
+const X3 = "obj/";
+const LOGO = '<img class="logo" src="onai-logo-night.svg" alt="">';
+const head = (h, size) => `<h1 class="h" data-fit="w" style="font-size:${size}px">${h}</h1>`;
+const lab = (t) => `<div class="label"><i></i>${t}</div>`;
+
+// digitCss: для двузначных цифр (10, 30) уменьшаем кегль, чтобы цифра не вышла за рамку
+const topic = (n, label, h, obj, objCss, floor, gx, digitCss) => ({
+  cls: "topic", gx: gx || "78%", gy: "30%",
+  html: `${lab(label)}${head(h, 76)}
+    <div class="digit" style="${digitCss || ""}">${n}</div>
+    <div class="shadow-floor" style="${floor}"></div>
+    <img class="obj" src="${obj}" style="${objCss}" alt="">${LOGO}`
+});
+
+const cards = {
+  "warm-edits": {
+    cls: "edits", gx: "82%", gy: "12%",
+    html: `${lab("КАК Я ПРАВЛЮ МОНТАЖ")}${head("Правлю словами,<br>монтажку не<br>открываю", 64)}
+      <div class="glass shot"><div class="in"><img src="obj/layout-sheet-top.jpg" alt=""></div></div>${LOGO}`
+  },
+  "warm-cases": {
+    cls: "cases", gx: "76%", gy: "36%",
+    html: `${lab("НЕ ТОЛЬКО РИЛСЫ")}${head("Агент собирает продукты для бизнеса", 62)}
+      <div class="glass f"><div class="in"><img src="../../public/montage/cases/ai-targetolog.webp" alt=""></div></div>
+      <div class="cap"><b>AI-Таргетолог</b> · заменяет специалиста по рекламе: сам запускает кампании, управляет ими и присылает отчёты</div>
+      <div class="glass plaque"><div class="ic"><img src="${X3}lg-i-cards-x3.png" alt=""></div><div class="t"><b>Erickson Central Asia</b> · платформа обучения коучей за 2&nbsp;месяца</div></div>${LOGO}`
+  },
+  "topic-p1": topic("1", "ПРАКТИКА 1 ИЗ 3", "Рилс без знаний<br>монтажа", L + "lg-ch1-clapper.webp",
+    "left:380px;top:590px;width:640px", "left:430px;top:1120px;width:560px;height:70px", "70%"),
+  "topic-p2": topic("2", "ПРАКТИКА 2 ИЗ 3", "Презентация<br>по брифу", X3 + "lg-i-cards-x3.png",
+    "left:470px;top:640px;width:540px", "left:470px;top:1090px;width:520px;height:64px", "70%"),
+  "topic-p3": topic("3", "ПРАКТИКА 3 ИЗ 3", "Приложение<br>из описания", X3 + "lg-i-phones-x3.png",
+    "left:450px;top:668px;width:560px", "left:460px;top:1095px;width:540px;height:64px", "70%"),
+  "training": {
+    cls: "train", gx: "84%", gy: "10%",
+    html: `${lab("ОБУЧЕНИЕ VIBE PRODUCTION")}${head("<em>3</em> модуля,<br><em>15</em> уроков,<br><em>1</em> месяц", 84)}
+      <div class="glass row" style="top:496px"><div class="ic"><img src="${X3}lg-i-clapper-x3.png" alt=""></div><div class="t">AI-монтаж</div></div>
+      <div class="glass row" style="top:720px"><div class="ic"><img src="${X3}lg-i-robot-x3.png" alt=""></div><div class="t">AI-креатор</div></div>
+      <div class="glass row" style="top:944px"><div class="ic"><img src="${X3}lg-i-botchat-x3.png" alt=""></div><div class="t">Ассистенты и автоматизация</div></div>${LOGO}`
+  },
+  "offer": {
+    cls: "offer", gx: "30%", gy: "22%",
+    html: `${lab("ДЛЯ УЧАСТНИКОВ ЭФИРА")}
+      <div class="old">250&nbsp;000&nbsp;₸</div>
+      <div class="price">150&nbsp;000&nbsp;₸</div>
+      <div class="inst">или от 6&nbsp;250&nbsp;₸ в месяц, рассрочка до 24&nbsp;месяцев</div>
+      <div class="until"><b></b>до 23:59 по Алматы</div>
+      <div class="light-floor" style="left:330px;top:640px;width:780px;height:700px;opacity:.55"></div>
+      <div class="shadow-floor" style="left:500px;top:1196px;width:520px;height:56px"></div>
+      <img style="position:absolute;left:468px;top:708px;width:560px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${L}lg-s41-deadline.webp" alt="">${LOGO}`
+  },
+
+  // Пакетный оффер: два курса вместе, та же композиция, что у offer
+  "offer-bundle": {
+    cls: "offer", gx: "30%", gy: "22%",
+    html: `${lab("ТОЛЬКО ДЛЯ УЧАСТНИКОВ ЭФИРА")}
+      <div class="old">440&nbsp;900&nbsp;₸</div>
+      <div class="price">390&nbsp;000&nbsp;₸</div>
+      <div class="inst" style="width:920px">Vibe Production и Vibe Coding PRO,<br>оба курса с обратной связью</div>
+      <div class="until"><b></b>до 23:59 по Алматы</div>
+      <div class="light-floor" style="left:330px;top:640px;width:780px;height:700px;opacity:.55"></div>
+      <div class="shadow-floor" style="left:490px;top:1176px;width:540px;height:60px"></div>
+      <img style="position:absolute;left:480px;top:716px;width:540px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${X3}lg-i-cards-x3.png" alt="">${LOGO}`
+  },
+
+  // Карточки рассылки (Telegram и WhatsApp): до эфира, в эфире, последний звонок
+  "reg-bonus": topic("2", "ЗА РЕГИСТРАЦИЮ", "Два бонуса<br>уже твои", X3 + "lg-i-box-x3.png",
+    "left:460px;top:740px;width:580px", "left:470px;top:1160px;width:560px;height:66px", "70%"),
+  "live-bonus": topic("2", "ТОЛЬКО НА ЭФИРЕ", "Ещё два бонуса<br>в конце эфира", X3 + "lg-s50-plan.png",
+    "left:490px;top:690px;width:540px", "left:490px;top:1160px;width:520px;height:62px", "70%"),
+  "t-minus-10": topic("10", "СЕГОДНЯ 20:00 ПО АЛМАТЫ", "Через 10 минут<br>начинаем", X3 + "lg-s41-alarm-x2.png",
+    "left:575px;top:725px;width:420px", "left:570px;top:1190px;width:440px;height:58px", "70%",
+    "font-size:560px;left:56px;top:340px"),
+  "live-now": {
+    cls: "live", gx: "72%", gy: "38%",
+    html: `${lab("ПРЯМОЙ ЭФИР")}${head("Мы в эфире,<br>заходи", 76)}
+      <div class="glass onair" data-fit><span class="dot"></span>LIVE</div>
+      <div class="light-floor" style="left:380px;top:620px;width:700px;height:640px;opacity:.5"></div>
+      <div class="shadow-floor" style="left:440px;top:1200px;width:580px;height:64px"></div>
+      <img class="obj" style="position:absolute;left:410px;top:555px;width:620px;filter:drop-shadow(0 34px 38px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(227,192,123,.18))" src="${X3}lg-i-camera-x3.png" alt="">${LOGO}`
+  },
+  "last-call": topic("30", "ДО 23:59 ПО АЛМАТЫ", "Осталось<br>30 минут", X3 + "lg-i-hourglass-x3.png",
+    "left:560px;top:560px;width:450px", "left:545px;top:1195px;width:480px;height:58px", "70%",
+    "font-size:520px;left:56px;top:350px"),
+};
+
+const id = new URLSearchParams(location.search).get("id") || "warm-edits";
+const c = cards[id];
+const el = document.getElementById("card");
+el.className = "card " + c.cls;
+el.style.setProperty("--gx", c.gx);
+el.style.setProperty("--gy", c.gy);
+el.innerHTML = c.html + '<div class="frame"></div><div class="grain"></div>';
+</script>
+</body></html>

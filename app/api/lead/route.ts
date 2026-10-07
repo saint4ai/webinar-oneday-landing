@@ -4,7 +4,8 @@
  *   1. Создаёт лид в amoCRM воронке «Однодневник» (10882150) с тегом «Однодневник»
  *   2. Шлёт событие Lead в Meta Conversions API (server-side, телефон хешируется
  *      SHA-256, дедуп с браузерным пикселем по общему event_id)
- *   3. Нотифицирует edbot для WhatsApp re-engagement тех, кто не вступил в community
+ *   EasyBot/Edbot полностью отключён (Александр, 06.10.2026): заявка в него больше не уходит,
+ *   сбор идёт только в WhatsApp-сообщество через /thank-you.
  *
  * Email НЕ собираем — письма не доходят (домен onai.academy не прогрет в Resend).
  *
@@ -16,13 +17,11 @@
  *   AMOCRM_ACCESS_TOKEN=eyJ...
  *   AMOCRM_PIPELINE_WORKSHOP=10882150
  *   AMOCRM_STATUS_WORKSHOP=86078458
- *   EDBOT_CHATBOT_ID=db343b5679ddf774530a60172b35bda8
  *   META_CAPI_TOKEN=EAA...            (Conversions API, серверный Lead)
  *   META_TEST_EVENT_CODE=TEST12345    (опц., Events Manager → Test Events)
  */
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { notifyEdbotLead } from "@/lib/edbot/notify";
 import { sendLeadEvent } from "@/lib/meta-capi";
 import { captureLead, markFailed, type CapturedLead } from "@/lib/leads/store";
 import { pushLeadToAmo, type PushResult } from "@/lib/leads/process";
@@ -102,11 +101,10 @@ export async function POST(req: NextRequest) {
     fbclid,
   });
 
-  // EasyBot ОТКЛЮЧЁН на период набора в WhatsApp-сообщество (живой эфир — среда):
-  // EasyBot добавляет раз в сутки — слишком медленно. Форма теперь ведёт на
-  // /thank-you → диплинк в сообщество. Раньше EasyBot был await-нут ради ссылки
-  // редиректа; убран с критического пути, чтобы не тормозить/ломать форму.
-  // Вернуть: import registerEasybotLead + await + botUrl в ответ (см. git).
+  // EasyBot/Edbot ОТКЛЮЧЁН полностью (06.10.2026, решение Александра): идёт только сбор в WhatsApp-группу.
+  // Раньше здесь в фоне вызывался notifyEdbotLead и каждая заявка регистрировалась в вебинаре EasyBot
+  // (колонки «Приход» и UTM в его кабинете брались отсюда), хотя человек шёл в группу через /thank-you.
+  // Форма ведёт на /thank-you → диплинк в сообщество. Вернуть: см. git (lib/edbot/notify.ts остался в репозитории).
 
   // ── Остальные плечи — В ФОНЕ, НЕ блокируем форму/редирект ──────────
   // Лид уже durable (captureLead → Supabase + WAL); при сбое amoCRM его дожмёт
@@ -124,8 +122,7 @@ export async function POST(req: NextRequest) {
       clientIp,
       userAgent,
     }),
-    notifyEdbotLead({ name: cleanName, phone: cleanPhone, source, siteUrl }),
-  ]).then(([crmResult, capiResult, edbotResult]) => {
+  ]).then(([crmResult, capiResult]) => {
     const crmStatus =
       crmResult.status === "fulfilled"
         ? crmResult.value.ok
@@ -138,20 +135,13 @@ export async function POST(req: NextRequest) {
           ? `ok:${capiResult.value.received}`
           : `skip:${capiResult.value.reason}`
         : "throw";
-    const edbotStatus =
-      edbotResult.status === "fulfilled"
-        ? edbotResult.value.ok
-          ? "ok"
-          : `fail:${edbotResult.value.reason}`
-        : "throw";
     console.log(
-      "[lead] name=%s phone=***%s source=%s crm=%s capi=%s edbot=%s",
+      "[lead] name=%s phone=***%s source=%s crm=%s capi=%s",
       cleanName,
       cleanPhone.slice(-4),
       source,
       crmStatus,
-      capiStatus,
-      edbotStatus
+      capiStatus
     );
   });
 

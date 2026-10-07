@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>Админка воркшопа</title>
+<style nonce="__NONCE__">
+:root{
+  --bg:#F6F0E4;--card:#FFFFFF;--fg:#2A211C;--hint:#6E5F53;--line:rgba(160,83,42,.20);
+  --gold:#C9A05A;--gold-hi:#E3C07B;--gold-soft:rgba(201,160,90,.20);--on-gold:#2A211C;
+  --link:#8B5E3C;--good:#2F7D4F;--bad:#B3402A;--warn-bg:rgba(179,64,42,.10);
+  --radius:16px;
+}
+:root[data-theme=dark]{
+  --bg:#15110D;--card:#211B15;--fg:#F3EBDD;--hint:#A99B8A;--line:rgba(227,192,123,.20);
+  --gold:#E3C07B;--gold-hi:#F2DCA0;--gold-soft:rgba(227,192,123,.16);--on-gold:#241B0E;
+  --link:#E3C07B;--good:#6CCB8E;--bad:#F2927B;--warn-bg:rgba(242,146,123,.14);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-width:320px;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.logo-svg{display:block;height:100%;width:auto;color:var(--fg)}
+
+/* вход */
+.login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px 20px;max-width:420px;margin:0 auto}
+.login .logo{height:40px;margin-bottom:10px}
+.login h1{margin:0;font-size:24px;line-height:1.2}
+.login p{margin:0;color:var(--hint)}
+.pinform{display:grid;gap:12px;margin-top:2px}
+.dots{display:flex;justify-content:center;align-items:center;gap:12px;height:24px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--hint);background:transparent;transition:background-color .12s,border-color .12s}
+.dots i.on{background:var(--gold);border-color:var(--gold)}
+.dots.shake{animation:shake .3s}
+@keyframes shake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.key{height:60px;min-width:0;padding:0;display:grid;place-items:center;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:27px;font-weight:600;line-height:1;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:background-color .08s,transform .08s}
+.key:active{background:var(--gold-soft);transform:scale(.96)}
+.key.fn{font-size:15px;color:var(--hint)}
+.key svg{width:28px;height:28px;stroke:var(--fg);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn{height:50px;border:0;border-radius:14px;padding:0 20px;background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:var(--on-gold);font-weight:700;font-size:16px}
+.btn:disabled{opacity:.55}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg);font-weight:600}
+.btn.small{height:40px;font-size:14px;padding:0 14px}
+.btn.full{width:100%}
+.login .err{min-height:22px;margin:0;color:var(--bad);font-weight:600;text-align:center}
+.note{padding:12px 14px;border-radius:12px;background:var(--gold-soft);color:var(--fg)}
+.note.warn{background:var(--warn-bg)}
+
+/* шапка */
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px 6px}
+.head .logo{height:22px}
+.head-r{display:flex;align-items:center;gap:6px;color:var(--hint);font-size:13px}
+.icon{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;padding:0}
+.icon svg{width:20px;height:20px;stroke:var(--fg);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* период */
+.bar{padding:4px 14px 8px}
+.chips{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px 2px}
+.chips::-webkit-scrollbar,.tabs::-webkit-scrollbar{display:none}
+.chip{flex:1 1 auto;white-space:nowrap;height:38px;padding:0 6px;border-radius:19px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px}
+.chip[aria-pressed=true]{background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:transparent;color:var(--on-gold)}
+.dates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:8px}
+.dates input{height:40px;min-width:0;border-radius:12px;border:1px solid var(--line);background:var(--card);padding:0 8px;font-size:14px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.seg button{height:38px;border:0;background:transparent;font-size:14px;font-weight:600}
+.seg button[aria-pressed=true]{background:var(--gold-soft);box-shadow:inset 0 -2px 0 var(--gold)}
+.plabel{margin-top:8px;color:var(--hint);font-size:13px}
+
+/* вкладки */
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;background:var(--bg);border-bottom:1px solid var(--line);padding:0 8px}
+.tab{flex:none;height:44px;padding:0 12px;border:0;background:transparent;color:var(--hint);font-weight:600;font-size:14px;border-bottom:3px solid transparent}
+.tab[aria-selected=true]{color:var(--fg);border-bottom-color:var(--gold)}
+
+main{padding:12px 14px 40px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;min-width:0}
+h2{margin:0 0 10px;font-size:17px;line-height:1.25}
+.hint{color:var(--hint);font-size:13px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.stat .l{color:var(--hint);font-size:13px;line-height:1.25}
+.stat .v{font-size:28px;font-weight:800;line-height:1.1;margin-top:2px;letter-spacing:-.01em}
+.stat .s{font-size:12px;color:var(--hint);margin-top:2px}
+.stat .d{font-size:13px;font-weight:700;margin-top:4px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.d.good{color:var(--good)}.d.bad{color:var(--bad)}.d.eq{color:var(--hint)}
+.d small{font-weight:500;color:var(--hint)}
+
+/* график и таблицы */
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .ax{fill:var(--hint);font-size:10px}
+.chart .val{fill:var(--fg);font-size:10px;font-weight:700}
+.chart .bar{fill:var(--gold)}
+.chart .bar2{fill:var(--fg)}
+.legend .k3{width:12px;height:12px;border-radius:3px;background:var(--fg)}
+.chart .ln{fill:none;stroke:var(--fg);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .dot{fill:var(--card);stroke:var(--fg);stroke-width:2}
+.legend{display:flex;gap:16px;margin-top:6px;font-size:13px;color:var(--hint)}
+.legend i{display:inline-block;vertical-align:-1px;margin-right:6px}
+.legend .k1{width:12px;height:12px;border-radius:3px;background:var(--gold)}
+.legend .k2{width:12px;height:12px;border-radius:50%;border:2px solid var(--fg)}
+.tw{overflow-x:auto;margin:10px -14px 0;padding:0 14px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+th:last-child,td:last-child{padding-right:0}
+th{color:var(--hint);font-weight:600;font-size:12px;vertical-align:bottom}
+tfoot td{font-weight:800;border-bottom:0}
+td.wrap{white-space:normal;overflow-wrap:anywhere;min-width:130px;text-align:left}
+tr.click{cursor:pointer}
+tr.click:active td{background:var(--gold-soft)}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--gold-soft);margin-left:6px;white-space:nowrap}
+.badge.ok{background:rgba(47,125,79,.16);color:var(--good)}
+.badge.no{background:var(--warn-bg);color:var(--bad)}
+.badge.mute{background:transparent;border:1px solid var(--line);color:var(--hint)}
+
+/* списки */
+.tools{display:grid;gap:8px}
+.tools-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.search{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);padding:0 14px;min-width:0;width:100%}
+.sel{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);padding:0 10px;max-width:100%}
+.sel.full{width:100%}
+.tag{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:6px 8px 6px 12px;border-radius:14px;background:var(--gold-soft);font-size:13px;font-weight:600}
+.tag span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag button{flex:none;width:26px;height:26px;border-radius:13px;border:0;background:var(--card);font-weight:800}
+.list{display:grid;gap:8px}
+.row{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.row .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;color:var(--hint);font-size:13px}
+.row .nm{font-weight:700;font-size:16px;margin-top:2px;overflow-wrap:anywhere}
+.row .ph{display:inline-flex;align-items:center;gap:8px;margin-top:2px;min-height:36px;padding:0 10px 0 0;border:0;background:transparent;font-size:16px;font-weight:600;color:var(--link)}
+.row .ph svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.row .meta{color:var(--hint);font-size:13px;overflow-wrap:anywhere;margin-top:2px}
+.row .flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.row .flags .badge{margin:0}
+.empty{padding:28px 10px;text-align:center;color:var(--hint)}
+.more{width:100%}
+.msgs{display:grid;gap:4px;margin-top:8px;font-size:13px}
+.msgs div{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.msgs b{font-weight:600;overflow-wrap:anywhere}
+.msgs span{flex:none;white-space:nowrap}
+.msgs div.col{flex-direction:column;gap:2px}
+.msgs div.col span{flex:initial;white-space:normal;color:var(--hint);overflow-wrap:anywhere}
+.kv{display:grid;gap:6px;font-size:14px}
+.kv div{display:flex;justify-content:space-between;gap:12px}
+.kv span:first-child{color:var(--hint)}
+.kv b{text-align:right}
+.skel{height:84px;border-radius:14px;background:linear-gradient(90deg,var(--card),var(--gold-soft),var(--card));background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+@media (max-height:700px){.login{padding:14px 20px;gap:8px}.login .logo{height:30px;margin-bottom:0}.login h1{font-size:22px}.pinform{gap:8px}.keypad{gap:8px}}
+@media (prefers-reduced-motion:reduce){.skel,.icon.spin svg,.dots.shake{animation:none}.key,.dots i{transition:none}.key:active{transform:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" class="sr" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3C07B"/><stop offset="1" stop-color="#C9A05A"/></linearGradient></defs>
+  <g id="logo" fill="none">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M542.885 252.305H316.89C242.085 252.305 181.292 314.133 181.292 390.211C181.292 466.288 242.085 528.116 316.89 528.116H542.885C617.689 528.116 678.482 466.288 678.482 390.211C678.482 314.133 617.689 252.305 542.885 252.305ZM542.885 482.148H316.89C266.945 482.148 226.491 441.006 226.491 390.211C226.491 339.415 266.945 298.274 316.89 298.274H542.885C592.829 298.274 633.283 339.415 633.283 390.211C633.283 441.006 592.829 482.148 542.885 482.148Z" fill="currentColor"/>
+    <circle cx="542.885" cy="390.211" r="60" fill="url(#gold)" stroke="#C9A05A" stroke-width="5"/>
+    <path d="M958.148 241.667C1000.74 241.667 1033.64 255.344 1056.84 282.7C1080.38 310.055 1092.15 354.897 1092.15 417.226V534.092H972.691V418.784C972.691 396.969 971.479 379.136 969.056 365.285C966.632 351.434 960.745 339.834 951.396 330.485C942.046 321.136 927.503 316.461 907.766 316.461C886.989 316.461 871.58 320.963 861.539 329.966C851.497 338.622 845.091 349.876 842.32 363.727C839.55 377.578 838.165 395.757 838.165 418.265V534.092H718.702V251.016H838.165V286.336C864.482 256.556 904.476 241.667 958.148 241.667Z" fill="url(#gold)"/>
+    <path d="M1689.08 534.091H1559.75L1523.91 468.126H1306.28L1270.44 534.091H1141.11L1349.39 149.73H1480.8L1689.08 534.091ZM1415.36 267.116L1353.03 381.385H1477.16L1415.36 267.116ZM1828.6 534.091H1700.3V149.73H1828.6V534.091Z" fill="currentColor"/>
+  </g>
+</svg>
+
+<!-- Вход -->
+<section id="login" class="login" hidden>
+  <svg class="logo" viewBox="170 140 1670 404" role="img" aria-label="onAI Academy"><use href="#logo"/></svg>
+  <h1>Админка воркшопа</h1>
+  <p id="login-sub">Только для владельца. Введите пароль.</p>
+  <form id="login-form" class="pinform" autocomplete="off">
+    <label class="sr" for="pin">Пароль</label>
+    <input id="pin" class="sr" type="password" inputmode="none" autocomplete="off" maxlength="8" tabindex="-1">
+    <div id="dots" class="dots" role="img" aria-label="Пароль: введено 0 цифр"></div>
+    <div class="keypad" role="group" aria-label="Цифровая клавиатура">
+      <button type="button" class="key" data-key="1">1</button>
+      <button type="button" class="key" data-key="2">2</button>
+      <button type="button" class="key" data-key="3">3</button>
+      <button type="button" class="key" data-key="4">4</button>
+      <button type="button" class="key" data-key="5">5</button>
+      <button type="button" class="key" data-key="6">6</button>
+      <button type="button" class="key" data-key="7">7</button>
+      <button type="button" class="key" data-key="8">8</button>
+      <button type="button" class="key" data-key="9">9</button>
+      <button type="button" class="key fn" data-key="clear">Стереть</button>
+      <button type="button" class="key" data-key="0">0</button>
+      <button type="button" class="key" data-key="back" aria-label="Удалить цифру"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z"/><path d="M12.5 9.5l5 5"/><path d="M17.5 9.5l-5 5"/></svg></button>
+    </div>
+    <p id="login-err" class="err" role="alert" aria-live="polite"></p>
+    <button id="login-btn" class="btn full" type="submit">Войти</button>
+  </form>
+</section>
+
+<!-- Приложение -->
+<div id="app" hidden>
+  <header class="head">
+    <svg class="logo" viewBox="170 140 1670 404" role="img" aria-label="onAI Academy"><use href="#logo"/></svg>
+    <div class="head-r">
+      <span id="updated"></span>
+      <button id="refresh" class="icon" type="button" aria-label="Обновить">
+        <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+      </button>
+      <button id="exit" class="icon" type="button" aria-label="Выйти">
+        <svg viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 8l4 4-4 4"/><path d="M20 12H9"/></svg>
+      </button>
+    </div>
+  </header>
+  <div class="bar">
+    <div class="chips" id="chips" role="group" aria-label="Период"></div>
+    <div class="dates" id="dates" hidden>
+      <input id="d-from" type="date" aria-label="С даты">
+      <input id="d-to" type="date" aria-label="По дату">
+      <button id="d-ok" class="btn small" type="button">Показать</button>
+    </div>
+    <div class="seg" id="basis" role="group" aria-label="Для бота считать по">
+      <button type="button" data-basis="reg" aria-pressed="true">День регистрации</button>
+      <button type="button" data-basis="stream" aria-pressed="false">День эфира</button>
+    </div>
+    <div class="plabel" id="plabel"></div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Разделы"></nav>
+  <main id="view"></main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script nonce="__NONCE__" src="tg-web-app.js"></script>
+<script nonce="__NONCE__">
+(function () {
+  'use strict';
+
+  // ───────── Telegram и тема ─────────
+  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  var initData = tg && typeof tg.initData === 'string' ? tg.initData : '';
+  var root = document.documentElement;
+
+  function lum(hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return null;
+    var n = parseInt(m[1], 16);
+    return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  }
+  // Смесь двух цветов #rrggbb: подсказки берём не из hint_color Telegram (на белом он слишком бледный), а смешиваем текст с фоном карточки.
+  function mix(a, b, t) {
+    var x = /^#?([0-9a-f]{6})$/i.exec(a || ''), y = /^#?([0-9a-f]{6})$/i.exec(b || '');
+    if (!x || !y) return '';
+    var m = parseInt(x[1], 16), n = parseInt(y[1], 16), out = 0;
+    for (var s = 16; s >= 0; s -= 8) out = (out << 8) | Math.round(((m >> s) & 255) * (1 - t) + ((n >> s) & 255) * t);
+    return '#' + ('000000' + out.toString(16)).slice(-6);
+  }
+  function applyTheme() {
+    var p = (tg && tg.themeParams) || {};
+    var dark = tg && tg.colorScheme ? tg.colorScheme === 'dark' : (lum(p.bg_color) !== null ? lum(p.bg_color) < 0.5 : window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    var cardBg = p.section_bg_color || p.bg_color;
+    var map = { '--bg': p.secondary_bg_color || p.bg_color, '--card': cardBg, '--fg': p.text_color, '--hint': mix(p.text_color, cardBg, 0.4) };
+    Object.keys(map).forEach(function (k) {
+      if (map[k]) root.style.setProperty(k, map[k]);
+      else root.style.removeProperty(k);
+    });
+    try {
+      if (tg && tg.setHeaderColor) tg.setHeaderColor(p.secondary_bg_color || p.bg_color || (dark ? '#15110D' : '#F6F0E4'));
+      if (tg && tg.setBackgroundColor) tg.setBackgroundColor(p.secondary_bg_color || p.bg_color || (dark ? '#15110D' : '#F6F0E4'));
+    } catch (e) { /* старый клиент */ }
+  }
+  applyTheme();
+  if (tg) {
+    try { tg.ready(); tg.expand(); if (tg.onEvent) tg.onEvent('themeChanged', applyTheme); } catch (e) { /* ничего */ }
+  }
+
+  // ───────── помощники ─────────
+  var API = location.pathname.replace(/admin-app\/?$/, 'admin/');
+  var NS = 'http://www.w3.org/2000/svg';
+  function $(id) { return document.getElementById(id); }
+  function append(el, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { append(el, x); }); return; }
+    el.appendChild(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  // Весь вывод через textContent и createElement: имена и метки из заявок не попадают в разметку как HTML.
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v == null || v === false) return;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function s(tag, attrs) {
+    var el = document.createElementNS(NS, tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') el.textContent = attrs[k];
+      else el.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function store(key, val) {
+    try { if (val === undefined) return sessionStorage.getItem(key); if (val === null) sessionStorage.removeItem(key); else sessionStorage.setItem(key, val); } catch (e) { /* нет хранилища */ }
+    return null;
+  }
+  var toastTimer = 0;
+  function toast(text) {
+    var t = $('toast');
+    t.textContent = text; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+  function plural(n, a, b, c) {
+    var m10 = n % 10, m100 = n % 100;
+    return m10 === 1 && m100 !== 11 ? a : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? b : c);
+  }
+  function copy(text) {
+    function fallback() {
+      var ta = h('textarea', { 'aria-hidden': 'true' });
+      ta.value = text; ta.className = 'sr';
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? 'Телефон скопирован' : 'Не удалось скопировать');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast('Телефон скопирован'); }, fallback);
+    else fallback();
+  }
+
+  // ───────── состояние ─────────
+  var PRESETS = [['t', 'Сегодня'], ['y', 'Вчера'], ['7', '7 дней'], ['30', '30 дней'], ['r', 'Даты']];
+  var TABS = [['summary', 'Сводка'], ['sources', 'Источники'], ['leads', 'Регистрации'], ['subs', 'Подписчики'], ['streams', 'Эфиры'], ['errors', 'Ошибки']];
+  var ui = { period: 't', from: '', to: '', basis: 'reg', tab: 'summary' };
+  try { var saved = JSON.parse(store('adm_ui') || 'null'); if (saved && typeof saved === 'object') Object.keys(ui).forEach(function (k) { if (typeof saved[k] === 'string') ui[k] = saved[k]; }); } catch (e) { /* по умолчанию */ }
+  var token = store('adm_token') || '';
+  var data = { summary: null, errors: null, leads: null, subs: null };
+  var filt = { leads: { q: '', utm: '', inbot: '' }, subs: { q: '', utm: '', flag: '' } };
+  var seq = 0;
+  var today = '';
+
+  function saveUi() { store('adm_ui', JSON.stringify(ui)); }
+  function reset() { data = { summary: null, errors: null, leads: null, subs: null }; }
+
+  // ───────── сеть ─────────
+  function HttpError(status, body) { this.status = status; this.body = body || {}; }
+  function api(path, params, init) {
+    init = init || {};
+    var headers = { 'X-Tg-Init-Data': initData };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    if (init.body) headers['Content-Type'] = 'application/json';
+    var qs = params ? '?' + params.toString() : '';
+    return fetch(API + path + qs, { method: init.method || 'GET', headers: headers, body: init.body, cache: 'no-store', credentials: 'omit' }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (b) {
+        if (!r.ok) throw new HttpError(r.status, b);
+        if (b && b.meta && b.meta.today) today = b.meta.today;
+        return b;
+      });
+    });
+  }
+  function periodParams() {
+    var p = new URLSearchParams();
+    if (ui.period === 'r' && ui.from && ui.to) { p.set('from', ui.from); p.set('to', ui.to); }
+    else p.set('period', ui.period === 'r' ? 't' : ui.period);
+    p.set('basis', ui.basis);
+    return p;
+  }
+
+  // ───────── вход ─────────
+  function showLogin(msg, lock) {
+    token = ''; store('adm_token', null);
+    $('app').hidden = true; $('login').hidden = false;
+    $('login-err').textContent = msg || '';
+    setPin('');
+    $('login-form').hidden = !!lock;
+  }
+  // Пароль цифровой: точки показывают длину, ввод идёт с экранной клавиатуры или с физической (скрытое поле #pin хранит значение).
+  var PIN_MAX = 8, dotsEl = $('dots');
+  for (var di = 0; di < PIN_MAX; di++) dotsEl.appendChild(h('i'));
+  function setPin(v) {
+    var pin = String(v).replace(/\D/g, '').slice(0, PIN_MAX);
+    $('pin').value = pin;
+    Array.prototype.forEach.call(dotsEl.children, function (d, i) { d.classList.toggle('on', i < pin.length); });
+    dotsEl.setAttribute('aria-label', 'Пароль: введено ' + pin.length + ' ' + plural(pin.length, 'цифра', 'цифры', 'цифр'));
+  }
+  function haptic() {
+    try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch (e) { /* старый клиент */ }
+  }
+  function pressKey(k) {
+    if ($('login-btn').disabled) return;
+    var cur = $('pin').value;
+    if (k === 'back') setPin(cur.slice(0, -1));
+    else if (k === 'clear') setPin('');
+    else setPin(cur + k);
+    haptic();
+  }
+  function shake() {
+    dotsEl.classList.remove('shake');
+    void dotsEl.offsetWidth;
+    dotsEl.classList.add('shake');
+    setTimeout(function () { dotsEl.classList.remove('shake'); }, 300);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.keypad [data-key]'), function (b) {
+    b.addEventListener('click', function () { pressKey(b.getAttribute('data-key')); });
+  });
+  $('pin').addEventListener('input', function () { setPin($('pin').value); });
+  // Физическая клавиатура (Telegram Desktop): цифры, Backspace, Enter; работает, пока виден экран входа.
+  document.addEventListener('keydown', function (e) {
+    if ($('login').hidden || $('login-form').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); pressKey(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); pressKey('back'); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.repeat) return;
+      var f = $('login-form');
+      if (f.requestSubmit) f.requestSubmit(); else $('login-btn').click();
+    }
+  });
+  function showApp() {
+    $('login').hidden = true; $('app').hidden = false;
+    renderBar(); renderTabs(); load();
+  }
+  function attemptsText(left) {
+    if (left <= 0) return 'Неверный пароль, попыток не осталось. Подождите 10 минут.';
+    return 'Неверный пароль, ' + (left === 1 ? 'осталась 1 попытка' : (left < 5 ? 'осталось ' + left + ' попытки' : 'осталось ' + left + ' попыток'));
+  }
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!initData) return;
+    var pin = $('pin').value;
+    if (!pin) { $('login-err').textContent = 'Введите пароль'; return; }
+    var btn = $('login-btn'); btn.disabled = true; $('login-err').textContent = '';
+    api('login', null, { method: 'POST', body: JSON.stringify({ initData: initData, pin: pin }) }).then(function (r) {
+      token = r.token; store('adm_token', token);
+      setPin('');
+      showApp();
+    }).catch(function (err) {
+      if (!(err instanceof HttpError)) { $('login-err').textContent = 'Нет связи с сервером. Попробуйте ещё раз.'; return; }
+      if (err.status === 401) { $('login-err').textContent = attemptsText(err.body.left); setPin(''); shake(); }
+      else if (err.status === 429) $('login-err').textContent = 'Слишком много попыток. Повторите через ' + Math.max(1, Math.ceil((err.body.retryAfter || 60) / 60)) + ' мин.';
+      else if (err.status === 403) showLogin('Нет доступа.', true);
+      else if (err.status === 503) showLogin('Админка ещё не настроена на сервере.', true);
+      else $('login-err').textContent = 'Не получилось войти. Попробуйте ещё раз.';
+    }).then(function () { btn.disabled = false; });
+  });
+  $('exit').addEventListener('click', function () { reset(); showLogin('', false); });
+
+  // ───────── шапка, период, вкладки ─────────
+  function renderBar() {
+    var chips = $('chips'); chips.textContent = '';
+    PRESETS.forEach(function (p) {
+      chips.appendChild(h('button', { class: 'chip', type: 'button', 'aria-pressed': String(ui.period === p[0]), text: p[1], onclick: function () {
+        if (p[0] === 'r') {
+          if (!ui.from) { ui.from = today || ''; ui.to = today || ''; }
+          ui.period = 'r'; saveUi(); renderBar(); reset(); load(); return;
+        }
+        ui.period = p[0]; saveUi(); renderBar(); reset(); load();
+      } }));
+    });
+    $('dates').hidden = ui.period !== 'r';
+    $('d-from').value = ui.from; $('d-to').value = ui.to;
+    Array.prototype.forEach.call($('basis').querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-basis') === ui.basis)); });
+    var lbl = data.summary ? data.summary.period.label : '';
+    $('plabel').textContent = (lbl ? lbl + ' · ' : '') + 'время Алматы';
+  }
+  $('d-ok').addEventListener('click', function () {
+    var f = $('d-from').value, t = $('d-to').value;
+    if (!f || !t) { toast('Выберите обе даты'); return; }
+    if (f > t) { var x = f; f = t; t = x; }
+    ui.period = 'r'; ui.from = f; ui.to = t; saveUi(); renderBar(); reset(); load();
+  });
+  Array.prototype.forEach.call($('basis').querySelectorAll('button'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-basis');
+      if (v === ui.basis) return;
+      ui.basis = v; saveUi(); renderBar(); data.summary = null; data.subs = null; load();
+    });
+  });
+  function renderTabs() {
+    var nav = $('tabs'); nav.textContent = '';
+    TABS.forEach(function (t) {
+      nav.appendChild(h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(ui.tab === t[0]), text: t[1], onclick: function () {
+        ui.tab = t[0]; saveUi(); renderTabs(); load();
+        window.scrollTo(0, 0);
+      } }));
+    });
+    var sel = nav.querySelector('[aria-selected=true]');
+    if (sel && sel.scrollIntoView) { try { sel.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { /* ничего */ } }
+  }
+  $('refresh').addEventListener('click', function () { reset(); load(true); });
+
+  // ───────── загрузка и отрисовка ─────────
+  function view() { return $('view'); }
+  function loading() {
+    var v = view(); v.textContent = '';
+    v.appendChild(h('div', { class: 'skel' })); v.appendChild(h('div', { class: 'skel' })); v.appendChild(h('div', { class: 'skel' }));
+  }
+  function fail(err) {
+    if (err instanceof HttpError) {
+      if (err.status === 401) { showLogin('Сессия закончилась. Введите пароль ещё раз.', false); return; }
+      if (err.status === 403) { showLogin('Доступ закрыт. Откройте админку заново из Telegram.', true); return; }
+    }
+    var msg = err instanceof HttpError ? (err.status === 400 ? 'Период указан неверно или больше года.' : err.status === 503 ? 'Бот сейчас выключен или не настроен.' : 'Сервер ответил ошибкой. Попробуйте ещё раз.') : 'Нет связи с сервером.';
+    var v = view(); v.textContent = '';
+    v.appendChild(h('div', { class: 'card' }, h('div', { class: 'note warn', text: msg }), h('p', null, h('button', { class: 'btn small', type: 'button', text: 'Повторить', onclick: function () { load(true); } }))));
+  }
+  function spin(on) { $('refresh').classList.toggle('spin', on); }
+
+  function load(force) {
+    var tab = ui.tab, my = ++seq;
+    if (tab === 'leads' || tab === 'subs') { listTab(tab); return; }
+    var need = tab === 'errors' ? 'errors' : 'summary';
+    if (data[need] && !force) { draw(); return; }
+    loading(); spin(true);
+    api(need, periodParams()).then(function (r) {
+      if (my !== seq) return;
+      data[need] = r;
+      draw();
+    }).catch(function (e) { if (my === seq) fail(e); }).then(function () { if (my === seq) spin(false); });
+  }
+  function fetchList(kind, offset) {
+    var p = periodParams(), f = filt[kind];
+    p.set('offset', String(offset)); p.set('limit', '50');
+    if (f.q) p.set('q', f.q);
+    if (f.utm) p.set('utm', f.utm);
+    if (kind === 'leads' && f.inbot) p.set('inbot', f.inbot);
+    if (kind === 'subs' && f.flag) p.set('flag', f.flag);
+    return api(kind === 'leads' ? 'leads' : 'subscribers', p);
+  }
+  function draw() {
+    var d = data.summary;
+    if (d) { $('updated').textContent = 'обновлено ' + d.meta.updated; renderBar(); }
+    var v = view(); v.textContent = '';
+    if (ui.tab === 'summary' && d) drawSummary(v, d);
+    else if (ui.tab === 'sources' && d) drawSources(v, d);
+    else if (ui.tab === 'streams' && d) drawStreams(v, d);
+    else if (ui.tab === 'errors' && data.errors) drawErrors(v, data.errors);
+  }
+
+  // ───────── Сводка ─────────
+  function delta(cur, prev, kind, badUp) {
+    var diff = cur - prev;
+    var unit = kind === 'pct' ? ' п.п.' : '';
+    if (diff === 0) return h('div', { class: 'd eq' }, '±0', h('small', { text: 'было ' + prev + (kind === 'pct' ? '%' : '') }));
+    var up = diff > 0, good = badUp ? !up : up;
+    return h('div', { class: 'd ' + (good ? 'good' : 'bad') }, (up ? '▲ +' : '▼ −') + Math.abs(diff) + unit, h('small', { text: 'было ' + prev + (kind === 'pct' ? '%' : '') }));
+  }
+  function stat(label, value, sub, dl) {
+    return h('div', { class: 'stat' }, h('div', { class: 'l', text: label }), h('div', { class: 'v', text: value }), sub ? h('div', { class: 's', text: sub }) : null, dl);
+  }
+  function drawSummary(v, d) {
+    var c = d.cards, p = d.prev;
+    if (!d.leadsOk) v.appendChild(h('div', { class: 'note warn', text: 'Заявки с сайта недоступны' + (d.leadsError ? ' (' + d.leadsError + ')' : '') + '. Бот и остальное считаются.' }));
+    v.appendChild(h('div', { class: 'grid2' },
+      stat('Заявки с сайта', c.leads, '', delta(c.leads, p.leads)),
+      stat(d.basis === 'stream' ? 'Записались на эфир' : 'В боте новых', c.bot, '', delta(c.bot, p.bot)),
+      stat('Заявка → бот', c.conv + '%', c.reached + ' из ' + c.leads, delta(c.conv, p.conv, 'pct')),
+      stat('Нажали WhatsApp', c.wa, 'после заявки', delta(c.wa, p.wa)),
+      stat('Нажали Telegram', c.tg, 'после заявки', delta(c.tg, p.tg)),
+      stat('Перешли на эфир', c.clicked, '', delta(c.clicked, p.clicked)),
+      stat('«Я уже оплатил(а)»', c.paid, '', delta(c.paid, p.paid)),
+      stat('Заблокировали бота', c.blocked, '', delta(c.blocked, p.blocked, null, true))
+    ));
+    v.appendChild(h('div', { class: 'hint', text: 'Сравнение с прошлым таким же периодом: ' + d.prevPeriod.label + '.' }));
+    // По дням или по часам
+    var hourly = d.hourly;
+    var rows = hourly ? hourly.map(function (r) { return { label: String(r.h), a: r.leads, b: r.bot }; }) : d.daily.map(function (r) { return { label: r.label, a: r.leads, b: r.bot }; });
+    var card = h('div', { class: 'card' }, h('h2', { text: hourly ? 'По часам' : 'По дням' }), chart(rows, !!hourly),
+      h('div', { class: 'legend' }, h('span', null, h('i', { class: 'k1' }), 'Заявки'), h('span', null, h('i', { class: hourly ? 'k3' : 'k2' }), d.basis === 'stream' && !hourly ? 'Записались на эфир' : 'В боте')));
+    var head = h('tr', null, h('th', { scope: 'col', text: 'Дата' }), h('th', { scope: 'col', text: 'Заявки' }), h('th', { scope: 'col', text: 'В боте' }), h('th', { scope: 'col', text: 'Доля' }), h('th', { scope: 'col', text: 'TG' }), h('th', { scope: 'col', text: 'WA' }));
+    var tot = { leads: 0, reached: 0, bot: 0, wa: 0, tg: 0 };
+    var body = d.daily.slice().reverse().map(function (r) {
+      tot.leads += r.leads; tot.reached += r.reached; tot.bot += r.bot; tot.wa += r.wa; tot.tg += r.tg;
+      return h('tr', null, h('td', { text: r.wd + ' ' + r.label }), h('td', { text: r.leads }), h('td', { text: r.bot }), h('td', { text: r.leads ? r.conv + '%' : '' }), h('td', { text: r.tg }), h('td', { text: r.wa }));
+    });
+    var foot = h('tr', null, h('td', { text: 'Итого' }), h('td', { text: tot.leads }), h('td', { text: tot.bot }), h('td', { text: tot.leads ? Math.round(tot.reached * 100 / tot.leads) + '%' : '' }), h('td', { text: tot.tg }), h('td', { text: tot.wa }));
+    card.appendChild(h('div', { class: 'tw' }, h('table', null, h('thead', null, head), h('tbody', null, body), h('tfoot', null, foot))));
+    card.appendChild(h('div', { class: 'hint', text: 'Доля: заявки, дошедшие до бота. TG и WA: нажатия после заявки.' }));
+    v.appendChild(card);
+    v.appendChild(h('div', { class: 'hint', text: 'Всего в боте: ' + d.totals.subscribers + ', активных: ' + d.totals.active + ', оплатили: ' + d.totals.paid + '.' }));
+  }
+
+  function niceStep(raw) {
+    var p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+  }
+  function chart(rows, hourly) {
+    var W = 340, H = 190, L = 30, R = 334, T = 14, B = 166;
+    var max = 0; rows.forEach(function (r) { max = Math.max(max, r.a, r.b); });
+    var step = max <= 4 ? 1 : niceStep(max / 4), top = Math.max(4, Math.ceil(max / step) * step), n = rows.length;
+    var cw = (R - L) / n, bw = Math.min(28, cw * 0.62);
+    var svg = s('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'График: заявки столбцами, в боте линией' });
+    function y(v) { return B - (v / top) * (B - T); }
+    for (var g = 0; g <= top; g += step) {
+      svg.appendChild(s('line', { class: 'grid', x1: L, x2: R, y1: y(g), y2: y(g) }));
+      svg.appendChild(s('text', { class: 'ax', x: L - 6, y: y(g) + 3, 'text-anchor': 'end', text: String(g) }));
+    }
+    var stride = Math.ceil(n / 7), pts = [];
+    rows.forEach(function (r, i) {
+      var x = L + cw * i + (cw - bw) / 2, cx = L + cw * i + cw / 2;
+      var bar = s('rect', { class: 'bar', x: x, y: y(r.a), width: bw, height: Math.max(0, B - y(r.a)), rx: 3 });
+      bar.appendChild(s('title', { text: r.label + ': заявок ' + r.a + ', в боте ' + r.b }));
+      svg.appendChild(bar);
+      if (cw >= 26 && r.a > 0) svg.appendChild(s('text', { class: 'val', x: cx, y: y(r.a) - 4, 'text-anchor': 'middle', text: String(r.a) }));
+      pts.push([cx, y(r.b)]);
+      // по часам линия рвётся в нули, поэтому «в боте» там узкие тёмные столбцы поверх заявок
+      if (hourly && r.b > 0) svg.appendChild(s('rect', { class: 'bar2', x: cx - bw * 0.2, y: y(r.b), width: bw * 0.4, height: Math.max(0, B - y(r.b)), rx: 1.5 }));
+      if (i % stride === 0) svg.appendChild(s('text', { class: 'ax', x: cx, y: 182, 'text-anchor': 'middle', text: r.label }));
+    });
+    if (!hourly && pts.length > 1) svg.appendChild(s('polyline', { class: 'ln', points: pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ') }));
+    if (!hourly && n <= 31) pts.forEach(function (q) { svg.appendChild(s('circle', { class: 'dot', cx: q[0], cy: q[1], r: 3 })); });
+    return svg;
+  }
+
+  // ───────── Источники ─────────
+  function drawSources(v, d) {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Источники' }), h('div', { class: 'hint', text: 'Нажмите строку, чтобы открыть регистрации или подписчиков с этой меткой.' }));
+    if (!d.sources.length) { card.appendChild(h('div', { class: 'empty', text: 'За период нет заявок и меток.' })); v.appendChild(card); return; }
+    var body = d.sources.map(function (r) {
+      var open = function () {
+        if (r.kind === 'tag') { filt.subs = { q: '', utm: r.key, flag: '' }; data.subs = null; ui.tab = 'subs'; }
+        else { filt.leads = { q: '', utm: r.key, inbot: '' }; data.leads = null; ui.tab = 'leads'; }
+        saveUi(); renderTabs(); load(); window.scrollTo(0, 0);
+      };
+      return h('tr', { class: 'click', tabindex: '0', role: 'button', onclick: open, onkeydown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } },
+        h('td', { class: 'wrap', text: r.label }),
+        h('td', { text: r.leads }), h('td', { text: r.bot }), h('td', { text: r.kind === 'tag' ? '' : r.pct + '%' }));
+    });
+    card.appendChild(h('div', { class: 'tw' }, h('table', null,
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Источник' }), h('th', { scope: 'col', text: 'Заявки' }), h('th', { scope: 'col', text: 'В боте' }), h('th', { scope: 'col', text: 'Доля' }))),
+      h('tbody', null, body))));
+    card.appendChild(h('div', { class: 'hint', text: 'Источник: utm_source / utm_medium / utm_campaign. Без метки: откуда пришёл по referrer. Метка бота: человек пришёл сразу в бота, например 2gis.' }));
+    v.appendChild(card);
+  }
+
+  // ───────── Списки: регистрации и подписчики ─────────
+  var searchTimer = 0, listSeq = 0;
+  // Вкладка со списком: панель поиска строится один раз, при вводе обновляется только блок результатов, поле не теряет фокус.
+  function listTab(kind) {
+    var v = view(); v.textContent = '';
+    var box = h('div');
+    v.appendChild(listTools(kind, box));
+    v.appendChild(box);
+    if (data[kind]) fillResults(kind, box); else reloadResults(kind, box);
+  }
+  function listTools(kind, box) {
+    var f = filt[kind], isLeads = kind === 'leads';
+    var again = function () { data[kind] = null; reloadResults(kind, box); };
+    var tools = h('div', { class: 'tools' });
+    var input = h('input', { class: 'search', type: 'search', placeholder: isLeads ? 'Имя или телефон' : 'Имя или @ник', 'aria-label': 'Поиск', value: f.q, autocomplete: 'off',
+      oninput: function () { f.q = input.value; clearTimeout(searchTimer); searchTimer = setTimeout(again, 350); } });
+    var select;
+    if (isLeads) {
+      select = h('select', { class: 'sel', 'aria-label': 'Фильтр по боту', onchange: function () { f.inbot = select.value; again(); } },
+        h('option', { value: '', text: 'Все' }), h('option', { value: '1', text: 'В боте' }), h('option', { value: '0', text: 'Не в боте' }));
+      select.value = f.inbot;
+    } else {
+      select = h('select', { class: 'sel', 'aria-label': 'Фильтр', onchange: function () { f.flag = select.value; again(); } },
+        h('option', { value: '', text: 'Все' }), h('option', { value: 'clicked', text: 'Перешли на эфир' }), h('option', { value: 'noclick', text: 'Не перешли' }),
+        h('option', { value: 'paid', text: 'Оплатили' }), h('option', { value: 'blocked', text: 'Заблокировали' }));
+      select.value = f.flag;
+    }
+    tools.appendChild(h('div', { class: 'tools-row' }, input, select));
+    tools.appendChild(utmSelect(kind, again));
+    return tools;
+  }
+  // Фильтр по метке источника: список из сводки (те же строки, что на вкладке «Источники»); нет сводки, подгружаем.
+  function utmSelect(kind, again) {
+    var f = filt[kind];
+    var sel = h('select', { class: 'sel full', 'aria-label': 'Метка источника', onchange: function () { f.utm = sel.value; again(); } });
+    function fill() {
+      sel.textContent = '';
+      sel.appendChild(h('option', { value: '', text: 'Все метки' }));
+      sel.appendChild(h('option', { value: 'без метки', text: 'Без метки (все)' }));
+      var seen = { '': 1, 'без метки': 1 };
+      (data.summary ? data.summary.sources : []).forEach(function (r) {
+        if (kind === 'leads' && r.kind === 'tag') return;
+        seen[r.key] = 1;
+        sel.appendChild(h('option', { value: r.key, text: r.label + ' (' + (r.kind === 'tag' ? r.bot : r.leads) + ')' }));
+      });
+      if (f.utm && !seen[f.utm]) sel.appendChild(h('option', { value: f.utm, text: f.utm }));
+      sel.value = f.utm;
+    }
+    fill();
+    if (!data.summary) api('summary', periodParams()).then(function (r) { data.summary = r; fill(); }).catch(function () { /* без списка меток остаётся «Все метки» */ });
+    return sel;
+  }
+  function reloadResults(kind, box) {
+    var my = ++listSeq;
+    box.textContent = ''; box.appendChild(h('div', { class: 'skel' })); spin(true);
+    fetchList(kind, 0).then(function (r) {
+      if (my !== listSeq || ui.tab !== kind) return;
+      data[kind] = { items: r.items, total: r.total, hasMore: r.hasMore, leadsOk: r.leadsOk, leadsError: r.leadsError };
+      if (r.meta) $('updated').textContent = 'обновлено ' + r.meta.updated;
+      fillResults(kind, box);
+    }).catch(function (e) { if (my === listSeq && ui.tab === kind) fail(e); }).then(function () { if (my === listSeq) spin(false); });
+  }
+  function fillResults(kind, box) {
+    var L = data[kind], isLeads = kind === 'leads';
+    box.textContent = '';
+    if (isLeads && L.leadsOk === false) box.appendChild(h('div', { class: 'note warn', text: 'Журнал заявок недоступен' + (L.leadsError ? ' (' + L.leadsError + ')' : '') + '.' }));
+    box.appendChild(h('div', { class: 'hint', text: 'Найдено: ' + L.total }));
+    var list = h('div', { class: 'list' });
+    if (!L.items.length) list.appendChild(h('div', { class: 'empty', text: isLeads ? 'Заявок за период не нашлось.' : 'Подписчиков за период не нашлось.' }));
+    L.items.forEach(function (it) { list.appendChild(isLeads ? leadRow(it) : subRow(it)); });
+    box.appendChild(list);
+    if (L.hasMore) {
+      box.appendChild(h('button', { class: 'btn ghost more', type: 'button', text: 'Показать ещё', onclick: function (e) {
+        var btn = e.currentTarget; btn.disabled = true;
+        fetchList(kind, L.items.length).then(function (r) {
+          L.items = L.items.concat(r.items); L.total = r.total; L.hasMore = r.hasMore; fillResults(kind, box);
+        }).catch(function (err) { btn.disabled = false; fail(err); });
+      } }));
+    }
+  }  var PLACES = { hero: 'первый экран', popup: 'форма в окне', dock: 'нижняя кнопка', header: 'шапка', program: 'блок программы', final: 'финальный блок' };
+  function leadRow(it) {
+    return h('div', { class: 'row' },
+      h('div', { class: 'top' }, h('span', { text: it.t }), h('span', null, PLACES[it.place] || it.place, h('span', { class: 'badge ' + (it.inBot ? 'ok' : 'no'), text: it.inBot ? 'в боте' : 'не в боте' }))),
+      h('div', { class: 'nm', text: it.name || 'без имени' }),
+      h('button', { class: 'ph', type: 'button', 'aria-label': 'Скопировать телефон ' + it.phone, onclick: function () { copy(it.phone); } }, it.phone,
+        (function () { var i = s('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }); i.appendChild(s('rect', { x: 9, y: 9, width: 11, height: 11, rx: 2 })); i.appendChild(s('path', { d: 'M5 15V6a2 2 0 0 1 2-2h9' })); return i; })()),
+      h('div', { class: 'meta', text: it.utm }));
+  }
+  function subRow(it) {
+    var flags = [];
+    if (it.clicked) flags.push(h('span', { class: 'badge ok', text: 'перешёл на эфир' }));
+    else flags.push(h('span', { class: 'badge mute', text: 'не переходил' }));
+    if (it.paid) flags.push(h('span', { class: 'badge ok', text: 'оплатил' }));
+    if (it.blocked) flags.push(h('span', { class: 'badge no', text: 'заблокировал' }));
+    if (it.stopped) flags.push(h('span', { class: 'badge no', text: 'отписался' }));
+    return h('div', { class: 'row' },
+      h('div', { class: 'top' }, h('span', { text: it.t }), h('span', { text: 'эфир ' + it.dayLabel })),
+      h('div', { class: 'nm', text: (it.name || 'без имени') + (it.username ? '  @' + it.username : '') }),
+      h('div', { class: 'meta', text: 'Откуда: ' + it.origin + (it.src ? ' · ' + it.src : '') }),
+      h('div', { class: 'flags' }, flags));
+  }
+
+  // ───────── Эфиры ─────────
+  function drawStreams(v, d) {
+    if (!d.streams.length) { v.appendChild(h('div', { class: 'card' }, h('div', { class: 'empty', text: 'За период нет записей на эфир и отправок серии.' }))); return; }
+    d.streams.forEach(function (r) {
+      var card = h('div', { class: 'card' }, h('h2', { text: r.wd + ' ' + r.label }),
+        h('div', { class: 'kv' },
+          h('div', null, h('span', { text: 'Записались' }), h('b', { text: r.registered })),
+          h('div', null, h('span', { text: 'Перешли на эфир' }), h('b', { text: r.clicked + ' (' + r.pct + '%)' })),
+          h('div', null, h('span', { text: '«Я уже оплатил(а)»' }), h('b', { text: r.paid })),
+          h('div', null, h('span', { text: 'Сообщения серии' }), h('b', { text: r.sentOk + (r.sentBad ? ' (ошибок ' + r.sentBad + ')' : '') }))));
+      if (r.messages.length) {
+        card.appendChild(h('div', { class: 'msgs' }, r.messages.map(function (m) {
+          return h('div', null, h('b', { text: (m.off ? '+' + m.off + ' дн. ' : '') + (m.at ? m.at + ' ' : '') + m.id }), h('span', { text: m.ok + (m.bad ? ' (ошибок ' + m.bad + ')' : '') }));
+        })));
+      }
+      v.appendChild(card);
+    });
+    v.appendChild(h('div', { class: 'hint', text: 'Дни считаются по дню эфира, на который записан человек, независимо от переключателя выше.' }));
+  }
+
+  // ───────── Ошибки ─────────
+  function drawErrors(v, e) {
+    v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'Отправки сообщений' }),
+      h('div', { class: 'kv' },
+        h('div', null, h('span', { text: 'Всего за период' }), h('b', { text: e.sentTotal })),
+        h('div', null, h('span', { text: 'Дошли' }), h('b', { text: e.sentOk })),
+        h('div', null, h('span', { text: 'Неудачные' }), h('b', { text: e.failed })),
+        h('div', null, h('span', { text: 'Заблокировали бота' }), h('b', { text: e.blocked })))));
+    if (e.groups.length) v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'Что чаще всего не так' }),
+      h('div', { class: 'msgs' }, e.groups.map(function (g) { return h('div', null, h('b', { text: g.text }), h('span', { text: g.n + ' раз' })); }))));
+    if (e.last.length) v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'Последние ошибки' }),
+      h('div', { class: 'msgs' }, e.last.map(function (g) { return h('div', { class: 'col' }, h('b', { text: g.t + ' · ' + g.msg }), h('span', { text: g.err })); }))));
+    var rt = e.runtime;
+    v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'С запуска процесса' }),
+      h('div', { class: 'kv' },
+        h('div', null, h('span', { text: 'Пропуски по опозданию' }), h('b', { text: rt.skipLate })),
+        h('div', null, h('span', { text: 'Медиа заменено текстом' }), h('b', { text: rt.mediaFallback })),
+        h('div', null, h('span', { text: 'Сбои планировщика' }), h('b', { text: rt.tickError })),
+        h('div', null, h('span', { text: 'Отказы вебхука по секрету' }), h('b', { text: rt.webhookRejected })),
+        h('div', null, h('span', { text: 'Процесс работает' }), h('b', { text: e.uptime })),
+        h('div', null, h('span', { text: 'Версия' }), h('b', { text: e.version })))));
+    if (rt.skipLateIds.length) v.appendChild(h('div', { class: 'hint', text: 'Пропущены по опозданию: ' + rt.skipLateIds.join(', ') + '.' }));
+    v.appendChild(h('div', { class: 'hint', text: 'Счётчики процесса считаются в памяти с момента запуска и от периода не зависят.' }));
+  }
+
+  // ───────── старт ─────────
+  if (!initData) {
+    showLogin('Откройте приложение из Telegram: кнопка «Админка» в чате с ботом или команда /app.', true);
+    $('login-sub').textContent = 'Откройте админку в Telegram на телефоне или компьютере.';
+  } else if (token) showApp();
+  else showLogin('', false);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>og:image лендинга, эфир каждый день, 1200x630</title>
+<link rel="stylesheet" href="base.css">
+<style>
+html,body{width:1200px;height:630px}
+.stage{position:relative;width:1200px;height:630px;overflow:hidden;
+  background:
+    radial-gradient(560px 520px at 1040px 250px,rgba(227,192,123,.36),rgba(227,192,123,.10) 50%,transparent 74%),
+    radial-gradient(480px 400px at 60px 640px,rgba(160,83,42,.30),transparent 70%),
+    radial-gradient(760px 560px at 22% 4%,#2a211b 0%,transparent 70%),
+    linear-gradient(115deg,#14100E 0%,#1a1411 55%,#211A16 100%)}
+.ring{position:absolute;left:760px;top:-30px;width:560px;height:560px;border-radius:50%;border:1.5px solid rgba(227,192,123,.22)}
+.ring.r2{left:820px;top:30px;width:440px;height:440px;border-color:rgba(227,192,123,.12)}
+.alex{position:absolute;left:792px;top:-6px;height:690px;width:auto;
+  filter:drop-shadow(0 0 1px rgba(255,226,165,.95)) drop-shadow(0 0 16px rgba(227,192,123,.30)) drop-shadow(-10px 14px 22px rgba(0,0,0,.5))}
+.floor{position:absolute;left:0;right:0;bottom:0;height:170px;background:linear-gradient(0deg,rgba(20,16,14,.7),transparent)}
+.leftfade{position:absolute;left:0;top:0;bottom:0;width:860px;background:linear-gradient(90deg,rgba(20,16,14,.5) 0%,rgba(20,16,14,.35) 70%,transparent 100%)}
+
+/* текст в центральном квадрате 630x630 (x 285..915): блок 318..838, поля по 33 px */
+.copy{position:absolute;left:318px;top:0;bottom:0;width:520px;display:flex;flex-direction:column;justify-content:center}
+.kicker{font-weight:700;font-size:22px;line-height:1.35;letter-spacing:.11em;color:var(--gold);text-transform:uppercase}
+h1{font-family:'Unbounded',sans-serif;font-weight:700;font-size:56px;line-height:1.1;letter-spacing:-.015em;color:var(--cream);margin-top:22px;white-space:nowrap}
+h1 span{display:block;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pill{align-self:flex-start;display:inline-flex;align-items:center;gap:16px;margin-top:30px;padding:0 34px 0 28px;height:86px;border-radius:999px;
+  background:linear-gradient(135deg,#F0D49A 0%,#E3C07B 40%,#C9A05A 100%);color:#14100E;
+  font-weight:800;font-size:27px;line-height:1.2;letter-spacing:.05em;box-shadow:0 10px 30px rgba(201,160,90,.35),inset 0 1px 0 rgba(255,255,255,.5)}
+.pill b{display:block;flex:none;width:15px;height:15px;border-radius:50%;background:#A0532A;box-shadow:0 0 0 5px rgba(160,83,42,.25)}
+
+/* декор по краям (в квадратной обрезке пропадает) */
+.glass{position:absolute}
+.c-reel{left:38px;top:132px;width:196px;height:348px;padding:8px;border-radius:26px;transform:rotate(-5deg)}
+.c-reel .in{position:relative;width:100%;height:100%;border-radius:19px;overflow:hidden;background:#000}
+.c-reel img{width:100%;height:100%;object-fit:cover;display:block}
+.c-reel .views{position:absolute;left:8px;bottom:8px;display:flex;align-items:center;gap:7px;padding:0 13px 0 10px;height:36px;border-radius:999px;background:rgba(20,16,14,.72);border:1px solid rgba(227,192,123,.5);font-weight:800;font-size:19px;color:var(--cream)}
+.c-reel .views svg{width:19px;height:19px;flex:none}
+.c-app{left:944px;top:452px;width:230px;height:150px;padding:7px;border-radius:22px;transform:rotate(3deg)}
+.c-app .in{position:relative;width:100%;height:100%;border-radius:16px;overflow:hidden;background:#0d0d0f}
+.c-app img{position:absolute;left:-64px;top:-18px;width:410px;max-width:none}
+.logo{position:absolute;left:40px;bottom:34px;height:32px;width:auto}
+</style></head>
+<body>
+<div class="stage">
+  <div class="ring"></div><div class="ring r2"></div>
+  <img class="alex" src="../../workshop-montazh/assets/img/alex.png" alt="">
+  <div class="floor"></div><div class="leftfade"></div>
+
+  <div class="glass c-reel"><div class="in">
+    <img src="../../workshop-montazh/assets/tg/reel-119k.jpg" alt="">
+    <div class="views"><svg viewBox="0 0 24 24" fill="none" stroke="#E3C07B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>119 тыс.</div>
+  </div></div>
+  <div class="glass c-app"><div class="in"><img src="../../public/montage/cases/ai-targetolog.webp" alt=""></div></div>
+
+  <div class="copy">
+    <div class="kicker">Бесплатный воркшоп · <span style="white-space:nowrap">Вайб-продакшен</span></div>
+    <h1>Рилс,<br>презентация<br>и приложение<span>за один вечер</span></h1>
+    <div class="pill"><b></b><span>КАЖДЫЙ ДЕНЬ<br>В 20:00 ПО АЛМАТЫ</span></div>
+  </div>
+  <img class="logo" src="onai-logo-night.svg" alt="onAI">
+  <div class="grain"></div>
+</div>
+</body></html>

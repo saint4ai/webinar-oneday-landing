@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Фон комнаты эфира Bizon 365</title>
+<link rel="stylesheet" href="base.css">
+<style>
+html,body{width:1920px;height:1080px}
+.bg{position:relative;width:1920px;height:1080px;overflow:hidden;
+  background:
+    /* свечение из углов и по краям, очень мягкое */
+    radial-gradient(900px 700px at -4% -8%,rgba(227,192,123,.27),transparent 70%),
+    radial-gradient(1000px 760px at 104% 112%,rgba(201,160,90,.30),transparent 70%),
+    radial-gradient(640px 520px at 102% -6%,rgba(227,192,123,.15),transparent 72%),
+    radial-gradient(700px 560px at -2% 108%,rgba(160,83,42,.26),transparent 72%),
+    radial-gradient(360px 760px at -2% 50%,rgba(227,192,123,.11),transparent 75%),
+    radial-gradient(360px 760px at 102% 50%,rgba(227,192,123,.11),transparent 75%),
+    linear-gradient(128deg,#14100E 0%,#1b1512 38%,#211A16 62%,#16120F 100%)}
+/* центр спокойный и тёмный: здесь плеер и чат */
+.calm{position:absolute;inset:0;background:radial-gradient(ellipse 54% 50% at 50% 50%,rgba(20,16,14,.62) 0%,rgba(20,16,14,.40) 55%,transparent 100%)}
+/* 3 едва заметных диагональных луча */
+.beam{position:absolute;transform-origin:50% 50%;background:linear-gradient(90deg,transparent,rgba(255,228,170,.085) 50%,transparent)}
+.b1{left:130px;top:-420px;width:260px;height:1900px;transform:rotate(24deg)}
+.b2{left:1480px;top:-460px;width:190px;height:1900px;transform:rotate(24deg);opacity:.8}
+.b3{left:-120px;top:-300px;width:150px;height:1700px;transform:rotate(24deg);opacity:.9}
+/* тонкая рамка и риски, как на карточках серии */
+.frame{position:absolute;inset:26px;border-radius:36px;border:1px solid rgba(227,192,123,.13)}
+.tick{position:absolute;background:rgba(227,192,123,.34)}
+.tick.h{height:2px}
+.tick.v{width:1px;background:rgba(227,192,123,.22)}
+.ruler{position:absolute;width:20px;height:1px;background:rgba(227,192,123,.20)}
+.ruler.l{left:26px}.ruler.r{right:26px}
+.ruler.long{width:34px;background:rgba(227,192,123,.30)}
+.logo{position:absolute;left:68px;bottom:60px;height:38px;width:auto;opacity:.5}
+</style></head>
+<body>
+<div class="bg" id="bg">
+  <div class="beam b1"></div><div class="beam b2"></div><div class="beam b3"></div>
+  <div class="calm"></div>
+  <div class="frame"></div>
+  <div class="tick h" style="left:68px;top:68px;width:44px"></div>
+  <div class="tick h" style="right:68px;top:68px;width:44px"></div>
+  <div class="tick h" style="right:68px;bottom:68px;width:44px"></div>
+  <div class="ruler l long" style="top:210px"></div>
+  <div class="ruler l" style="top:264px"></div>
+  <div class="ruler l" style="top:318px"></div>
+  <div class="ruler l" style="top:372px"></div>
+  <div class="ruler l long" style="top:426px"></div>
+  <div class="ruler l" style="top:480px"></div>
+  <div class="ruler l" style="top:534px"></div>
+  <div class="ruler l" style="top:588px"></div>
+  <div class="ruler l long" style="top:642px"></div>
+  <div class="ruler l" style="top:696px"></div>
+  <div class="ruler l" style="top:750px"></div>
+  <div class="ruler l" style="top:804px"></div>
+  <div class="ruler l long" style="top:858px"></div>
+  <div class="ruler r long" style="top:210px"></div>
+  <div class="ruler r" style="top:264px"></div>
+  <div class="ruler r" style="top:318px"></div>
+  <div class="ruler r" style="top:372px"></div>
+  <div class="ruler r long" style="top:426px"></div>
+  <div class="ruler r" style="top:480px"></div>
+  <div class="ruler r" style="top:534px"></div>
+  <div class="ruler r" style="top:588px"></div>
+  <div class="ruler r long" style="top:642px"></div>
+  <div class="ruler r" style="top:696px"></div>
+  <div class="ruler r" style="top:750px"></div>
+  <div class="ruler r" style="top:804px"></div>
+  <div class="ruler r long" style="top:858px"></div>
+  <img class="logo" src="onai-logo-night.svg" alt="">
+  <div class="grain" style="opacity:.09;mix-blend-mode:normal"></div>
+</div>
+</body></html>

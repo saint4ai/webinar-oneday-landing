@@ -7,7 +7,6 @@ import { apiUrl, withBase } from "@/lib/api-url";
 import { newEventId, collectMetaClientData, trackLead } from "@/lib/meta-pixel";
 import { ymGoal } from "@/lib/analytics/ym";
 import { pushWorkshopLead } from "@/lib/gtm";
-import { buildStaticEasybotUrl } from "@/lib/easybot/redirect";
 
 type Props = {
   open: boolean;
@@ -15,7 +14,7 @@ type Props = {
 };
 
 // POST /api/lead создаёт лид в amoCRM воронке «Однодневник» с тегом «Однодневник»
-// и шлёт событие Lead в Meta CAPI; редирект формы — в WhatsApp/EasyBot.
+// и шлёт событие Lead в Meta CAPI; после заявки ведёт на /thank-you (WhatsApp-сообщество), EasyBot не используется.
 
 export const RegisterModal = ({ open, onClose }: Props) => {
   const [name, setName] = useState("");
@@ -100,9 +99,9 @@ export const RegisterModal = ({ open, onClose }: Props) => {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Лид принят. Редирект в EasyBot (персональная ссылка с кодом → бот активирует скрипты).
+      // Лид принят. Если сервер отдал redirect — идём туда, иначе на /thank-you: там кнопка и авто-переход в WhatsApp-сообщество.
       const data = (await res.json().catch(() => ({}))) as { redirect?: string };
-      const dest = data.redirect || buildStaticEasybotUrl(meta.utm);
+      const dest = data.redirect || withBase("/thank-you");
       setBotDest(dest);
       // Meta Pixel Lead (дедуп с CAPI) + Я.Метрика конверсия (раньше была на /thank-you)
       trackLead(eventId);
