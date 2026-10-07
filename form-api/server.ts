@@ -16,6 +16,7 @@
  *   POST /api/ty-click      — клик по кнопке Telegram/WhatsApp на странице «Спасибо» (204)
  *   GET  /api/go/<token>    — переход в эфир с учётом клика (302 на Bizon)
  *   GET  /api/admin-app     — мини-приложение админки для Telegram (страница, только владелец, пароль)
+ *   GET  /api/tg-web-app.js — скрипт Telegram Web App со своего адреса (общий CSP nginx не пускает telegram.org)
  *   POST /api/admin/login   — вход в админку: initData Telegram + пароль, в ответ токен сессии
  *   GET  /api/admin/{summary,leads,subscribers,errors} — данные админки (initData + токен на каждый запрос)
  *   GET  /api/health        — состояние (наружу через nginx), /health — то же для проверки на сервере
@@ -35,7 +36,7 @@ import { sendOwnerAlert } from "../lib/telegram/alert";
 import { readWhatsAppLink, writeWhatsAppLink, readWhatsAppRecord, isValidWhatsAppLink } from "../lib/whatsapp-link";
 import { calendarDay, handleGo, handleTgWorkshop, handleTyClick, initTgWorkshop, tgHealth } from "./tg-workshop";
 import { startScheduler } from "./tg-scheduler";
-import { handleAdminApp, handleAdminData, handleAdminLogin } from "./tg-miniapp";
+import { handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk } from "./tg-miniapp";
 
 /**
  * Секреты из .env рядом с бандлом (PM2 сам env-файлы не читает).
@@ -417,6 +418,7 @@ const server = createServer(async (req, res) => {
     if (method === "POST" && url === "/api/ty-click") return await handleTyClick(req, res);
     if ((method === "GET" || method === "HEAD") && url.startsWith("/api/go/")) return handleGo(req, res, url.slice("/api/go/".length));
     if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
+    if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     // /api/health виден снаружи через nginx (/workshop/api/health), /health только с самого сервера.

@@ -1,7 +1,8 @@
 /**
  * Мини-приложение админки воркшопа (Telegram Mini App) только для владельца.
  *
- *   GET  /api/admin-app            страница (admin-app.html рядом с бандлом), CSP: свой origin и telegram.org
+ *   GET  /api/admin-app            страница (admin-app.html рядом с бандлом), CSP: только свой origin
+ *   GET  /api/tg-web-app.js        скрипт Telegram Web App со своего адреса (общий CSP nginx не пускает telegram.org)
  *   POST /api/admin/login          initData + пароль, в ответ токен сессии на 12 часов
  *   GET  /api/admin/summary        сводка, по дням, источники, эфиры за период
  *   GET  /api/admin/leads          регистрации (заявки с сайта), поиск и фильтры, подгрузка по 50
@@ -45,6 +46,7 @@ import {
 } from "./tg-admin";
 import { activeSeries, adminAppIds, adminCtx, botEnabled, botToken, isAdminAppUser } from "./tg-workshop";
 import { addDays, dayKeyOf, hhmmOf, isDayKey, partsInTZ } from "./tg-time";
+import { TG_WEBAPP_SDK } from "./tg-webapp-sdk";
 
 // ───────────────────────── конфиг ─────────────────────────
 
@@ -673,7 +675,21 @@ function readPage(): string | null {
   return null;
 }
 
-/** GET /api/admin-app: один HTML. CSP: только свой origin и telegram.org, скрипты и стили по одноразовому nonce. */
+/**
+ * GET|HEAD /api/tg-web-app.js: скрипт Telegram Web App с нашего адреса. Общий CSP nginx не пускает
+ * https://telegram.org в script-src, поэтому страница берёт SDK у себя (текст зашит в tg-webapp-sdk.ts).
+ */
+export function handleTgSdk(req: IncomingMessage, res: ServerResponse): void {
+  res.writeHead(200, {
+    "Content-Type": "application/javascript; charset=utf-8",
+    "Content-Length": Buffer.byteLength(TG_WEBAPP_SDK),
+    "Cache-Control": "public, max-age=86400",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(req.method === "HEAD" ? undefined : TG_WEBAPP_SDK);
+}
+
+/** GET /api/admin-app: один HTML. CSP: только свой origin, скрипты и стили по одноразовому nonce. */
 export function handleAdminApp(req: IncomingMessage, res: ServerResponse): void {
   const html = readPage();
   if (html === null) return send(res, 404, { ok: false, error: "not_found" });
@@ -685,7 +701,7 @@ export function handleAdminApp(req: IncomingMessage, res: ServerResponse): void 
     "Cache-Control": "no-store",
     "Content-Security-Policy": [
       "default-src 'self'",
-      `script-src 'nonce-${nonce}' https://telegram.org`,
+      `script-src 'nonce-${nonce}'`,
       `style-src 'nonce-${nonce}'`,
       "style-src-attr 'unsafe-inline'",
       "img-src 'self' data:",

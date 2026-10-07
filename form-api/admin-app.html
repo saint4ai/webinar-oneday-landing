@@ -206,7 +206,7 @@ tr.click:active td{background:var(--gold-soft)}
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script nonce="__NONCE__" src="tg-web-app.js"></script>
 <script nonce="__NONCE__">
 (function () {
   'use strict';
@@ -725,7 +725,7 @@ tr.click:active td{background:var(--gold-soft)}
   // ───────── старт ─────────
   if (!initData) {
     showLogin('Откройте приложение из Telegram: кнопка «Админка» в чате с ботом или команда /app.', true);
-    $('login-sub').textContent = 'Приложение работает только внутри Telegram.';
+    $('login-sub').textContent = 'Откройте админку в Telegram на телефоне или компьютере.';
   } else if (token) showApp();
   else showLogin('', false);
 })();

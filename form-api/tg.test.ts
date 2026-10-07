@@ -43,7 +43,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync } from "node:fs";
 import { adminAppIds, adminAppUrl, isAdminAppUser } from "./tg-workshop";
 import {
-  buildErrors, buildLeads, buildSubscribers, buildSummary, handleAdminApp, handleAdminData, handleAdminLogin, INIT_MAX_AGE_SEC,
+  buildErrors, buildLeads, buildSubscribers, buildSummary, handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk, INIT_MAX_AGE_SEC,
   LOGIN_MAX_FAILS, LOGIN_WINDOW_MS, loginLockedFor, noteLoginFail, pinMatches, resetAdminAppState, SESSION_TTL_MS, signSession,
   verifyInitData, verifySession, type ListQuery,
 } from "./tg-miniapp";
@@ -2267,6 +2267,7 @@ async function startAdminApi() {
     const url = (req.url || "").split("?")[0].replace(/\/+$/, "") || "/";
     const method = req.method || "GET";
     if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
+    if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return void handleAdminLogin(req, res);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     res.writeHead(404);
@@ -2285,7 +2286,7 @@ function captureLogs() {
   return { out, restore: () => Object.assign(console, orig) };
 }
 
-test("страница: HTML отдаётся, CSP только свой origin и telegram.org, nonce другой на каждый запрос, no-store", async () => {
+test("страница: HTML отдаётся, CSP только свой origin (script-src без telegram.org), nonce другой на каждый запрос, no-store", async () => {
   const { server, base } = await startAdminApi();
   try {
     const a = await fetch(`${base}/api/admin-app`);
@@ -2299,10 +2300,13 @@ test("страница: HTML отдаётся, CSP только свой origin 
     assert.ok(nonce.length >= 16);
     assert.match(csp, /default-src 'self'/);
     assert.match(csp, /connect-src 'self'/);
-    assert.match(csp, /script-src 'nonce-[^']+' https:\/\/telegram\.org(;|$)/);
-    // кроме своего origin разрешён только telegram.org
+    // script-src только свой nonce: https://telegram.org там не нужен (скрипт Telegram отдаём сами)
+    assert.match(csp, /script-src 'nonce-[^']+'(;|$)/);
+    assert.equal(/script-src[^;]*telegram\.org/.test(csp), false, csp);
+    // единственные внешние адреса в CSP: кто может встраивать страницу (frame-ancestors)
     const hosts = [...csp.matchAll(/https?:\/\/([^\s;]+)/g)].map((m) => m[1]);
     assert.ok(hosts.length > 0 && hosts.every((h) => h === "telegram.org" || h === "*.telegram.org"), hosts.join(","));
+    assert.match(csp, /frame-ancestors https:\/\/telegram\.org https:\/\/\*\.telegram\.org/);
     assert.equal(/unsafe-eval/.test(csp), false);
     assert.equal(html.includes("__NONCE__"), false);
     assert.ok(html.includes(`nonce="${nonce}"`));
@@ -2323,7 +2327,50 @@ test("страница: HTML отдаётся, CSP только свой origin 
   }
 });
 
-test("admin-app.html: без длинного тире, без innerHTML, скрипты и стили по nonce, внешний адрес один", () => {
+test("скрипт Telegram со своего адреса: 200, application/javascript, WebApp внутри, HEAD без тела", async () => {
+  const { server, base } = await startAdminApi();
+  try {
+    const r = await fetch(`${base}/api/tg-web-app.js`);
+    const js = await r.text();
+    assert.equal(r.status, 200);
+    assert.match(r.headers.get("content-type") || "", /^application\/javascript/);
+    assert.equal(r.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(r.headers.get("cache-control"), "public, max-age=86400");
+    assert.equal(Number(r.headers.get("content-length")), Buffer.byteLength(js));
+    assert.ok(js.length > 20000, String(js.length));
+    assert.ok(js.includes("WebApp"));
+    const head = await fetch(`${base}/api/tg-web-app.js`, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.match(head.headers.get("content-type") || "", /^application\/javascript/);
+    assert.equal(Number(head.headers.get("content-length")), Buffer.byteLength(js));
+    assert.equal(await head.text(), "");
+  } finally {
+    await stopAdminApi(server);
+  }
+});
+
+test("регрессия на причину: каждый <script src> в отданном HTML со своего origin и с nonce, чужих адресов нет", async () => {
+  const { server, base } = await startAdminApi();
+  try {
+    const html = await fetch(`${base}/api/admin-app`).then((r) => r.text());
+    const nonce = /<script nonce="([^"]+)"/.exec(html)?.[1] || "";
+    assert.ok(nonce.length >= 16);
+    const withSrc = [...html.matchAll(/<script\b([^>]*\bsrc\s*=[^>]*)>/g)].map((m) => m[1]);
+    assert.ok(withSrc.length >= 1);
+    for (const attrs of withSrc) {
+      const src = /\bsrc="([^"]*)"/.exec(attrs)?.[1] ?? "";
+      assert.ok(src.length > 0 && !src.includes("://") && !src.startsWith("//"), `чужой адрес скрипта: ${src}`);
+      assert.ok(attrs.includes(`nonce="${nonce}"`), `у скрипта ${src} нет nonce`);
+    }
+    // относительный путь со страницы /workshop/api/admin-app даёт /workshop/api/tg-web-app.js
+    assert.ok(withSrc.some((a) => a.includes('src="tg-web-app.js"')));
+    assert.equal(new URL("tg-web-app.js", "https://onai.academy/workshop/api/admin-app").pathname, "/workshop/api/tg-web-app.js");
+  } finally {
+    await stopAdminApi(server);
+  }
+});
+
+test("admin-app.html: без длинного тире, без innerHTML, скрипты и стили по nonce, внешних адресов нет", () => {
   const html = readFileSync(PAGE_FILE, "utf8");
   assert.equal(html.includes("—"), false, "длинное тире");
   assert.equal(html.includes("–"), false, "среднее тире");
@@ -2331,11 +2378,13 @@ test("admin-app.html: без длинного тире, без innerHTML, скр
   assert.equal(/\sstyle\s*=/.test(html), false, "inline-стили в разметке");
   const scripts = [...html.matchAll(/<script\b([^>]*)>/g)].map((m) => m[1]);
   assert.equal(scripts.length, 2);
-  assert.ok(scripts.some((s) => s.includes('src="https://telegram.org/js/telegram-web-app.js"')));
-  assert.ok(scripts.some((s) => s.includes('nonce="__NONCE__"')));
+  assert.ok(scripts.some((s) => s.includes('src="tg-web-app.js"') && s.includes('nonce="__NONCE__"')));
+  assert.ok(scripts.every((s) => s.includes('nonce="__NONCE__"')));
   assert.ok([...html.matchAll(/<style\b([^>]*)>/g)].every((m) => m[1].includes('nonce="__NONCE__"')));
+  // внешних адресов ноль: единственное вхождение http(s) это пространство имён SVG (xmlns), оно ничего не загружает
   const hosts = new Set([...html.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]));
-  assert.deepEqual([...hosts].sort(), ["telegram.org", "www.w3.org"]);
+  assert.deepEqual([...hosts].sort(), ["www.w3.org"]);
+  assert.equal(/telegram\.org/.test(html), false);
   // тема Telegram и ширина экрана
   assert.match(html, /themeParams/);
   assert.match(html, /name="viewport"/);
@@ -2842,7 +2891,13 @@ test("дым-тест на порту 4110: страница отдаётся, �
     const html = await page.text();
     assert.equal(page.status, 200);
     assert.ok(html.includes("Админка воркшопа") && !html.includes("__NONCE__"));
-    assert.match(page.headers.get("content-security-policy") || "", /telegram\.org/);
+    assert.equal(/script-src[^;]*telegram\.org/.test(page.headers.get("content-security-policy") || ""), false);
+    // скрипт Telegram со своего адреса, из бандла
+    const sdk = await fetch(`${base}/api/tg-web-app.js`);
+    assert.equal(sdk.status, 200);
+    assert.match(sdk.headers.get("content-type") || "", /^application\/javascript/);
+    assert.ok((await sdk.text()).includes("WebApp"));
+    assert.equal((await fetch(`${base}/api/tg-web-app.js`, { method: "HEAD" })).status, 200);
     // вход: подставная initData, подписанная тестовым токеном бота
     const init = initFor(900);
     const jsonPost = (body: unknown) => fetch(`${base}/api/admin/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
