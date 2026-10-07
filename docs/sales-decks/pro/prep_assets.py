@@ -1,7 +1,7 @@
 # Подготовка картинок презентации «Vibe Coding PRO»: сжатие в img/ и три фона страниц.
 # Запуск: python docs/sales-decks/pro/prep_assets.py
 # Фоны снимаются с Chromium как обычные JPEG: в PDF они лежат одной картинкой, без сотен градиентов (мобильные просмотрщики на них белеют).
-import os, shutil, sys
+import os, shutil, sys, urllib.request
 import numpy as np
 from PIL import Image
 from playwright.sync_api import sync_playwright
@@ -11,6 +11,7 @@ rng = np.random.default_rng(7)
 HERE = os.path.dirname(os.path.abspath(__file__))
 IMG = os.path.join(HERE, "img")
 LAND = r"C:\Проекты\webinar-oneday-landing\public\montage"
+CASES_ERICKSON = r"C:\Проекты\Мой проект\projects\saint_landing\public\assets\cases"
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OBJ = os.path.join(REPO, "docs", "tg-media", "obj")
 # Python-playwright ждёт другую сборку Chromium, поэтому берём headless shell 1223, уже стоящий для Node-playwright 1.60
@@ -38,7 +39,6 @@ shutil.copyfile(os.path.join(REPO, "docs", "tg-media", "onai-logo-night.svg"), o
 save_png(os.path.join(OBJ, "lg-i-phones-x3.png"), "obj-phones.png", 800)
 save_png(os.path.join(OBJ, "lg-i-box-x3.png"), "obj-box.png", 520)
 save_png(os.path.join(OBJ, "lg-i-botchat-x3.png"), "obj-botchat.png", 460)
-save_png(os.path.join(OBJ, "lg-i-robot-x3.png"), "obj-robot.png", 520)
 save_png(os.path.join(LAND, "lego", "lg-i-rocket.webp"), "obj-rocket.png", 202)
 save_png(os.path.join(LAND, "lego", "lg-s39-calendar.webp"), "obj-calendar.png", 620)
 save_png(os.path.join(LAND, "lego", "lg-s44-codeword.webp"), "obj-codeword.png", 640)
@@ -46,7 +46,13 @@ save_png(os.path.join(LAND, "lego", "lg-s44-codeword.webp"), "obj-codeword.png",
 # автор: вырезанное фото
 save_png(os.path.join(LAND, "alex-cacao.webp"), "alex.png", 640)
 
-# кейсы (кейс Erickson только текстом, без экранов: на карточке LEGO-робот AI-куратора)
+# кейс Erickson: экран AI-куратора (без лиц и без экрана входа) и логотип с живой страницы onai.academy/saint
+save_jpg(os.path.join(CASES_ERICKSON, "erickson-curator-large.webp"), "case-erickson.jpg", 820)
+LOGO = os.path.join(IMG, "erickson-logo.svg")
+if not os.path.exists(LOGO):
+    urllib.request.urlretrieve("https://onai.academy/saint/assets/logos/erickson.svg", LOGO)
+
+# остальные кейсы
 save_jpg(os.path.join(LAND, "cases", "onai-academy.webp"), "case-academy.jpg", 820)
 save_jpg(os.path.join(LAND, "cases", "ai-assistant.webp"), "case-assistant.jpg", 820)
 save_jpg(os.path.join(LAND, "cases", "ai-targetolog.webp"), "case-targetolog.jpg", 820)
