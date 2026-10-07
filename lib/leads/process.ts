@@ -3,7 +3,7 @@
  * и фоновым reconciler'ом. На ретраях сначала проба существования (дедуп
  * от потерянного ответа), затем создание.
  */
-import { createWorkshopLead, findExistingWorkshopLead } from "@/lib/amocrm/client";
+import { addWorkshopLeadTelegramNote, createWorkshopLead, findExistingWorkshopLead } from "@/lib/amocrm/client";
 import { markDone, type CapturedLead } from "@/lib/leads/store";
 
 export type PushResult =
@@ -18,6 +18,8 @@ export async function pushLeadToAmo(
   if (opts.probeFirst) {
     const found = await findExistingWorkshopLead(lead.phone);
     if (found.ok && found.leadId) {
+      // Сделка уже есть, а примечание с Telegram могло не успеть уйти вместе с потерянным ответом.
+      if (lead.telegram) await addWorkshopLeadTelegramNote(found.leadId, lead.telegram);
       await markDone(lead.id, found.leadId);
       return { ok: true, leadId: found.leadId, adopted: true };
     }
@@ -29,6 +31,7 @@ export async function pushLeadToAmo(
     source: lead.source ?? "landing",
     utm: lead.utm,
     fbclid: lead.fbclid,
+    telegram: lead.telegram,
   });
 
   if (r.ok) {

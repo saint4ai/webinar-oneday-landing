@@ -31,6 +31,7 @@ import { join } from "node:path";
 import { sendLeadEvent } from "../lib/meta-capi";
 import { captureLead, markFailed, incrementRetry, markAlertSent, ingestWalToSupabase, type CapturedLead } from "../lib/leads/store";
 import { pushLeadToAmo, type PushResult } from "../lib/leads/process";
+import { normalizeTelegram, unpackUtm } from "../lib/leads/telegram-nick";
 import { selectRetryable, supabaseConfigured } from "../lib/supabase-rest";
 import { sendOwnerAlert } from "../lib/telegram/alert";
 import { readWhatsAppLink, writeWhatsAppLink, readWhatsAppRecord, isValidWhatsAppLink } from "../lib/whatsapp-link";
@@ -111,6 +112,8 @@ async function readJson<T>(req: IncomingMessage): Promise<T | null> {
 type LeadPayload = {
   name: string;
   phone: string;
+  /** Необязательно: «@ник», «t.me/ник», «https://t.me/ник». Мусор молча отбрасывается, заявку не отклоняем. */
+  telegram?: unknown;
   source?: string;
   consent?: boolean;
   eventId?: string;
@@ -148,6 +151,7 @@ async function handleLead(req: IncomingMessage, res: ServerResponse) {
 
   const cleanName = name.trim();
   const cleanPhone = phone.trim();
+  const cleanTelegram = normalizeTelegram(payload.telegram);
 
   const siteUrl =
     eventSourceUrl ||
@@ -174,6 +178,7 @@ async function handleLead(req: IncomingMessage, res: ServerResponse) {
     source,
     utm,
     fbclid,
+    ...(cleanTelegram ? { telegram: cleanTelegram } : {}),
   });
 
   // ── Остальные плечи — В ФОНЕ, НЕ блокируем форму/редирект ──────────
@@ -204,7 +209,8 @@ async function handleLead(req: IncomingMessage, res: ServerResponse) {
           ? `ok:${capiResult.value.received}`
           : `skip:${capiResult.value.reason}`
         : "throw";
-    console.log("[lead] name=%s phone=***%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), source, crmStatus, capiStatus);
+    // Ник в лог не пишем, как и телефон целиком: только факт, что Telegram указан.
+    console.log("[lead] name=%s phone=***%s tg=%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), cleanTelegram ? "yes" : "no", source, crmStatus, capiStatus);
   });
 
   // Воронка одна: страница «Спасибо», где человек сам выбирает WhatsApp или Telegram-бот.
@@ -232,14 +238,17 @@ async function handleReconcile(req: IncomingMessage, res: ServerResponse) {
 
   for (const row of rows) {
     if (!row.id) continue;
+    // Ник Telegram лежит в utm строки (ключ telegram): разделяем обратно на метки и ник.
+    const { utm, telegram } = unpackUtm(row.utm);
     const lead: CapturedLead = {
       id: row.id,
       eventId: row.event_id ?? undefined,
       name: row.name,
       phone: row.phone,
       source: row.source ?? undefined,
-      utm: row.utm ?? undefined,
+      utm,
       fbclid: row.fbclid ?? undefined,
+      ...(telegram ? { telegram } : {}),
     };
 
     const result = await pushLeadToAmo(lead, { probeFirst: true });

@@ -184,6 +184,33 @@ async function selectRetryable(maxRetry, limit = 50) {
   }
 }
 
+// lib/leads/telegram-nick.ts
+var TG_UTM_KEY = "telegram";
+function normalizeTelegram(raw) {
+  if (typeof raw !== "string") return "";
+  let s = raw.slice(0, 300).replace(/\s+/g, "");
+  s = s.replace(/^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me|telegram\.dog)\//i, "");
+  s = s.replace(/^@+/, "");
+  s = s.replace(/[/?#].*$/, "");
+  return /^[A-Za-z0-9_]{4,32}$/.test(s) ? s : "";
+}
+function packUtm(utm, telegram) {
+  const out = {};
+  for (const [k, v] of Object.entries(utm ?? {})) if (k !== TG_UTM_KEY) out[k] = v;
+  if (telegram) out[TG_UTM_KEY] = telegram;
+  return Object.keys(out).length ? out : null;
+}
+function unpackUtm(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  const utm = {};
+  for (const [k, v] of Object.entries(raw)) if (k !== TG_UTM_KEY) utm[k] = v;
+  const telegram = normalizeTelegram(raw[TG_UTM_KEY]);
+  return {
+    ...Object.keys(utm).length ? { utm } : {},
+    ...telegram ? { telegram } : {}
+  };
+}
+
 // lib/leads/store.ts
 var LOG_PATH = process.env.LEADS_LOG_PATH || "/var/lib/workshop/leads.jsonl";
 function appendWal(entry) {
@@ -207,7 +234,8 @@ async function captureLead(input) {
     name: input.name,
     phone: input.phone,
     source: input.source ?? null,
-    utm: input.utm ?? null,
+    // В workshop_leads нет колонки под Telegram: ник едет в jsonb utm (ключ telegram), без миграции.
+    utm: packUtm(input.utm, input.telegram),
     fbclid: input.fbclid ?? null,
     status: "pending",
     retry_count: 0
@@ -263,7 +291,7 @@ async function ingestWalToSupabase() {
       name: e.name,
       phone: e.phone,
       source: e.source ?? null,
-      utm: e.utm ?? null,
+      utm: packUtm(e.utm ?? void 0, normalizeTelegram(e.telegram)),
       fbclid: e.fbclid ?? null,
       status: "pending",
       retry_count: 0
@@ -360,10 +388,35 @@ async function createWorkshopLead(input) {
       data?.[0]?.contact_id,
       TAG_WORKSHOP
     );
+    if (input.telegram && leadId) await addWorkshopLeadTelegramNote(leadId, input.telegram);
     return { ok: true, leadId };
   } catch (err) {
     console.error("[amocrm] fetch threw:", err);
     return { ok: false, reason: "exception", error: err };
+  }
+}
+async function addWorkshopLeadTelegramNote(leadId, telegram) {
+  const token = process.env.AMOCRM_ACCESS_TOKEN;
+  const domain = process.env.AMOCRM_DOMAIN || "platformonaiacademy";
+  if (!token || !telegram) return false;
+  try {
+    const res = await fetch(`https://${domain}.amocrm.ru/api/v4/leads/${leadId}/notes`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify([{ note_type: "common", params: { text: `Telegram \u0434\u043B\u044F \u0441\u0432\u044F\u0437\u0438: @${telegram}` } }])
+    });
+    if (!res.ok) {
+      console.error("[amocrm] note %d \u0434\u043B\u044F \u0441\u0434\u0435\u043B\u043A\u0438 %s (Telegram \u0443\u043A\u0430\u0437\u0430\u043D)", res.status, leadId);
+      return false;
+    }
+    console.log("[amocrm] note \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043E \u043A \u0441\u0434\u0435\u043B\u043A\u0435 %s (Telegram \u0443\u043A\u0430\u0437\u0430\u043D)", leadId);
+    return true;
+  } catch {
+    console.error("[amocrm] note \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \u0434\u043B\u044F \u0441\u0434\u0435\u043B\u043A\u0438 %s (Telegram \u0443\u043A\u0430\u0437\u0430\u043D)", leadId);
+    return false;
   }
 }
 async function findExistingWorkshopLead(phone) {
@@ -399,6 +452,7 @@ async function pushLeadToAmo(lead, opts) {
   if (opts.probeFirst) {
     const found = await findExistingWorkshopLead(lead.phone);
     if (found.ok && found.leadId) {
+      if (lead.telegram) await addWorkshopLeadTelegramNote(found.leadId, lead.telegram);
       await markDone(lead.id, found.leadId);
       return { ok: true, leadId: found.leadId, adopted: true };
     }
@@ -408,7 +462,8 @@ async function pushLeadToAmo(lead, opts) {
     phone: lead.phone,
     source: lead.source ?? "landing",
     utm: lead.utm,
-    fbclid: lead.fbclid
+    fbclid: lead.fbclid,
+    telegram: lead.telegram
   });
   if (r.ok) {
     await markDone(lead.id, r.leadId);
@@ -434,6 +489,7 @@ async function sendOwnerAlert(lead, error) {
     "\u{1F534} <b>\u041B\u0438\u0434 \u041D\u0415 \u0441\u043E\u0437\u0434\u0430\u043D \u0432 amoCRM</b> (\u0440\u0435\u0442\u0440\u0430\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u044B)",
     `\u0418\u043C\u044F: <b>${esc(lead.name)}</b>`,
     `\u0422\u0435\u043B\u0435\u0444\u043E\u043D: <code>${esc(lead.phone)}</code>`,
+    ...lead.telegram ? [`Telegram: <code>@${esc(lead.telegram)}</code>`] : [],
     `UTM: ${esc(utm)}`,
     `\u041E\u0448\u0438\u0431\u043A\u0430: <code>${esc(error)}</code>`,
     `ID \u0432 \u0431\u0430\u0437\u0435: <code>${esc(lead.id)}</code>`,
@@ -1127,6 +1183,7 @@ function readLeads(ctx) {
       eventId: String(row.eventId ?? "").trim(),
       name: String(row.name ?? "").trim().slice(0, 120),
       phone: String(row.phone ?? "").trim().slice(0, 40),
+      telegram: normalizeTelegram(row.telegram),
       place: placeOf(String(row.source ?? "")),
       utmSource: low(u.utm_source),
       utmMedium: low(u.utm_medium),
@@ -6814,6 +6871,7 @@ function buildLeads(ctx, p, q) {
     t: stamp(l.ts),
     name: l.name,
     phone: l.phone,
+    telegram: l.telegram,
     place: l.place,
     utm: leadKey(l),
     inBot: linked(g, l)
@@ -7147,6 +7205,7 @@ async function handleLead(req, res) {
   if (!consent) return json(res, 422, { ok: false, error: "Consent required" });
   const cleanName = name.trim();
   const cleanPhone = phone.trim();
+  const cleanTelegram = normalizeTelegram(payload.telegram);
   const siteUrl = eventSourceUrl || req.headers.referer || req.headers.origin || "https://onai.academy/workshop";
   const forwarded = req.headers["x-forwarded-for"];
   const clientIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
@@ -7159,7 +7218,8 @@ async function handleLead(req, res) {
     phone: cleanPhone,
     source,
     utm,
-    fbclid
+    fbclid,
+    ...cleanTelegram ? { telegram: cleanTelegram } : {}
   });
   void Promise.allSettled([
     persistAmoLead(captured),
@@ -7176,7 +7236,7 @@ async function handleLead(req, res) {
   ]).then(([crmResult, capiResult]) => {
     const crmStatus = crmResult.status === "fulfilled" ? crmResult.value.ok ? `ok:${crmResult.value.leadId}` : `fail:${crmResult.value.error}` : "throw";
     const capiStatus = capiResult.status === "fulfilled" ? capiResult.value.ok ? `ok:${capiResult.value.received}` : `skip:${capiResult.value.reason}` : "throw";
-    console.log("[lead] name=%s phone=***%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), source, crmStatus, capiStatus);
+    console.log("[lead] name=%s phone=***%s tg=%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), cleanTelegram ? "yes" : "no", source, crmStatus, capiStatus);
   });
   return json(res, 200, { ok: true, redirect: THANKYOU_URL });
 }
@@ -7194,14 +7254,16 @@ async function handleReconcile(req, res) {
   let retrying = 0;
   for (const row of rows) {
     if (!row.id) continue;
+    const { utm, telegram } = unpackUtm(row.utm);
     const lead = {
       id: row.id,
       eventId: row.event_id ?? void 0,
       name: row.name,
       phone: row.phone,
       source: row.source ?? void 0,
-      utm: row.utm ?? void 0,
-      fbclid: row.fbclid ?? void 0
+      utm,
+      fbclid: row.fbclid ?? void 0,
+      ...telegram ? { telegram } : {}
     };
     const result = await pushLeadToAmo(lead, { probeFirst: true });
     if (result.ok) {

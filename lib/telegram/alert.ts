@@ -35,6 +35,7 @@ export async function sendOwnerAlert(
     "🔴 <b>Лид НЕ создан в amoCRM</b> (ретраи исчерпаны)",
     `Имя: <b>${esc(lead.name)}</b>`,
     `Телефон: <code>${esc(lead.phone)}</code>`,
+    ...(lead.telegram ? [`Telegram: <code>@${esc(lead.telegram)}</code>`] : []),
     `UTM: ${esc(utm)}`,
     `Ошибка: <code>${esc(error)}</code>`,
     `ID в базе: <code>${esc(lead.id)}</code>`,

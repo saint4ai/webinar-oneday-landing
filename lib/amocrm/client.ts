@@ -10,6 +10,10 @@
  * Не падает без AMOCRM_ACCESS_TOKEN — логирует и возвращает skip:no_token.
  * Форма продолжает принимать лиды даже до полной настройки CRM.
  *
+ * Telegram для связи (необязательное поле формы) кладём примечанием к сделке: поля контакта под него
+ * в amoCRM нет, а /leads/complex примечания не принимает, поэтому примечание уходит вторым запросом
+ * после создания и его сбой сделку не ломает.
+ *
  * ENV:
  *   AMOCRM_DOMAIN=platformonaiacademy   (без .amocrm.ru)
  *   AMOCRM_ACCESS_TOKEN=eyJ...
@@ -26,6 +30,8 @@ type LeadInput = {
   source: string;
   utm?: Record<string, string>;
   fbclid?: string;
+  /** Проверенный ник без «@» (normalizeTelegram), пусто или нет: Telegram не указан. */
+  telegram?: string;
 };
 
 // ID кастомных tracking_data полей сделки в AmoCRM (сняты через API).
@@ -138,10 +144,40 @@ export async function createWorkshopLead(input: LeadInput): Promise<CreateResult
       data?.[0]?.contact_id,
       TAG_WORKSHOP
     );
+    if (input.telegram && leadId) await addWorkshopLeadTelegramNote(leadId, input.telegram);
     return { ok: true, leadId };
   } catch (err) {
     console.error("[amocrm] fetch threw:", err);
     return { ok: false, reason: "exception", error: err };
+  }
+}
+
+/**
+ * Примечание «Telegram для связи» к сделке (POST /leads/{id}/notes). Never-throw: сделка уже создана,
+ * и потеря примечания не должна превращаться в повторное создание. Ник в лог не пишем, только факт.
+ */
+export async function addWorkshopLeadTelegramNote(leadId: number, telegram: string): Promise<boolean> {
+  const token = process.env.AMOCRM_ACCESS_TOKEN;
+  const domain = process.env.AMOCRM_DOMAIN || "platformonaiacademy";
+  if (!token || !telegram) return false;
+  try {
+    const res = await fetch(`https://${domain}.amocrm.ru/api/v4/leads/${leadId}/notes`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([{ note_type: "common", params: { text: `Telegram для связи: @${telegram}` } }]),
+    });
+    if (!res.ok) {
+      console.error("[amocrm] note %d для сделки %s (Telegram указан)", res.status, leadId);
+      return false;
+    }
+    console.log("[amocrm] note добавлено к сделке %s (Telegram указан)", leadId);
+    return true;
+  } catch {
+    console.error("[amocrm] note не отправлено для сделки %s (Telegram указан)", leadId);
+    return false;
   }
 }
 

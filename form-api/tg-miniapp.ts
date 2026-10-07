@@ -416,6 +416,7 @@ export function buildLeads(ctx: AdminCtx, p: Period, q: ListQuery) {
       t: stamp(l.ts),
       name: l.name,
       phone: l.phone,
+      telegram: l.telegram,
       place: l.place,
       utm: leadKey(l),
       inBot: linked(g, l),

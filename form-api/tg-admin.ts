@@ -11,6 +11,7 @@
  */
 import { closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { normalizeTelegram } from "../lib/leads/telegram-nick";
 import { runtime, type SentEntry, type Subscriber, type TgStore } from "./tg-store";
 import { addDays, dateLabel, dayKeyOf, hhmmOf, isDayKey, isStreamDay, type TimeCfg } from "./tg-time";
 
@@ -101,6 +102,8 @@ export type Lead = {
   /** Имя и телефон из заявки. Только для мини-приложения владельца: в текстовые отчёты чата не попадают. */
   name: string;
   phone: string;
+  /** Ник Telegram для связи без «@» (поле необязательное, пусто, если не указали). Туда же, куда имя и телефон. */
+  telegram: string;
   /** Место на странице: hero, popup, dock, header, final. */
   place: string;
   utmSource: string;
@@ -167,6 +170,7 @@ export function readLeads(ctx: AdminCtx): { leads: Lead[] | null; error: string 
       eventId: String(row.eventId ?? "").trim(),
       name: String(row.name ?? "").trim().slice(0, 120),
       phone: String(row.phone ?? "").trim().slice(0, 40),
+      telegram: normalizeTelegram(row.telegram),
       place: placeOf(String(row.source ?? "")),
       utmSource: low(u.utm_source),
       utmMedium: low(u.utm_medium),
