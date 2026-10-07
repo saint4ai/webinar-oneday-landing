@@ -17,10 +17,12 @@ import {
   activeSeries,
   botConfigured,
   botEnabled,
+  adminCtx,
   dayReportText,
   getStore,
   noteSendResult,
   notifyOwners,
+  notifyOwnersHtml,
   ownerIds,
   registerFire,
   sendContent,
@@ -30,7 +32,8 @@ import {
   type Series,
   type SeriesMsg,
 } from "./tg-workshop";
-import type { Subscriber, TgStore } from "./tg-store";
+import { noteRuntime, type Subscriber, type TgStore } from "./tg-store";
+import { dailyKeyboard, renderDailyReport } from "./tg-admin";
 import { addDays, atTime, dayKeyOf, isStreamDay, streamEnd } from "./tg-time";
 
 const TICK_MS = 30_000;
@@ -185,6 +188,7 @@ export async function deliver(
     if (opts.deadline !== undefined && deps.now() > opts.deadline) {
       stats.skippedLate = rcpts.length - i;
       console.warn("[tg-sched] skip late msg=%s day=%s: окно закрылось, не успели %d", msg.id, day, stats.skippedLate);
+      noteRuntime("skipLate", { msg: msg.id, info: String(stats.skippedLate) });
       break;
     }
     const key = `${msg.id}|${day}|${s.chatId}`;
@@ -233,6 +237,7 @@ function logLate(st: TgStore, sr: Series, now: number) {
       if (n > 0) {
         lateLogged.add(key);
         console.warn("[tg-sched] skip late msg=%s day=%s: окно закрылось, не получили %d", msg.id, day, n);
+        noteRuntime("skipLate", { msg: msg.id, info: String(n) });
       }
     }
   }
@@ -250,6 +255,7 @@ function noteTickResult(ok: boolean, why: string) {
   }
   errStreak++;
   console.error("[tg-sched] тик с ошибкой (%d подряд): %s", errStreak, why);
+  noteRuntime("tickError", { info: why.slice(0, 120) });
   if (errStreak >= 3 && !errAlerted) {
     errAlerted = true;
     void notifyOwners(`Планировщик серии: ${errStreak} тика подряд с ошибкой. Последняя: ${why}. Проверь pm2 logs workshop-form.`);
@@ -283,6 +289,38 @@ export async function dailyReport(now: number = Date.now()): Promise<boolean> {
   return false;
 }
 
+/**
+ * Утренний админ-отчёт за вчера: каждый день в adminDailyReportAt (по умолчанию 09:00 по Алматы).
+ * Отметка по дню в tg-state.json: после рестарта не дублируется. Не догоняет пропущенное старше суток:
+ * отчёт, назначенный на момент T, можно отправить только в промежутке [T, T + 24 ч). Отчёты, назначенные
+ * до первого запуска этой функции (adminSince в state), не отправляются: после выкладки первый отчёт
+ * придёт утром следующего дня. От seriesEnabled не зависит. Не дошло ни до одного владельца: отметки нет,
+ * повторим на следующем тике.
+ */
+export async function adminDaily(now: number = Date.now()): Promise<boolean> {
+  const st = getStore();
+  const sr = activeSeries();
+  if (!st.state.adminSince) {
+    st.setAdminSince(now);
+    return false;
+  }
+  const at = sr.adminDailyReportAt || "09:00";
+  const today = dayKeyOf(now);
+  for (const occ of [addDays(today, -1), today]) {
+    const t = atTime(occ, at);
+    if (t < st.state.adminSince || now < t || now >= t + 24 * 3600_000) continue;
+    const day = addDays(occ, -1);
+    if (st.isAdminReported(day)) continue;
+    if (!ownerIds().length) return false;
+    const text = renderDailyReport(adminCtx(now), day);
+    if ((await notifyOwnersHtml(text, dailyKeyboard(day))) > 0) {
+      st.markAdminReported(day);
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Один тик. Пока не закончился предыдущий, новый не стартует. Возвращает число успешных отправок серии. */
 export async function tick(now: number = Date.now(), deps: Deps = defaultDeps): Promise<number> {
   if (running) return 0;
@@ -295,6 +333,11 @@ export async function tick(now: number = Date.now(), deps: Deps = defaultDeps): 
       await dailyReport(now);
     } catch (e) {
       console.error("[tg-sched] отчёт не ушёл:", (e as Error)?.message || e);
+    }
+    try {
+      await adminDaily(now);
+    } catch (e) {
+      console.error("[tg-sched] админ-отчёт не ушёл:", (e as Error)?.message || e);
     }
     // Серия выключена: идут только обязательные сообщения (essential), остальное молчит.
     const full = activeSeries();

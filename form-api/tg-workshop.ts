@@ -12,7 +12,19 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { TgStore, type Audience, type Overrides, type Subscriber } from "./tg-store";
+import { noteRuntime, runtime, TgStore, type Audience, type Overrides, type Subscriber } from "./tg-store";
+import {
+  adminKeyboard,
+  adminVersion,
+  datePickerKeyboard,
+  menuKeyboard,
+  parseAdminCb,
+  renderErrors,
+  renderReport,
+  renderUtmByDay,
+  type AdminButton,
+  type AdminCtx,
+} from "./tg-admin";
 import {
   DEFAULT_JOIN_MINUTES,
   addDays,
@@ -115,6 +127,8 @@ export type Series = {
   streamMinutes: number;
   joinLiveMinutes?: number;
   graceMinutes: number;
+  /** Время утреннего отчёта админам за вчера, HH:MM по Алматы. По умолчанию 09:00. */
+  adminDailyReportAt?: string;
   links: Links;
   welcome: Welcome;
   messages: SeriesMsg[];
@@ -219,6 +233,14 @@ export function validateSeries(raw: unknown): Series {
   if (typeof raw.streamMinutes !== "number" || raw.streamMinutes <= 0) throw new Error("серия: streamMinutes должен быть числом больше 0");
   if (raw.joinLiveMinutes !== undefined && (typeof raw.joinLiveMinutes !== "number" || raw.joinLiveMinutes < 0)) throw new Error("серия: joinLiveMinutes число минут");
   if (typeof raw.graceMinutes !== "number" || raw.graceMinutes < 0) throw new Error("серия: graceMinutes должен быть числом");
+  if (raw.adminDailyReportAt !== undefined) {
+    try {
+      if (typeof raw.adminDailyReportAt !== "string") throw new Error("not a string");
+      parseHHMM(raw.adminDailyReportAt);
+    } catch {
+      throw new Error("серия: adminDailyReportAt вида HH:MM");
+    }
+  }
   if (!isObj(raw.links)) throw new Error("серия: нет links");
   for (const k of LINK_KEYS) {
     if (typeof raw.links[k] !== "string") throw new Error(`серия: links.${k} должен быть строкой`);
@@ -726,6 +748,16 @@ export async function notifyOwners(text: string): Promise<number> {
   return delivered;
 }
 
+/** То же с разметкой HTML и кнопками (ежедневный админ-отчёт). */
+export async function notifyOwnersHtml(text: string, markup?: InlineButton[][]): Promise<number> {
+  let delivered = 0;
+  for (const id of ownerIds()) {
+    const n = Number(id);
+    if (Number.isFinite(n) && (await sendText(n, text, markup)).ok) delivered++;
+  }
+  return delivered;
+}
+
 /** Одно предупреждение владельцам на каждое медиа за жизнь процесса. */
 const mediaWarned = new Set<string>();
 async function warnMedia(url: string, error: string | undefined) {
@@ -749,6 +781,7 @@ export async function sendContent(c: Content, ctx: RenderCtx, opts: { prio?: Pri
   if (m.ok) return short ? m : sendText(ctx.chatId, html, kb, c.silent, prio);
   if (isGone(m)) return m;
   console.warn("[tg] медиа %s не ушло (%s), шлю текстом", c.media.url, m.error);
+  noteRuntime("mediaFallback", { info: c.media.url });
   void warnMedia(c.media.url, m.error);
   return sendText(ctx.chatId, html, kb, c.silent, prio);
 }
@@ -803,7 +836,24 @@ type TgCallback = { id: string; from: TgUser; message?: { message_id?: number; c
 type TgMemberUpdate = { chat: TgChat; from?: TgUser; new_chat_member?: { status?: string } };
 export type TgUpdate = { update_id?: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate };
 
-const OWNER_CMDS = new Set(["stats", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+const OWNER_CMDS = new Set(["stats", "admin", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+
+/** Справка владельцу (/help). У остальных /help идёт как обычный текст: им отвечает welcome.other. */
+export const HELP_TEXT = [
+  "Команды владельца:",
+  "/admin: аналитика (заявки, бот, UTM по дням, ошибки), выбор периода и даты. /stats открывает то же",
+  "/series: расписание сообщений на сегодня",
+  "/preview: прислать себе всю серию для проверки",
+  "/fire <id>: отправить сообщение сейчас (сначала превью, потом кнопка «Отправить»)",
+  "/at <id> HH:MM: сдвинуть время сообщения (/at <id> reset вернёт как в json)",
+  "/off <id>, /on <id>: выключить или включить сообщение",
+  "/bizon <ссылка>: сменить ссылку эфира",
+  "/paid <chat_id или @username>: отметить оплату",
+  "/reload: перечитать tg-series.json",
+  "/series_on, /series_off: включить или выключить серию",
+  "",
+  "Метка источника: добавь ?start=2gis к ссылке на бота (t.me/workshop_aiprod_bot?start=2gis), в отчётах она покажется как источник.",
+].join("\n");
 
 function parseCommand(text: string): { cmd: string; args: string } | null {
   const m = /^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/.exec(text.trim());
@@ -875,6 +925,10 @@ async function onMessage(m: TgMessage, now: number) {
   const c = parseCommand(text);
   if (c?.cmd === "start") return onStart(m, cleanPayload(c.args), now);
   if (c?.cmd === "stop") return onStop(m, now);
+  if (c?.cmd === "help" && isOwner(m.from.id)) {
+    await plain(m.chat.id, HELP_TEXT);
+    return;
+  }
   if (c && OWNER_CMDS.has(c.cmd)) {
     // Команды владельцев: от остальных молча игнорируем, даже не показываем, что команда есть.
     if (isOwner(m.from.id)) await ownerCommand(c.cmd, c.args, m, now);
@@ -943,6 +997,12 @@ async function onCallback(cq: TgCallback, now: number) {
   // Любой callback закрываем сразу, чтобы у кнопки не крутился индикатор. Неизвестные тоже.
   await botSend("answerCallbackQuery", { callback_query_id: cq.id });
 
+  // Меню админа: только владельцам, остальным ничего кроме закрытия кнопки.
+  if (cq.data?.startsWith("adm:")) {
+    if (isOwner(cq.from.id)) await onAdminCallback(cq, now);
+    return;
+  }
+
   if (cq.data === "paid") {
     if (!sub || sub.paid) return;
     st.recordEvent({ type: "paid", chat_id: chatId, by: "self", ts });
@@ -969,6 +1029,62 @@ async function onCallback(cq: TgCallback, now: number) {
     }
     await plain(chatId, await fireHook.run(cq.data.slice(5), now));
   }
+}
+
+/** Контекст аналитики: хранилище, расписание и версия деплоя. */
+export function adminCtx(now: number): AdminCtx {
+  return { store: getStore(), cfg: timeCfg(getSeries()), now, version: adminVersion() };
+}
+
+/** Стартовый экран админки: общая сводка (то, что раньше отдавал /stats) и выбор периода. */
+export function adminHomeText(st: TgStore, sr: Series, now: number): string {
+  return `${buildStatsText(st, sr, now)}\n\nВыбери период для отчёта:`;
+}
+
+/**
+ * Нажатие кнопки меню: то же сообщение редактируется (editMessageText), новые не плодятся.
+ * Не удалось отредактировать по другой причине, чем «не изменилось»: шлём новым сообщением.
+ */
+async function onAdminCallback(cq: TgCallback, now: number) {
+  const cb = parseAdminCb(cq.data || "");
+  if (!cb) return;
+  const chatId = cq.message?.chat?.id ?? cq.from.id;
+  const ctx = adminCtx(now);
+  let text: string;
+  let kb: AdminButton[][];
+  let html = true;
+  if (cb.action === "m") {
+    text = adminHomeText(getStore(), activeSeries(), now);
+    kb = menuKeyboard();
+    html = false;
+  } else if (cb.action === "d") {
+    text = "Выбери день (последние 14 дней) или весь период:";
+    kb = datePickerKeyboard(now);
+    html = false;
+  } else if (cb.action === "u") {
+    text = renderUtmByDay(ctx, cb.period);
+    kb = adminKeyboard(cb.period, "u");
+  } else if (cb.action === "e") {
+    text = renderErrors(ctx, cb.period);
+    kb = adminKeyboard(cb.period, "e");
+  } else {
+    text = renderReport(ctx, cb.period);
+    kb = adminKeyboard(cb.period, "p");
+  }
+  const body: Record<string, unknown> = {
+    chat_id: chatId,
+    text,
+    ...(html ? { parse_mode: "HTML" } : {}),
+    link_preview_options: { is_disabled: true },
+    reply_markup: { inline_keyboard: kb },
+  };
+  const mid = cq.message?.message_id;
+  if (mid) {
+    const r = await botSend("editMessageText", { ...body, message_id: mid });
+    if (r.ok || /not modified/i.test(r.description)) return;
+    console.warn("[tg] не удалось отредактировать сообщение админки (%s), шлю новым", r.description);
+  }
+  await botSend("sendMessage", body);
 }
 
 function onMemberUpdate(u: TgMemberUpdate, now: number) {
@@ -1105,7 +1221,8 @@ async function ownerCommand(cmd: string, args: string, m: TgMessage, now: number
   const sr = () => activeSeries();
   switch (cmd) {
     case "stats":
-      await plain(chatId, buildStatsText(st, sr(), now));
+    case "admin":
+      await plain(chatId, adminHomeText(st, sr(), now), menuKeyboard());
       return;
     case "series":
       await plain(chatId, buildSeriesText(st, sr(), now));
@@ -1289,7 +1406,10 @@ function secretOk(provided: string | undefined): boolean {
  */
 export async function handleTgWorkshop(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const h = req.headers["x-telegram-bot-api-secret-token"];
-  if (!secretOk(Array.isArray(h) ? h[0] : h)) return reply(res, 401, { ok: false });
+  if (!secretOk(Array.isArray(h) ? h[0] : h)) {
+    runtime.webhookRejected++;
+    return reply(res, 401, { ok: false });
+  }
   const raw = await readLimited(req, MAX_UPDATE_BODY);
   reply(res, 200, { ok: true });
   if (raw === null || !botEnabled()) return;
@@ -1331,26 +1451,29 @@ export function handleGo(req: IncomingMessage, res: ServerResponse, rawToken: st
 let tyWindowStart = 0;
 let tyWindowCount = 0;
 
-/** Тело клика: ch=tg|wa и необязательный eid (uuid посетителя). text/plain, форма или json. */
-export function parseTyBody(raw: string): { ch: "tg" | "wa"; eid: string } | null {
+/** Тело клика: ch=tg|wa, необязательные eid (uuid посетителя) и src=pp|ty (окно или страница). text/plain, форма или json. */
+export function parseTyBody(raw: string): { ch: "tg" | "wa"; eid: string; src?: "pp" | "ty" } | null {
   let ch = "";
   let eid = "";
+  let src = "";
   const s = raw.trim();
   try {
     if (s.startsWith("{")) {
       const o = JSON.parse(s) as Record<string, unknown>;
       ch = String(o.ch ?? "");
       eid = String(o.eid ?? "");
+      src = String(o.src ?? "");
     } else {
       const p = new URLSearchParams(s);
       ch = p.get("ch") || "";
       eid = p.get("eid") || "";
+      src = p.get("src") || "";
     }
   } catch {
     return null;
   }
   if (ch !== "tg" && ch !== "wa") return null;
-  return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "" };
+  return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "", ...(src === "pp" || src === "ty" ? { src } : {}) };
 }
 
 /** POST /api/ty-click: клик по кнопке Telegram или WhatsApp на странице «Спасибо». Всегда 204. */
@@ -1368,7 +1491,7 @@ export async function handleTyClick(req: IncomingMessage, res: ServerResponse): 
   }
   if (++tyWindowCount > 200) return;
   // Больше TY_DAILY_CAP записей за сутки: 204 без записи.
-  store.recordTyClick(p.ch, p.eid, dayKeyOf(t), new Date(t).toISOString());
+  store.recordTyClick(p.ch, p.eid, dayKeyOf(t), new Date(t).toISOString(), p.src);
 }
 
 /** День ближайшего эфира для /calendar: то же правило, что у /start (серия не загружена: 20:00, окно 40 минут). */

@@ -67,7 +67,30 @@ export type StoreState = {
   bizon: string;
   /** Дни эфира, по которым итоговый отчёт владельцам уже ушёл (последние 30). */
   reported: string[];
+  /** Дни, за которые утренний админ-отчёт уже ушёл (последние 30). */
+  adminReported: string[];
+  /** Когда планировщик впервые увидел функцию админ-отчёта (мс). Отчёты за время до этого не догоняем. */
+  adminSince: number;
 };
+
+/** События процесса, которых нет в файлах: считаются в памяти с момента запуска (для экрана «Ошибки»). */
+export type RuntimeEventType = "skipLate" | "mediaFallback" | "tickError";
+export type RuntimeEvent = { type: RuntimeEventType; ts: number; msg?: string; info?: string };
+export const runtime = {
+  startedAt: Date.now(),
+  /** Отказы вебхука по секрету. */
+  webhookRejected: 0,
+  events: [] as RuntimeEvent[],
+};
+export function noteRuntime(type: RuntimeEventType, extra: { msg?: string; info?: string } = {}) {
+  runtime.events.push({ type, ts: Date.now(), ...extra });
+  if (runtime.events.length > 500) runtime.events.splice(0, runtime.events.length - 500);
+}
+export function resetRuntime() {
+  runtime.startedAt = Date.now();
+  runtime.webhookRejected = 0;
+  runtime.events.length = 0;
+}
 
 export type TyChannel = "tg" | "wa";
 
@@ -172,7 +195,7 @@ export class TgStore {
   private readonly regDays = new Map<string, Set<number>>();
   /** Кто нажал «Я уже оплатил(а)» сам, по дню эфира, на который был записан в тот момент. */
   private readonly paidDays = new Map<string, Set<number>>();
-  state: StoreState = { seriesEnabled: false, media: {}, overrides: {}, bizon: "", reported: [] };
+  state: StoreState = { seriesEnabled: false, media: {}, overrides: {}, bizon: "", reported: [], adminReported: [], adminSince: 0 };
 
   private readonly fSubs: string;
   private readonly fSent: string;
@@ -219,6 +242,8 @@ export class TgStore {
           overrides: obj(st.overrides) as Overrides,
           bizon: typeof st.bizon === "string" ? st.bizon : "",
           reported: Array.isArray(st.reported) ? st.reported.filter((x) => typeof x === "string") : [],
+          adminReported: Array.isArray(st.adminReported) ? st.adminReported.filter((x) => typeof x === "string") : [],
+          adminSince: typeof st.adminSince === "number" ? st.adminSince : 0,
         };
       }
     } catch {
@@ -303,6 +328,26 @@ export class TgStore {
     this.saveState();
   }
 
+  setAdminSince(ms: number) {
+    this.state.adminSince = ms;
+    this.saveState();
+  }
+
+  isAdminReported(day: string): boolean {
+    return this.state.adminReported.includes(day);
+  }
+
+  markAdminReported(day: string) {
+    if (this.isAdminReported(day)) return;
+    this.state.adminReported = [...this.state.adminReported, day].slice(-30);
+    this.saveState();
+  }
+
+  /** Пути журналов: их читает админ-аналитика (tg-admin) с кешем по mtime. */
+  paths() {
+    return { subs: this.fSubs, sent: this.fSent, clicks: this.fClicks, ty: this.fTy };
+  }
+
   recordSent(e: SentEntry) {
     this.append(this.fSent, e);
     this.sent.add(TgStore.sentKey(e.msg, e.day, e.chat_id));
@@ -341,9 +386,9 @@ export class TgStore {
    * Клик по кнопке Telegram или WhatsApp на странице «Спасибо». Повтор того же eid за день не
    * считается. Потолок TY_DAILY_CAP записей в сутки: дальше ничего не пишем и возвращаем false.
    */
-  recordTyClick(ch: TyChannel, eid: string, day: string, ts: string): boolean {
+  recordTyClick(ch: TyChannel, eid: string, day: string, ts: string, src = ""): boolean {
     if ((this.tyTotals.get(day) || 0) >= TY_DAILY_CAP) return false;
-    this.append(this.fTy, { ch, eid, day, ts });
+    this.append(this.fTy, { ch, eid, day, ts, ...(src ? { src } : {}) });
     this.countTy(ch, eid, day);
     return true;
   }

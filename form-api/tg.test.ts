@@ -30,6 +30,14 @@ import {
 } from "./tg-scheduler";
 import { TY_DAILY_CAP } from "./tg-store";
 import { botCall } from "./tg-workshop";
+import { appendFileSync } from "node:fs";
+import { noteRuntime, resetRuntime, runtime } from "./tg-store";
+import {
+  adminKeyboard, assemble, classifyPayload, datePickerKeyboard, hostOf, MSG_LIMIT, parseAdminCb, placeOf, readJsonlCached,
+  renderDailyReport, renderErrors, renderReport, renderUtmByDay, resetAdminCache, resolvePeriod,
+} from "./tg-admin";
+import { adminCtx } from "./tg-workshop";
+import { adminDaily } from "./tg-scheduler";
 
 process.env.TG_WORKSHOP_BOT_TOKEN = "TESTTOKEN:abc123";
 process.env.TG_WORKSHOP_WEBHOOK_SECRET = "test-webhook-secret-0123";
@@ -247,7 +255,7 @@ test("dayWord, dateLabel: Сегодня, Завтра, дата; границы
 });
 
 test("исходники tg-*.ts: без Intl, локальных геттеров Date, toLocale и длинного тире", () => {
-  for (const f of ["tg-time.ts", "tg-store.ts", "tg-workshop.ts", "tg-scheduler.ts", "tg-setup.ts"]) {
+  for (const f of ["tg-time.ts", "tg-store.ts", "tg-workshop.ts", "tg-scheduler.ts", "tg-setup.ts", "tg-admin.ts"]) {
     const p = join(REPO, "form-api", f);
     const src = readFileSync(p, "utf8");
     assert.equal(/\bIntl\./.test(src), false, `${f}: Intl`);
@@ -1589,4 +1597,555 @@ test("/health: блок tgBot без секретов", () => {
 test("atTime, streamStart и dayWord согласованы со смещением из серии", () => {
   assert.equal(atTime(D, "20:00"), streamStart(D, CFG));
   assert.equal(atTime("2026-10-07", "00:00"), alm(2026, 10, 7, 0, 0));
+});
+
+// ───────────────────────── админка: аналитика, меню, ежедневный отчёт ─────────────────────────
+
+test.beforeEach(() => {
+  resetAdminCache();
+  resetRuntime();
+  delete process.env.LEADS_LOG_PATH;
+});
+
+const SECRET_NAME = "Секретное Имя";
+const SECRET_PHONE = "+77011112233";
+
+type LeadSpec = { id: string; iso: string; eventId?: string; source?: string; utm?: Record<string, string> };
+const leadRow = (l: LeadSpec) => ({ kind: "capture", id: l.id, eventId: l.eventId, name: SECRET_NAME, phone: SECRET_PHONE, source: l.source ?? "efir-1-okt-hero", utm: l.utm, ts: l.iso });
+
+/** Журнал заявок во временной папке: LEADS_LOG_PATH указывает на него. */
+function writeLeads(dir: string, rows: unknown[]): string {
+  const f = join(dir, "leads.jsonl");
+  writeFileSync(f, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+  process.env.LEADS_LOG_PATH = f;
+  return f;
+}
+
+const NOW = alm(2026, 10, 7, 18, 0);
+const TODAY = "2026-10-07";
+
+/** Набор данных: 7 заявок (1 вчера, 6 сегодня), подписчики с метками pp, ty, 2gis, прямой, клики и рассылка. */
+function adminScenario() {
+  const { store, dir } = boot([msg("warm-1200", "12:00")]);
+  const utmIg = { utm_source: "Instagram", utm_medium: "paid_social", utm_campaign: "efir_0710" };
+  writeLeads(dir, [
+    leadRow({ id: "l1", iso: "2026-10-06T18:59:59.000Z", eventId: "E0", source: "efir-1-okt-dock", utm: utmIg }), // 23:59:59 вчера по Алматы
+    leadRow({ id: "l2", iso: "2026-10-06T19:00:00.000Z", eventId: "E1", source: "efir-1-okt-hero", utm: utmIg }), // 00:00:00 сегодня
+    leadRow({ id: "l2", iso: "2026-10-06T19:00:00.000Z", eventId: "E1", source: "efir-1-okt-hero", utm: utmIg }), // дубль
+    { kind: "supabase_insert_failed", id: "l2", reason: "no_config", ts: "2026-10-06T19:00:01.000Z" },
+    leadRow({ id: "l3", iso: "2026-10-07T05:00:00.000Z", eventId: "E2", source: "efir-1-okt-popup", utm: { utm_source: "saint4aibio" } }),
+    leadRow({ id: "l4", iso: "2026-10-07T06:00:00.000Z", eventId: "E3", source: "efir-1-okt-hero", utm: { utm_referrer: "https://l.instagram.com/?u=x" } }),
+    leadRow({ id: "l5", iso: "2026-10-07T07:00:00.000Z", eventId: "E4", source: "efir-1-okt-dock", utm: { utm_referrer: "instagram.com" } }),
+    leadRow({ id: "l6", iso: "2026-10-07T07:30:00.000Z", eventId: "E5", source: "efir-1-okt-header" }),
+    leadRow({ id: "l7", iso: "2026-10-07T08:00:00.000Z", eventId: "E6", source: "efir-1-okt-final", utm: { gclid: "abc" } }),
+  ]);
+  const at = (h: number, m = 0) => alm(2026, 10, 7, h, m);
+  sub(store, 5551234501, TODAY, at(6), { payload: "pp_E1", first: SECRET_NAME });
+  sub(store, 5551234502, TODAY, at(7), { payload: "ty_E2" });
+  sub(store, 5551234503, TODAY, at(8), { payload: "2gis" });
+  sub(store, 5551234504, TODAY, at(9), { payload: "2gis_card" });
+  sub(store, 5551234505, TODAY, at(10), { payload: "" });
+  sub(store, 5551234506, TODAY, at(11), { payload: "pp" });
+  sub(store, 5551234507, TODAY, at(12), { payload: "ty_unknownEid" });
+  sub(store, 5551234508, "2026-10-06", alm(2026, 10, 6, 20, 0), { payload: "pp_E0" }); // вчера
+  store.recordTyClick("tg", "E1", TODAY, iso(at(7)), "pp");
+  store.recordTyClick("tg", "E2", TODAY, iso(at(8)), "ty");
+  store.recordTyClick("wa", "E1", TODAY, iso(at(9)), "pp");
+  store.recordClick(5551234501, TODAY, iso(at(17)));
+  store.recordEvent({ type: "paid", chat_id: 5551234501, by: "self", ts: iso(at(17, 30)) });
+  for (const c of [1, 2, 3]) store.recordSent({ msg: "warm-1200", day: TODAY, chat_id: 5551234500 + c, ts: iso(at(12, 1)), ok: true });
+  store.recordSent({ msg: "warm-1200", day: TODAY, chat_id: 5551234504, ts: iso(at(12, 1)), ok: false, err: "403 Forbidden: bot was blocked by the user" });
+  store.recordSent({ msg: "link-1950", day: TODAY, chat_id: 5551234505, ts: iso(at(17, 50)), ok: false, err: "400 Bad Request: chat not found" });
+  store.recordEvent({ type: "blocked", chat_id: 5551234504, ts: iso(at(12, 1)) });
+  return { store, dir };
+}
+
+test("периоды: границы дней по Алматы (23:59:59 и 00:00:00), сегодня, вчера, 7 и 30 дней, дата, весь период", () => {
+  adminScenario();
+  const ctx = adminCtx(NOW);
+  const today = renderReport(ctx, "t");
+  const yest = renderReport(ctx, "y");
+  assert.match(today, /^<b>Сегодня, 7 октября<\/b>/);
+  assert.match(today, /<b>Заявки с сайта: 6<\/b>/);        // 00:00:00 вчера по UTC, 7 октября по Алматы
+  assert.match(yest, /^<b>Вчера, 6 октября<\/b>/);
+  assert.match(yest, /<b>Заявки с сайта: 1<\/b>/);         // 23:59:59 6 октября по Алматы
+  assert.match(renderReport(ctx, "2026-10-06"), /<b>Заявки с сайта: 1<\/b>/);
+  assert.match(renderReport(ctx, "7"), /<b>Заявки с сайта: 7<\/b>/);
+  assert.match(renderReport(ctx, "30"), /^<b>30 дней: 8 сентября - 7 октября<\/b>/);
+  assert.match(renderReport(ctx, "all"), /^<b>Весь период: 6 октября - 7 октября<\/b>/);
+  // сам расчёт периодов
+  const p7 = resolvePeriod("7", NOW);
+  assert.deepEqual([p7.from, p7.to, p7.days.length], ["2026-10-01", "2026-10-07", 7]);
+  assert.equal(resolvePeriod("30", NOW).days.length, 30);
+  assert.deepEqual(resolvePeriod("2026-10-03", NOW).days, ["2026-10-03"]);
+  assert.equal(resolvePeriod("мусор", NOW).key, "t");
+  // полночь по Алматы: 23:59:59 ещё «сегодня» 7-го, секундой позже уже 8-е
+  assert.equal(resolvePeriod("t", alm(2026, 10, 7, 23, 59, 59)).from, "2026-10-07");
+  assert.equal(resolvePeriod("t", alm(2026, 10, 8, 0, 0, 0)).from, "2026-10-08");
+  assert.equal(resolvePeriod("y", alm(2026, 10, 8, 0, 0, 0)).from, "2026-10-07");
+  // 00:30 по Алматы это ещё 19:30 предыдущих суток по UTC
+  assert.equal(resolvePeriod("t", Date.UTC(2026, 9, 7, 19, 30)).from, "2026-10-08");
+  assert.equal(resolvePeriod("t", Date.UTC(2026, 9, 7, 18, 59, 59)).from, "2026-10-07");
+});
+
+test("связка pp_ и ty_ с eventId заявки, прямой /start, метки источников, доля «заявка → бот»", () => {
+  adminScenario();
+  const r = renderReport(adminCtx(NOW), "t");
+  assert.match(r, /<b>Бот: новых подписчиков 7<\/b>/);
+  assert.match(r, /Откуда: окно на сайте 2, «Спасибо» 2, прямой \/start 1, метки: 2gis 2/);
+  // pp_E1 -> заявка с utm_source instagram, ty_E2 -> saint4aibio; pp без номера и ty_unknownEid заявку не нашли
+  assert.match(r, /По UTM заявки: instagram 1, saint4aibio 1, заявка не найдена 2/);
+  assert.match(r, /Заявка → бот: 2 из 6 \(33%\)/);
+  // вчерашний подписчик с pp_E0 в сегодняшний отчёт не попал, во вчерашний попал вместе со своей заявкой
+  const y = renderReport(adminCtx(NOW), "y");
+  assert.match(y, /<b>Бот: новых подписчиков 1<\/b>/);
+  assert.match(y, /Заявка → бот: 1 из 1 \(100%\)/);
+});
+
+test("группировка UTM: источник / канал / кампания, без UTM по referrer, топ-8 и «прочие»", () => {
+  adminScenario();
+  const r = renderReport(adminCtx(NOW), "t");
+  assert.match(r, /Место на странице: hero 2, dock 1, final 1, header 1, popup 1/);
+  assert.match(r, /UTM: instagram \/ paid_social \/ efir_0710 1; saint4aibio 1\n/);
+  assert.match(r, /Без UTM: google \(gclid\) 1, instagram\.com 1, l\.instagram\.com 1, прямой заход 1/);
+  assert.match(renderReport(adminCtx(NOW), "7"), /По дням: 06\.10 1, 07\.10 6/);
+  // 10 разных кампаний: показаны 8 и «прочие»
+  const { dir } = boot();
+  const rows = Array.from({ length: 10 }, (_, i) => leadRow({ id: `c${i}`, iso: iso(alm(2026, 10, 7, 9, i)), eventId: `X${i}`, utm: { utm_source: "ads", utm_medium: "cpc", utm_campaign: `camp${String(i).padStart(2, "0")}` } }));
+  rows.push(leadRow({ id: "c-extra", iso: iso(alm(2026, 10, 7, 10, 0)), eventId: "Xe", utm: { utm_source: "ads", utm_medium: "cpc", utm_campaign: "camp00" } }));
+  writeLeads(dir, rows);
+  const r2 = renderReport(adminCtx(NOW), "t");
+  const utmLine = r2.split("\n").find((l) => l.startsWith("UTM:")) as string;
+  assert.equal(utmLine.split(";").length, 9); // 8 меток и «прочие»
+  assert.match(utmLine, /^UTM: ads \/ cpc \/ camp00 2; /);
+  assert.match(utmLine, /; прочие 2$/);
+  // источник в разном регистре и с пробелами склеивается
+  const { dir: d3 } = boot();
+  writeLeads(d3, [leadRow({ id: "a", iso: iso(alm(2026, 10, 7, 9, 0)), utm: { utm_source: " Instagram " } }), leadRow({ id: "b", iso: iso(alm(2026, 10, 7, 9, 1)), utm: { utm_source: "instagram" } })]);
+  assert.match(renderReport(adminCtx(NOW), "t"), /UTM: instagram 2\n/);
+});
+
+test("метка 2gis: любой payload кроме pp_ и ty_ это источник до первого «_», виден в отчёте и в таблице UTM по дням", () => {
+  assert.deepEqual(classifyPayload("2gis"), { kind: "tag", eid: "", tag: "2gis" });
+  assert.deepEqual(classifyPayload("2GIS_card_1"), { kind: "tag", eid: "", tag: "2gis" });
+  assert.deepEqual(classifyPayload("ppc_google"), { kind: "tag", eid: "", tag: "ppc" });
+  assert.deepEqual(classifyPayload("pp_abc-1"), { kind: "pp", eid: "abc-1", tag: "" });
+  assert.deepEqual(classifyPayload("ty"), { kind: "ty", eid: "", tag: "" });
+  assert.deepEqual(classifyPayload(""), { kind: "direct", eid: "", tag: "" });
+  adminScenario();
+  const ctx = adminCtx(NOW);
+  assert.match(renderReport(ctx, "t"), /метки: 2gis 2/);
+  const table = renderUtmByDay(ctx, "t");
+  assert.match(table, /<pre>/);
+  assert.match(table, /2gis/);
+  assert.match(table, /0\(2\)/); // заявок нет, оба дошли до бота
+  assert.match(table, /сразу в бота/);
+});
+
+test("кнопки после заявки: Telegram и WhatsApp с разбивкой окно и страница (поле src), без src только итоги", () => {
+  adminScenario();
+  const r = renderReport(adminCtx(NOW), "t");
+  assert.match(r, /<b>Кнопки после заявки<\/b>\nTelegram 2 \(окно 1, страница 1\), WhatsApp 1 \(окно 1, страница 0\)/);
+  const { store } = boot();
+  store.recordTyClick("tg", "", TODAY, iso(NOW));
+  assert.match(renderReport(adminCtx(NOW), "t"), /Telegram 1, WhatsApp 0\n/);
+  assert.doesNotMatch(renderReport(adminCtx(NOW), "t"), /окно/);
+  // клик со страницы пишет src в журнал
+  assert.deepEqual(parseTyBody("ch=tg&eid=abc&src=pp"), { ch: "tg", eid: "abc", src: "pp" });
+  assert.deepEqual(parseTyBody("ch=wa&src=zzz"), { ch: "wa", eid: "" });
+  assert.deepEqual(parseTyBody(JSON.stringify({ ch: "tg", src: "ty" })), { ch: "tg", eid: "", src: "ty" });
+});
+
+test("эфиры и рассылка в отчёте: записались, перешли, оплатили, отправлено, ошибки, заблокировали", () => {
+  adminScenario();
+  const r = renderReport(adminCtx(NOW), "t");
+  assert.match(r, /<b>Эфиры<\/b>\n07\.10: записались 7, перешли 1 \(14%\), «Я уже оплатил\(а\)» 1/);
+  assert.match(r, /<b>Рассылка<\/b>: отправлено 3, ошибок 2, заблокировали бота 1\nwarm-1200 3 \(ошибок 1\), link-1950 0 \(ошибок 1\)/);
+});
+
+test("отчёты без имён, телефонов и chat_id; пользовательские метки экранируются", () => {
+  const { dir } = adminScenario();
+  writeLeads(dir, [leadRow({ id: "x", iso: iso(alm(2026, 10, 7, 9, 0)), eventId: "Ex", utm: { utm_source: "<b>evil</b>&co", utm_campaign: "a<script>" } })]);
+  const ctx = adminCtx(NOW);
+  for (const text of [renderReport(ctx, "t"), renderUtmByDay(ctx, "t"), renderErrors(ctx, "t"), renderDailyReport(ctx, "2026-10-07")]) {
+    assert.equal(text.includes(SECRET_NAME), false);
+    assert.equal(text.includes("Секретное"), false);
+    assert.equal(text.includes("77011112233"), false);
+    assert.equal(/55512345\d\d/.test(text), false);
+    assert.equal(text.includes("\u2014"), false);
+    assert.equal(text.includes("<script>"), false);
+    assert.equal(text.includes("<b>evil"), false);
+  }
+  assert.match(renderReport(ctx, "t"), /&lt;b&gt;evil&lt;\/b&gt;&amp;co/);
+  // таблица: в <pre> тоже экранировано, тег закрыт
+  const t = renderUtmByDay(ctx, "t");
+  assert.match(t, /<pre>[\s\S]*<\/pre>$/);
+  assert.match(t, /&lt;b&gt;ev/);
+});
+
+test("«UTM по дням»: топ-4 источника по заявкам и в скобках дошедшие до бота, «прочие», итоги, ширина колонок", () => {
+  const { dir } = boot([msg("a", "10:00")]);
+  const rows: unknown[] = [];
+  let n = 0;
+  const add = (day: number, src: string, count: number, linked = 0) => {
+    for (let i = 0; i < count; i++) rows.push(leadRow({ id: `u${n}`, iso: iso(alm(2026, 10, day, 9, i)), eventId: `EV${n++}`, utm: src ? { utm_source: src } : undefined }));
+    return linked;
+  };
+  add(6, "instagram", 5);
+  add(7, "instagram", 3);
+  add(7, "saint4aibio", 4);
+  add(7, "", 2);
+  add(7, "vk", 1);
+  add(7, "yandex", 1);
+  add(7, "tiktok", 1);
+  writeLeads(dir, rows);
+  const store = getStore();
+  // первые два заявки instagram 6 октября и одна saint4aibio 7 октября дошли до бота
+  sub(store, 71, "2026-10-07", alm(2026, 10, 6, 12, 0), { payload: "pp_EV0" });
+  sub(store, 72, "2026-10-07", alm(2026, 10, 6, 12, 1), { payload: "ty_EV1" });
+  sub(store, 73, "2026-10-07", alm(2026, 10, 7, 12, 0), { payload: "pp_EV9" });
+  sub(store, 74, "2026-10-07", alm(2026, 10, 7, 13, 0), { payload: "2gis" });
+  const out = renderUtmByDay(adminCtx(NOW), "7");
+  const pre = (out.match(/<pre>([\s\S]*)<\/pre>/) as RegExpMatchArray)[1].split("\n");
+  assert.match(out, /^<b>UTM по дням, 7 дней: 1 октября - 7 октября<\/b>/);
+  assert.equal(pre.length, 1 + 7 + 1); // шапка, 7 дней, итого
+  assert.match(pre[0], /^дата\s+instagram\s+saint4aibio\s+без метки\s+2gis\s+прочие\s+всего$/);
+  const row = (d: string) => pre.find((l) => l.startsWith(d)) as string;
+  assert.match(row("06.10"), /^06\.10\s+5\(2\)\s+\.\s+\.\s+\.\s+\.\s+5\(2\)$/);
+  assert.match(row("07.10"), /^07\.10\s+3\(0\)\s+4\(1\)\s+2\(0\)\s+0\(1\)\s+3\(0\)\s+12\(2\)$/);
+  assert.match(row("01.10"), /^01\.10\s+\.\s+\.\s+\.\s+\.\s+\.\s+\.$/);
+  assert.match(pre[pre.length - 1], /^итого\s+8\(2\)\s+4\(1\)\s+2\(0\)\s+0\(1\)\s+3\(0\)\s+17\(4\)$/);
+  // колонки ровные: у всех строк «всего» начинается с одной позиции
+  const starts = new Set(pre.map((l) => l.search(/\S+$/)));
+  assert.equal(starts.size, 1);
+});
+
+test("длина сообщений не больше 4096 на больших данных; таблица по дням режется с пометкой", () => {
+  const { dir } = boot([msg("a", "10:00")]);
+  const rows: unknown[] = [];
+  const store = getStore();
+  const srcs = ["instagram", "saint4aibio", "google", "yandex", "tiktok", "vk", "facebook", "telegram", "2gis", "youtube"];
+  for (let d = 0; d < 120; d++) {
+    const day = addDays("2026-06-10", d);
+    for (let k = 0; k < 6; k++) {
+      const ts = atTime(day, "10:00") + k * 60_000;
+      rows.push({ kind: "capture", id: `${d}-${k}`, eventId: `ev-${d}-${k}`, source: "efir-1-okt-hero", utm: { utm_source: srcs[(d + k) % srcs.length], utm_medium: "m" + (k % 3), utm_campaign: "kampaniya_" + ((d * 7 + k) % 40) }, ts: iso(ts) });
+    }
+    if (d % 3 === 0) sub(store, 9000 + d, day, atTime(day, "11:00"), { payload: `pp_ev-${d}-0` });
+    store.recordSent({ msg: "m" + (d % 25), day, chat_id: 9000 + d, ts: iso(atTime(day, "12:00")), ok: d % 5 !== 0, ...(d % 5 === 0 ? { err: "400 Bad Request: ошибка номер " + d } : {}) });
+  }
+  writeLeads(dir, rows);
+  const ctx = adminCtx(alm(2026, 10, 7, 18, 0));
+  for (const key of ["t", "y", "7", "30", "all", "2026-07-01"]) {
+    for (const f of [renderReport, renderUtmByDay, renderErrors]) {
+      const text = f(ctx, key);
+      assert.ok(text.length <= 4096, `${f.name} ${key}: ${text.length}`);
+      assert.ok(text.length > 20);
+    }
+  }
+  const table = renderUtmByDay(ctx, "all");
+  assert.match(table, /показаны последние \d+ дн\. из \d+/);
+  assert.ok(table.length <= MSG_LIMIT);
+  assert.match(table, /<\/pre>$/);
+  assert.match(table, /итого/);
+  // assemble режет блоки по строкам и пишет пометку
+  const big = assemble("<b>Шапка</b>", ["a\n".repeat(50), Array.from({ length: 400 }, (_, i) => `строка ${i}`).join("\n")]);
+  assert.ok(big.length <= 4096);
+  assert.match(big, /часть отчёта не поместилась/);
+});
+
+test("ошибки: неудачные отправки по тексту, последние 10 с временем и id сообщения, блокировки, счётчики процесса, версия", async () => {
+  adminScenario();
+  const store = getStore();
+  for (let i = 0; i < 12; i++) store.recordSent({ msg: `m${i}`, day: TODAY, chat_id: 5551230000 + i, ts: iso(alm(2026, 10, 7, 13, i)), ok: false, err: "500 Internal error" });
+  noteRuntime("skipLate", { msg: "live-2000", info: "3" });
+  noteRuntime("tickError", { info: "boom" });
+  // подмена медиа на текст и отказ вебхука по секрету: реальные пути кода
+  fake.respond = (method) => (method === "sendPhoto" ? { status: 400, json: { ok: false, error_code: 400, description: "Bad Request: failed to get HTTP URL content" } } : null);
+  await sendContent({ media: { type: "photo", url: "https://onai.academy/x/err.jpg" }, text: "Т" }, ctxFor(mkSeries([])));
+  const { server, url } = await startWebhook();
+  try {
+    for (const secret of [undefined, "wrong", "wrong2"]) await fetch(url, { method: "POST", headers: { "content-type": "application/json", ...(secret ? { "x-telegram-bot-api-secret-token": secret } : {}) }, body: "{}" });
+  } finally {
+    await new Promise<void>((r) => server.close(() => r()));
+  }
+  // предупреждения владельцам о подмене медиа уходят асинхронно: дожидаемся, чтобы они не попали в следующий тест
+  await waitFor(() => fake.texts(900).some((x) => x.startsWith("Не отправилась картинка")) && fake.texts(901).some((x) => x.startsWith("Не отправилась картинка")));
+  assert.equal(runtime.webhookRejected, 3);
+  const text = renderErrors(adminCtx(NOW), "t");
+  assert.match(text, /^<b>Ошибки, Сегодня, 7 октября<\/b>/);
+  assert.match(text, /<b>Неудачные отправки: 14<\/b> \(из 17\)/);
+  assert.match(text, /12 x 500 Internal error/);
+  assert.match(text, /1 x 403 Forbidden: bot was blocked by the user/);
+  assert.match(text, /<b>Последние 10<\/b>/);
+  const lastLines = text.split("\n").slice(text.split("\n").indexOf("<b>Последние 10</b>") + 1, text.split("\n").indexOf("<b>Последние 10</b>") + 11);
+  assert.equal(lastLines[0], "07.10 17:50 link-1950: 400 Bad Request: chat not found"); // новее сверху
+  assert.equal(lastLines[1], "07.10 13:11 m11: 500 Internal error");
+  assert.equal(lastLines.filter((l) => /^07\.10 \d\d:\d\d m\d+: 500 Internal error$/.test(l)).length, 9);
+  assert.match(text, /<b>Заблокировали бота<\/b>: 1/);
+  assert.match(text, /Пропуски по опозданию планировщика: 1 \(live-2000\)/);
+  assert.match(text, /Медиа заменено текстом: 1/);
+  assert.match(text, /Сбои тиков планировщика: 1/);
+  assert.match(text, /Отказы вебхука по секрету: 3/);
+  assert.match(text, /Версия: dev, процесс работает/);
+  assert.equal(/55512300\d\d/.test(text), false); // чаты не показываются
+});
+
+test("меню /admin и /stats: только владельцам, кнопки периода, редактирование того же сообщения, чужим ничего", async () => {
+  adminScenario();
+  const now = NOW;
+  // чужой: молчание и на команду, и на кнопку (кнопка только закрывается)
+  await processUpdate(upd(555, "/admin"), now);
+  await processUpdate(upd(555, "/stats"), now);
+  assert.equal(fake.calls.length, 0);
+  await processUpdate(cb(555, "adm:p:t"), now);
+  await processUpdate(cb(555, "adm:u:7", { id: "x2" }), now);
+  await processUpdate(cb(555, "adm:e:y", { id: "x3" }), now);
+  await processUpdate(cb(555, "adm:d", { id: "x4" }), now);
+  assert.deepEqual(fake.calls.map((c) => c.method), ["answerCallbackQuery", "answerCallbackQuery", "answerCallbackQuery", "answerCallbackQuery"]);
+
+  // владелец: /admin и /stats открывают одно меню
+  fake.reset();
+  await processUpdate(upd(900, "/admin"), now);
+  await processUpdate(upd(900, "/stats"), now);
+  const menus = fake.of("sendMessage");
+  assert.equal(menus.length, 2);
+  for (const mnu of menus) {
+    assert.equal(mnu.body.parse_mode, undefined);
+    const labels = (mnu.body.reply_markup.inline_keyboard as Array<Array<{ text: string; callback_data: string }>>).flat().map((b) => b.text);
+    assert.deepEqual(labels, ["Сегодня", "Вчера", "7 дней", "30 дней", "Дата…"]);
+    assert.match(String(mnu.body.text), /Подписчиков всего: 8/);
+    assert.match(String(mnu.body.text), /Выбери период для отчёта:/);
+  }
+  const cbs = (menus[0].body.reply_markup.inline_keyboard as Array<Array<{ callback_data: string }>>).flat().map((b) => b.callback_data);
+  assert.deepEqual(cbs, ["adm:p:t", "adm:p:y", "adm:p:7", "adm:p:30", "adm:d"]);
+  for (const c of cbs) assert.ok(Buffer.byteLength(c) <= 64);
+
+  // кнопка периода редактирует то же сообщение, не шлёт новое
+  fake.reset();
+  await processUpdate(cb(900, "adm:p:t", { id: "o1" }), now);
+  assert.deepEqual(fake.calls.map((c) => c.method), ["answerCallbackQuery", "editMessageText"]);
+  const ed = fake.of("editMessageText")[0].body;
+  assert.equal(ed.message_id, 77);
+  assert.equal(ed.chat_id, 900);
+  assert.equal(ed.parse_mode, "HTML");
+  assert.match(String(ed.text), /^<b>Сегодня, 7 октября<\/b>/);
+  assert.deepEqual((ed.reply_markup.inline_keyboard as Array<Array<{ text: string }>>).map((r) => r.map((b) => b.text)), [["UTM по дням", "Ошибки"], ["Обновить", "← Период"]]);
+  assert.deepEqual(ed.link_preview_options, { is_disabled: true });
+  // «UTM по дням» и «Ошибки» тоже правят сообщение, «Обновить» повторяет экран, «← Период» возвращает меню
+  for (const [data, re, btns] of [
+    ["adm:u:t", /^<b>UTM по дням, Сегодня, 7 октября<\/b>/, ["Отчёт", "Ошибки"]],
+    ["adm:e:t", /^<b>Ошибки, Сегодня, 7 октября<\/b>/, ["Отчёт", "UTM по дням"]],
+  ] as const) {
+    fake.reset();
+    await processUpdate(cb(900, data, { id: data }), now);
+    const body = fake.of("editMessageText")[0].body;
+    assert.match(String(body.text), re);
+    assert.deepEqual((body.reply_markup.inline_keyboard as Array<Array<{ text: string }>>)[0].map((b) => b.text), [...btns]);
+    assert.equal((body.reply_markup.inline_keyboard as Array<Array<{ text: string; callback_data: string }>>)[1][0].callback_data, data);
+  }
+  fake.reset();
+  await processUpdate(cb(900, "adm:m", { id: "m" }), now);
+  const back = fake.of("editMessageText")[0].body;
+  assert.equal(back.parse_mode, undefined);
+  assert.match(String(back.text), /Выбери период для отчёта:/);
+
+  // выбор даты: последние 14 дней дд.мм и «Весь период»
+  fake.reset();
+  await processUpdate(cb(900, "adm:d", { id: "d" }), now);
+  const kb = fake.of("editMessageText")[0].body.reply_markup.inline_keyboard as Array<Array<{ text: string; callback_data: string }>>;
+  const dayBtns = kb.flat().filter((b) => /^\d\d\.\d\d$/.test(b.text));
+  assert.equal(dayBtns.length, 14);
+  assert.deepEqual([dayBtns[0].text, dayBtns[0].callback_data, dayBtns[13].text, dayBtns[13].callback_data], ["07.10", "adm:p:2026-10-07", "24.09", "adm:p:2026-09-24"]);
+  assert.ok(kb.flat().some((b) => b.text === "Весь период" && b.callback_data === "adm:p:all"));
+  // выбранная дата открывает отчёт за этот день
+  fake.reset();
+  await processUpdate(cb(900, "adm:p:2026-10-06", { id: "dd" }), now);
+  assert.match(String(fake.of("editMessageText")[0].body.text), /^<b>6 октября<\/b>/);
+  // сообщение уже нельзя править: отчёт приходит новым; «не изменилось» молча
+  fake.reset();
+  fake.respond = (method) => (method === "editMessageText" ? { status: 400, json: { ok: false, error_code: 400, description: "Bad Request: message to edit not found" } } : null);
+  await processUpdate(cb(900, "adm:p:7", { id: "n1" }), now);
+  assert.equal(fake.of("sendMessage").length, 1);
+  assert.equal(fake.of("sendMessage")[0].body.parse_mode, "HTML");
+  fake.reset();
+  fake.respond = (method) => (method === "editMessageText" ? { status: 400, json: { ok: false, error_code: 400, description: "Bad Request: message is not modified" } } : null);
+  await processUpdate(cb(900, "adm:p:7", { id: "n2" }), now);
+  assert.equal(fake.of("sendMessage").length, 0);
+  // мусорный callback владельца: только закрытие кнопки
+  fake.reset();
+  await processUpdate(cb(900, "adm:p:2026-13-45", { id: "bad" }), now);
+  await processUpdate(cb(900, "adm:x", { id: "bad2" }), now);
+  assert.deepEqual(fake.calls.map((c) => c.method), ["answerCallbackQuery", "answerCallbackQuery"]);
+  assert.equal(parseAdminCb("adm:p:all")?.period, "all");
+  assert.equal(parseAdminCb("adm:p:2026-02-30"), null);
+  assert.equal(parseAdminCb("fire:x"), null);
+  assert.equal(adminKeyboard("t", "p").flat().length, 4);
+  assert.equal(datePickerKeyboard(NOW).flat().length, 16);
+});
+
+test("заявки недоступны: нет файла или ошибка чтения не роняют бота, остальные блоки отчёта на месте", async () => {
+  const { dir } = adminScenario();
+  process.env.LEADS_LOG_PATH = join(dir, "нет-такого-файла.jsonl");
+  const ctx = adminCtx(NOW);
+  const r = renderReport(ctx, "t");
+  assert.match(r, /<b>Заявки с сайта<\/b>: заявки недоступны \(файл заявок не найден\)/);
+  assert.match(r, /<b>Бот: новых подписчиков 7<\/b>/);
+  assert.match(r, /<b>Рассылка<\/b>/);
+  assert.doesNotMatch(r, /Заявка → бот/);
+  assert.match(renderUtmByDay(ctx, "t"), /Заявки недоступны/);
+  assert.match(renderDailyReport(ctx, "2026-10-07"), /Заявки недоступны\./);
+  // путь, который нельзя прочитать как файл (родитель сам файл)
+  process.env.LEADS_LOG_PATH = join(dir, "series.json", "leads.jsonl");
+  assert.match(renderReport(ctx, "t"), /заявки недоступны/);
+  // и через кнопку: бот отвечает, а не молчит
+  fake.reset();
+  await processUpdate(cb(900, "adm:p:t", { id: "u1" }), NOW);
+  assert.match(String(fake.of("editMessageText")[0].body.text), /заявки недоступны/);
+});
+
+test("кеш чтения файлов: без изменений отдаётся из кеша, добавленное дочитывается, неполная строка ждёт, усечение читается заново", () => {
+  const dir = tmp();
+  const f = join(dir, "log.jsonl");
+  writeFileSync(f, '{"a":1}\n{"a":2}\n');
+  const r1 = readJsonlCached(f);
+  assert.equal(r1.rows.length, 2);
+  const r2 = readJsonlCached(f);
+  assert.equal(r2.rows, r1.rows); // тот же массив: файл не перечитывался
+  appendFileSync(f, '{"a":3}\n{"a":4');
+  const r3 = readJsonlCached(f);
+  assert.equal(r3.rows.length, 3);       // последняя строка без \n ещё не дописана
+  assert.equal(r3.rows, r1.rows);        // дочитано в тот же массив
+  appendFileSync(f, '}\nбитая строка\n{"a":5}\n');
+  const r4 = readJsonlCached(f);
+  assert.deepEqual(r4.rows.map((r) => r.a), [1, 2, 3, 4, 5]);
+  writeFileSync(f, '{"a":9}\n');          // файл стал меньше: читаем заново
+  assert.deepEqual(readJsonlCached(f).rows.map((r) => r.a), [9]);
+  assert.equal(readJsonlCached(join(dir, "none.jsonl")).missing, true);
+  // отчёт видит заявки, дописанные после первого чтения
+  const { dir: d2 } = boot();
+  const lf = writeLeads(d2, [leadRow({ id: "a", iso: iso(alm(2026, 10, 7, 9, 0)) })]);
+  assert.match(renderReport(adminCtx(NOW), "t"), /Заявки с сайта: 1/);
+  appendFileSync(lf, JSON.stringify(leadRow({ id: "b", iso: iso(alm(2026, 10, 7, 9, 5)) })) + "\n");
+  assert.match(renderReport(adminCtx(NOW), "t"), /Заявки с сайта: 2/);
+  assert.equal(hostOf("https://www.L.Instagram.com/path?x=1"), "l.instagram.com");
+  assert.equal(hostOf("instagram.com"), "instagram.com");
+  assert.equal(hostOf("мусор"), "");
+  assert.equal(placeOf("efir-1-okt-popup"), "popup");
+  assert.equal(placeOf(""), "не указано");
+});
+
+test("/help: владельцу справка по всем командам, остальным обычный ответ бота", async () => {
+  boot();
+  const now = alm(2026, 10, 7, 11, 0);
+  await processUpdate(upd(900, "/help"), now);
+  const help = fake.texts(900)[0];
+  for (const cmd of ["/admin", "/series", "/preview", "/fire", "/at", "/off", "/on", "/bizon", "/paid", "/reload", "/series_on", "/series_off"]) {
+    assert.ok(help.includes(cmd), `в справке нет ${cmd}`);
+  }
+  assert.equal(help.includes("\u2014"), false);
+  assert.ok(help.length < 1500);
+  assert.equal(fake.of("sendMessage")[0].body.parse_mode, undefined);
+  fake.reset();
+  await processUpdate(upd(555, "/help"), now);
+  assert.equal(fake.texts(555)[0], base.welcome.other); // чужому как любой другой текст
+});
+
+// ───────────────────────── ежедневный админ-отчёт ─────────────────────────
+
+test("ежедневный отчёт: в 09:00 за вчера, один раз в сутки, после рестарта не дублируется, от seriesEnabled не зависит", async () => {
+  const { store, dir, seriesPath } = boot([msg("a", "10:00")]);
+  writeLeads(dir, [leadRow({ id: "d1", iso: iso(alm(2026, 10, 7, 12, 0)), eventId: "D1", utm: { utm_source: "instagram", utm_medium: "paid_social", utm_campaign: "efir_0710" } }), leadRow({ id: "d2", iso: iso(alm(2026, 10, 7, 13, 0)), eventId: "D2" })]);
+  sub(store, 61, "2026-10-07", alm(2026, 10, 7, 14, 0), { payload: "pp_D1" });
+  sub(store, 62, "2026-10-07", alm(2026, 10, 7, 15, 0), { payload: "2gis" });
+  store.recordClick(61, "2026-10-07", iso(alm(2026, 10, 7, 20, 5)));
+  assert.equal(store.state.seriesEnabled, false);
+  // первый запуск функции только запоминает момент: старые дни не догоняются
+  assert.equal(await adminDaily(alm(2026, 10, 8, 8, 0)), false);
+  assert.equal(store.state.adminSince, alm(2026, 10, 8, 8, 0));
+  assert.equal(await adminDaily(alm(2026, 10, 8, 8, 59, 59)), false);
+  assert.equal(fake.calls.length, 0);
+  assert.equal(await adminDaily(alm(2026, 10, 8, 9, 0)), true);
+  assert.deepEqual(fake.of("sendMessage").map((c) => c.body.chat_id), [900, 901]);
+  const text = String(fake.of("sendMessage")[0].body.text);
+  assert.match(text, /^<b>Итоги за вчера, 7 октября<\/b>/);
+  assert.match(text, /Заявок: 2\. Топ UTM: instagram \/ paid_social \/ efir_0710 1; без UTM: прямой заход 1/);
+  assert.match(text, /В боте новых: 2 \(окно 1, «Спасибо» 0, прямой 0, 2gis 1\)\. Заявка → бот: 1 из 2 \(50%\)/);
+  assert.match(text, /Эфир: записались 2, перешли 1 \(50%\)/);
+  assert.match(text, /Ошибок отправки нет\./);
+  assert.equal(fake.of("sendMessage")[0].body.parse_mode, "HTML");
+  assert.deepEqual(fake.of("sendMessage")[0].body.reply_markup.inline_keyboard, [[{ text: "Подробнее", callback_data: "adm:p:2026-10-07" }, { text: "Ошибки", callback_data: "adm:e:2026-10-07" }]]);
+  assert.ok(text.length < 1200);
+  assert.equal(text.includes("\u2014"), false);
+  assert.equal(store.isAdminReported("2026-10-07"), true);
+  // в тот же день второй раз не уходит
+  fake.reset();
+  assert.equal(await adminDaily(alm(2026, 10, 8, 9, 5)), false);
+  assert.equal(await adminDaily(alm(2026, 10, 8, 21, 0)), false);
+  assert.equal(fake.calls.length, 0);
+  // рестарт: отметка и момент старта читаются из tg-state.json
+  initTgWorkshop({ dir, seriesFile: seriesPath });
+  assert.equal(getStore().isAdminReported("2026-10-07"), true);
+  assert.equal(await adminDaily(alm(2026, 10, 8, 9, 10)), false);
+  assert.equal(fake.calls.length, 0);
+  // кнопка «Подробнее» открывает полный отчёт за тот день
+  await processUpdate(cb(900, "adm:p:2026-10-07", { id: "more" }), alm(2026, 10, 8, 9, 20));
+  assert.match(String(fake.of("editMessageText")[0].body.text), /^<b>7 октября<\/b>/);
+});
+
+test("ежедневный отчёт: пропуск до суток догоняется, старше суток нет; нет доставки владельцам: отметки нет", async () => {
+  const { store } = boot([msg("a", "10:00")]);
+  writeLeads(getStore().dir, []);
+  await adminDaily(alm(2026, 10, 8, 8, 0)); // момент старта
+  assert.equal(await adminDaily(alm(2026, 10, 8, 9, 0)), true);
+  fake.reset();
+  // процесс «лежал» с 9 по 20 часов 9 октября: отчёт за 8-е (был назначен на 09:00) догоняется
+  assert.equal(await adminDaily(alm(2026, 10, 9, 20, 0)), true);
+  assert.equal(store.isAdminReported("2026-10-08"), true);
+  assert.match(String(fake.of("sendMessage")[0].body.text), /^<b>Итоги за вчера, 8 октября<\/b>/);
+  // 10-го отчёта нет, процесс вернулся 11-го в 10:00: отчёт за 10-е старше суток, за 9-е и подавно
+  fake.reset();
+  assert.equal(await adminDaily(alm(2026, 10, 11, 10, 0)), true);
+  assert.equal(store.isAdminReported("2026-10-10"), true);
+  assert.equal(store.isAdminReported("2026-10-09"), false);
+  assert.equal(fake.of("sendMessage").length, 2);
+  // Telegram не доставил ни одному владельцу: не отмечаем, повторим на следующем тике
+  fake.reset();
+  fake.respond = () => ({ status: 403, json: { ok: false, error_code: 403, description: "Forbidden" } });
+  assert.equal(await adminDaily(alm(2026, 10, 12, 9, 0)), false);
+  assert.equal(store.isAdminReported("2026-10-11"), false);
+  fake.respond = null;
+  assert.equal(await adminDaily(alm(2026, 10, 12, 9, 1)), true);
+  assert.equal(store.isAdminReported("2026-10-11"), true);
+  // владельцев нет: ничего не шлём
+  const saved = process.env.TG_LINK_OWNER_IDS;
+  process.env.TG_LINK_OWNER_IDS = "";
+  fake.reset();
+  assert.equal(await adminDaily(alm(2026, 10, 13, 9, 0)), false);
+  assert.equal(fake.calls.length, 0);
+  process.env.TG_LINK_OWNER_IDS = saved;
+});
+
+test("ежедневный отчёт: время из adminDailyReportAt, идёт из tick(), отчёт после эфира в 21:25 остаётся", async () => {
+  const { store, dir } = boot([msg("a", "10:00")], { adminDailyReportAt: "07:30" });
+  writeLeads(dir, []);
+  sub(store, 63, "2026-10-07", alm(2026, 10, 7, 10, 0));
+  const f = fakeDeps();
+  // старый отчёт после эфира в 21:25 работает независимо и как раньше
+  assert.equal(await dailyReport(alm(2026, 10, 7, 21, 25)), true);
+  assert.equal(fake.texts(900).filter((t) => t.startsWith("Эфир 7 октября: записались в бота 1")).length, 1);
+  const daily = () => fake.texts(900).filter((t) => t.startsWith("<b>Итоги за вчера")).length;
+  await tick(alm(2026, 10, 8, 7, 0), f.deps);           // первый тик: старт функции
+  await tick(alm(2026, 10, 8, 7, 29, 59), f.deps);
+  assert.equal(daily(), 0);
+  await tick(alm(2026, 10, 8, 7, 30), f.deps);
+  assert.equal(daily(), 1);
+  assert.equal(fake.texts(900).filter((t) => t.startsWith("<b>Итоги за вчера, 7 октября")).length, 1);
+  await tick(alm(2026, 10, 8, 7, 31), f.deps);
+  assert.equal(daily(), 1);
+  // неверное время в серии отвергается при проверке
+  assert.throws(() => validateSeries(rawSeries([msg("a", "10:00")], { adminDailyReportAt: "9 утра" })), /adminDailyReportAt вида HH:MM/);
+  assert.throws(() => validateSeries(rawSeries([msg("a", "10:00")], { adminDailyReportAt: 900 })), /adminDailyReportAt/);
+  assert.doesNotThrow(() => validateSeries(rawSeries([msg("a", "10:00")], { adminDailyReportAt: "09:00" })));
+  assert.equal(validateSeries(rawSeries([msg("a", "10:00")])).adminDailyReportAt, undefined); // по умолчанию 09:00 берёт планировщик
 });

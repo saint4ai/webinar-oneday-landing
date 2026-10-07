@@ -25,8 +25,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // form-api/server.ts
 var import_node_http = require("node:http");
 var import_node_crypto4 = require("node:crypto");
-var import_node_fs6 = require("node:fs");
-var import_node_path6 = require("node:path");
+var import_node_fs7 = require("node:fs");
+var import_node_path7 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -532,12 +532,22 @@ function writeWhatsAppLink(link, by) {
 
 // form-api/tg-workshop.ts
 var import_node_crypto3 = require("node:crypto");
-var import_node_fs4 = require("node:fs");
-var import_node_path4 = require("node:path");
+var import_node_fs5 = require("node:fs");
+var import_node_path5 = require("node:path");
 
 // form-api/tg-store.ts
 var import_node_fs3 = require("node:fs");
 var import_node_path3 = require("node:path");
+var runtime = {
+  startedAt: Date.now(),
+  /** Отказы вебхука по секрету. */
+  webhookRejected: 0,
+  events: []
+};
+function noteRuntime(type, extra = {}) {
+  runtime.events.push({ type, ts: Date.now(), ...extra });
+  if (runtime.events.length > 500) runtime.events.splice(0, runtime.events.length - 500);
+}
 var TY_DAILY_CAP = 5e3;
 function applyEvent(subs, ev) {
   const ts = Date.parse(ev.ts);
@@ -628,7 +638,7 @@ var TgStore = class _TgStore {
     this.regDays = /* @__PURE__ */ new Map();
     /** Кто нажал «Я уже оплатил(а)» сам, по дню эфира, на который был записан в тот момент. */
     this.paidDays = /* @__PURE__ */ new Map();
-    this.state = { seriesEnabled: false, media: {}, overrides: {}, bizon: "", reported: [] };
+    this.state = { seriesEnabled: false, media: {}, overrides: {}, bizon: "", reported: [], adminReported: [], adminSince: 0 };
     this.dir = dir;
     (0, import_node_fs3.mkdirSync)(dir, { recursive: true });
     this.fSubs = (0, import_node_path3.join)(dir, "tg-subscribers.jsonl");
@@ -665,7 +675,9 @@ var TgStore = class _TgStore {
           media: obj(st.media),
           overrides: obj(st.overrides),
           bizon: typeof st.bizon === "string" ? st.bizon : "",
-          reported: Array.isArray(st.reported) ? st.reported.filter((x) => typeof x === "string") : []
+          reported: Array.isArray(st.reported) ? st.reported.filter((x) => typeof x === "string") : [],
+          adminReported: Array.isArray(st.adminReported) ? st.adminReported.filter((x) => typeof x === "string") : [],
+          adminSince: typeof st.adminSince === "number" ? st.adminSince : 0
         };
       }
     } catch {
@@ -741,6 +753,22 @@ var TgStore = class _TgStore {
     this.state.reported = [...this.state.reported, day].slice(-30);
     this.saveState();
   }
+  setAdminSince(ms) {
+    this.state.adminSince = ms;
+    this.saveState();
+  }
+  isAdminReported(day) {
+    return this.state.adminReported.includes(day);
+  }
+  markAdminReported(day) {
+    if (this.isAdminReported(day)) return;
+    this.state.adminReported = [...this.state.adminReported, day].slice(-30);
+    this.saveState();
+  }
+  /** Пути журналов: их читает админ-аналитика (tg-admin) с кешем по mtime. */
+  paths() {
+    return { subs: this.fSubs, sent: this.fSent, clicks: this.fClicks, ty: this.fTy };
+  }
   recordSent(e) {
     this.append(this.fSent, e);
     this.sent.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
@@ -775,9 +803,9 @@ var TgStore = class _TgStore {
    * Клик по кнопке Telegram или WhatsApp на странице «Спасибо». Повтор того же eid за день не
    * считается. Потолок TY_DAILY_CAP записей в сутки: дальше ничего не пишем и возвращаем false.
    */
-  recordTyClick(ch, eid, day, ts) {
+  recordTyClick(ch, eid, day, ts, src = "") {
     if ((this.tyTotals.get(day) || 0) >= TY_DAILY_CAP) return false;
-    this.append(this.fTy, { ch, eid, day, ts });
+    this.append(this.fTy, { ch, eid, day, ts, ...src ? { src } : {} });
     this.countTy(ch, eid, day);
     return true;
   }
@@ -877,6 +905,10 @@ var TgStore = class _TgStore {
     this.saveState();
   }
 };
+
+// form-api/tg-admin.ts
+var import_node_fs4 = require("node:fs");
+var import_node_path4 = require("node:path");
 
 // form-api/tg-time.ts
 var DEFAULT_OFFSET_MIN = 300;
@@ -993,6 +1025,564 @@ function dayWordLower(day, now) {
   const w = dayWord(day, now);
   return w.charAt(0).toLowerCase() + w.slice(1);
 }
+function hhmmOf(ms) {
+  const p = partsInTZ(ms);
+  return `${pad(p.hour)}:${pad(p.minute)}`;
+}
+
+// form-api/tg-admin.ts
+var MSG_LIMIT = 4e3;
+var caches = /* @__PURE__ */ new Map();
+function readJsonlCached(file) {
+  let st;
+  try {
+    st = (0, import_node_fs4.statSync)(file);
+  } catch (e) {
+    caches.delete(file);
+    const code = e.code;
+    return code === "ENOENT" ? { rows: [], missing: true } : { rows: [], error: String(e.message || e) };
+  }
+  let c = caches.get(file);
+  if (c && c.size === st.size && c.mtime === st.mtimeMs) return { rows: c.rows };
+  if (!c || st.size < c.offset) c = { size: 0, mtime: 0, offset: 0, rows: [] };
+  try {
+    const len = st.size - c.offset;
+    if (len > 0) {
+      const buf = Buffer.alloc(len);
+      const fd = (0, import_node_fs4.openSync)(file, "r");
+      try {
+        (0, import_node_fs4.readSync)(fd, buf, 0, len, c.offset);
+      } finally {
+        (0, import_node_fs4.closeSync)(fd);
+      }
+      const nl = buf.lastIndexOf(10);
+      if (nl >= 0) {
+        for (const line of buf.subarray(0, nl + 1).toString("utf8").split("\n")) {
+          const s = line.trim();
+          if (!s) continue;
+          try {
+            const o = JSON.parse(s);
+            if (o && typeof o === "object") c.rows.push(o);
+          } catch {
+          }
+        }
+        c.offset += nl + 1;
+      }
+    }
+    c.size = st.size;
+    c.mtime = st.mtimeMs;
+    caches.set(file, c);
+    return { rows: c.rows };
+  } catch (e) {
+    caches.delete(file);
+    return { rows: [], error: String(e.message || e) };
+  }
+}
+var low = (v, max = 60) => String(v ?? "").trim().toLowerCase().slice(0, max);
+function hostOf(raw) {
+  const s = raw.trim();
+  if (!s) return "";
+  for (const cand of [s, `https://${s}`]) {
+    try {
+      const h = new URL(cand).hostname.toLowerCase().replace(/^www\./, "");
+      if (h && h.includes(".")) return h;
+    } catch {
+    }
+  }
+  return "";
+}
+function placeOf(source) {
+  const s = source.trim().toLowerCase();
+  if (!s) return "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u043E";
+  return s.includes("-") ? s.split("-").pop() : s;
+}
+var leadMemo = null;
+function leadsFilePath(ctx) {
+  return ctx.leadsFile || process.env.LEADS_LOG_PATH || "/var/lib/workshop/leads.jsonl";
+}
+function readLeads(ctx) {
+  const r = readJsonlCached(leadsFilePath(ctx));
+  if (r.error) return { leads: null, error: r.error };
+  if (r.missing) return { leads: null, error: "\u0444\u0430\u0439\u043B \u0437\u0430\u044F\u0432\u043E\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D" };
+  if (leadMemo && leadMemo.rowsRef === r.rows && leadMemo.len === r.rows.length) return { leads: leadMemo.leads, error: "" };
+  const seen = /* @__PURE__ */ new Set();
+  const leads = [];
+  for (const row of r.rows) {
+    if (row.kind !== "capture") continue;
+    const ts = Date.parse(String(row.ts ?? ""));
+    if (!Number.isFinite(ts)) continue;
+    const id = String(row.id ?? "");
+    if (id) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+    }
+    const u = row.utm && typeof row.utm === "object" ? row.utm : {};
+    leads.push({
+      id,
+      eventId: String(row.eventId ?? "").trim(),
+      place: placeOf(String(row.source ?? "")),
+      utmSource: low(u.utm_source),
+      utmMedium: low(u.utm_medium),
+      utmCampaign: low(u.utm_campaign),
+      refHost: hostOf(String(u.utm_referrer ?? "")),
+      gclid: !!String(u.gclid ?? "").trim(),
+      ts,
+      day: dayKeyOf(ts)
+    });
+  }
+  leadMemo = { rowsRef: r.rows, len: r.rows.length, leads };
+  return { leads, error: "" };
+}
+var hasUtm = (l) => !!(l.utmSource || l.utmMedium || l.utmCampaign);
+function utmLabel(l) {
+  return [l.utmSource, l.utmMedium, l.utmCampaign].filter(Boolean).join(" / ");
+}
+function noUtmLabel(l) {
+  if (l.refHost) return l.refHost;
+  if (l.gclid) return "google (gclid)";
+  return "\u043F\u0440\u044F\u043C\u043E\u0439 \u0437\u0430\u0445\u043E\u0434";
+}
+var sourceCol = (l) => l.utmSource || "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438";
+function classifyPayload(payload) {
+  const p = payload.trim();
+  if (!p) return { kind: "direct", eid: "", tag: "" };
+  const m = /^(pp|ty)(?:_(.+))?$/i.exec(p);
+  if (m) return { kind: m[1].toLowerCase(), eid: m[2] || "", tag: "" };
+  return { kind: "tag", eid: "", tag: (p.split("_")[0] || p).toLowerCase() };
+}
+var RANGE_MAX_DAYS = 366;
+function daysBetween(from, to) {
+  const out = [];
+  for (let d = from; d <= to && out.length < RANGE_MAX_DAYS; d = addDays(d, 1)) out.push(d);
+  return out;
+}
+var ddmm = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+function resolvePeriod(key, now, firstDataDay2) {
+  const today = dayKeyOf(now);
+  let from = today;
+  let to = today;
+  let label;
+  if (key === "y") {
+    from = to = addDays(today, -1);
+    label = `\u0412\u0447\u0435\u0440\u0430, ${dateLabel(from)}`;
+  } else if (key === "7" || key === "30") {
+    from = addDays(today, -(Number(key) - 1));
+    label = `${key} \u0434\u043D\u0435\u0439: ${dateLabel(from)} - ${dateLabel(to)}`;
+  } else if (key === "all") {
+    from = firstDataDay2 && firstDataDay2 < today ? firstDataDay2 : today;
+    if (daysBetween(from, to).length >= RANGE_MAX_DAYS) from = addDays(today, -(RANGE_MAX_DAYS - 1));
+    label = `\u0412\u0435\u0441\u044C \u043F\u0435\u0440\u0438\u043E\u0434: ${dateLabel(from)} - ${dateLabel(to)}`;
+  } else if (isDayKey(key)) {
+    from = to = key;
+    label = dateLabel(key);
+  } else {
+    key = "t";
+    label = `\u0421\u0435\u0433\u043E\u0434\u043D\u044F, ${dateLabel(today)}`;
+  }
+  if (key === "t") label = `\u0421\u0435\u0433\u043E\u0434\u043D\u044F, ${dateLabel(today)}`;
+  return { key, from, to, days: daysBetween(from, to), label };
+}
+var inPeriod = (p, ms) => {
+  const d = dayKeyOf(ms);
+  return d >= p.from && d <= p.to;
+};
+function firstDataDay(ctx) {
+  let min = Infinity;
+  for (const s of ctx.store.subs.values()) min = Math.min(min, s.firstStartAt);
+  const { leads } = readLeads(ctx);
+  if (leads) for (const l of leads) min = Math.min(min, l.ts);
+  return Number.isFinite(min) ? dayKeyOf(min) : void 0;
+}
+var esc2 = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+var lab = (s, max = 40) => esc2(s.length > max ? s.slice(0, max - 1) + "\u2026" : s);
+var pct = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
+var inc = (m, k, n = 1) => void m.set(k, (m.get(k) || 0) + n);
+var top = (m) => [...m.entries()].sort((a, b) => b[1] - a[1] || (String(a[0]) < String(b[0]) ? -1 : String(a[0]) > String(b[0]) ? 1 : 0));
+function gather(ctx, p) {
+  const { leads, error } = readLeads(ctx);
+  const all = leads || [];
+  const leadByEid = /* @__PURE__ */ new Map();
+  for (const l of all) if (l.eventId) leadByEid.set(l.eventId, l);
+  const linkedEids = /* @__PURE__ */ new Set();
+  const newSubs = [];
+  for (const s of ctx.store.subs.values()) {
+    const o = classifyPayload(s.payload);
+    if (o.eid) linkedEids.add(o.eid);
+    if (inPeriod(p, s.firstStartAt)) newSubs.push(s);
+  }
+  const paths = ctx.store.paths();
+  const ty = [];
+  const seenTy = /* @__PURE__ */ new Set();
+  for (const r of readJsonlCached(paths.ty).rows) {
+    const day = String(r.day ?? "");
+    if (!isDayKey(day) || day < p.from || day > p.to) continue;
+    const ch = r.ch === "wa" ? "wa" : r.ch === "tg" ? "tg" : null;
+    if (!ch) continue;
+    const eid = String(r.eid ?? "");
+    if (eid) {
+      const k = `${day}|${ch}|${eid}`;
+      if (seenTy.has(k)) continue;
+      seenTy.add(k);
+    }
+    ty.push({ ch, eid, day, src: String(r.src ?? "") });
+  }
+  const sent = [];
+  for (const r of readJsonlCached(paths.sent).rows) {
+    const ts = Date.parse(String(r.ts ?? ""));
+    if (Number.isFinite(ts) && inPeriod(p, ts) && typeof r.msg === "string") sent.push(r);
+  }
+  let blockedEvents = 0;
+  for (const r of readJsonlCached(paths.subs).rows) {
+    if (r.type !== "blocked") continue;
+    const ts = Date.parse(String(r.ts ?? ""));
+    if (Number.isFinite(ts) && inPeriod(p, ts)) blockedEvents++;
+  }
+  return {
+    p,
+    leadsOk: leads !== null,
+    leadsError: error,
+    leads: all.filter((l) => l.day >= p.from && l.day <= p.to),
+    linkedEids,
+    leadByEid,
+    newSubs,
+    ty,
+    sent,
+    blockedEvents
+  };
+}
+var linked = (g, l) => !!l.eventId && g.linkedEids.has(l.eventId);
+function assemble(head, sections, limit = MSG_LIMIT) {
+  let out = head;
+  for (const s of sections) {
+    if (!s) continue;
+    const next = `${out}
+
+${s}`;
+    if (next.length <= limit) {
+      out = next;
+      continue;
+    }
+    const room = limit - out.length - 40;
+    if (room > 60) {
+      const lines = [];
+      let used = 0;
+      for (const line of s.split("\n")) {
+        if (used + line.length + 1 > room) break;
+        lines.push(line);
+        used += line.length + 1;
+      }
+      if (lines.length) out += `
+
+${lines.join("\n")}`;
+    }
+    out += "\n(\u0447\u0430\u0441\u0442\u044C \u043E\u0442\u0447\u0451\u0442\u0430 \u043D\u0435 \u043F\u043E\u043C\u0435\u0441\u0442\u0438\u043B\u0430\u0441\u044C)";
+    break;
+  }
+  return out;
+}
+function leadsLines(g) {
+  if (!g.leadsOk) return [`<b>\u0417\u0430\u044F\u0432\u043A\u0438 \u0441 \u0441\u0430\u0439\u0442\u0430</b>: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B (${lab(g.leadsError, 80)})`];
+  const L = g.leads;
+  const lines = [`<b>\u0417\u0430\u044F\u0432\u043A\u0438 \u0441 \u0441\u0430\u0439\u0442\u0430: ${L.length}</b>`];
+  if (!L.length) return lines;
+  if (g.p.days.length > 1) {
+    const byDay = /* @__PURE__ */ new Map();
+    for (const l of L) inc(byDay, l.day);
+    const days = g.p.days.filter((d) => byDay.has(d));
+    const shown = days.slice(-14);
+    lines.push(`\u041F\u043E \u0434\u043D\u044F\u043C: ${shown.map((d) => `${ddmm(d)} ${byDay.get(d)}`).join(", ")}${days.length > shown.length ? ` (\u0438 \u0435\u0449\u0451 ${days.length - shown.length} \u0434\u043D.)` : ""}`);
+  }
+  const places = /* @__PURE__ */ new Map();
+  for (const l of L) inc(places, l.place);
+  lines.push(`\u041C\u0435\u0441\u0442\u043E \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435: ${top(places).map(([k, n]) => `${lab(k, 16)} ${n}`).join(", ")}`);
+  const utm = /* @__PURE__ */ new Map();
+  const none = /* @__PURE__ */ new Map();
+  for (const l of L) hasUtm(l) ? inc(utm, utmLabel(l)) : inc(none, noUtmLabel(l));
+  if (utm.size) {
+    const t = top(utm);
+    const shown = t.slice(0, 8);
+    const rest = t.slice(8).reduce((s, [, n]) => s + n, 0);
+    lines.push(`UTM: ${shown.map(([k, n]) => `${lab(k, 60)} ${n}`).join("; ")}${rest ? `; \u043F\u0440\u043E\u0447\u0438\u0435 ${rest}` : ""}`);
+  }
+  if (none.size) lines.push(`\u0411\u0435\u0437 UTM: ${top(none).map(([k, n]) => `${lab(k, 30)} ${n}`).join(", ")}`);
+  return lines;
+}
+function botLines(g) {
+  const N = g.newSubs;
+  const lines = [`<b>\u0411\u043E\u0442: \u043D\u043E\u0432\u044B\u0445 \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u043E\u0432 ${N.length}</b>`];
+  if (!N.length && !g.leads.length) return lines;
+  let pp = 0;
+  let ty = 0;
+  let direct = 0;
+  const tags = /* @__PURE__ */ new Map();
+  const viaUtm = /* @__PURE__ */ new Map();
+  let notFound = 0;
+  for (const s of N) {
+    const o = classifyPayload(s.payload);
+    if (o.kind === "pp") pp++;
+    else if (o.kind === "ty") ty++;
+    else if (o.kind === "direct") direct++;
+    else inc(tags, o.tag);
+    if (o.kind === "pp" || o.kind === "ty") {
+      const lead = o.eid ? g.leadByEid.get(o.eid) : void 0;
+      if (lead) inc(viaUtm, sourceCol(lead));
+      else notFound++;
+    }
+  }
+  if (N.length) {
+    const parts = [`\u043E\u043A\u043D\u043E \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 ${pp}`, `\xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB ${ty}`, `\u043F\u0440\u044F\u043C\u043E\u0439 /start ${direct}`];
+    if (tags.size) parts.push(`\u043C\u0435\u0442\u043A\u0438: ${top(tags).map(([k, n]) => `${lab(k, 20)} ${n}`).join(", ")}`);
+    lines.push(`\u041E\u0442\u043A\u0443\u0434\u0430: ${parts.join(", ")}`);
+    if (viaUtm.size || notFound) {
+      const v = top(viaUtm).slice(0, 6).map(([k, n]) => `${lab(k, 24)} ${n}`);
+      if (notFound && g.leadsOk) v.push(`\u0437\u0430\u044F\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 ${notFound}`);
+      if (v.length) lines.push(`\u041F\u043E UTM \u0437\u0430\u044F\u0432\u043A\u0438: ${v.join(", ")}`);
+    }
+  }
+  if (g.leadsOk) {
+    const reached = g.leads.filter((l) => linked(g, l)).length;
+    lines.push(`\u0417\u0430\u044F\u0432\u043A\u0430 \u2192 \u0431\u043E\u0442: ${reached} \u0438\u0437 ${g.leads.length} (${pct(reached, g.leads.length)}%)`);
+  }
+  return lines;
+}
+function buttonsLines(g) {
+  if (!g.ty.length) return [`<b>\u041A\u043D\u043E\u043F\u043A\u0438 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438</b>: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442 \u043D\u0430\u0436\u0430\u0442\u0438\u0439`];
+  const cnt = (ch, src) => g.ty.filter((r) => r.ch === ch && (src === void 0 || r.src === src)).length;
+  const hasSrc = g.ty.some((r) => r.src);
+  const part = (ch, name) => `${name} ${cnt(ch)}${hasSrc ? ` (\u043E\u043A\u043D\u043E ${cnt(ch, "pp")}, \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${cnt(ch, "ty")})` : ""}`;
+  return [`<b>\u041A\u043D\u043E\u043F\u043A\u0438 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438</b>`, `${part("tg", "Telegram")}, ${part("wa", "WhatsApp")}`];
+}
+function streamLines(ctx, g) {
+  const rows = [];
+  for (const d of g.p.days) {
+    const m = ctx.store.dayMetrics(d);
+    if (!m.registered || !isStreamDay(d, ctx.cfg)) continue;
+    rows.push(`${ddmm(d)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 ${m.clicked} (${pct(m.clicked, m.registered)}%), \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB ${m.paid}`);
+  }
+  if (!rows.length) return [`<b>\u042D\u0444\u0438\u0440\u044B</b>: \u0437\u0430\u043F\u0438\u0441\u0435\u0439 \u043D\u0430 \u044D\u0444\u0438\u0440 \u0437\u0430 \u043F\u0435\u0440\u0438\u043E\u0434 \u043D\u0435\u0442`];
+  const shown = rows.slice(-10);
+  return [`<b>\u042D\u0444\u0438\u0440\u044B</b>`, ...shown, ...rows.length > shown.length ? [`(\u0438 \u0435\u0449\u0451 ${rows.length - shown.length} \u0434\u043D.)`] : []];
+}
+function mailingLines(g) {
+  const ok = g.sent.filter((e) => e.ok).length;
+  const bad = g.sent.length - ok;
+  const lines = [`<b>\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430</b>: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${ok}, \u043E\u0448\u0438\u0431\u043E\u043A ${bad}, \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0431\u043E\u0442\u0430 ${g.blockedEvents}`];
+  const per = /* @__PURE__ */ new Map();
+  for (const e of g.sent) {
+    const c = per.get(e.msg) || { ok: 0, bad: 0 };
+    if (e.ok) c.ok++;
+    else c.bad++;
+    per.set(e.msg, c);
+  }
+  const rows = [...per.entries()].slice(0, 12).map(([id, c]) => `${lab(id, 24)} ${c.ok}${c.bad ? ` (\u043E\u0448\u0438\u0431\u043E\u043A ${c.bad})` : ""}`);
+  if (rows.length) lines.push(rows.join(", "));
+  return lines;
+}
+function adminKeyboard(period, screen) {
+  return [
+    [
+      screen === "p" ? { text: "UTM \u043F\u043E \u0434\u043D\u044F\u043C", callback_data: `adm:u:${period}` } : { text: "\u041E\u0442\u0447\u0451\u0442", callback_data: `adm:p:${period}` },
+      screen === "e" ? { text: "UTM \u043F\u043E \u0434\u043D\u044F\u043C", callback_data: `adm:u:${period}` } : { text: "\u041E\u0448\u0438\u0431\u043A\u0438", callback_data: `adm:e:${period}` }
+    ],
+    [
+      { text: "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C", callback_data: `adm:${screen}:${period}` },
+      { text: "\u2190 \u041F\u0435\u0440\u0438\u043E\u0434", callback_data: "adm:m" }
+    ]
+  ];
+}
+function menuKeyboard() {
+  return [
+    [
+      { text: "\u0421\u0435\u0433\u043E\u0434\u043D\u044F", callback_data: "adm:p:t" },
+      { text: "\u0412\u0447\u0435\u0440\u0430", callback_data: "adm:p:y" }
+    ],
+    [
+      { text: "7 \u0434\u043D\u0435\u0439", callback_data: "adm:p:7" },
+      { text: "30 \u0434\u043D\u0435\u0439", callback_data: "adm:p:30" }
+    ],
+    [{ text: "\u0414\u0430\u0442\u0430\u2026", callback_data: "adm:d" }]
+  ];
+}
+function datePickerKeyboard(now) {
+  const today = dayKeyOf(now);
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, -i));
+  const rows = [];
+  for (let i = 0; i < days.length; i += 4) rows.push(days.slice(i, i + 4).map((d) => ({ text: ddmm(d), callback_data: `adm:p:${d}` })));
+  rows.push([{ text: "\u0412\u0435\u0441\u044C \u043F\u0435\u0440\u0438\u043E\u0434", callback_data: "adm:p:all" }, { text: "\u2190 \u041F\u0435\u0440\u0438\u043E\u0434", callback_data: "adm:m" }]);
+  return rows;
+}
+function parseAdminCb(data) {
+  const m = /^adm:([puedm])(?::([A-Za-z0-9-]{1,10}))?$/.exec(data);
+  if (!m) return null;
+  const action = m[1];
+  const period = m[2] || "t";
+  if (action === "m" || action === "d") return { action, period: "t" };
+  if (!["t", "y", "7", "30", "all"].includes(period) && !isDayKey(period)) return null;
+  return { action, period };
+}
+function renderReport(ctx, periodKey) {
+  const p = resolvePeriod(periodKey, ctx.now, periodKey === "all" ? firstDataDay(ctx) : void 0);
+  const g = gather(ctx, p);
+  return assemble(`<b>${lab(p.label, 80)}</b>`, [
+    leadsLines(g).join("\n"),
+    botLines(g).join("\n"),
+    buttonsLines(g).join("\n"),
+    streamLines(ctx, g).join("\n"),
+    mailingLines(g).join("\n")
+  ]);
+}
+function renderUtmByDay(ctx, periodKey) {
+  const p = resolvePeriod(periodKey, ctx.now, periodKey === "all" ? firstDataDay(ctx) : void 0);
+  const g = gather(ctx, p);
+  const head = `<b>UTM \u043F\u043E \u0434\u043D\u044F\u043C, ${lab(p.label, 80)}</b>`;
+  if (!g.leadsOk) return `${head}
+\u0417\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B (${lab(g.leadsError, 80)}).`;
+  const cells = /* @__PURE__ */ new Map();
+  const total = /* @__PURE__ */ new Map();
+  const cell = (day, col) => {
+    const k = `${day}|${col}`;
+    let c = cells.get(k);
+    if (!c) cells.set(k, c = { leads: 0, bot: 0 });
+    return c;
+  };
+  for (const l of g.leads) {
+    const col = sourceCol(l);
+    const c = cell(l.day, col);
+    c.leads++;
+    if (linked(g, l)) c.bot++;
+    inc(total, col);
+  }
+  for (const s of g.newSubs) {
+    const o = classifyPayload(s.payload);
+    if (o.kind !== "tag") continue;
+    cell(dayKeyOf(s.firstStartAt), o.tag).bot++;
+    inc(total, o.tag);
+  }
+  if (!total.size) return `${head}
+\u0417\u0430 \u043F\u0435\u0440\u0438\u043E\u0434 \u043D\u0435\u0442 \u0437\u0430\u044F\u0432\u043E\u043A \u0438 \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u043E\u0432 \u0441 \u043C\u0435\u0442\u043A\u0430\u043C\u0438.`;
+  const ranked = top(total).map(([k]) => k);
+  const cols = ranked.slice(0, 4);
+  const rest = ranked.slice(4);
+  const zero = () => ({ leads: 0, bot: 0 });
+  const add = (a, b) => ({ leads: a.leads + b.leads, bot: a.bot + b.bot });
+  const colCell = (day, col) => col === null ? rest.reduce((a, k) => add(a, cells.get(`${day}|${k}`) || zero()), zero()) : cells.get(`${day}|${col}`) || zero();
+  const keys = [...cols, ...rest.length ? [null] : []];
+  const fmt = (c) => c.leads || c.bot ? `${c.leads}(${c.bot})` : ".";
+  const header = ["\u0434\u0430\u0442\u0430", ...keys.map((k) => k === null ? "\u043F\u0440\u043E\u0447\u0438\u0435" : k.length > 12 ? k.slice(0, 11) + "\u2026" : k), "\u0432\u0441\u0435\u0433\u043E"];
+  const table = p.days.map((d) => {
+    const cs = keys.map((k) => colCell(d, k));
+    return [ddmm(d), ...cs.map(fmt), fmt(cs.reduce(add, zero()))];
+  });
+  const foot = keys.map((k) => p.days.reduce((a, d) => add(a, colCell(d, k)), zero()));
+  const footer = ["\u0438\u0442\u043E\u0433\u043E", ...foot.map(fmt), fmt(foot.reduce(add, zero()))];
+  const note = "\u0432 \u0441\u043A\u043E\u0431\u043A\u0430\u0445 \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0438\u0437 \u043D\u0438\u0445 \u0434\u043E\u0448\u043B\u0438 \u0434\u043E \u0431\u043E\u0442\u0430; \u043C\u0435\u0442\u043A\u0438 \u0432\u0440\u043E\u0434\u0435 2gis \u0438\u0434\u0443\u0442 \u0441\u0440\u0430\u0437\u0443 \u0432 \u0431\u043E\u0442\u0430";
+  const build = (from2) => {
+    const rows = table.slice(from2);
+    const w = header.map((h, i) => Math.max(h.length, footer[i].length, ...rows.map((r) => r[i].length)));
+    const ln = (r) => r.map((c, i) => c.padEnd(w[i])).join("  ").trimEnd();
+    const pre = [ln(header), ...rows.map(ln), ln(footer)].map(esc2).join("\n");
+    const cut = from2 > 0 ? `
+\u043F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 ${rows.length} \u0434\u043D. \u0438\u0437 ${table.length}` : "";
+    return `${head}
+${note}${cut}
+<pre>${pre}</pre>`;
+  };
+  let from = 0;
+  let text = build(from);
+  while (text.length > MSG_LIMIT && from < table.length - 1) text = build(++from);
+  return text;
+}
+function adminVersion() {
+  try {
+    return (0, import_node_fs4.readFileSync)((0, import_node_path4.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+  } catch {
+    return "dev";
+  }
+}
+var uptimeText = (sec) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor(sec % 3600 / 60);
+  return h >= 24 ? `${Math.floor(h / 24)} \u0434\u043D. ${h % 24} \u0447` : `${h} \u0447 ${m} \u043C\u0438\u043D`;
+};
+function renderErrors(ctx, periodKey) {
+  const p = resolvePeriod(periodKey, ctx.now, periodKey === "all" ? firstDataDay(ctx) : void 0);
+  const g = gather(ctx, p);
+  const bad = g.sent.filter((e) => !e.ok);
+  const parts = [];
+  const head = `<b>\u041E\u0448\u0438\u0431\u043A\u0438, ${lab(p.label, 80)}</b>`;
+  const groups = /* @__PURE__ */ new Map();
+  for (const e of bad) inc(groups, String(e.err ?? "\u0431\u0435\u0437 \u0442\u0435\u043A\u0441\u0442\u0430").replace(/\d{5,}/g, "#").slice(0, 70));
+  const failLines = [`<b>\u041D\u0435\u0443\u0434\u0430\u0447\u043D\u044B\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438: ${bad.length}</b> (\u0438\u0437 ${g.sent.length})`];
+  if (groups.size) failLines.push(...top(groups).slice(0, 6).map(([k, n]) => `${n} x ${lab(k, 70)}`));
+  parts.push(failLines.join("\n"));
+  if (bad.length) {
+    const last = [...bad].sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts)).slice(0, 10);
+    parts.push(
+      [`<b>\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 ${last.length}</b>`, ...last.map((e) => `${ddmm(dayKeyOf(Date.parse(e.ts)))} ${hhmmOf(Date.parse(e.ts))} ${lab(e.msg, 24)}: ${lab(String(e.err ?? ""), 50)}`)].join("\n")
+    );
+  }
+  parts.push(`<b>\u0417\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0431\u043E\u0442\u0430</b>: ${g.blockedEvents}`);
+  const rt = runtime.events;
+  const cntRt = (t) => rt.filter((e) => e.type === t).length;
+  const skipped = rt.filter((e) => e.type === "skipLate");
+  parts.push(
+    [
+      `<b>\u0421 \u0437\u0430\u043F\u0443\u0441\u043A\u0430 \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430</b> (${uptimeText(Math.floor(process.uptime()))} \u043D\u0430\u0437\u0430\u0434, \u0441\u0447\u0451\u0442\u0447\u0438\u043A\u0438 \u0432 \u043F\u0430\u043C\u044F\u0442\u0438):`,
+      `\u041F\u0440\u043E\u043F\u0443\u0441\u043A\u0438 \u043F\u043E \u043E\u043F\u043E\u0437\u0434\u0430\u043D\u0438\u044E \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A\u0430: ${skipped.length}${skipped.length ? ` (${[...new Set(skipped.map((e) => e.msg || "?"))].slice(0, 6).map((x) => lab(x, 20)).join(", ")})` : ""}`,
+      `\u041C\u0435\u0434\u0438\u0430 \u0437\u0430\u043C\u0435\u043D\u0435\u043D\u043E \u0442\u0435\u043A\u0441\u0442\u043E\u043C: ${cntRt("mediaFallback")}`,
+      `\u0421\u0431\u043E\u0438 \u0442\u0438\u043A\u043E\u0432 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A\u0430: ${cntRt("tickError")}`,
+      `\u041E\u0442\u043A\u0430\u0437\u044B \u0432\u0435\u0431\u0445\u0443\u043A\u0430 \u043F\u043E \u0441\u0435\u043A\u0440\u0435\u0442\u0443: ${runtime.webhookRejected}`
+    ].join("\n")
+  );
+  parts.push(`\u0412\u0435\u0440\u0441\u0438\u044F: ${lab(ctx.version ?? adminVersion(), 40)}, \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 ${uptimeText(Math.floor(process.uptime()))}`);
+  return assemble(head, parts);
+}
+function renderDailyReport(ctx, day) {
+  const p = resolvePeriod(day, ctx.now);
+  const g = gather(ctx, p);
+  const lines = [`<b>\u0418\u0442\u043E\u0433\u0438 \u0437\u0430 ${day === addDays(dayKeyOf(ctx.now), -1) ? "\u0432\u0447\u0435\u0440\u0430, " : ""}${dateLabel(day)}</b>`];
+  if (!g.leadsOk) lines.push("\u0417\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B.");
+  else {
+    const utm = /* @__PURE__ */ new Map();
+    for (const l of g.leads) inc(utm, hasUtm(l) ? utmLabel(l) : `\u0431\u0435\u0437 UTM: ${noUtmLabel(l)}`);
+    const t = top(utm).slice(0, 3).map(([k, n]) => `${lab(k, 56)} ${n}`);
+    lines.push(`\u0417\u0430\u044F\u0432\u043E\u043A: ${g.leads.length}${t.length ? `. \u0422\u043E\u043F UTM: ${t.join("; ")}` : ""}`);
+  }
+  const N = g.newSubs;
+  const tags = /* @__PURE__ */ new Map();
+  let pp = 0;
+  let ty = 0;
+  let direct = 0;
+  for (const s of N) {
+    const o = classifyPayload(s.payload);
+    if (o.kind === "pp") pp++;
+    else if (o.kind === "ty") ty++;
+    else if (o.kind === "direct") direct++;
+    else inc(tags, o.tag);
+  }
+  const reached = g.leadsOk ? g.leads.filter((l) => linked(g, l)).length : 0;
+  lines.push(
+    `\u0412 \u0431\u043E\u0442\u0435 \u043D\u043E\u0432\u044B\u0445: ${N.length} (\u043E\u043A\u043D\u043E ${pp}, \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB ${ty}, \u043F\u0440\u044F\u043C\u043E\u0439 ${direct}${tags.size ? `, ${top(tags).slice(0, 4).map(([k, n]) => `${lab(k, 16)} ${n}`).join(", ")}` : ""})${g.leadsOk ? `. \u0417\u0430\u044F\u0432\u043A\u0430 \u2192 \u0431\u043E\u0442: ${reached} \u0438\u0437 ${g.leads.length} (${pct(reached, g.leads.length)}%)` : ""}`
+  );
+  const tg = g.ty.filter((r) => r.ch === "tg").length;
+  const wa = g.ty.filter((r) => r.ch === "wa").length;
+  lines.push(`\u041A\u043D\u043E\u043F\u043A\u0438 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438: Telegram ${tg}, WhatsApp ${wa}`);
+  const m = ctx.store.dayMetrics(day);
+  if (m.registered) lines.push(`\u042D\u0444\u0438\u0440: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 ${m.clicked} (${pct(m.clicked, m.registered)}%), \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB ${m.paid}`);
+  const ok = g.sent.filter((e) => e.ok).length;
+  const bad = g.sent.length - ok;
+  lines.push(`\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${ok}, \u043E\u0448\u0438\u0431\u043E\u043A ${bad}, \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0431\u043E\u0442\u0430 ${g.blockedEvents}`);
+  if (bad) {
+    const groups = /* @__PURE__ */ new Map();
+    for (const e of g.sent) if (!e.ok) inc(groups, String(e.err ?? "\u0431\u0435\u0437 \u0442\u0435\u043A\u0441\u0442\u0430").replace(/\d{5,}/g, "#").slice(0, 60));
+    const [k, n] = top(groups)[0];
+    lines.push(`\u0427\u0430\u0449\u0435 \u0432\u0441\u0435\u0433\u043E: ${n} x ${lab(k, 60)}`);
+  } else lines.push("\u041E\u0448\u0438\u0431\u043E\u043A \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0435\u0442.");
+  return assemble(lines[0], [lines.slice(1).join("\n")]);
+}
+function dailyKeyboard(day) {
+  return [[{ text: "\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435", callback_data: `adm:p:${day}` }, { text: "\u041E\u0448\u0438\u0431\u043A\u0438", callback_data: `adm:e:${day}` }]];
+}
 
 // form-api/tg-workshop.ts
 var env = (k) => (process.env[k] || "").trim();
@@ -1100,6 +1690,14 @@ function validateSeries(raw) {
   if (typeof raw.streamMinutes !== "number" || raw.streamMinutes <= 0) throw new Error("\u0441\u0435\u0440\u0438\u044F: streamMinutes \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0447\u0438\u0441\u043B\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u0435 0");
   if (raw.joinLiveMinutes !== void 0 && (typeof raw.joinLiveMinutes !== "number" || raw.joinLiveMinutes < 0)) throw new Error("\u0441\u0435\u0440\u0438\u044F: joinLiveMinutes \u0447\u0438\u0441\u043B\u043E \u043C\u0438\u043D\u0443\u0442");
   if (typeof raw.graceMinutes !== "number" || raw.graceMinutes < 0) throw new Error("\u0441\u0435\u0440\u0438\u044F: graceMinutes \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0447\u0438\u0441\u043B\u043E\u043C");
+  if (raw.adminDailyReportAt !== void 0) {
+    try {
+      if (typeof raw.adminDailyReportAt !== "string") throw new Error("not a string");
+      parseHHMM(raw.adminDailyReportAt);
+    } catch {
+      throw new Error("\u0441\u0435\u0440\u0438\u044F: adminDailyReportAt \u0432\u0438\u0434\u0430 HH:MM");
+    }
+  }
   if (!isObj(raw.links)) throw new Error("\u0441\u0435\u0440\u0438\u044F: \u043D\u0435\u0442 links");
   for (const k of LINK_KEYS) {
     if (typeof raw.links[k] !== "string") throw new Error(`\u0441\u0435\u0440\u0438\u044F: links.${k} \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0439`);
@@ -1183,10 +1781,10 @@ function activeSeries() {
   return applyOverrides(getSeries(), getStore().state.overrides);
 }
 function seriesPath(explicit) {
-  return explicit || env("TG_SERIES_FILE") || (0, import_node_path4.join)(__dirname, "tg-series.json");
+  return explicit || env("TG_SERIES_FILE") || (0, import_node_path5.join)(__dirname, "tg-series.json");
 }
 function reloadSeries(explicit) {
-  const loaded = validateSeries(JSON.parse((0, import_node_fs4.readFileSync)(seriesPath(explicit), "utf8")));
+  const loaded = validateSeries(JSON.parse((0, import_node_fs5.readFileSync)(seriesPath(explicit), "utf8")));
   series = loaded;
   botError = "";
   setUtcOffsetMinutes(loaded.utcOffsetMinutes ?? 300);
@@ -1195,7 +1793,7 @@ function reloadSeries(explicit) {
 function initTgWorkshop(opts = {}) {
   series = null;
   botError = "";
-  store = new TgStore(opts.dir || env("DATA_DIR") || (0, import_node_path4.join)(__dirname, "data"));
+  store = new TgStore(opts.dir || env("DATA_DIR") || (0, import_node_path5.join)(__dirname, "data"));
   if (botOff()) {
     botError = "off";
     console.log("[tg] TG_BOT=off: \u0431\u043E\u0442 \u0438 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B");
@@ -1467,6 +2065,14 @@ async function notifyOwners(text) {
   }
   return delivered;
 }
+async function notifyOwnersHtml(text, markup) {
+  let delivered = 0;
+  for (const id of ownerIds()) {
+    const n = Number(id);
+    if (Number.isFinite(n) && (await sendText(n, text, markup)).ok) delivered++;
+  }
+  return delivered;
+}
 var mediaWarned = /* @__PURE__ */ new Set();
 async function warnMedia(url, error) {
   if (mediaWarned.has(url)) return;
@@ -1483,6 +2089,7 @@ async function sendContent(c, ctx, opts = {}) {
   if (m.ok) return short ? m : sendText(ctx.chatId, html, kb, c.silent, prio);
   if (isGone(m)) return m;
   console.warn("[tg] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", c.media.url, m.error);
+  noteRuntime("mediaFallback", { info: c.media.url });
   void warnMedia(c.media.url, m.error);
   return sendText(ctx.chatId, html, kb, c.silent, prio);
 }
@@ -1514,7 +2121,22 @@ async function sendGreeting(sub, now) {
     noteSendResult(sub.chatId, r2, now);
   }
 }
-var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+var HELP_TEXT = [
+  "\u041A\u043E\u043C\u0430\u043D\u0434\u044B \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:",
+  "/admin: \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 (\u0437\u0430\u044F\u0432\u043A\u0438, \u0431\u043E\u0442, UTM \u043F\u043E \u0434\u043D\u044F\u043C, \u043E\u0448\u0438\u0431\u043A\u0438), \u0432\u044B\u0431\u043E\u0440 \u043F\u0435\u0440\u0438\u043E\u0434\u0430 \u0438 \u0434\u0430\u0442\u044B. /stats \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0442\u043E \u0436\u0435",
+  "/series: \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F",
+  "/preview: \u043F\u0440\u0438\u0441\u043B\u0430\u0442\u044C \u0441\u0435\u0431\u0435 \u0432\u0441\u044E \u0441\u0435\u0440\u0438\u044E \u0434\u043B\u044F \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438",
+  "/fire <id>: \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0439\u0447\u0430\u0441 (\u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0440\u0435\u0432\u044C\u044E, \u043F\u043E\u0442\u043E\u043C \u043A\u043D\u043E\u043F\u043A\u0430 \xAB\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C\xBB)",
+  "/at <id> HH:MM: \u0441\u0434\u0432\u0438\u043D\u0443\u0442\u044C \u0432\u0440\u0435\u043C\u044F \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F (/at <id> reset \u0432\u0435\u0440\u043D\u0451\u0442 \u043A\u0430\u043A \u0432 json)",
+  "/off <id>, /on <id>: \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435",
+  "/bizon <\u0441\u0441\u044B\u043B\u043A\u0430>: \u0441\u043C\u0435\u043D\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443 \u044D\u0444\u0438\u0440\u0430",
+  "/paid <chat_id \u0438\u043B\u0438 @username>: \u043E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u043E\u043F\u043B\u0430\u0442\u0443",
+  "/reload: \u043F\u0435\u0440\u0435\u0447\u0438\u0442\u0430\u0442\u044C tg-series.json",
+  "/series_on, /series_off: \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0435\u0440\u0438\u044E",
+  "",
+  "\u041C\u0435\u0442\u043A\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430: \u0434\u043E\u0431\u0430\u0432\u044C ?start=2gis \u043A \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u0431\u043E\u0442\u0430 (t.me/workshop_aiprod_bot?start=2gis), \u0432 \u043E\u0442\u0447\u0451\u0442\u0430\u0445 \u043E\u043D\u0430 \u043F\u043E\u043A\u0430\u0436\u0435\u0442\u0441\u044F \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A."
+].join("\n");
 function parseCommand(text) {
   const m = /^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/.exec(text.trim());
   return m ? { cmd: m[1].toLowerCase(), args: (m[2] || "").trim() } : null;
@@ -1572,6 +2194,10 @@ async function onMessage(m, now) {
   const c = parseCommand(text);
   if (c?.cmd === "start") return onStart(m, cleanPayload(c.args), now);
   if (c?.cmd === "stop") return onStop(m, now);
+  if (c?.cmd === "help" && isOwner(m.from.id)) {
+    await plain(m.chat.id, HELP_TEXT);
+    return;
+  }
   if (c && OWNER_CMDS.has(c.cmd)) {
     if (isOwner(m.from.id)) await ownerCommand(c.cmd, c.args, m, now);
     return;
@@ -1632,6 +2258,10 @@ async function onCallback(cq, now) {
   const sub = st.subs.get(chatId);
   const ts = new Date(now).toISOString();
   await botSend("answerCallbackQuery", { callback_query_id: cq.id });
+  if (cq.data?.startsWith("adm:")) {
+    if (isOwner(cq.from.id)) await onAdminCallback(cq, now);
+    return;
+  }
   if (cq.data === "paid") {
     if (!sub || sub.paid) return;
     st.recordEvent({ type: "paid", chat_id: chatId, by: "self", ts });
@@ -1655,6 +2285,55 @@ async function onCallback(cq, now) {
     await plain(chatId, await fireHook.run(cq.data.slice(5), now));
   }
 }
+function adminCtx(now) {
+  return { store: getStore(), cfg: timeCfg(getSeries()), now, version: adminVersion() };
+}
+function adminHomeText(st, sr, now) {
+  return `${buildStatsText(st, sr, now)}
+
+\u0412\u044B\u0431\u0435\u0440\u0438 \u043F\u0435\u0440\u0438\u043E\u0434 \u0434\u043B\u044F \u043E\u0442\u0447\u0451\u0442\u0430:`;
+}
+async function onAdminCallback(cq, now) {
+  const cb = parseAdminCb(cq.data || "");
+  if (!cb) return;
+  const chatId = cq.message?.chat?.id ?? cq.from.id;
+  const ctx = adminCtx(now);
+  let text;
+  let kb;
+  let html = true;
+  if (cb.action === "m") {
+    text = adminHomeText(getStore(), activeSeries(), now);
+    kb = menuKeyboard();
+    html = false;
+  } else if (cb.action === "d") {
+    text = "\u0412\u044B\u0431\u0435\u0440\u0438 \u0434\u0435\u043D\u044C (\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 14 \u0434\u043D\u0435\u0439) \u0438\u043B\u0438 \u0432\u0435\u0441\u044C \u043F\u0435\u0440\u0438\u043E\u0434:";
+    kb = datePickerKeyboard(now);
+    html = false;
+  } else if (cb.action === "u") {
+    text = renderUtmByDay(ctx, cb.period);
+    kb = adminKeyboard(cb.period, "u");
+  } else if (cb.action === "e") {
+    text = renderErrors(ctx, cb.period);
+    kb = adminKeyboard(cb.period, "e");
+  } else {
+    text = renderReport(ctx, cb.period);
+    kb = adminKeyboard(cb.period, "p");
+  }
+  const body = {
+    chat_id: chatId,
+    text,
+    ...html ? { parse_mode: "HTML" } : {},
+    link_preview_options: { is_disabled: true },
+    reply_markup: { inline_keyboard: kb }
+  };
+  const mid = cq.message?.message_id;
+  if (mid) {
+    const r = await botSend("editMessageText", { ...body, message_id: mid });
+    if (r.ok || /not modified/i.test(r.description)) return;
+    console.warn("[tg] \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0430\u0434\u043C\u0438\u043D\u043A\u0438 (%s), \u0448\u043B\u044E \u043D\u043E\u0432\u044B\u043C", r.description);
+  }
+  await botSend("sendMessage", body);
+}
 function onMemberUpdate(u, now) {
   if (u.chat?.type !== "private") return;
   const st = getStore();
@@ -1667,14 +2346,14 @@ function onMemberUpdate(u, now) {
 }
 var AUD_LABEL = { all: "\u0432\u0441\u0435", clicked: "\u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C", notClicked: "\u043D\u0435 \u043D\u0430\u0436\u0430\u0432\u0448\u0438\u043C", notPaid: "\u043D\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u0432\u0448\u0438\u043C" };
 var payloadGroup = (payload) => payload.split("_")[0] || "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438";
-var pct = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
+var pct2 = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
 function buildDayTable(st, sr, now) {
   const today = dayKeyOf(now);
   const days = new Set(st.regDayKeys());
   if (isStreamDay(today, timeCfg(sr))) days.add(today);
   return [...days].sort().reverse().slice(0, 7).map((d) => {
     const m = st.dayMetrics(d);
-    return `${d}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 ${m.clicked} (${pct(m.clicked, m.registered)}%), \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB ${m.paid}`;
+    return `${d}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB ${m.paid}`;
   });
 }
 function buildStatsText(st, sr, now) {
@@ -1715,7 +2394,7 @@ function buildStatsText(st, sr, now) {
 }
 function dayReportText(st, day) {
   const m = st.dayMetrics(day);
-  return `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+  return `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
 }
 function buildSeriesText(st, sr, now) {
   const today = dayKeyOf(now);
@@ -1763,7 +2442,8 @@ async function ownerCommand(cmd, args, m, now) {
   const sr = () => activeSeries();
   switch (cmd) {
     case "stats":
-      await plain(chatId, buildStatsText(st, sr(), now));
+    case "admin":
+      await plain(chatId, adminHomeText(st, sr(), now), menuKeyboard());
       return;
     case "series":
       await plain(chatId, buildSeriesText(st, sr(), now));
@@ -1939,7 +2619,10 @@ function secretOk(provided) {
 }
 async function handleTgWorkshop(req, res) {
   const h = req.headers["x-telegram-bot-api-secret-token"];
-  if (!secretOk(Array.isArray(h) ? h[0] : h)) return reply(res, 401, { ok: false });
+  if (!secretOk(Array.isArray(h) ? h[0] : h)) {
+    runtime.webhookRejected++;
+    return reply(res, 401, { ok: false });
+  }
   const raw = await readLimited(req, MAX_UPDATE_BODY);
   reply(res, 200, { ok: true });
   if (raw === null || !botEnabled()) return;
@@ -1973,22 +2656,25 @@ var tyWindowCount = 0;
 function parseTyBody(raw) {
   let ch = "";
   let eid = "";
+  let src = "";
   const s = raw.trim();
   try {
     if (s.startsWith("{")) {
       const o = JSON.parse(s);
       ch = String(o.ch ?? "");
       eid = String(o.eid ?? "");
+      src = String(o.src ?? "");
     } else {
       const p = new URLSearchParams(s);
       ch = p.get("ch") || "";
       eid = p.get("eid") || "";
+      src = p.get("src") || "";
     }
   } catch {
     return null;
   }
   if (ch !== "tg" && ch !== "wa") return null;
-  return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "" };
+  return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "", ...src === "pp" || src === "ty" ? { src } : {} };
 }
 async function handleTyClick(req, res) {
   const raw = await readLimited(req, 2048);
@@ -2003,15 +2689,15 @@ async function handleTyClick(req, res) {
     tyWindowCount = 0;
   }
   if (++tyWindowCount > 200) return;
-  store.recordTyClick(p.ch, p.eid, dayKeyOf(t), new Date(t).toISOString());
+  store.recordTyClick(p.ch, p.eid, dayKeyOf(t), new Date(t).toISOString(), p.src);
 }
 function calendarDay(now = Date.now()) {
   return assignStreamDay(now, series ? timeCfg(series) : { streamStart: "20:00", streamMinutes: 80, joinLiveMinutes: DEFAULT_JOIN_MINUTES });
 }
 
 // form-api/tg-scheduler.ts
-var import_node_fs5 = require("node:fs");
-var import_node_path5 = require("node:path");
+var import_node_fs6 = require("node:fs");
+var import_node_path6 = require("node:path");
 var TICK_MS = 3e4;
 var LOCK_STALE_MS = 3 * TICK_MS;
 var REPORT_DELAY_MS = 5 * 6e4;
@@ -2051,7 +2737,7 @@ function pickRecipients(st, msg, day, opts = {}) {
   }
   return out.sort((a, b) => a.chatId - b.chatId);
 }
-var lockPath = (st) => (0, import_node_path5.join)(st.dir, "scheduler.lock");
+var lockPath = (st) => (0, import_node_path6.join)(st.dir, "scheduler.lock");
 function pidAlive(pid) {
   try {
     process.kill(pid, 0);
@@ -2064,8 +2750,8 @@ var lockedOutLogged = false;
 function holdLock(st) {
   const f = lockPath(st);
   try {
-    if ((0, import_node_fs5.existsSync)(f)) {
-      const cur = JSON.parse((0, import_node_fs5.readFileSync)(f, "utf8"));
+    if ((0, import_node_fs6.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs6.readFileSync)(f, "utf8"));
       if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS && pidAlive(cur.pid)) {
         if (!lockedOutLogged) console.warn("[tg-sched] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0448\u043B\u0451\u0442", cur.pid);
         lockedOutLogged = true;
@@ -2073,7 +2759,7 @@ function holdLock(st) {
       }
     }
     lockedOutLogged = false;
-    (0, import_node_fs5.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    (0, import_node_fs6.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
     return true;
   } catch (e) {
     console.error("[tg-sched] lock-\u0444\u0430\u0439\u043B \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
@@ -2083,7 +2769,7 @@ function holdLock(st) {
 function releaseLock(st) {
   try {
     const f = lockPath(st);
-    if ((0, import_node_fs5.existsSync)(f) && JSON.parse((0, import_node_fs5.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs5.unlinkSync)(f);
+    if ((0, import_node_fs6.existsSync)(f) && JSON.parse((0, import_node_fs6.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs6.unlinkSync)(f);
   } catch {
   }
 }
@@ -2104,6 +2790,7 @@ async function deliver(st, msg, day, rcpts, opts = {}, deps = defaultDeps) {
     if (opts.deadline !== void 0 && deps.now() > opts.deadline) {
       stats.skippedLate = rcpts.length - i;
       console.warn("[tg-sched] skip late msg=%s day=%s: \u043E\u043A\u043D\u043E \u0437\u0430\u043A\u0440\u044B\u043B\u043E\u0441\u044C, \u043D\u0435 \u0443\u0441\u043F\u0435\u043B\u0438 %d", msg.id, day, stats.skippedLate);
+      noteRuntime("skipLate", { msg: msg.id, info: String(stats.skippedLate) });
       break;
     }
     const key = `${msg.id}|${day}|${s.chatId}`;
@@ -2146,6 +2833,7 @@ function logLate(st, sr, now) {
       if (n > 0) {
         lateLogged.add(key);
         console.warn("[tg-sched] skip late msg=%s day=%s: \u043E\u043A\u043D\u043E \u0437\u0430\u043A\u0440\u044B\u043B\u043E\u0441\u044C, \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 %d", msg.id, day, n);
+        noteRuntime("skipLate", { msg: msg.id, info: String(n) });
       }
     }
   }
@@ -2158,6 +2846,7 @@ function noteTickResult(ok, why) {
   }
   errStreak++;
   console.error("[tg-sched] \u0442\u0438\u043A \u0441 \u043E\u0448\u0438\u0431\u043A\u043E\u0439 (%d \u043F\u043E\u0434\u0440\u044F\u0434): %s", errStreak, why);
+  noteRuntime("tickError", { info: why.slice(0, 120) });
   if (errStreak >= 3 && !errAlerted) {
     errAlerted = true;
     void notifyOwners(`\u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u0441\u0435\u0440\u0438\u0438: ${errStreak} \u0442\u0438\u043A\u0430 \u043F\u043E\u0434\u0440\u044F\u0434 \u0441 \u043E\u0448\u0438\u0431\u043A\u043E\u0439. \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${why}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C pm2 logs workshop-form.`);
@@ -2179,6 +2868,29 @@ async function dailyReport(now = Date.now()) {
   }
   return false;
 }
+async function adminDaily(now = Date.now()) {
+  const st = getStore();
+  const sr = activeSeries();
+  if (!st.state.adminSince) {
+    st.setAdminSince(now);
+    return false;
+  }
+  const at = sr.adminDailyReportAt || "09:00";
+  const today = dayKeyOf(now);
+  for (const occ of [addDays(today, -1), today]) {
+    const t = atTime(occ, at);
+    if (t < st.state.adminSince || now < t || now >= t + 24 * 36e5) continue;
+    const day = addDays(occ, -1);
+    if (st.isAdminReported(day)) continue;
+    if (!ownerIds().length) return false;
+    const text = renderDailyReport(adminCtx(now), day);
+    if (await notifyOwnersHtml(text, dailyKeyboard(day)) > 0) {
+      st.markAdminReported(day);
+      return true;
+    }
+  }
+  return false;
+}
 async function tick(now = Date.now(), deps = defaultDeps) {
   if (running) return 0;
   running = true;
@@ -2190,6 +2902,11 @@ async function tick(now = Date.now(), deps = defaultDeps) {
       await dailyReport(now);
     } catch (e) {
       console.error("[tg-sched] \u043E\u0442\u0447\u0451\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B:", e?.message || e);
+    }
+    try {
+      await adminDaily(now);
+    } catch (e) {
+      console.error("[tg-sched] \u0430\u0434\u043C\u0438\u043D-\u043E\u0442\u0447\u0451\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B:", e?.message || e);
     }
     const full = activeSeries();
     const sr = st.state.seriesEnabled ? full : { ...full, messages: full.messages.filter((m) => m.essential) };
@@ -2260,7 +2977,7 @@ function startScheduler() {
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs6.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path6.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs7.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path7.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -2482,7 +3199,7 @@ function handleCalendar(res) {
 }
 function readVersion() {
   try {
-    return (0, import_node_fs6.readFileSync)((0, import_node_path6.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+    return (0, import_node_fs7.readFileSync)((0, import_node_path7.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
   } catch {
     return "dev";
   }
