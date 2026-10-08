@@ -173,7 +173,9 @@ function lead(o: { phone: string; at: number; name?: string; eid?: string }): L 
 const addLeads = (w: W, list: L[]) => appendFileSync(join(w.dir, "leads.jsonl"), list.map((l) => l.line).join("\n") + "\n");
 /** Участники сообщества дня: каждому номер в phoneNumber и LID в id, как отдаёт Evolution 2.3.7. */
 function members(day: string, phones: string[], seqN = 1) {
-  evo.participants.set(sendJidOf(day, seqN), phones.map((p, i) => ({ id: `${184467440737000 + i}@lid`, phoneNumber: `${p}@s.whatsapp.net`, admin: i === 0 ? "superadmin" : null })));
+  // Первым всегда сам номер-админ: в настоящем сообществе он есть всегда, пустых списков не бывает.
+  const all = ["77000000001", ...phones];
+  evo.participants.set(sendJidOf(day, seqN), all.map((p, i) => ({ id: `${184467440737000 + i}@lid`, phoneNumber: `${p}@s.whatsapp.net`, admin: i === 0 ? "superadmin" : null })));
 }
 const sentChats = () => wazzup.sent.filter((s) => s.templateId).map((s) => s.chatId);
 const texts = () => wazzup.sent.filter((s) => s.text !== undefined);
@@ -303,7 +305,7 @@ test("замер: список вдруг в разы короче прошло�
   addLeads(w, [lead({ phone: "77099998888", at: alm(2026, 10, 8, 10, 0) })]);
   await tick();
   assert.equal(sentChats().length, 1);
-  assert.equal(w.members().targets[idOf("2026-10-08")].total, 40);
+  assert.equal(w.members().targets[idOf("2026-10-08")].total, 41, "40 участников и номер-админ");
   // следующий замер вернул пустой список: принимать нельзя, иначе все вступившие станут «не вступившими»
   addLeads(w, [lead({ phone: "77011111000", at: alm(2026, 10, 8, 10, 30) })]);
   members("2026-10-08", []);
@@ -311,7 +313,7 @@ test("замер: список вдруг в разы короче прошло�
   const t = await tick();
   assert.equal(t.measured, 1, "принят только замер второго дня");
   assert.equal(sentChats().length, 1, "по подозрительному замеру никто не получил шаблон");
-  assert.equal(w.members().targets[idOf("2026-10-08")].total, 40, "прежний замер сохранён");
+  assert.equal(w.members().targets[idOf("2026-10-08")].total, 41, "прежний замер сохранён");
   assert.equal(alarms.filter((a) => /вдруг стал короче/.test(a)).length, 1);
   clock.t += 11 * 60_000;
   await tick();
@@ -1164,7 +1166,7 @@ test("пульт: включённый дожим без вебхука пред
   assert.match(reason(), /Сейчас не отправляет: номер не подключён \(close\)/);
 });
 
-test("429 у Wazzup: остальным заявкам в этом проходе не пишем, следующий проход идёт дальше, первая заявка повторяется через 5 минут", async () => {
+test("429 у Wazzup: пауза 5 минут для всех заявок (попытки остальных не сгорают), потом все уходят, первая повторяется", async () => {
   const w = boot();
   members("2026-10-08", []);
   addLeads(w, [lead({ phone: "77011112221", at: alm(2026, 10, 8, 9, 0) }), lead({ phone: "77011112222", at: alm(2026, 10, 8, 9, 1) }), lead({ phone: "77011112223", at: alm(2026, 10, 8, 9, 2) })]);
@@ -1174,11 +1176,11 @@ test("429 у Wazzup: остальным заявкам в этом проход�
   assert.deepEqual([t1.sent, wazzup.of("POST", "/v3/message").length], [0, 1], "после 429 проход остановлен");
   clock.t += 30_000;
   const t2 = await tick();
-  assert.equal(t2.sent, 2, "следующий проход пишет остальным");
-  assert.deepEqual(sentChats(), ["77011112222", "77011112223"]);
+  assert.equal(t2.sent, 0, "во время паузы после 429 никому не пишем");
+  assert.equal(wazzup.of("POST", "/v3/message").length, 1, "попытки остальных заявок не тратятся");
   clock.t += 5 * 60_000;
-  assert.equal((await tick()).sent, 1, "первая заявка повторена через 5 минут");
-  assert.deepEqual(sentChats(), ["77011112222", "77011112223", "77011112221"]);
+  assert.equal((await tick()).sent, 3, "через 5 минут уходят все три, включая повтор первой");
+  assert.deepEqual([...sentChats()].sort(), ["77011112221", "77011112222", "77011112223"]);
 });
 
 test("замер: участники без номера (только LID) считаются и показываются в пульте, чтобы было видно, сколько вступивших сопоставить нельзя", async () => {
@@ -1193,4 +1195,18 @@ test("замер: участники без номера (только LID) сч
   await tick();
   const d8 = (dzPanel(clock.t) as any).days.find((x: any) => x.day === "2026-10-08");
   assert.deepEqual([d8.applied, d8.joined, d8.unresolved], [1, 1, 2]);
+});
+
+test("ревью 08.10: казахские имена не превращаются в «друг»", () => {
+  assert.deepEqual(["Іңкәр", "Әлі", "гүлім", "ҰЛАН"].map(cleanName), ["Іңкәр", "Әлі", "Гүлім", "Ұлан"]);
+});
+
+test("ревью 08.10: замер, где участники без номеров (только LID), не принимается, шаблоны не уходят", async () => {
+  const w = boot();
+  evo.participants.set(sendJidOf("2026-10-08"), Array.from({ length: 25 }, (_, i) => ({ id: `${184467440738000 + i}@lid`, admin: i === 0 ? "superadmin" : null })));
+  members("2026-10-09", ["77044444444"]);
+  addLeads(w, [lead({ phone: "77099998881", at: alm(2026, 10, 8, 10, 0) })]);
+  await tick();
+  assert.equal(sentChats().length, 0, "без номеров участников не понять, кто вступил: никому не пишем");
+  assert.equal(w.members().targets[idOf("2026-10-08")], undefined, "замер не сохранён");
 });

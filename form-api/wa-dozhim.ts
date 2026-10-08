@@ -37,6 +37,8 @@ const env = (k: string) => (process.env[k] || "").trim();
 
 const MIN = 60_000;
 const HOUR = 3600_000;
+/** Заявки старше двух суток дожим не трогает никогда: при сдвиге даты эфира или режима история leads.jsonl не должна получить шаблон. */
+const MAX_LEAD_AGE = 48 * HOUR;
 const DAY = 24 * HOUR;
 /** Свежесть замера участников: старше этого срока слать нельзя. */
 export const MEASURE_MAX_AGE = 10 * MIN;
@@ -204,7 +206,7 @@ export function cleanName(raw: unknown): string {
   if (plain.length < 2) return "";
   if (NAME_STOP.has(plain.toLowerCase())) return "";
   if (/(.)\1{3,}/iu.test(plain) || new Set(plain.toLowerCase()).size < 2) return "";
-  if (!/[аеёиоуыэюяaeiouy]/iu.test(plain)) return "";
+  if (!/[аеёиоуыэюяaeiouyәөүұі]/iu.test(plain)) return "";
   if (plain === plain.toLowerCase() || plain === plain.toUpperCase()) {
     s = s
       .split("-")
@@ -615,6 +617,13 @@ async function measureTarget(a: Dz, t: DzTarget): Promise<boolean> {
     else unresolved++;
   }
   const total = r.data.length;
+  // Первый замер тоже проверяем: пустой список или участники без номеров (только LID) превратили бы вступивших в «не вступил».
+  if (total === 0 || (total >= 20 && unresolved > total * 0.05)) {
+    a.measureFails++;
+    log("замер %s не принят: участников %d, без номера %d", t.id, total, unresolved);
+    if (a.measureFails >= 3) await alarmOnce(a, `bad:${t.id}`, HOUR, `Дожим WABA: замер сообщества ${t.day} не принят (участников ${total}, без номера ${unresolved}). Шаблоны этому дню не отправляются.`);
+    return false;
+  }
   const prev = a.members.get(t.id);
   if (prev && prev.total >= 10 && total < prev.total * 0.7) {
     a.measureFails++;
@@ -722,6 +731,7 @@ export function evaluate(a: Dz, now: number): Eval {
   const leads = [...src.leads].sort((x, y) => x.ts - y.ts);
   for (const lead of leads) {
     if (lead.ts > now) continue;
+    if (now - lead.ts > MAX_LEAD_AGE) continue;
     const day = h.dayOf(lead.ts);
     const ph = normalizePhone(lead.phone);
     if (ph && shown.has(day)) shown.get(day)!.add(ph.digits);
@@ -839,6 +849,8 @@ async function sendPick(a: Dz, pick: Pick): Promise<boolean> {
   // 429 и 5xx: Wazzup сейчас не принимает, остальным заявкам в этом проходе не пишем. Следующий проход через 30 секунд, повтор этой заявки через 5 минут.
   if (!final) {
     a.tries.set(pick.eid, { n, nextAt: h.now() + RETRY_AFTER });
+    // Сбой на стороне Wazzup: пауза для всех заявок, иначе каждая следующая за несколько минут сожжёт свои попытки.
+    a.haltUntil = Math.max(a.haltUntil || 0, h.now() + RETRY_AFTER);
     return false;
   }
   a.failedEids.add(pick.eid);
@@ -1407,7 +1419,7 @@ export function dzPanel(nowArg?: number): Record<string, unknown> {
   else if (st.enabled) {
     const can = h.canRun();
     if (!can.ok) reason = `Сейчас не отправляет: ${can.why}.`;
-    else if (now < a.haltUntil) reason = "Отправки остановлены на час после нескольких отказов Wazzup. Проверь шаблон, канал и ключ.";
+    else if (now < a.haltUntil) reason = "Отправки на паузе после ошибок Wazzup (после сбоя 5 минут, после трёх отказов час). Проверь шаблон, канал и ключ.";
   }
   const ev = evaluate(a, now);
   if (ev.error) reason = reason || `Заявки недоступны: ${ev.error}.`;

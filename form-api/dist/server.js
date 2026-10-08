@@ -8322,6 +8322,7 @@ var wzSetHooks = (body) => wzCall("PATCH", "/v3/webhooks", body, 3e4);
 var env6 = (k) => (process.env[k] || "").trim();
 var MIN2 = 6e4;
 var HOUR2 = 36e5;
+var MAX_LEAD_AGE = 48 * HOUR2;
 var DAY2 = 24 * HOUR2;
 var MEASURE_MAX_AGE = 10 * MIN2;
 var MEASURE_BUSY_AGE = 5 * MIN2;
@@ -8431,7 +8432,7 @@ function cleanName(raw) {
   if (plain2.length < 2) return "";
   if (NAME_STOP.has(plain2.toLowerCase())) return "";
   if (/(.)\1{3,}/iu.test(plain2) || new Set(plain2.toLowerCase()).size < 2) return "";
-  if (!/[аеёиоуыэюяaeiouy]/iu.test(plain2)) return "";
+  if (!/[аеёиоуыэюяaeiouyәөүұі]/iu.test(plain2)) return "";
   if (plain2 === plain2.toLowerCase() || plain2 === plain2.toUpperCase()) {
     s = s.split("-").map((p) => p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p).join("-");
   }
@@ -8703,6 +8704,12 @@ async function measureTarget(a, t) {
     else unresolved++;
   }
   const total = r.data.length;
+  if (total === 0 || total >= 20 && unresolved > total * 0.05) {
+    a.measureFails++;
+    log2("\u0437\u0430\u043C\u0435\u0440 %s \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442: \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %d, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 %d", t.id, total, unresolved);
+    if (a.measureFails >= 3) await alarmOnce2(a, `bad:${t.id}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0437\u0430\u043C\u0435\u0440 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 ${t.day} \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442 (\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${total}, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 ${unresolved}). \u0428\u0430\u0431\u043B\u043E\u043D\u044B \u044D\u0442\u043E\u043C\u0443 \u0434\u043D\u044E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F.`);
+    return false;
+  }
   const prev = a.members.get(t.id);
   if (prev && prev.total >= 10 && total < prev.total * 0.7) {
     a.measureFails++;
@@ -8777,6 +8784,7 @@ function evaluate(a, now) {
   const leads = [...src.leads].sort((x, y) => x.ts - y.ts);
   for (const lead of leads) {
     if (lead.ts > now) continue;
+    if (now - lead.ts > MAX_LEAD_AGE) continue;
     const day = h.dayOf(lead.ts);
     const ph = normalizePhone(lead.phone);
     if (ph && shown.has(day)) shown.get(day).add(ph.digits);
@@ -8881,6 +8889,7 @@ async function sendPick(a, pick) {
   log2("\u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s, \u043F\u043E\u043F\u044B\u0442\u043A\u0430 %d%s", maskDigits(pick.digits), res.error, n, final ? ", \u043E\u043A\u043E\u043D\u0447\u0430\u0442\u0435\u043B\u044C\u043D\u043E" : "");
   if (!final) {
     a.tries.set(pick.eid, { n, nextAt: h.now() + RETRY_AFTER });
+    a.haltUntil = Math.max(a.haltUntil || 0, h.now() + RETRY_AFTER);
     return false;
   }
   a.failedEids.add(pick.eid);
@@ -9352,7 +9361,7 @@ function dzPanel(nowArg) {
   else if (st.enabled) {
     const can = h.canRun();
     if (!can.ok) reason = `\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442: ${can.why}.`;
-    else if (now < a.haltUntil) reason = "\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B \u043D\u0430 \u0447\u0430\u0441 \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u043E\u0442\u043A\u0430\u0437\u043E\u0432 Wazzup. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447.";
+    else if (now < a.haltUntil) reason = "\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435 \u043F\u043E\u0441\u043B\u0435 \u043E\u0448\u0438\u0431\u043E\u043A Wazzup (\u043F\u043E\u0441\u043B\u0435 \u0441\u0431\u043E\u044F 5 \u043C\u0438\u043D\u0443\u0442, \u043F\u043E\u0441\u043B\u0435 \u0442\u0440\u0451\u0445 \u043E\u0442\u043A\u0430\u0437\u043E\u0432 \u0447\u0430\u0441). \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447.";
   }
   const ev = evaluate(a, now);
   if (ev.error) reason = reason || `\u0417\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B: ${ev.error}.`;
