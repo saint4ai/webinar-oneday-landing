@@ -21,6 +21,11 @@
  *   POST /api/admin/wa/ai/toggle      ИИ-ассистент в личке вкл/выкл                     {enabled:bool, confirm:true при включении}
  *   POST /api/admin/wa/ai/test        «Проверить ассистента»: ответ модели без отправки {question}
  *   GET  /api/admin/wa/ai/number?id=  полный номер человека из списка диалогов (в списке номера закрыты)
+ *   GET  /api/admin/wa/dozhim/templates  одобренные шаблоны Wazzup для выбора (?refresh=1 обновить, не чаще раза в 5 секунд)
+ *   POST /api/admin/wa/dozhim/toggle  дожим WABA вкл/выкл                              {enabled:bool, confirm:true при включении}
+ *   POST /api/admin/wa/dozhim/save    шаблон, задержка, окно часов, лимит, переменные  {templateId, delayMin, from, to, cutoff, dailyLimit, map}
+ *   POST /api/admin/wa/dozhim/hook    поставить или снять вебхук Wazzup                {on:bool, confirm:true при установке}
+ *   POST /api/admin/wa/dozhim/test    тестовая отправка шаблона на номер               {number, confirm:true}
  *
  * Доступ тот же, что у остальных данных админки (tg-miniapp.ts, gateAdminSession): подпись initData Telegram на каждый
  * запрос, user.id из ADMIN_APP_IDS, токен сессии после ввода пароля. Ключ Evolution в браузер не попадает: всё идёт
@@ -32,8 +37,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { adminJson, adminReadBody, gateAdminSession } from "./tg-miniapp";
 import * as wa from "./wa-groups";
 import * as ai from "./wa-assistant";
+import * as dz from "./wa-dozhim";
 
-const MAX_BODY = 4096;
+const MAX_BODY = 8192;
 
 /** Код причины отказа в статус ответа. Всё неизвестное, что не ok, это конфликт состояния (409). */
 const STATUS: Record<string, number> = {
@@ -46,6 +52,7 @@ const STATUS: Record<string, number> = {
   no_id: 400,
   confirm: 400,
   evolution: 502,
+  wazzup: 502,
   model: 502,
   rate: 429,
   not_found: 404,
@@ -94,6 +101,10 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
       }
       if (what === "ai/number") {
         const x = ai.aiNumber(qs.get("id"));
+        return adminJson(res, statusOf(x), x);
+      }
+      if (what === "dozhim/templates") {
+        const x = await dz.dzTemplates(qs.get("refresh") === "1");
         return adminJson(res, statusOf(x), x);
       }
       return adminJson(res, 404, { ok: false, error: "not_found" });
@@ -146,6 +157,16 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
         const x = await ai.aiTest(body.question);
         return adminJson(res, statusOf(x), x);
       }
+      case "dozhim/toggle":
+        // Выключить можно сразу, включить только после подтверждения: включение начинает писать людям шаблоны.
+        return body.enabled === false || confirmed ? done(await dz.dzSetEnabled(body.enabled)) : done(NEED_CONFIRM);
+      case "dozhim/save":
+        return done(await dz.dzSave(body));
+      case "dozhim/hook":
+        // Снять можно сразу, поставить только после подтверждения: это меняет настройки в кабинете Wazzup.
+        return body.on === false || confirmed ? done(await dz.dzHookSet(body.on)) : done(NEED_CONFIRM);
+      case "dozhim/test":
+        return confirmed ? done(await dz.dzTestSend(body.number)) : done(NEED_CONFIRM);
     }
     return adminJson(res, 404, { ok: false, error: "not_found" });
   } catch (e) {

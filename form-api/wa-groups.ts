@@ -20,6 +20,8 @@
  *  - заявки: перед каждым пакетом считается заполнение (замер плюс одобренные после него), у лимита не одобряем и сразу открываем следующее;
  *  - ИИ-ассистент в личке номера (wa-assistant.ts, docs/tasks/wa_assistant.md): по умолчанию выключен, включается в пульте или /wa_ai on;
  *    вебхук Evolution и ответы идут через ту же очередь запросов, паузу модуля и проверку подключения;
+ *  - дожим «не вступил в сообщество» через WABA Wazzup (wa-dozhim.ts, docs/tasks/wa_wazzup_dozhim.md): по умолчанию выключен; замер участников
+ *    сообществ у Evolution, шаблон тем, кто записался (номер Казахстана) и не вступил, ответ на кнопку присылает ссылку (вебхук Wazzup);
  *  - пульт показывает статус подключения (waStatus: подключён, ждёт подключения, отключён с причиной, номер заблокирован, вышел из устройства,
  *    Evolution не отвечает; причина из fetchInstances) и подключает номер двумя способами: QR (waQr) и кодом по номеру телефона (waPairing).
  *
@@ -42,6 +44,8 @@ import { isValidWhatsAppLink } from "../lib/whatsapp-link";
 import { DEFAULT_JOIN_MINUTES, addDays, assignStreamDay, atTime, dayKeyOf, dayWordLower, hhmmOf, isDayKey, isStreamDay, parseHHMM, type TimeCfg } from "./tg-time";
 import { getSeries, getStore, notifyOwners, registerWa, registerWaReport, timeCfg, type WaReply } from "./tg-workshop";
 import { aiCommand, aiInit, aiPanel, aiReset, aiTick, type AiHost, type AiState } from "./wa-assistant";
+import { dzCommand, dzInit, dzPanel, dzReset, dzTick, freshDz, normalizeDz, type DzHost, type DzState } from "./wa-dozhim";
+import { classifyPayload, readLeads } from "./tg-admin";
 
 const env = (k: string) => (process.env[k] || "").trim();
 
@@ -252,6 +256,8 @@ export type State = {
   event: EventCfg;
   /** ИИ-ассистент в личке (wa-assistant.ts): выключатель (по умолчанию выкл), секрет вебхука, стоит ли вебхук в Evolution. */
   assistant: AiState;
+  /** Дожим «не вступил в сообщество» через WABA (wa-dozhim.ts): выключатель (по умолчанию выкл), шаблон, окно часов, лимит, вебхук. */
+  dozhim: DzState;
 };
 
 const freshEvent = (): EventCfg => ({ date: "", start: "", recruitFrom: "" });
@@ -276,6 +282,7 @@ const freshState = (): State => ({
   daily: { enabled: false },
   event: freshEvent(),
   assistant: { enabled: false, hookOn: false, secret: "" },
+  dozhim: freshDz(),
 });
 
 export type Deps = {
@@ -429,6 +436,7 @@ function loadState(r: Rt): State {
     if (st.mode === "event") st.daily.enabled = false;
     const as = raw.assistant;
     if (as && typeof as === "object") st.assistant = { enabled: as.enabled === true, hookOn: as.hookOn === true, secret: typeof as.secret === "string" ? as.secret : "" };
+    st.dozhim = normalizeDz(raw.dozhim);
   } catch {
     console.warn("[wa] wa-state.json нечитаем, начинаю с пустого состояния");
   }
@@ -521,6 +529,7 @@ export function initWaGroups(opts: InitOpts = {}): void {
   rt = r;
   initError = "";
   aiInit(aiHostOf(r));
+  dzInit(dzHostOf(r));
 }
 
 /** То, что модуль даёт ИИ-ассистенту: часы, очередь запросов к Evolution, состояние, тревоги, условия отправки. */
@@ -550,12 +559,92 @@ function aiHostOf(r: Rt): AiHost {
   };
 }
 
+/** То, что модуль даёт дожиму WABA: часы, очередь запросов к Evolution, состояние, цели, ссылки, заявки, связку с ботом. */
+function dzHostOf(r: Rt): DzHost {
+  const dayOf = (ts: number): string => {
+    const ev = r.state.event;
+    // Живой эфир: все заявки с начала набора относятся к дню эфира, сайт ведёт их в одно сообщество.
+    if (r.state.mode === "event" && ev.date && !ev.done && ev.recruitFrom && ts >= atTime(ev.recruitFrom, "00:00")) return ev.date;
+    return assignStreamDay(ts, tcfg(r));
+  };
+  return {
+    dir: r.dir,
+    now: () => r.deps.now(),
+    rand: () => r.deps.rand(),
+    sleep: (ms) => r.deps.sleep(ms),
+    alarm: (text) => alarm(r, text),
+    notify: (text) => r.deps.notify(text),
+    journal: (row) => journal(r, row),
+    exclusive: (fn) => exclusive(r, fn),
+    state: () => r.state.dozhim,
+    patch: (p) => {
+      Object.assign(r.state.dozhim, p);
+      save(r);
+    },
+    canRun: () =>
+      r.state.paused
+        ? { ok: false, why: "модуль на паузе" }
+        : r.conn.state !== "open"
+          ? { ok: false, why: `номер не подключён (${r.conn.state})` }
+          : r.lockedOutLogged
+            ? { ok: false, why: "данные держит другой процесс" }
+            : { ok: true },
+    timeCfg: () => tcfg(r),
+    dayOf,
+    targets: (now) => {
+      const c = tcfg(r);
+      const ev = r.state.event;
+      let days: Set<string>;
+      if (r.state.mode === "event") days = new Set(ev.date && !ev.done ? [ev.date] : []);
+      else {
+        const cur = assignStreamDay(now, c);
+        days = new Set([dayKeyOf(now), cur, nextStreamAfter(r, cur)]);
+      }
+      return r.state.targets
+        .filter((t) => days.has(t.day) && (r.state.mode === "event" ? t.source === "event" : t.source !== "event") && !!t.sendJid && now < closeAtOf(r, t.day))
+        .map((t) => ({ id: t.id, day: t.day, sendJid: t.sendJid }));
+    },
+    noteMembers: (id, count, at) => {
+      const t = r.state.targets.find((x) => x.id === id);
+      if (!t) return;
+      t.members = count;
+      t.membersAt = at;
+      // Свежий замер уже включает тех, кого одобрили раньше: счёт «одобрено после замера» начинается заново.
+      r.approvedSince.set(id, 0);
+      save(r);
+    },
+    linkFor: (day, now) => linkForDay(r, day, now),
+    leads: () => {
+      try {
+        const x = readLeads({ store: getStore(), cfg: tcfg(r), now: r.deps.now() });
+        return { leads: x.leads, error: x.error };
+      } catch {
+        return { leads: null, error: "хранилище бота не открыто" };
+      }
+    },
+    linkedEids: () => {
+      const out = new Set<string>();
+      try {
+        for (const sub of getStore().subs.values()) {
+          const o = classifyPayload(sub.payload);
+          if (o.eid) out.add(o.eid);
+        }
+      } catch {
+        /* хранилище бота не открыто */
+      }
+      return out;
+    },
+    waUrl: TEMPLATE_URL,
+  };
+}
+
 /** Остановить и забыть модуль (для тестов и перезагрузки). */
 export function resetWaGroups(): void {
   if (rt) releaseLock(rt);
   rt = null;
   initError = "";
   aiReset();
+  dzReset();
 }
 
 /** Для тестов: текущее состояние и настройки. */
@@ -584,6 +673,7 @@ export function startWaGroups(opts: InitOpts = {}): () => void {
   registerWaReport((day) => waReportLine(day));
   const main = setInterval(() => void waTick(), TICK_MS);
   const joins = setInterval(() => void joinsTick(), JOINS_TICK_MS);
+  const dozhim = setInterval(() => void dzTick(), TICK_MS);
   const first = setTimeout(() => void waTick(), 5000);
   const onExit = () => releaseLock(r);
   process.on("exit", onExit);
@@ -599,6 +689,7 @@ export function startWaGroups(opts: InitOpts = {}): () => void {
   return () => {
     clearInterval(main);
     clearInterval(joins);
+    clearInterval(dozhim);
     clearTimeout(first);
     process.off("exit", onExit);
     registerWa(null);
@@ -793,6 +884,17 @@ export function waGroupLink(now?: number, served = true): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Ссылка сообщества дня D (для ответа на кнопку шаблона): тот же выбор, что у ссылки на сайте, только для заданного дня.
+ * null: готового сообщества этого дня нет, тогда дожим даёт постоянный адрес /wa.
+ */
+function linkForDay(r: Rt, day: string, now: number): string | null {
+  const ok = (t: Target) => isReady(t) && !!t.link && isValidWhatsAppLink(t.link) && now < closeAtOf(r, t.day);
+  const list = targetsOf(r, day);
+  const t = r.state.mode === "event" ? (day === r.state.event.date ? list.find((x) => x.source === "event" && ok(x)) : undefined) : list.find((x) => x.source !== "event" && ok(x));
+  return t ? t.link : null;
 }
 
 // ───────────────────────── общие помощники ─────────────────────────
@@ -1751,6 +1853,7 @@ async function cmdStatus(r: Rt, now: number): Promise<WaReply> {
     `Ошибок подряд: ${r.state.failStreak} из ${r.cfg.retry.pauseAfter}`,
     // Строка про ассистента только когда он включён: при выключенном вывод /wa прежний.
     ...(r.state.assistant.enabled ? ["ИИ-ассистент в личке: включён (/wa_ai покажет счётчики за сегодня)"] : []),
+    ...(r.state.dozhim.enabled ? ["Дожим WABA: включён (/wa_dozhim покажет счётчики за сегодня)"] : []),
   ];
   return { text: lines.join("\n") };
 }
@@ -1979,6 +2082,7 @@ export async function waCommand(cmd: string, args: string, now: number): Promise
     if (cmd === "wa_new") return await cmdNew(r, args, now);
     if (cmd === "wa_send") return await cmdSend(r, args, now);
     if (cmd === "wa_ai" || cmd === "wa_ai_test") return { text: await aiCommand(cmd, args) };
+    if (cmd === "wa_dozhim" || cmd === "wa_dozhim_test") return { text: await dzCommand(cmd, args) };
     return { text: "Неизвестная команда WhatsApp." };
   } catch (e) {
     console.error("[wa] команда %s упала:", cmd, (e as Error)?.stack || e);
@@ -2598,7 +2702,7 @@ function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
 
 export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
 
-const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip"]);
+const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
 const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 const clip = (s: unknown, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -2691,6 +2795,23 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
           break;
         case "ai_skip":
           text = `ИИ-ассистент не ответил ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
+          break;
+        case "dz_on":
+          kind = "ok";
+          text = "Дожим WABA включён";
+          break;
+        case "dz_off":
+          text = "Дожим WABA выключен";
+          break;
+        case "dz_hook":
+          kind = x.on ? "ok" : "info";
+          text = x.on ? "Вебхук Wazzup поставлен" : "Вебхук Wazzup снят";
+          break;
+        case "dz_save":
+          text = `Настройки дожима WABA сохранены: шаблон «${clip(x.template, 60)}»`;
+          break;
+        case "dz_tpl":
+          text = `Шаблон WABA «${clip(x.name, 60)}»: статус ${clip(x.status, 30) || "не указан"}`;
           break;
       }
       return { ts, t: ts ? stampOf(ts) : "", kind, text };
@@ -2795,6 +2916,9 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
     }
   }
 
+  // «Вступили N из M записавшихся на этот день» (замер участников и заявки, wa-dozhim.ts); без замера N не известно.
+  const dz = dzPanel(now) as { days?: Array<{ day: string; applied: number; joined: number | null; measured: string }> };
+  const signupsOf = (day: string) => dz.days?.find((x) => x.day === day) ?? null;
   // Текущее и следующее сообщество.
   const cardsOf = (day: string) => [...targetsOf(r, day)].reverse().filter((t) => st.mode === "event" || t.source !== "event").map((t) => cardOf(r, t, now, serving));
   let current: Record<string, unknown> | null = null;
@@ -2802,7 +2926,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
   if (st.mode === "event") {
     if (ev.date) {
       const cards = cardsOf(ev.date);
-      current = { title: "Сообщество живого эфира", day: ev.date, dayLabel: ddmm(ev.date), cards, pending: cards.length ? "" : evText };
+      current = { title: "Сообщество живого эфира", day: ev.date, dayLabel: ddmm(ev.date), cards, pending: cards.length ? "" : evText, signups: signupsOf(ev.date) };
     }
   } else {
     const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
@@ -2810,7 +2934,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
     const pend = (day: string) => (r.state.daily.enabled ? `Будет создано ${when(createAtOf(r, day))}.` : "Ежедневное создание выключено, сообщество не создаётся.");
     const mk = (title: string, day: string) => {
       const cards = cardsOf(day);
-      return { title, day, dayLabel: ddmm(day), cards, pending: cards.length ? "" : pend(day) };
+      return { title, day, dayLabel: ddmm(day), cards, pending: cards.length ? "" : pend(day), signups: signupsOf(day) };
     };
     current = mk("Эфир", cur);
     next = mk("Следующий эфир", nxt);
@@ -2883,6 +3007,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
     sendTo: targets.map((t) => t.name),
     series,
     assistant: aiPanel(now),
+    dozhim: dzPanel(now),
     journal: journalView(r, 20),
   };
 }

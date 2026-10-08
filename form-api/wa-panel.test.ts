@@ -11,12 +11,17 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
-import { EVO_KEY, evo, openai, OPENAI_KEY, tg } from "./wa-testkit";
+import { EVO_KEY, evo, openai, OPENAI_KEY, TPL_LINK, TPL_REMINDER, tg, wazzup, WZ_CHANNEL, WZ_KEY } from "./wa-testkit";
 import { aiFlush, aiHookBody, aiNumber, aiSetEnabled, aiTest } from "./wa-assistant";
+import { dzHookSet, dzSave, dzSetEnabled, dzTemplates, dzTestSend } from "./wa-dozhim";
 import { initWaGroups, resetWaGroups, waConnection, waGroups, waLogout, waPairing, waPanel, waQr, waStatus } from "./wa-groups";
 import { setUtcOffsetMinutes } from "./tg-time";
 
 process.env.EVOLUTION_API_KEY = EVO_KEY;
+process.env.WAZZUP_API_KEY = WZ_KEY;
+process.env.WAZZUP_CHANNEL_ID = WZ_CHANNEL;
+process.env.WAZZUP_HOOK_URL = "http://127.0.0.1:1/api/wazzup-hook";
+delete process.env.WAZZUP_HOOK_SECRET;
 delete process.env.EVOLUTION_INSTANCE;
 delete process.env.WA_GROUPS;
 delete process.env.WA_ADMIN_NUMBERS;
@@ -118,6 +123,8 @@ const all = (root: El | Txt, pred: (e: El) => boolean = () => true): El[] => {
 const hasClass = (e: El, c: string) => e.className.split(/\s+/).includes(c);
 
 type Fetched = { url: string; method: string; body: any };
+/** Подмена ответа wa/state в одном тесте: например, подставить «вступили N из M» без бота и заявок. */
+let stateHook: ((s: any) => void) | null = null;
 
 /** Страница в песочнице: вкладка «WhatsApp» уже выбрана, сессия есть, запросы идут в модуль. */
 function loadPanel() {
@@ -151,8 +158,11 @@ function loadPanel() {
     const body = init?.body ? JSON.parse(init.body) : {};
     const res = (x: any) => ({ status: x && x.ok === false ? 409 : 200, body: x });
     switch (path) {
-      case "wa/state":
-        return res(waPanel(clock.t));
+      case "wa/state": {
+        const st = waPanel(clock.t) as any;
+        stateHook?.(st);
+        return res(st);
+      }
       case "wa/status":
         return res(await waStatus());
       case "wa/connection":
@@ -171,6 +181,16 @@ function loadPanel() {
         return res(await aiTest(body.question));
       case "wa/ai/number":
         return res(aiNumber(new URL(rawUrl, "http://x").searchParams.get("id")));
+      case "wa/dozhim/templates":
+        return res(await dzTemplates(new URL(rawUrl, "http://x").searchParams.get("refresh") === "1"));
+      case "wa/dozhim/toggle":
+        return res(body.enabled === false || body.confirm === true ? await dzSetEnabled(body.enabled) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
+      case "wa/dozhim/save":
+        return res(await dzSave(body));
+      case "wa/dozhim/hook":
+        return res(body.on === false || body.confirm === true ? await dzHookSet(body.on) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
+      case "wa/dozhim/test":
+        return res(body.confirm === true ? await dzTestSend(body.number) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
     }
     return { status: 404, body: { ok: false, error: "not_found" } };
   };
@@ -237,6 +257,7 @@ test.before(async () => {
   await tg.start();
   await evo.start();
   await openai.start();
+  await wazzup.start();
   setUtcOffsetMinutes(300);
 });
 test.after(async () => {
@@ -244,11 +265,14 @@ test.after(async () => {
   await tg.stop();
   await evo.stop();
   await openai.stop();
+  await wazzup.stop();
   assert.deepEqual(evo.violations, [], "защита номера цела");
 });
 test.beforeEach(() => {
+  stateHook = null;
   evo.reset();
   openai.reset();
+  wazzup.reset();
   process.env.OPENAI_API_KEY = OPENAI_KEY;
   process.env.WA_AI_QUIET_MS = "100000";
   clock.t = alm(2026, 10, 8, 12, 0);
@@ -466,4 +490,159 @@ test("панель: нет ключа OpenAI: выключатель недос�
   await p.settle();
   assert.match(p.cards().find((c) => /^ИИ-ассистент в личке/.test(c.textContent))!.textContent, /Нет ключа OPENAI_API_KEY/);
   assert.equal(evo.of("/webhook").length, 0);
+});
+
+test("панель: блок «Дожим WABA»: выключатель с подтверждением, шаблоны из одобренных, переменные, сохранение, вебхук, тестовая отправка с подтверждением, номера закрыты", async () => {
+  wazzup.testHook = false; // адрес вебхука в этом тесте недоступен снаружи, проверку Wazzup не имитируем
+  const p = loadPanel();
+  await p.settle();
+  const card = () => p.cards().find((c) => /^Дожим WABA/.test(c.textContent))!;
+  assert.ok(card(), "блок есть");
+  const order = p.cards().map((c) => c.textContent.slice(0, 12));
+  assert.ok(order.findIndex((t) => /^ИИ-ассистент/.test(t)) < order.findIndex((t) => /^Дожим WABA/.test(t)), "после блока ассистента");
+  const sw = () => all(card(), (e) => e.attrs.get("role") === "switch")[0];
+  assert.equal(sw().attrs.get("aria-checked"), "false");
+  assert.equal(sw().disabled, true, "шаблон не выбран: включить нельзя");
+  assert.match(card().textContent, /Выключено: запросов к Wazzup нет, шаблоны не уходят/);
+  assert.match(card().textContent, /Выбери шаблон из одобренных и сохрани настройки/);
+  assert.match(card().textContent, /Кандидатов сегодня0/);
+  assert.match(card().textContent, /Вступили после дожима0/);
+  assert.match(card().textContent, /За 24 часа0 из 200/);
+  assert.match(card().textContent, /Отправок пока нет/);
+  assert.match(card().textContent, /Вебхук Wazzup/);
+  assert.match(card().textContent, /Не стоит: ответы людей на шаблон не обрабатываются/);
+  assert.equal(wazzup.calls.length, 0, "пока настройки закрыты, Wazzup не трогаем");
+
+  // настройки: шаблоны подгружаются по кнопке, в списке только одобренные
+  p.button("Настроить").dispatch("click");
+  await p.settle();
+  assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/templates")).length, 1);
+  const sel = () => all(card(), (e) => e.tag === "select" && e.attrs.get("aria-label") === "Шаблон WABA")[0];
+  assert.deepEqual(all(sel(), (e) => e.tag === "option").map((o) => o.textContent), ["Выбери шаблон", "Напоминание о записи или встрече · utility", "Вступите в сообщество ссылка · utility"], "основной шаблон на модерации не предлагается");
+  assert.ok(p.buttons().includes("Обновить список шаблонов"));
+  // выбрали запасной: три переменные с постоянными текстами по умолчанию
+  sel().value = TPL_REMINDER;
+  sel().dispatch("change");
+  const vars = () => all(card(), (e) => e.tag === "select" && /^Источник переменной/.test(e.attrs.get("aria-label") || ""));
+  assert.equal(vars().length, 3);
+  assert.deepEqual(vars().map((v) => v.value), ["text", "text", "text"]);
+  const texts = () => all(card(), (e) => e.tag === "input" && /^Текст для переменной/.test(e.attrs.get("aria-label") || ""));
+  assert.deepEqual(texts().map((t) => t.value), ["команда onAI Academy", "воркшопе «Вайб-продакшен»", "20:00 по Алматы"]);
+  assert.match(card().textContent, /Здравствуйте\. Это \{\{1\}\}\. Напоминаем о \{\{2\}\} в \{\{3\}\}/);
+  // параметры и сохранение
+  const num = (label: string) => all(card(), (e) => e.tag === "input" && e.attrs.get("aria-label") === label)[0];
+  num("Задержка после заявки, минут").value = "45";
+  num("Задержка после заявки, минут").dispatch("input");
+  num("Лимит в сутки").value = "150";
+  num("Лимит в сутки").dispatch("input");
+  p.button("Сохранить настройки").dispatch("click");
+  await p.settle();
+  const saves = p.fetched.filter((f) => f.url.endsWith("wa/dozhim/save"));
+  assert.equal(saves.length, 1);
+  assert.deepEqual(saves[0].body, {
+    templateId: TPL_REMINDER,
+    map: [{ kind: "text", text: "команда onAI Academy" }, { kind: "text", text: "воркшопе «Вайб-продакшен»" }, { kind: "text", text: "20:00 по Алматы" }],
+    delayMin: 45, from: "09:00", to: "21:00", cutoff: "19:30", dailyLimit: 150,
+  });
+  assert.match(p.text(), /Настройки дожима сохранены/);
+  assert.equal(sw().disabled, false, "шаблон выбран: включить можно");
+  assert.match(card().textContent, /Лимит в сутки/);
+
+  // включение: подтверждение в странице, без него запроса нет
+  sw().dispatch("click");
+  assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/toggle")).length, 0);
+  assert.match(card().textContent, /Включить дожим\? Шаблон «Напоминание о записи или встрече» начнёт уходить людям с номерами Казахстана/);
+  assert.match(card().textContent, /Не больше 150 в сутки, каждое сообщение платное/);
+  p.button("Включить").dispatch("click");
+  await p.settle();
+  assert.deepEqual(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/toggle")).map((f) => f.body), [{ enabled: true, confirm: true }]);
+  assert.equal(sw().attrs.get("aria-checked"), "true");
+  assert.match(card().textContent, /Включено: шаблон «Напоминание о записи или встрече» через 45 мин после заявки, с 09:00 до 21:00 по Алматы, в день эфира не позже 19:30/);
+
+  // вебхук: ставится после подтверждения, снимается сразу
+  const hookBtn = () => p.button("Поставить вебхук");
+  hookBtn().dispatch("click");
+  assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/hook")).length, 0);
+  assert.match(card().textContent, /Поставить вебхук в Wazzup\? Wazzup проверит адрес тестовым запросом/);
+  p.button("Поставить").dispatch("click");
+  await p.settle();
+  assert.deepEqual(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/hook")).map((f) => f.body), [{ on: true, confirm: true }]);
+  assert.match(card().textContent, /Стоит: ответ на шаблон присылает человеку ссылку на сообщество/);
+  assert.match(wazzup.hooks.webhooksUri, /^http:\/\/127\.0\.0\.1:1\/api\/wazzup-hook\?s=[0-9a-f]{48}$/);
+  assert.equal(p.text().includes(wazzup.hooks.webhooksUri.split("?s=")[1]), false, "секрет вебхука на экране не показывается");
+  p.button("Снять вебхук").dispatch("click");
+  await p.settle();
+  assert.deepEqual(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/hook")).map((f) => f.body).pop(), { on: false });
+  assert.equal(wazzup.hooks.webhooksUri, "");
+  assert.match(card().textContent, /Не стоит: ответы людей на шаблон не обрабатываются/);
+
+  // тестовая отправка: цифры в поле, подтверждение с закрытым номером, затем запрос с confirm
+  const tin = () => all(card(), (e) => e.tag === "input" && /^Номер для тестовой отправки/.test(e.attrs.get("aria-label") || ""))[0];
+  tin().value = "+7 (701) 123-45-67";
+  tin().dispatch("input");
+  assert.equal(tin().value, "77011234567", "в поле остаются только цифры");
+  const before = p.fetched.length;
+  p.button("Тестовая отправка").dispatch("click");
+  assert.equal(p.fetched.length, before, "без подтверждения запроса нет");
+  assert.match(card().textContent, /Отправить шаблон «Напоминание о записи или встрече» на номер 7701\*\*\*4567\? Это платное сообщение WhatsApp/);
+  assert.equal(p.text().includes("77011234567"), false, "полного номера на экране нет");
+  p.button("Отправить").dispatch("click");
+  await p.settle();
+  const tests = p.fetched.filter((f) => f.url.endsWith("wa/dozhim/test"));
+  assert.deepEqual(tests.map((t) => t.body), [{ number: "77011234567", confirm: true }]);
+  assert.equal(wazzup.sent.length, 1);
+  assert.equal(wazzup.sent[0].chatId, "77011234567");
+  assert.equal(wazzup.sent[0].templateId, TPL_REMINDER);
+  assert.match(p.text(), /Тестовый шаблон «Напоминание о записи или встрече» отправлен на 7701\*\*\*4567/);
+  assert.match(card().textContent, /7701\*\*\*4567/);
+  assert.match(card().textContent, /тест/);
+  assert.equal(p.text().includes("77011234567"), false, "полный номер нигде на экране");
+  // слишком короткий номер: запроса нет
+  tin().value = "123";
+  tin().dispatch("input");
+  const n1 = p.fetched.length;
+  p.button("Тестовая отправка").dispatch("click");
+  assert.equal(p.fetched.length, n1);
+  assert.match(p.text(), /Номер для теста: только цифры, с кодом страны, от 10 до 15/);
+
+  // выключение сразу, без подтверждения
+  sw().dispatch("click");
+  await p.settle();
+  assert.deepEqual(p.fetched.filter((f) => f.url.endsWith("wa/dozhim/toggle")).map((f) => f.body).pop(), { enabled: false });
+  assert.equal(sw().attrs.get("aria-checked"), "false");
+});
+
+test("панель: нет ключа Wazzup: выключатель недоступен и причина написана; шаблоны не загружаются, ошибка словами", async () => {
+  delete process.env.WAZZUP_API_KEY;
+  const p = loadPanel();
+  await p.settle();
+  const card = () => p.cards().find((c) => /^Дожим WABA/.test(c.textContent))!;
+  const sw = all(card(), (e) => e.attrs.get("role") === "switch")[0];
+  assert.equal(sw.disabled, true);
+  assert.match(card().textContent, /Нет WAZZUP_API_KEY в \.env на сервере: дожим не стартует/);
+  p.button("Настроить").dispatch("click");
+  await p.settle();
+  assert.match(card().textContent, /Нет WAZZUP_API_KEY в \.env на сервере/);
+  assert.equal(wazzup.calls.length, 0);
+  process.env.WAZZUP_API_KEY = WZ_KEY;
+  // Wazzup не отвечает: понятная ошибка, а не пустой список
+  wazzup.fail = (c) => (c.path === "/v3/templates/whatsapp" ? { status: 500 } : null);
+  p.button("Обновить список шаблонов").dispatch("click");
+  await p.settle();
+  assert.match(card().textContent, /Не удалось получить шаблоны Wazzup/);
+  void TPL_LINK;
+});
+
+test("панель: в карточках сообществ строка «Вступили N из M записавшихся на этот день»; без замера честно сказано, что кто вступил, пока не известно", async () => {
+  stateHook = (st) => {
+    st.current.signups = { day: st.current.day, dayLabel: st.current.dayLabel, applied: 12, joined: 7, measured: "3 мин назад" };
+    st.next.signups = { day: st.next.day, dayLabel: st.next.dayLabel, applied: 3, joined: null, measured: "" };
+  };
+  const p = loadPanel();
+  await p.settle();
+  const cur = p.cards().find((c) => /^Эфир 08\.10/.test(c.textContent))!;
+  const nxt = p.cards().find((c) => /^Следующий эфир 09\.10/.test(c.textContent))!;
+  assert.ok(cur && nxt, "карточки сообществ есть");
+  assert.match(cur.textContent, /Вступили 7 из 12 записавшихся на этот день \(замер 3 мин назад\)\./);
+  assert.match(nxt.textContent, /Записавшихся на этот день: 3\. Кто из них вступил, пока не замеряно: замер идёт, когда включён дожим WABA\./);
 });

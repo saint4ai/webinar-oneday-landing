@@ -21,6 +21,7 @@
  *   GET  /api/admin/{summary,leads,subscribers,errors} — данные админки (initData + токен на каждый запрос)
  *   GET|POST /api/admin/wa/*: пульт WhatsApp-сообществ (вкладка «WhatsApp» админки, те же initData и токен), см. wa-admin.ts
  *   POST /api/wa-hook       : вебхук Evolution MESSAGES_UPSERT для ИИ-ассистента в личке WhatsApp (только 127.0.0.1 и секрет в заголовке), см. wa-assistant.ts
+ *   POST /api/wazzup-hook   : вебхук Wazzup для дожима WABA (секрет в адресе ?s=), ответ человека на шаблон присылает ссылку, см. wa-dozhim.ts
  *   GET  /api/health        — состояние (наружу через nginx), /health — то же для проверки на сервере
  *   GET  /calendar          — ссылка «добавить эфир в календарь»
  *
@@ -43,6 +44,7 @@ import { handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk } from "
 import { handleWaAdmin } from "./wa-admin";
 import { startWaGroups, waGroupLink, waHealth } from "./wa-groups";
 import { handleWaHook } from "./wa-assistant";
+import { handleWazzupHook } from "./wa-dozhim";
 
 /**
  * Секреты из .env рядом с бандлом (PM2 сам env-файлы не читает).
@@ -437,6 +439,7 @@ export const server = createServer(async (req, res) => {
     if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
     if (method === "POST" && url === "/api/wa-hook") return await handleWaHook(req, res);
+    if (url === "/api/wazzup-hook") return await handleWazzupHook(req, res);
     if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     // /api/health виден снаружи через nginx (/workshop/api/health), /health только с самого сервера.

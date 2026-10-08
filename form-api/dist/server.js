@@ -34,9 +34,9 @@ __export(server_exports, {
 });
 module.exports = __toCommonJS(server_exports);
 var import_node_http = require("node:http");
-var import_node_crypto6 = require("node:crypto");
-var import_node_fs10 = require("node:fs");
-var import_node_path10 = require("node:path");
+var import_node_crypto7 = require("node:crypto");
+var import_node_fs11 = require("node:fs");
+var import_node_path11 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -279,14 +279,14 @@ async function markAlertSent(id) {
 }
 async function ingestWalToSupabase() {
   if (!(0, import_node_fs.existsSync)(LOG_PATH)) return 0;
-  let text = "";
+  let text2 = "";
   try {
-    text = (0, import_node_fs.readFileSync)(LOG_PATH, "utf8");
+    text2 = (0, import_node_fs.readFileSync)(LOG_PATH, "utf8");
   } catch {
     return 0;
   }
   const rows = [];
-  for (const line of text.split("\n")) {
+  for (const line of text2.split("\n")) {
     if (!line.trim()) continue;
     let e;
     try {
@@ -495,7 +495,7 @@ async function sendOwnerAlert(lead, error) {
     return { ok: false };
   }
   const utm = lead.utm ? Object.entries(lead.utm).map(([k, v]) => `${k}=${v}`).join(" \xB7 ") : "\u2014";
-  const text = [
+  const text2 = [
     "\u{1F534} <b>\u041B\u0438\u0434 \u041D\u0415 \u0441\u043E\u0437\u0434\u0430\u043D \u0432 amoCRM</b> (\u0440\u0435\u0442\u0440\u0430\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u044B)",
     `\u0418\u043C\u044F: <b>${esc(lead.name)}</b>`,
     `\u0422\u0435\u043B\u0435\u0444\u043E\u043D: <code>${esc(lead.phone)}</code>`,
@@ -514,7 +514,7 @@ async function sendOwnerAlert(lead, error) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: CHAT_ID,
-          text,
+          text: text2,
           parse_mode: "HTML",
           disable_web_page_preview: true
         })
@@ -1569,9 +1569,9 @@ ${note}${cut}
 <pre>${pre}</pre>`;
   };
   let from = 0;
-  let text = build(from);
-  while (text.length > MSG_LIMIT && from < table.length - 1) text = build(++from);
-  return text;
+  let text2 = build(from);
+  while (text2.length > MSG_LIMIT && from < table.length - 1) text2 = build(++from);
+  return text2;
 }
 function adminVersion() {
   try {
@@ -2141,11 +2141,11 @@ async function sendMedia(chatId, media, caption, markup, silent, prio) {
   }
   return toSend(r);
 }
-async function plain(chatId, text, markup) {
+async function plain(chatId, text2, markup) {
   return toSend(
     await botSend("sendMessage", {
       chat_id: chatId,
-      text: text.slice(0, 4e3),
+      text: text2.slice(0, 4e3),
       link_preview_options: { is_disabled: true },
       ...markup ? { reply_markup: { inline_keyboard: markup } } : {}
     })
@@ -2159,19 +2159,19 @@ async function sendPhotoBytes(chatId, data, caption) {
   await acquireSlot("hi");
   return toSend(await botCall("sendPhoto", form, 3e4));
 }
-async function notifyOwners(text) {
+async function notifyOwners(text2) {
   let delivered = 0;
   for (const id of ownerIds()) {
     const n = Number(id);
-    if (Number.isFinite(n) && (await plain(n, text)).ok) delivered++;
+    if (Number.isFinite(n) && (await plain(n, text2)).ok) delivered++;
   }
   return delivered;
 }
-async function notifyOwnersHtml(text, markup) {
+async function notifyOwnersHtml(text2, markup) {
   let delivered = 0;
   for (const id of ownerIds()) {
     const n = Number(id);
-    if (Number.isFinite(n) && (await sendText(n, text, markup)).ok) delivered++;
+    if (Number.isFinite(n) && (await sendText(n, text2, markup)).ok) delivered++;
   }
   return delivered;
 }
@@ -2228,7 +2228,7 @@ async function sendGreeting(sub, now) {
     noteSendResult(sub.chatId, r2, now);
   }
 }
-var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test"]);
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test", "wa_dozhim", "wa_dozhim_test"]);
 var waHook = null;
 var waReport = null;
 function registerWa(h) {
@@ -2257,11 +2257,13 @@ var HELP_TEXT = [
   "/wa_send <id>: \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430",
   "/wa_ai on|off: \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 \u0432 \u043B\u0438\u0447\u043A\u0435 WhatsApp (\u0431\u0435\u0437 \u0430\u0440\u0433\u0443\u043C\u0435\u043D\u0442\u0430: \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435)",
   "/wa_ai_test <\u0432\u043E\u043F\u0440\u043E\u0441>: \u043E\u0442\u0432\u0435\u0442 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 \u0431\u0435\u0437 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u0432 WhatsApp",
+  "/wa_dozhim on|off: \u0434\u043E\u0436\u0438\u043C \xAB\u043D\u0435 \u0432\u0441\u0442\u0443\u043F\u0438\u043B\xBB \u0447\u0435\u0440\u0435\u0437 WABA (\u0431\u0435\u0437 \u0430\u0440\u0433\u0443\u043C\u0435\u043D\u0442\u0430: \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435)",
+  "/wa_dozhim_test <\u043D\u043E\u043C\u0435\u0440>: \u0442\u0435\u0441\u0442 \u0448\u0430\u0431\u043B\u043E\u043D\u0430 \u0434\u043E\u0436\u0438\u043C\u0430 \u043D\u0430 \u043D\u043E\u043C\u0435\u0440",
   "",
   "\u041C\u0435\u0442\u043A\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430: \u0434\u043E\u0431\u0430\u0432\u044C ?start=2gis \u043A \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u0431\u043E\u0442\u0430 (t.me/workshop_aiprod_bot?start=2gis), \u0432 \u043E\u0442\u0447\u0451\u0442\u0430\u0445 \u043E\u043D\u0430 \u043F\u043E\u043A\u0430\u0436\u0435\u0442\u0441\u044F \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A."
 ].join("\n");
-function parseCommand(text) {
-  const m = /^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/.exec(text.trim());
+function parseCommand(text2) {
+  const m = /^\/([A-Za-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s+([\s\S]*))?$/.exec(text2.trim());
   return m ? { cmd: m[1].toLowerCase(), args: (m[2] || "").trim() } : null;
 }
 function cleanPayload(args) {
@@ -2312,9 +2314,9 @@ async function processUpdate(u, now = Date.now()) {
 }
 async function onMessage(m, now) {
   if (m.chat?.type !== "private" || !m.from || m.from.is_bot) return;
-  const text = (m.text || "").trim();
-  if (!text) return;
-  const c = parseCommand(text);
+  const text2 = (m.text || "").trim();
+  if (!text2) return;
+  const c = parseCommand(text2);
   if (c?.cmd === "start") return onStart(m, cleanPayload(c.args), now);
   if (c?.cmd === "stop") return onStop(m, now);
   if (c?.cmd === "privacy") {
@@ -2425,30 +2427,30 @@ async function onAdminCallback(cq, now) {
   if (!cb) return;
   const chatId = cq.message?.chat?.id ?? cq.from.id;
   const ctx = adminCtx(now);
-  let text;
+  let text2;
   let kb;
   let html = true;
   if (cb.action === "m") {
-    text = adminHomeText(getStore(), activeSeries(), now);
+    text2 = adminHomeText(getStore(), activeSeries(), now);
     kb = menuKeyboard();
     html = false;
   } else if (cb.action === "d") {
-    text = "\u0412\u044B\u0431\u0435\u0440\u0438 \u0434\u0435\u043D\u044C (\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 14 \u0434\u043D\u0435\u0439) \u0438\u043B\u0438 \u0432\u0435\u0441\u044C \u043F\u0435\u0440\u0438\u043E\u0434:";
+    text2 = "\u0412\u044B\u0431\u0435\u0440\u0438 \u0434\u0435\u043D\u044C (\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 14 \u0434\u043D\u0435\u0439) \u0438\u043B\u0438 \u0432\u0435\u0441\u044C \u043F\u0435\u0440\u0438\u043E\u0434:";
     kb = datePickerKeyboard(now);
     html = false;
   } else if (cb.action === "u") {
-    text = renderUtmByDay(ctx, cb.period);
+    text2 = renderUtmByDay(ctx, cb.period);
     kb = adminKeyboard(cb.period, "u");
   } else if (cb.action === "e") {
-    text = renderErrors(ctx, cb.period);
+    text2 = renderErrors(ctx, cb.period);
     kb = adminKeyboard(cb.period, "e");
   } else {
-    text = renderReport(ctx, cb.period);
+    text2 = renderReport(ctx, cb.period);
     kb = adminKeyboard(cb.period, "p");
   }
   const body = {
     chat_id: chatId,
-    text,
+    text: text2,
     ...html ? { parse_mode: "HTML" } : {},
     link_preview_options: { is_disabled: true },
     reply_markup: { inline_keyboard: kb }
@@ -2709,7 +2711,9 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
     case "wa_new":
     case "wa_send":
     case "wa_ai":
-    case "wa_ai_test": {
+    case "wa_ai_test":
+    case "wa_dozhim":
+    case "wa_dozhim_test": {
       if (!waHook) {
         await plain(chatId, "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u043B\u0441\u044F (\u0441\u043C. /api/health).");
         return;
@@ -3058,8 +3062,8 @@ async function adminDaily(now = Date.now()) {
     const day = addDays(occ, -1);
     if (st.isAdminReported(day)) continue;
     if (!ownerIds().length) return false;
-    const text = renderDailyReport(adminCtx(now), day);
-    if (await notifyOwnersHtml(text, dailyKeyboard(day)) > 0) {
+    const text2 = renderDailyReport(adminCtx(now), day);
+    if (await notifyOwnersHtml(text2, dailyKeyboard(day)) > 0) {
       st.markAdminReported(day);
       return true;
     }
@@ -7021,7 +7025,7 @@ function buildErrors(ctx, p) {
     sentTotal: g.sent.length,
     sentOk: g.sent.length - bad.length,
     failed: bad.length,
-    groups: [...groups.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1)).slice(0, 8).map(([text, n]) => ({ text, n })),
+    groups: [...groups.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1)).slice(0, 8).map(([text2, n]) => ({ text: text2, n })),
     last,
     blocked: g.blockedEvents,
     runtime: {
@@ -7209,8 +7213,8 @@ function handleAdminApp(req, res) {
 }
 
 // form-api/wa-groups.ts
-var import_node_fs9 = require("node:fs");
-var import_node_path9 = require("node:path");
+var import_node_fs10 = require("node:fs");
+var import_node_path10 = require("node:path");
 
 // form-api/wa-evolution.ts
 var env3 = (k) => (process.env[k] || "").trim();
@@ -7227,8 +7231,8 @@ var scrub2 = (s) => {
 };
 function errorText(data, fallback) {
   const m = data?.response?.message ?? data?.message ?? data?.error;
-  const text = Array.isArray(m) ? m.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join("; ") : typeof m === "string" ? m : m ? JSON.stringify(m) : "";
-  return scrub2((text || fallback).slice(0, 300));
+  const text2 = Array.isArray(m) ? m.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join("; ") : typeof m === "string" ? m : m ? JSON.stringify(m) : "";
+  return scrub2((text2 || fallback).slice(0, 300));
 }
 async function evoCall(method, path, body, timeoutMs2 = TIMEOUT_MS) {
   const key = evoKey();
@@ -7240,15 +7244,15 @@ async function evoCall(method, path, body, timeoutMs2 = TIMEOUT_MS) {
       ...body !== void 0 ? { body: JSON.stringify(body) } : {},
       signal: AbortSignal.timeout(timeoutMs2)
     });
-    const text = await res.text();
+    const text2 = await res.text();
     let data = null;
     try {
-      data = text ? JSON.parse(text) : null;
+      data = text2 ? JSON.parse(text2) : null;
     } catch {
       data = null;
     }
     if (res.ok) return { ok: true, status: res.status, data };
-    return { ok: false, status: res.status, error: `${res.status} ${errorText(data, res.statusText || text.slice(0, 100))}`, data };
+    return { ok: false, status: res.status, error: `${res.status} ${errorText(data, res.statusText || text2.slice(0, 100))}`, data };
   } catch (e) {
     const err = e;
     const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
@@ -7362,13 +7366,32 @@ function inviteOf(r) {
   if (!inviteUrl) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0438-\u043F\u0440\u0438\u0433\u043B\u0430\u0448\u0435\u043D\u0438\u044F", data: r.data };
   return { ok: true, status: r.status, data: { inviteCode, inviteUrl } };
 }
+async function groupParticipants(jid) {
+  const r = await evoCall("GET", `/group/participants/${I()}?groupJid=${encodeURIComponent(jid)}`, void 0, GROUPS_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.participants) ? r.data.participants : null;
+  if (!list) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 participants \u043D\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430", data: r.data };
+  const members = [];
+  for (const p of list) {
+    if (!p || typeof p !== "object") continue;
+    members.push({ id: String(p.id ?? p.jid ?? ""), phoneNumber: String(p.phoneNumber ?? p.phone ?? ""), admin: String(p.admin ?? "") });
+  }
+  return { ok: true, status: r.status, data: members };
+}
+async function contactPushName(digits) {
+  const r = await evoCall("POST", `/chat/findContacts/${I()}`, { where: { remoteJid: `${digits}@s.whatsapp.net` } });
+  if (!r.ok) return r;
+  const list = Array.isArray(r.data) ? r.data : [];
+  const hit = list.find((c) => c && typeof c.pushName === "string" && c.pushName.trim());
+  return { ok: true, status: r.status, data: hit ? String(hit.pushName).trim() : "" };
+}
 function sentOf(r) {
   if (!r.ok) return r;
   return { ok: true, status: r.status, data: { messageId: String(r.data?.key?.id || "") } };
 }
-async function sendText2(jid, text, opts = {}) {
+async function sendText2(jid, text2, opts = {}) {
   const delay = opts.delay && opts.delay > 0 ? Math.round(opts.delay) : 0;
-  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text, linkPreview: false, ...delay ? { delay } : {} }, delay ? TIMEOUT_MS + delay : TIMEOUT_MS));
+  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text: text2, linkPreview: false, ...delay ? { delay } : {} }, delay ? TIMEOUT_MS + delay : TIMEOUT_MS));
 }
 function setWebhook(p) {
   return evoCall("POST", `/webhook/set/${I()}`, {
@@ -7453,12 +7476,12 @@ var REASON_TEXT = {
   empty: "\u043E\u0442\u0432\u0435\u0442 \u043F\u0443\u0441\u0442\u043E\u0439"
 };
 var MAX_REPLY = 600;
-function checkReply(text) {
+function checkReply(text2) {
   const out = /* @__PURE__ */ new Set();
-  if (!text.trim()) return ["empty"];
-  if (text.length > MAX_REPLY) out.add("long");
-  if (FORBIDDEN2.test(text)) out.add("forbidden");
-  let rest = text;
+  if (!text2.trim()) return ["empty"];
+  if (text2.length > MAX_REPLY) out.add("long");
+  if (FORBIDDEN2.test(text2)) out.add("forbidden");
+  let rest = text2;
   const judge = (m) => {
     if (!allowedLink(m)) out.add("link");
     return " ";
@@ -7605,10 +7628,10 @@ function readTail(file, maxBytes) {
     } finally {
       (0, import_node_fs8.closeSync)(fd);
     }
-    let text = buf.toString("utf8");
-    if (start > 0) text = text.slice(text.indexOf("\n") + 1);
+    let text2 = buf.toString("utf8");
+    if (start > 0) text2 = text2.slice(text2.indexOf("\n") + 1);
     const out = [];
-    for (const line of text.split("\n")) {
+    for (const line of text2.split("\n")) {
       const s = line.trim();
       if (!s) continue;
       try {
@@ -7735,10 +7758,10 @@ async function callModel(messages) {
     }
     if (!res.ok) return { ok: false, error: scrub3(`${res.status} ${clipText(data?.error?.message || res.statusText || raw, 120)}`) };
     const choice = data?.choices?.[0];
-    const text = choice?.message?.content;
+    const text2 = choice?.message?.content;
     if (choice?.finish_reason === "length") return { ok: false, error: "\u043E\u0442\u0432\u0435\u0442 \u043E\u0431\u043E\u0440\u0432\u0430\u043B\u0441\u044F \u043F\u043E \u0434\u043B\u0438\u043D\u0435" };
-    if (typeof text !== "string" || !text.trim()) return { ok: false, error: choice?.message?.refusal ? "\u043C\u043E\u0434\u0435\u043B\u044C \u043E\u0442\u043A\u0430\u0437\u0430\u043B\u0430\u0441\u044C \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C" : "\u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438" };
-    return { ok: true, text };
+    if (typeof text2 !== "string" || !text2.trim()) return { ok: false, error: choice?.message?.refusal ? "\u043C\u043E\u0434\u0435\u043B\u044C \u043E\u0442\u043A\u0430\u0437\u0430\u043B\u0430\u0441\u044C \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C" : "\u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438" };
+    return { ok: true, text: text2 };
   } catch (e) {
     const err = e;
     if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, error: "\u0442\u0430\u0439\u043C\u0430\u0443\u0442" };
@@ -7775,12 +7798,12 @@ ${r.text}`;
   }
   return out;
 }
-async function alarmOnce(a, key, windowMs, text) {
+async function alarmOnce(a, key, windowMs, text2) {
   const now = a.host.now();
   if (now - (a.alarmAt.get(key) || 0) < windowMs) return;
   a.alarmAt.set(key, now);
   try {
-    await a.host.alarm(text);
+    await a.host.alarm(text2);
   } catch {
   }
 }
@@ -7861,7 +7884,7 @@ async function answer(a, jid, p) {
     await alarmOnce(a, `person:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0447\u0435\u043B\u043E\u0432\u0435\u043A ${maskJid(jid)} \u043F\u043E\u043B\u0443\u0447\u0438\u043B ${LIMIT_PERSON} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438. \u0415\u043C\u0443 \u0434\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
     return;
   }
-  let text = MEDIA_PHRASE;
+  let text2 = MEDIA_PHRASE;
   let via = "media";
   let handoff = false;
   let summary = "";
@@ -7886,7 +7909,7 @@ async function answer(a, jid, p) {
       await alarmOnce(a, "openai", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (${made.error}). \u0427\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
       return;
     }
-    text = made.text;
+    text2 = made.text;
     via = made.via;
     handoff = made.handoff;
     summary = made.summary;
@@ -7899,7 +7922,7 @@ async function answer(a, jid, p) {
   const can2 = h.canSend();
   if (!can2.ok) return;
   const delay = PAUSE_MS[0] + Math.round(h.rand() * (PAUSE_MS[1] - PAUSE_MS[0]));
-  const sent = await h.exclusive(() => sendText2(jid, text, { delay }));
+  const sent = await h.exclusive(() => sendText2(jid, text2, { delay }));
   if (!sent.ok) {
     append(a, { ts: h.now(), jid, ev: "error", error: clipText(sent.error, 120) });
     statsOf(a, day).errors++;
@@ -7908,7 +7931,7 @@ async function answer(a, jid, p) {
     return;
   }
   const ts = h.now();
-  const row = { ts, jid, role: "assistant", text, via };
+  const row = { ts, jid, role: "assistant", text: text2, via };
   append(a, row);
   apply(a, row);
   log("\u043E\u0442\u0432\u0435\u0442 \u0443\u0448\u0451\u043B: %s, %s", maskJid(jid), via);
@@ -8172,12 +8195,1254 @@ ${r.message}${r.reasons?.length ? `
   ].join("\n");
 }
 
-// form-api/wa-groups.ts
+// form-api/wa-dozhim.ts
+var import_node_fs9 = require("node:fs");
+var import_node_crypto6 = require("node:crypto");
+var import_node_path9 = require("node:path");
+
+// form-api/wazzup.ts
 var env5 = (k) => (process.env[k] || "").trim();
-var waEnabled = () => env5("WA_GROUPS").toLowerCase() === "on";
-var adminNumbers = () => env5("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
+var wzKey = () => env5("WAZZUP_API_KEY");
+var wzChannel = () => env5("WAZZUP_CHANNEL_ID");
+var wzBase = () => (env5("WAZZUP_API_URL") || "https://api.wazzup24.com").replace(/\/+$/, "");
+var TIMEOUT_MS2 = 2e4;
+var scrub4 = (s) => {
+  const k = wzKey();
+  return k ? s.split(k).join("***") : s;
+};
+function errorText2(data, fallback) {
+  const parts = [data?.error, data?.code, data?.description, data?.message].map((x) => typeof x === "string" ? x : x && typeof x === "object" ? JSON.stringify(x) : "").filter(Boolean);
+  return scrub4((parts.join(" ") || fallback).replace(/\s+/g, " ").trim().slice(0, 240));
+}
+async function wzCall(method, path, body, timeoutMs2 = TIMEOUT_MS2) {
+  const key = wzKey();
+  if (!key) return { ok: false, status: 0, error: "no_api_key", retryable: false };
+  try {
+    const res = await fetch(`${wzBase()}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${key}`, ...body !== void 0 ? { "Content-Type": "application/json" } : {} },
+      ...body !== void 0 ? { body: JSON.stringify(body) } : {},
+      signal: AbortSignal.timeout(timeoutMs2)
+    });
+    const text2 = await res.text();
+    let data = null;
+    try {
+      data = text2 ? JSON.parse(text2) : null;
+    } catch {
+      data = null;
+    }
+    if (res.ok) return { ok: true, status: res.status, data };
+    return { ok: false, status: res.status, error: `${res.status} ${errorText2(data, res.statusText || text2.slice(0, 100))}`, data, retryable: res.status === 429 || res.status >= 500 };
+  } catch (e) {
+    const err = e;
+    const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
+    return {
+      ok: false,
+      status: 0,
+      error: timeout ? "timeout" : scrub4(String(err?.cause?.code || err?.message || err)).slice(0, 160),
+      retryable: true,
+      ...timeout ? { timeout: true } : {}
+    };
+  }
+}
+var NOT_APPROVED_RE = /pending|moderat|review|reject|declin|denied|disabled|inactive|paused|draft|created|appeal|flagged|suspend|отклон|модерац|ожида|черновик|проверк|приостан/i;
+var APPROVED_RE = /approv|accepted|(^|[^a-z])active|(^|[^a-z])enabled|одобр|активн/i;
+function approvedOf(status) {
+  if (!status) return null;
+  if (NOT_APPROVED_RE.test(status)) return false;
+  return APPROVED_RE.test(status) ? true : null;
+}
+function varCount(text2) {
+  let max = 0;
+  for (const m of text2.matchAll(/\{\{\s*(\d{1,2})\s*\}\}/g)) max = Math.max(max, Number(m[1]));
+  return max;
+}
+function textOf(t) {
+  const direct = [t?.text, t?.templateText, t?.body, t?.content, t?.message];
+  for (const x of direct) if (typeof x === "string" && x.trim()) return x;
+  const body = t?.body ?? t?.components?.find?.((c) => String(c?.type || "").toUpperCase() === "BODY");
+  if (body && typeof body === "object" && typeof body.text === "string") return body.text;
+  return "";
+}
+function normalizeTemplates(data) {
+  const list = Array.isArray(data) ? data : data && typeof data === "object" ? data.templates ?? data.data ?? data.items ?? [] : [];
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const t of list) {
+    if (!t || typeof t !== "object") continue;
+    const id = String(t.templateGuid ?? t.guid ?? t.templateId ?? t.id ?? "").trim();
+    if (!id) continue;
+    const name = String(t.name ?? t.templateName ?? t.title ?? "").trim();
+    const title = String(t.title ?? t.templateTitle ?? t.name ?? "").trim();
+    const text2 = textOf(t);
+    const rawStatus = t.status ?? t.templateStatus ?? t.state ?? t.moderationStatus;
+    const status = typeof rawStatus === "string" ? rawStatus.trim().toLowerCase() : "";
+    out.push({
+      id,
+      name,
+      title,
+      text: text2,
+      category: String(t.category ?? t.templateCategory ?? "").trim().toLowerCase(),
+      status,
+      approved: approvedOf(status),
+      vars: text2 ? varCount(text2) : null
+    });
+  }
+  return out;
+}
+async function wzTemplates() {
+  const r = await wzCall("GET", "/v3/templates/whatsapp");
+  if (!r.ok) return r;
+  return { ok: true, status: r.status, data: normalizeTemplates(r.data) };
+}
+async function wzSend(p) {
+  const r = await wzCall("POST", "/v3/message", {
+    channelId: wzChannel(),
+    chatType: "whatsapp",
+    chatId: p.chatId,
+    ...p.templateId ? { templateId: p.templateId, templateValues: p.templateValues ?? [] } : { text: p.text ?? "" },
+    crmMessageId: p.crmMessageId
+  });
+  if (!r.ok) return r;
+  return { ok: true, status: r.status, data: { messageId: String(r.data?.messageId ?? r.data?.id ?? "") } };
+}
+function isRepeatedCrmId(f) {
+  if (f.status !== 400 && f.status !== 409) return false;
+  return /repeat|duplicate|already|exist|повтор|уже/i.test(f.error) && /crm|message|сообщ/i.test(f.error);
+}
+async function wzGetHooks() {
+  const r = await wzCall("GET", "/v3/webhooks");
+  if (!r.ok) return r;
+  const subs = r.data?.subscriptions && typeof r.data.subscriptions === "object" ? r.data.subscriptions : {};
+  return { ok: true, status: r.status, data: { webhooksUri: typeof r.data?.webhooksUri === "string" ? r.data.webhooksUri : "", subscriptions: subs } };
+}
+var wzSetHooks = (body) => wzCall("PATCH", "/v3/webhooks", body, 3e4);
+
+// form-api/wa-dozhim.ts
+var env6 = (k) => (process.env[k] || "").trim();
 var MIN2 = 6e4;
 var HOUR2 = 36e5;
+var DAY2 = 24 * HOUR2;
+var MEASURE_MAX_AGE = 10 * MIN2;
+var MEASURE_BUSY_AGE = 5 * MIN2;
+var PER_TICK = 25;
+var PACE_MS = [1500, 3500];
+var RETRY_AFTER = 5 * MIN2;
+var MAX_ATTEMPTS = 3;
+var REPLY_WINDOW = 48 * HOUR2;
+var HALT_AFTER = 3;
+var HALT_MS = HOUR2;
+var MEASURE_RETRY = 2 * MIN2;
+var FILE_TAIL_BYTES2 = 3 * 1024 * 1024;
+var FILE_COMPACT_BYTES2 = 6 * 1024 * 1024;
+var ROWS_KEEP = 6e3;
+var SIGNUP_URL = "https://onai.academy/workshop-montazh/";
+var HOOK_PATH_DEFAULT = "https://onai.academy/workshop/api/wazzup-hook";
+var hookBase = () => env6("WAZZUP_HOOK_URL") || HOOK_PATH_DEFAULT;
+var LINK_TEXT = (url) => `\u0412\u043E\u0442 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u044D\u0444\u0438\u0440 \u043F\u0440\u0438\u0434\u0451\u0442 \u0442\u0443\u0434\u0430 \u0432 19:50: ${url}`;
+var DECLINE_TEXT = `\u0425\u043E\u0440\u043E\u0448\u043E. \u0415\u0441\u043B\u0438 \u043F\u0435\u0440\u0435\u0434\u0443\u043C\u0430\u0435\u0442\u0435, \u0437\u0430\u043F\u0438\u0441\u044C \u043D\u0430 \u043B\u044E\u0431\u043E\u0439 \u0434\u0435\u043D\u044C: ${SIGNUP_URL}`;
+var fail2 = (code, message) => ({ ok: false, code, message });
+var freshDz = () => ({
+  enabled: false,
+  hookOn: false,
+  secret: "",
+  templateId: "",
+  templateName: "",
+  vars: 0,
+  delayMin: 30,
+  from: "09:00",
+  to: "21:00",
+  cutoff: "19:30",
+  dailyLimit: 200,
+  maps: {}
+});
+var HHMM = /^\d{1,2}:\d{2}$/;
+var validHHMM = (s) => {
+  if (typeof s !== "string" || !HHMM.test(s)) return false;
+  try {
+    parseHHMM(s);
+    return true;
+  } catch {
+    return false;
+  }
+};
+var padHHMM = (s) => {
+  const { h, m } = parseHHMM(s);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+var minsOf = (s) => {
+  const { h, m } = parseHHMM(s);
+  return h * 60 + m;
+};
+function cleanMap(x) {
+  if (!Array.isArray(x) || x.length > 10) return null;
+  const out = [];
+  for (const v of x) {
+    if (!v || typeof v !== "object") return null;
+    const kind = v.kind;
+    if (kind === "name" || kind === "date" || kind === "link") out.push({ kind });
+    else if (kind === "text") {
+      const text2 = typeof v.text === "string" ? v.text.replace(/\s+/g, " ").trim().slice(0, 200) : "";
+      out.push({ kind, text: text2 });
+    } else return null;
+  }
+  return out;
+}
+function normalizeDz(raw) {
+  const st = freshDz();
+  if (!raw || typeof raw !== "object") return st;
+  const r = raw;
+  st.enabled = r.enabled === true;
+  st.hookOn = r.hookOn === true;
+  st.secret = typeof r.secret === "string" ? r.secret : "";
+  st.templateId = typeof r.templateId === "string" ? r.templateId : "";
+  st.templateName = typeof r.templateName === "string" ? r.templateName.slice(0, 120) : "";
+  st.vars = Number.isInteger(r.vars) && r.vars >= 0 && r.vars <= 10 ? r.vars : 0;
+  if (Number.isFinite(r.delayMin) && r.delayMin >= 0 && r.delayMin <= 1440) st.delayMin = Math.round(r.delayMin);
+  if (validHHMM(r.from) && validHHMM(r.to) && minsOf(r.from) < minsOf(r.to)) {
+    st.from = padHHMM(r.from);
+    st.to = padHHMM(r.to);
+  }
+  if (validHHMM(r.cutoff)) st.cutoff = padHHMM(r.cutoff);
+  if (Number.isFinite(r.dailyLimit) && r.dailyLimit >= 1 && r.dailyLimit <= 250) st.dailyLimit = Math.round(r.dailyLimit);
+  if (r.maps && typeof r.maps === "object" && !Array.isArray(r.maps)) {
+    for (const [k, v] of Object.entries(r.maps)) {
+      const m = cleanMap(v);
+      if (m && k.length <= 80) st.maps[k] = m;
+    }
+  }
+  return st;
+}
+function normalizePhone(raw) {
+  let d = String(raw ?? "").replace(/\D/g, "");
+  if (d.length < 8 || d.length > 15) return null;
+  if (d.length === 11 && d[0] === "8") d = `7${d.slice(1)}`;
+  else if (d.length === 10 && d[0] === "7") d = `7${d}`;
+  return { digits: d, kz: /^77\d{9}$/.test(d) };
+}
+var maskDigits = (d) => d.length >= 9 ? `${d.slice(0, 4)}***${d.slice(-4)}` : d ? "***" : "";
+var NAME_STOP = /* @__PURE__ */ new Set(["\u0442\u0435\u0441\u0442", "test", "\u0442\u0435\u0441\u0442\u043E\u0432\u044B\u0439", "\u0438\u043C\u044F", "name", "\u043D\u0435\u0442", "no", "none", "null", "undefined", "asd", "asdf", "qwe", "qwerty", "\u0439\u0446\u0443\u043A\u0435\u043D", "\u0444\u044B\u0432", "admin", "\u0430\u0431\u0432", "\u0430\u0431\u0432\u0433", "\u0430\u0431\u0432\u0433\u0434", "\u0430\u0430\u0430\u0430", "xxx", "\u0445\u0445\u0445"]);
+function cleanName(raw) {
+  const token = String(raw ?? "").normalize("NFC").trim().split(/\s+/)[0] || "";
+  if (!token || /[@\d/\\:]|https?|www\./i.test(token)) return "";
+  let s = token.replace(/[^\p{L}-]/gu, "").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
+  if (s.length < 2 || s.length > 30) return "";
+  const plain2 = s.replace(/-/g, "");
+  if (plain2.length < 2) return "";
+  if (NAME_STOP.has(plain2.toLowerCase())) return "";
+  if (/(.)\1{3,}/iu.test(plain2) || new Set(plain2.toLowerCase()).size < 2) return "";
+  if (!/[аеёиоуыэюяaeiouy]/iu.test(plain2)) return "";
+  if (plain2 === plain2.toLowerCase() || plain2 === plain2.toUpperCase()) {
+    s = s.split("-").map((p) => p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p).join("-");
+  }
+  return s;
+}
+var WEEKDAY_ACC = ["\u0432 \u0432\u043E\u0441\u043A\u0440\u0435\u0441\u0435\u043D\u044C\u0435", "\u0432 \u043F\u043E\u043D\u0435\u0434\u0435\u043B\u044C\u043D\u0438\u043A", "\u0432\u043E \u0432\u0442\u043E\u0440\u043D\u0438\u043A", "\u0432 \u0441\u0440\u0435\u0434\u0443", "\u0432 \u0447\u0435\u0442\u0432\u0435\u0440\u0433", "\u0432 \u043F\u044F\u0442\u043D\u0438\u0446\u0443", "\u0432 \u0441\u0443\u0431\u0431\u043E\u0442\u0443"];
+function dateWord(day, now) {
+  const today = dayKeyOf(now);
+  const date = dateLabel(day);
+  if (day === today) return `\u0441\u0435\u0433\u043E\u0434\u043D\u044F, ${date}`;
+  if (day === addDays(today, 1)) return `\u0437\u0430\u0432\u0442\u0440\u0430, ${date}`;
+  const { y, m0, d } = parseDayKey(day);
+  return `${WEEKDAY_ACC[new Date(Date.UTC(y, m0, d)).getUTCDay()]}, ${date}`;
+}
+var text = (t) => ({ kind: "text", text: t });
+function defaultMap(name, title, vars) {
+  const key = `${name} ${title}`.toLowerCase();
+  let base;
+  if (/napominanie_o_zapisi|напоминание о записи/.test(key)) base = [text("\u043A\u043E\u043C\u0430\u043D\u0434\u0430 onAI Academy"), text("\u0432\u043E\u0440\u043A\u0448\u043E\u043F\u0435 \xAB\u0412\u0430\u0439\u0431-\u043F\u0440\u043E\u0434\u0430\u043A\u0448\u0435\u043D\xBB"), text("20:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B")];
+  else base = [{ kind: "name" }, { kind: "date" }];
+  const n = vars ?? base.length;
+  const out = base.slice(0, n);
+  while (out.length < n) out.push(text(""));
+  return out;
+}
+function buildValues(map, c) {
+  const out = [];
+  for (const v of map) {
+    const s = v.kind === "name" ? c.name : v.kind === "date" ? dateWord(c.day, c.now) : v.kind === "link" ? c.link : (v.text || "").trim();
+    if (!s) return null;
+    out.push(s);
+  }
+  return out;
+}
+var DECLINE_RE = /^(нет|не надо|не нужно|не хочу|стоп|stop|отписаться|отпишите|отписка)(?![\p{L}])/u;
+function isDecline(raw) {
+  const t = String(raw ?? "").toLowerCase().replace(/ё/g, "\u0435").replace(/[^\p{L}\p{N}\s,]/gu, " ").replace(/\s+/g, " ").trim();
+  return t.length > 0 && t.length <= 40 && DECLINE_RE.test(t);
+}
+var digitsOf = (x) => typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "";
+var A2 = null;
+var log2 = (msg, ...args) => console.log(`[wa-dozhim] ${msg}`, ...args);
+var clipText2 = (s, n) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
+};
+var scrub5 = (s) => {
+  let out = s;
+  for (const k of [wzKey(), evoKey(), A2?.host.state().secret || "", env6("WAZZUP_HOOK_SECRET")]) if (k) out = out.split(k).join("***");
+  return out;
+};
+function appendRow(a, row) {
+  try {
+    (0, import_node_fs9.appendFileSync)(a.file, JSON.stringify(row) + "\n", "utf8");
+  } catch (e) {
+    console.error("[wa-dozhim] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C wa-dozhim.jsonl:", e.message);
+  }
+  a.rows.push(row);
+  if (a.rows.length > ROWS_KEEP) a.rows.splice(0, a.rows.length - ROWS_KEEP);
+}
+function readTail2(file, maxBytes) {
+  try {
+    const size = (0, import_node_fs9.statSync)(file).size;
+    const start = Math.max(0, size - maxBytes);
+    const buf = Buffer.alloc(size - start);
+    const fd = (0, import_node_fs9.openSync)(file, "r");
+    try {
+      (0, import_node_fs9.readSync)(fd, buf, 0, buf.length, start);
+    } finally {
+      (0, import_node_fs9.closeSync)(fd);
+    }
+    let t = buf.toString("utf8");
+    if (start > 0) t = t.slice(t.indexOf("\n") + 1);
+    const out = [];
+    for (const line of t.split("\n")) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        out.push(JSON.parse(s));
+      } catch {
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+function applyRow(a, row) {
+  const ts = typeof row.ts === "number" ? row.ts : 0;
+  const to = typeof row.to === "string" ? row.to : "";
+  const chat = typeof row.chat === "string" ? row.chat : "";
+  switch (row.ev) {
+    case "send": {
+      if (row.ok !== true || !to) break;
+      const eid = String(row.eid || "");
+      if (eid) a.sentEids.add(eid);
+      const day = String(row.day || "");
+      if (day) a.sentPhoneDay.add(`${to}|${day}`);
+      a.sendTimes.push(ts);
+      const prev = a.chats.get(to);
+      if (!prev || ts >= prev.sentAt) a.chats.set(to, { eid, day, sentAt: ts, test: row.test === true, replyAt: 0, linkAt: 0 });
+      if (row.test === true) a.declined.delete(to);
+      break;
+    }
+    case "send_fail": {
+      const eid = String(row.eid || "");
+      if (!eid) break;
+      if (row.final === true) a.failedEids.add(eid);
+      else a.tries.set(eid, { n: Number(row.attempt) || 1, nextAt: ts + RETRY_AFTER });
+      break;
+    }
+    case "in": {
+      if (typeof row.mid === "string" && row.mid) a.seenMid.add(row.mid);
+      const c = a.chats.get(chat);
+      if (c && ts >= c.sentAt) c.replyAt = Math.max(c.replyAt, ts);
+      break;
+    }
+    case "link": {
+      const c = a.chats.get(chat);
+      if (c && row.ok === true) c.linkAt = Math.max(c.linkAt, ts);
+      break;
+    }
+    case "decline":
+      if (chat) a.declined.add(chat);
+      break;
+    case "tpl_status":
+      a.tplSeen.add(`${row.guid}|${row.status}`);
+      break;
+  }
+}
+function persistMembers(a) {
+  try {
+    const targets = {};
+    for (const [id, m] of a.members) targets[id] = { day: m.day, at: m.at, total: m.total, unresolved: m.unresolved, numbers: [...m.numbers] };
+    const tmp = `${a.membersFile}.tmp.${process.pid}`;
+    (0, import_node_fs9.writeFileSync)(tmp, JSON.stringify({ v: 1, targets }) + "\n", "utf8");
+    (0, import_node_fs9.renameSync)(tmp, a.membersFile);
+  } catch (e) {
+    console.error("[wa-dozhim] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C wa-members.json:", e.message);
+  }
+}
+function loadMembers(a) {
+  try {
+    if (!(0, import_node_fs9.existsSync)(a.membersFile)) return;
+    const raw = JSON.parse((0, import_node_fs9.readFileSync)(a.membersFile, "utf8"));
+    for (const [id, m] of Object.entries(raw?.targets || {})) {
+      if (!m || !Array.isArray(m.numbers) || typeof m.at !== "number") continue;
+      a.members.set(id, { day: String(m.day || ""), at: m.at, total: Number(m.total) || m.numbers.length, unresolved: Number(m.unresolved) || 0, numbers: new Set(m.numbers.map(String)) });
+    }
+  } catch {
+    log2("wa-members.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0431\u0435\u0437 \u0437\u0430\u043C\u0435\u0440\u0430");
+  }
+}
+function dzInit(host) {
+  dzReset();
+  (0, import_node_fs9.mkdirSync)(host.dir, { recursive: true });
+  const a = {
+    host,
+    file: (0, import_node_path9.join)(host.dir, "wa-dozhim.jsonl"),
+    membersFile: (0, import_node_path9.join)(host.dir, "wa-members.json"),
+    rows: [],
+    members: /* @__PURE__ */ new Map(),
+    sentEids: /* @__PURE__ */ new Set(),
+    sentPhoneDay: /* @__PURE__ */ new Set(),
+    failedEids: /* @__PURE__ */ new Set(),
+    tries: /* @__PURE__ */ new Map(),
+    chats: /* @__PURE__ */ new Map(),
+    declined: /* @__PURE__ */ new Set(),
+    seenMid: /* @__PURE__ */ new Set(),
+    tplSeen: /* @__PURE__ */ new Set(),
+    sendTimes: [],
+    names: /* @__PURE__ */ new Map(),
+    alarmAt: /* @__PURE__ */ new Map(),
+    replies: [],
+    running: /* @__PURE__ */ new Set(),
+    busy: /* @__PURE__ */ new Set(),
+    ticking: false,
+    toggling: false,
+    hookBusy: false,
+    consecFail: 0,
+    haltUntil: 0,
+    measureFails: 0,
+    measureTry: /* @__PURE__ */ new Map(),
+    testAt: [],
+    tpl: null,
+    hookCheckAt: 0,
+    lastTickAt: 0
+  };
+  try {
+    if ((0, import_node_fs9.existsSync)(a.file) && (0, import_node_fs9.statSync)(a.file).size > FILE_COMPACT_BYTES2) {
+      const keep = readTail2(a.file, 2 * 1024 * 1024);
+      const tmp = `${a.file}.tmp.${process.pid}`;
+      (0, import_node_fs9.writeFileSync)(tmp, keep.map((r) => JSON.stringify(r)).join("\n") + "\n", "utf8");
+      (0, import_node_fs9.renameSync)(tmp, a.file);
+    }
+  } catch (e) {
+    console.error("[wa-dozhim] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u0436\u0430\u0442\u044C wa-dozhim.jsonl:", e.message);
+  }
+  for (const row of readTail2(a.file, FILE_TAIL_BYTES2)) {
+    if (!row || typeof row.ev !== "string" || typeof row.ts !== "number") continue;
+    a.rows.push(row);
+    applyRow(a, row);
+  }
+  if (a.rows.length > ROWS_KEEP) a.rows.splice(0, a.rows.length - ROWS_KEEP);
+  a.sendTimes = a.sendTimes.filter((t) => host.now() - t < 2 * DAY2);
+  loadMembers(a);
+  A2 = a;
+}
+function dzReset() {
+  A2 = null;
+}
+function hookSecret2() {
+  return env6("WAZZUP_HOOK_SECRET") || A2?.host.state().secret || "";
+}
+function ensureSecret2(a) {
+  if (env6("WAZZUP_HOOK_SECRET")) return env6("WAZZUP_HOOK_SECRET");
+  const cur = a.host.state().secret;
+  if (cur) return cur;
+  const secret = (0, import_node_crypto6.randomBytes)(24).toString("hex");
+  a.host.patch({ secret });
+  return secret;
+}
+var hookUri = (secret) => `${hookBase()}?s=${encodeURIComponent(secret)}`;
+var hookShown = () => hookBase();
+function currentMap(a) {
+  const st = a.host.state();
+  return st.maps[st.templateId] ?? defaultMap(st.templateName, "", st.vars || null);
+}
+function mapProblem(a) {
+  const st = a.host.state();
+  const map = currentMap(a);
+  if (st.vars && map.length !== st.vars) return `\u0412 \u0448\u0430\u0431\u043B\u043E\u043D\u0435 ${st.vars} \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445, \u0430 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043E ${map.length}.`;
+  for (let i = 0; i < map.length; i++) if (map[i].kind === "text" && !(map[i].text || "").trim()) return `\u0417\u0430\u043F\u043E\u043B\u043D\u0438 \u0442\u0435\u043A\u0441\u0442 \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 {{${i + 1}}}.`;
+  return "";
+}
+function prerequisites2(a) {
+  if (!wzKey()) return { ok: false, reason: "\u041D\u0435\u0442 WAZZUP_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0434\u043E\u0436\u0438\u043C \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
+  if (!wzChannel()) return { ok: false, reason: "\u041D\u0435\u0442 WAZZUP_CHANNEL_ID \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0434\u043E\u0436\u0438\u043C \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
+  if (!evoKey()) return { ok: false, reason: "\u041D\u0435\u0442 EVOLUTION_API_KEY: \u0431\u0435\u0437 \u043D\u0435\u0433\u043E \u043D\u0435 \u0432\u0438\u0434\u043D\u043E, \u043A\u0442\u043E \u0432\u0441\u0442\u0443\u043F\u0438\u043B." };
+  const st = a.host.state();
+  if (!st.templateId) return { ok: false, reason: "\u0412\u044B\u0431\u0435\u0440\u0438 \u0448\u0430\u0431\u043B\u043E\u043D \u0438\u0437 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438." };
+  const bad = mapProblem(a);
+  if (bad) return { ok: false, reason: bad };
+  return { ok: true };
+}
+async function alarmOnce2(a, key, windowMs, textMsg) {
+  const now = a.host.now();
+  if (now - (a.alarmAt.get(key) || 0) < windowMs) return;
+  a.alarmAt.set(key, now);
+  try {
+    await a.host.alarm(textMsg);
+  } catch {
+  }
+}
+async function measureTarget(a, t) {
+  const r = await a.host.exclusive(() => groupParticipants(t.sendJid));
+  const at = a.host.now();
+  if (!r.ok) {
+    a.measureFails++;
+    log2("\u0437\u0430\u043C\u0435\u0440 %s \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: %s", t.id, scrub5(r.error));
+    if (a.measureFails >= 3) await alarmOnce2(a, "measure", HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0435\u0442\u0441\u044F \u0443\u0437\u043D\u0430\u0442\u044C, \u043A\u0442\u043E \u0432\u0441\u0442\u0443\u043F\u0438\u043B \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E (${clipText2(scrub5(r.error), 100)}). \u041F\u043E\u043A\u0430 \u0437\u0430\u043C\u0435\u0440\u0430 \u043D\u0435\u0442, \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F.`);
+    return false;
+  }
+  const numbers = /* @__PURE__ */ new Set();
+  let unresolved = 0;
+  for (const p of r.data) {
+    const d = digitsOf(p.phoneNumber) || (p.id.endsWith("@s.whatsapp.net") ? digitsOf(p.id) : "");
+    if (d) numbers.add(d);
+    else unresolved++;
+  }
+  const total = r.data.length;
+  const prev = a.members.get(t.id);
+  if (prev && prev.total >= 10 && total < prev.total * 0.7) {
+    a.measureFails++;
+    log2("\u0437\u0430\u043C\u0435\u0440 %s \u043F\u043E\u0434\u043E\u0437\u0440\u0438\u0442\u0435\u043B\u0435\u043D: \u0431\u044B\u043B\u043E %d, \u0441\u0442\u0430\u043B\u043E %d, \u043D\u0435 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E", t.id, prev.total, total);
+    await alarmOnce2(a, `shrink:${t.id}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0441\u043F\u0438\u0441\u043E\u043A \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 ${t.day} \u0432\u0434\u0440\u0443\u0433 \u0441\u0442\u0430\u043B \u043A\u043E\u0440\u043E\u0447\u0435 (${prev.total} -> ${total}). \u0417\u0430\u043C\u0435\u0440 \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442, \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u044D\u0442\u043E\u043C\u0443 \u0434\u043D\u044E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F, \u043F\u043E\u043A\u0430 \u0441\u043F\u0438\u0441\u043E\u043A \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F.`);
+    return false;
+  }
+  a.measureFails = 0;
+  a.members.set(t.id, { day: t.day, at, total, unresolved, numbers });
+  a.host.noteMembers(t.id, total, at);
+  persistMembers(a);
+  log2("\u0437\u0430\u043C\u0435\u0440 %s: \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %d, \u043D\u043E\u043C\u0435\u0440\u043E\u0432 %d, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 %d", t.id, total, numbers.size, unresolved);
+  return true;
+}
+function pruneMembers(a, live) {
+  const ids = new Set(live.map((t) => t.id));
+  let changed = false;
+  for (const id of [...a.members.keys()]) {
+    if (!ids.has(id)) {
+      a.members.delete(id);
+      changed = true;
+    }
+  }
+  if (changed) persistMembers(a);
+}
+function membersOfDay(a, day, targets, now, needFresh) {
+  const list = targets.filter((t) => t.day === day);
+  if (!list.length) return null;
+  const union = /* @__PURE__ */ new Set();
+  for (const t of list) {
+    const m = a.members.get(t.id);
+    if (!m) return null;
+    if (needFresh && now - m.at > MEASURE_MAX_AGE) return null;
+    for (const n of m.numbers) union.add(n);
+  }
+  return union;
+}
+var minuteOfDay = (ms) => {
+  const p = partsInTZ(ms);
+  return p.hour * 60 + p.minute;
+};
+function windowStart(ms, from, to) {
+  const m = minuteOfDay(ms);
+  const day = dayKeyOf(ms);
+  if (m < minsOf(from)) return atTime(day, from);
+  if (m >= minsOf(to)) return atTime(addDays(day, 1), from);
+  return ms;
+}
+var inWindow2 = (ms, st) => {
+  const m = minuteOfDay(ms);
+  return m >= minsOf(st.from) && m < minsOf(st.to);
+};
+function evaluate(a, now) {
+  const h = a.host;
+  const st = h.state();
+  const out = { ready: [], waiting: 0, needMeasure: 0, foreign: 0, noTarget: [], days: [], error: "" };
+  const src = h.leads();
+  if (!src.leads) {
+    out.error = src.error || "\u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B";
+    return out;
+  }
+  const cfg = h.timeCfg();
+  const today = dayKeyOf(now);
+  const targets = h.targets(now);
+  const linked2 = h.linkedEids();
+  const seenEid = /* @__PURE__ */ new Set();
+  const seenPhoneDay = /* @__PURE__ */ new Set();
+  const cutoffMs = atTime(today, st.cutoff);
+  const curDay = h.dayOf(now);
+  const nxtDay = nextStreamDay(addDays(curDay, 1), cfg);
+  const shown = /* @__PURE__ */ new Map([[today, /* @__PURE__ */ new Set()], [curDay, /* @__PURE__ */ new Set()], [nxtDay, /* @__PURE__ */ new Set()]]);
+  const leads = [...src.leads].sort((x, y) => x.ts - y.ts);
+  for (const lead of leads) {
+    if (lead.ts > now) continue;
+    const day = h.dayOf(lead.ts);
+    const ph = normalizePhone(lead.phone);
+    if (ph && shown.has(day)) shown.get(day).add(ph.digits);
+    if (day < today || !ph) continue;
+    if (!ph.kz) {
+      out.foreign++;
+      continue;
+    }
+    const eid = lead.eventId || lead.id;
+    if (!eid || linked2.has(eid)) continue;
+    if (seenEid.has(eid) || a.sentEids.has(eid) || a.failedEids.has(eid)) continue;
+    const pd = `${ph.digits}|${day}`;
+    if (seenPhoneDay.has(pd) || a.sentPhoneDay.has(pd) || a.declined.has(ph.digits)) continue;
+    const anyMembers = membersOfDay(a, day, targets, now, false);
+    if (anyMembers?.has(ph.digits)) continue;
+    seenEid.add(eid);
+    seenPhoneDay.add(pd);
+    out.waiting++;
+    const fresh = membersOfDay(a, day, targets, now, true);
+    if (!fresh) {
+      out.needMeasure++;
+      if (!targets.some((t) => t.day === day) && !out.noTarget.includes(day)) out.noTarget.push(day);
+      continue;
+    }
+    const due = windowStart(lead.ts + st.delayMin * MIN2, st.from, st.to);
+    if (now < due || !inWindow2(now, st)) continue;
+    if (day === today && now > cutoffMs) continue;
+    if (a.tries.get(eid) && a.tries.get(eid).nextAt > now) continue;
+    out.ready.push({ lead, digits: ph.digits, day, eid, due });
+  }
+  for (const [day, phones] of shown) {
+    const mem = membersOfDay(a, day, targets, now, false);
+    let joined = null;
+    if (mem) {
+      joined = 0;
+      for (const p of phones) if (mem.has(p)) joined++;
+    }
+    const at = Math.min(...targets.filter((t) => t.day === day).map((t) => a.members.get(t.id)?.at ?? 0), Number.MAX_SAFE_INTEGER);
+    const unresolved = targets.filter((t) => t.day === day).reduce((n, t) => n + (a.members.get(t.id)?.unresolved ?? 0), 0);
+    out.days.push({ day, applied: phones.size, joined, measuredAt: at === Number.MAX_SAFE_INTEGER ? 0 : at, unresolved });
+  }
+  return out;
+}
+var sends24 = (a, now) => a.sendTimes.filter((t) => now - t < DAY2).length;
+async function resolveName(a, lead, digits, useProfile) {
+  const own = lead ? cleanName(lead.name) : "";
+  if (own) return { name: own, from: "lead" };
+  if (useProfile) {
+    let prof = a.names.get(digits);
+    if (prof === void 0) {
+      const r = await a.host.exclusive(() => contactPushName(digits));
+      prof = r.ok ? cleanName(r.data) : "";
+      if (r.ok) {
+        a.names.set(digits, prof);
+        if (a.names.size > 2e3) a.names.delete(a.names.keys().next().value);
+      }
+    }
+    if (prof) return { name: prof, from: "profile" };
+  }
+  return { name: "\u0434\u0440\u0443\u0433", from: "fallback" };
+}
+async function sendTemplate(a, chat, values, crm) {
+  const st = a.host.state();
+  const r = await wzSend({ chatId: chat, templateId: st.templateId, templateValues: values, crmMessageId: crm });
+  if (r.ok) return { ok: true, mid: r.data.messageId };
+  if (isRepeatedCrmId(r)) return { ok: true, mid: "", dup: true };
+  return { ok: false, status: r.status, error: scrub5(r.error), retryable: r.retryable };
+}
+function recordSent(a, p) {
+  const now = a.host.now();
+  appendRow(a, { ts: now, ev: "send", ok: true, to: p.to, eid: p.eid, day: p.day, tpl: a.host.state().templateId, tplName: a.host.state().templateName, mid: p.mid, crm: `dozhim-${p.eid}`, status: 201, ...p.test ? { test: true } : {}, nameFrom: p.from, ...p.dup ? { dup: true } : {} });
+  if (p.eid) a.sentEids.add(p.eid);
+  a.sentPhoneDay.add(`${p.to}|${p.day}`);
+  a.sendTimes.push(now);
+  a.chats.set(p.to, { eid: p.eid, day: p.day, sentAt: now, test: p.test, replyAt: 0, linkAt: 0 });
+  a.tries.delete(p.eid);
+  if (p.test) a.declined.delete(p.to);
+}
+async function sendPick(a, pick) {
+  const h = a.host;
+  const st = h.state();
+  const map = currentMap(a);
+  const needsName = map.some((v) => v.kind === "name");
+  const nm = needsName ? await resolveName(a, pick.lead, pick.digits, true) : { name: "", from: "lead" };
+  const now = h.now();
+  const link = h.waUrl;
+  const values = buildValues(map, { name: nm.name, day: pick.day, now, link });
+  if (!values) {
+    await alarmOnce2(a, "values", HOUR2, "\u0414\u043E\u0436\u0438\u043C WABA: \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0431\u0440\u0430\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u0448\u0430\u0431\u043B\u043E\u043D\u0430 (\u043F\u0443\u0441\u0442\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435). \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.");
+    return false;
+  }
+  const res = await sendTemplate(a, pick.digits, values, `dozhim-${pick.eid}`);
+  if (res.ok) {
+    a.consecFail = 0;
+    recordSent(a, { to: pick.digits, eid: pick.eid, day: pick.day, mid: res.mid, test: false, name: nm.name, from: nm.from, dup: res.dup });
+    log2("\u0448\u0430\u0431\u043B\u043E\u043D \u0443\u0448\u0451\u043B: %s, \u044D\u0444\u0438\u0440 %s", maskDigits(pick.digits), pick.day);
+    return true;
+  }
+  const n = (a.tries.get(pick.eid)?.n ?? 0) + 1;
+  const final = !res.retryable || n >= MAX_ATTEMPTS;
+  appendRow(a, { ts: h.now(), ev: "send_fail", to: pick.digits, eid: pick.eid, day: pick.day, tpl: st.templateId, status: res.status, err: clipText2(res.error, 160), retryable: res.retryable, attempt: n, final });
+  log2("\u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s, \u043F\u043E\u043F\u044B\u0442\u043A\u0430 %d%s", maskDigits(pick.digits), res.error, n, final ? ", \u043E\u043A\u043E\u043D\u0447\u0430\u0442\u0435\u043B\u044C\u043D\u043E" : "");
+  if (!final) {
+    a.tries.set(pick.eid, { n, nextAt: h.now() + RETRY_AFTER });
+    return false;
+  }
+  a.failedEids.add(pick.eid);
+  a.tries.delete(pick.eid);
+  await alarmOnce2(a, `fail:${res.status}:${clipText2(res.error, 40)}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0448\u0430\u0431\u043B\u043E\u043D ${maskDigits(pick.digits)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (${clipText2(res.error, 120)}). ${res.retryable ? "\u0422\u0440\u0438 \u043F\u043E\u043F\u044B\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u044B." : "\u041F\u043E\u0432\u0442\u043E\u0440\u0430 \u043D\u0435 \u0431\u0443\u0434\u0435\u0442."}`);
+  if (res.retryable) return false;
+  a.consecFail++;
+  if (a.consecFail >= HALT_AFTER) {
+    a.haltUntil = h.now() + HALT_MS;
+    a.consecFail = 0;
+    await alarmOnce2(a, "halt", HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: ${HALT_AFTER} \u043E\u0442\u043A\u0430\u0437\u0430 \u043F\u043E\u0434\u0440\u044F\u0434, \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B \u043D\u0430 \u0447\u0430\u0441, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0442\u0435\u0440\u044F\u0442\u044C \u0437\u0430\u044F\u0432\u043A\u0438. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447 Wazzup \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.`);
+    return false;
+  }
+  return true;
+}
+async function dzTick() {
+  const a = A2;
+  const none = { sent: 0, measured: 0, ready: 0 };
+  if (!a) return none;
+  if (a.ticking) return { ...none, skipped: "busy" };
+  a.ticking = true;
+  try {
+    const h = a.host;
+    const st = h.state();
+    a.lastTickAt = h.now();
+    if (st.hookOn || a.replies.length) await runReplies(a);
+    if (st.hookOn) await hookCheck(a);
+    if (!st.enabled) return { ...none, skipped: "off" };
+    const can = h.canRun();
+    if (!can.ok) return { ...none, skipped: "no_run" };
+    if (!prerequisites2(a).ok) return { ...none, skipped: "no_config" };
+    const now0 = h.now();
+    const targets = h.targets(now0);
+    pruneMembers(a, targets);
+    const first = evaluate(a, now0);
+    const maxAge = first.ready.length || first.needMeasure ? MEASURE_BUSY_AGE : MEASURE_MAX_AGE;
+    let measured = 0;
+    for (const t of targets) {
+      const m = a.members.get(t.id);
+      if (m && now0 - m.at < maxAge) continue;
+      if (now0 - (a.measureTry.get(t.id) ?? 0) < MEASURE_RETRY) continue;
+      a.measureTry.set(t.id, now0);
+      if (await measureTarget(a, t)) measured++;
+    }
+    const ev = measured ? evaluate(a, h.now()) : first;
+    const info = { sent: 0, measured, ready: ev.ready.length };
+    if (h.now() < a.haltUntil) return { ...info, skipped: "halt" };
+    if (!ev.ready.length) return info;
+    for (const pick of ev.ready) {
+      if (info.sent >= PER_TICK) break;
+      if (!h.state().enabled || !h.canRun().ok) break;
+      const now = h.now();
+      if (now < a.haltUntil) break;
+      const tg = h.targets(now);
+      const mem = membersOfDay(a, pick.day, tg, now, true);
+      if (!mem) break;
+      if (mem.has(pick.digits)) continue;
+      if (sends24(a, now) >= h.state().dailyLimit) {
+        await alarmOnce2(a, `limit:${dayKeyOf(now)}`, DAY2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0437\u0430 \u0441\u0443\u0442\u043A\u0438 \u0443\u0436\u0435 ${h.state().dailyLimit} \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B \u043D\u043E\u043C\u0435\u0440\u0430. \u041E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438 \u043F\u043E\u0434\u043E\u0436\u0434\u0443\u0442.`);
+        break;
+      }
+      const before = a.sentEids.has(pick.eid);
+      const cont = await sendPick(a, pick);
+      if (!before && a.sentEids.has(pick.eid)) info.sent++;
+      if (!cont) break;
+      await h.sleep(Math.round(PACE_MS[0] + h.rand() * (PACE_MS[1] - PACE_MS[0])));
+    }
+    return info;
+  } catch (e) {
+    console.error("[wa-dozhim] \u043F\u0440\u043E\u0445\u043E\u0434 \u0443\u043F\u0430\u043B:", scrub5(String(e?.stack || e)).slice(0, 400));
+    return none;
+  } finally {
+    a.ticking = false;
+  }
+}
+var hashOf2 = (s) => (0, import_node_crypto6.createHash)("sha256").update(s).digest();
+function readLimited4(req, max) {
+  return new Promise((resolve) => {
+    let size = 0;
+    let over = false;
+    const chunks = [];
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > max) over = true;
+      else chunks.push(c);
+    });
+    req.on("end", () => resolve(over ? null : Buffer.concat(chunks).toString("utf8")));
+    req.on("error", () => resolve(null));
+  });
+}
+async function handleWazzupHook(req, res) {
+  const send2 = (status, body2) => {
+    const payload = JSON.stringify(body2);
+    res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
+    res.end(payload);
+  };
+  const secret = hookSecret2();
+  let given = "";
+  try {
+    given = new URL(req.url || "/", "http://x").searchParams.get("s") || "";
+  } catch {
+    given = "";
+  }
+  if (req.method !== "POST" || !secret || !given || !(0, import_node_crypto6.timingSafeEqual)(hashOf2(secret), hashOf2(given))) {
+    req.resume();
+    return send2(req.method !== "POST" ? 405 : 403, { ok: false });
+  }
+  const raw = await readLimited4(req, 1024 * 1024);
+  send2(200, { ok: true });
+  const a = A2;
+  if (!a || raw === null) return;
+  let body;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (!body || typeof body !== "object" || body.test === true) return;
+  const job = ingest2(a, body).catch((e) => console.error("[wa-dozhim] \u0440\u0430\u0437\u0431\u043E\u0440 \u0432\u0435\u0431\u0445\u0443\u043A\u0430 \u0443\u043F\u0430\u043B:", scrub5(String(e?.message || e)).slice(0, 200))).finally(() => a.running.delete(job));
+  a.running.add(job);
+}
+async function ingest2(a, body) {
+  const st = a.host.state();
+  if (!st.enabled && !st.hookOn) return;
+  if (body.templateStatus !== void 0 && body.templateStatus !== null) onTemplateStatus(a, body.templateStatus);
+  const msgs = Array.isArray(body.messages) ? body.messages : [];
+  for (const m of msgs) await onMessage2(a, m);
+}
+function onTemplateStatus(a, raw) {
+  const list = Array.isArray(raw) ? raw : [raw];
+  for (const t of list) {
+    if (!t || typeof t !== "object") continue;
+    const o = t;
+    const guid = String(o.templateGuid ?? o.guid ?? o.templateId ?? o.id ?? "").slice(0, 80);
+    const name = clipText2(o.name ?? o.templateName ?? o.title ?? "", 120);
+    const rawStatus = o.status ?? o.templateStatus ?? o.state;
+    const status = clipText2(typeof rawStatus === "string" ? rawStatus.toLowerCase() : rawStatus, 40);
+    if (!guid && !name) continue;
+    const key = `${guid || name}|${status}`;
+    const fresh = !a.tplSeen.has(key);
+    a.tplSeen.add(key);
+    appendRow(a, { ts: a.host.now(), ev: "tpl_status", guid, name, status });
+    a.host.journal({ ev: "dz_tpl", name, status });
+    a.tpl = null;
+    if (!fresh) continue;
+    const main = /вступите в сообщество|vstupite_v_soobshchestvo/i.test(`${name} ${guid === a.host.state().templateId ? a.host.state().templateName : ""}`);
+    if (!main) continue;
+    if (/approv|одобр/i.test(status)) void a.host.notify(`\u0428\u0430\u0431\u043B\u043E\u043D WABA \xAB${name || "\u0412\u0441\u0442\u0443\u043F\u0438\u0442\u0435 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E"}\xBB \u043E\u0434\u043E\u0431\u0440\u0435\u043D. \u0415\u0433\u043E \u043C\u043E\u0436\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432 \u043F\u0443\u043B\u044C\u0442\u0435 WhatsApp, \u0431\u043B\u043E\u043A \xAB\u0414\u043E\u0436\u0438\u043C WABA\xBB.`).catch(() => {
+    });
+    else if (/reject|отклон|disabled/i.test(status)) void a.host.notify(`\u0428\u0430\u0431\u043B\u043E\u043D WABA \xAB${name || "\u0412\u0441\u0442\u0443\u043F\u0438\u0442\u0435 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E"}\xBB \u043D\u0435 \u043F\u0440\u043E\u0448\u0451\u043B \u043C\u043E\u0434\u0435\u0440\u0430\u0446\u0438\u044E (${status}). \u0414\u043E\u0436\u0438\u043C \u043F\u043E\u043A\u0430 \u0438\u0434\u0451\u0442 \u0437\u0430\u043F\u0430\u0441\u043D\u044B\u043C \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u043C.`).catch(() => {
+    });
+  }
+}
+async function onMessage2(a, m) {
+  if (!m || typeof m !== "object") return;
+  if (m.isEcho !== false || m.chatType !== "whatsapp") return;
+  const ch = wzChannel();
+  if (ch && m.channelId && String(m.channelId) !== ch) return;
+  const chat = digitsOf(String(m.chatId ?? ""));
+  if (!chat) return;
+  const h = a.host;
+  const now = h.now();
+  const info = a.chats.get(chat);
+  if (!info || now - info.sentAt > REPLY_WINDOW) return;
+  const mid = String(m.messageId ?? "").slice(0, 100) || (0, import_node_crypto6.createHash)("sha1").update(`${chat}|${m.dateTime ?? ""}|${m.text ?? ""}`).digest("hex");
+  if (a.seenMid.has(mid)) return;
+  a.seenMid.add(mid);
+  if (a.seenMid.size > 8e3) a.seenMid.delete(a.seenMid.values().next().value);
+  appendRow(a, { ts: now, ev: "in", mid, chat });
+  info.replyAt = now;
+  if (a.declined.has(chat)) return;
+  const body = typeof m.text === "string" ? m.text : typeof m.content === "string" ? m.content : "";
+  if (isDecline(body)) {
+    a.declined.add(chat);
+    appendRow(a, { ts: now, ev: "decline", chat });
+    await replyOnce(a, { chat, kind: "decline", tries: 0, nextAt: 0 });
+    return;
+  }
+  if (info.linkAt) return;
+  await replyOnce(a, { chat, kind: "link", tries: 0, nextAt: 0 });
+}
+function linkTextFor(a, info) {
+  const now = a.host.now();
+  const url = a.host.linkFor(info.day, now) ?? a.host.waUrl;
+  return LINK_TEXT(url);
+}
+async function replyOnce(a, rp) {
+  const key = `${rp.kind}:${rp.chat}`;
+  if (a.busy.has(key)) return;
+  a.busy.add(key);
+  try {
+    await replyNow(a, rp);
+  } finally {
+    a.busy.delete(key);
+  }
+}
+async function replyNow(a, rp) {
+  const h = a.host;
+  const info = a.chats.get(rp.chat);
+  if (!info) return;
+  if (rp.kind === "link" && info.linkAt) return;
+  const body = rp.kind === "link" ? linkTextFor(a, info) : DECLINE_TEXT;
+  const crm = `dozhim-${rp.kind}-${info.eid}`;
+  const r = await wzSend({ chatId: rp.chat, text: body, crmMessageId: crm });
+  const now = h.now();
+  if (r.ok || isRepeatedCrmId(r)) {
+    if (rp.kind === "link") info.linkAt = now;
+    appendRow(a, { ts: now, ev: rp.kind === "link" ? "link" : "decline_sent", ok: true, chat: rp.chat, day: info.day, mid: r.ok ? r.data.messageId : "" });
+    log2("%s \u0443\u0448\u043B\u043E: %s", rp.kind === "link" ? "\u0441\u0441\u044B\u043B\u043A\u0430" : "\u043E\u0442\u043A\u0430\u0437 \u043F\u0440\u0438\u043D\u044F\u0442", maskDigits(rp.chat));
+    return;
+  }
+  appendRow(a, { ts: now, ev: rp.kind === "link" ? "link" : "decline_sent", ok: false, chat: rp.chat, status: r.status, err: clipText2(scrub5(r.error), 160), attempt: rp.tries + 1 });
+  log2("\u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s", maskDigits(rp.chat), scrub5(r.error));
+  if (r.retryable && rp.tries < 2 && rp.kind === "link") {
+    a.replies.push({ ...rp, tries: rp.tries + 1, nextAt: now + MIN2 });
+    return;
+  }
+  await alarmOnce2(a, `reply:${r.status}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 ${maskDigits(rp.chat)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clipText2(scrub5(r.error), 120)}). \u0421\u0441\u044B\u043B\u043A\u0443 \u043E\u043D \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B.`);
+}
+async function runReplies(a) {
+  if (!a.replies.length) return;
+  const now = a.host.now();
+  const due = a.replies.filter((r) => r.nextAt <= now);
+  a.replies = a.replies.filter((r) => r.nextAt > now);
+  for (const rp of due) await replyOnce(a, rp);
+}
+var SUBS_ON = { messagesAndStatuses: true, contactsAndDealsCreation: false, channelsUpdates: false, templateStatus: true };
+var SUBS_OFF = { messagesAndStatuses: false, contactsAndDealsCreation: false, channelsUpdates: false, templateStatus: false };
+function sameHook(current) {
+  try {
+    const x = new URL(current);
+    const y = new URL(hookBase());
+    return x.origin === y.origin && x.pathname.replace(/\/+$/, "") === y.pathname.replace(/\/+$/, "");
+  } catch {
+    return false;
+  }
+}
+var hostOf2 = (u) => {
+  try {
+    const x = new URL(u);
+    return `${x.origin}${x.pathname}`;
+  } catch {
+    return "\u0430\u0434\u0440\u0435\u0441 \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D";
+  }
+};
+var originOf = (u) => {
+  try {
+    return new URL(u).origin;
+  } catch {
+    return "\u0430\u0434\u0440\u0435\u0441 \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D";
+  }
+};
+async function dzHookSet(on) {
+  const a = A2;
+  if (!a) return MODULE_OFF2;
+  if (typeof on !== "boolean") return fail2("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (!wzKey()) return fail2("no_key", "\u041D\u0435\u0442 WAZZUP_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435.");
+  if (a.hookBusy) return fail2("busy", "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0430\u044F \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u0441 \u0432\u0435\u0431\u0445\u0443\u043A\u043E\u043C \u0435\u0449\u0451 \u0438\u0434\u0451\u0442, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434.");
+  a.hookBusy = true;
+  try {
+    const cur = await wzGetHooks();
+    if (!cur.ok) return fail2("wazzup", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0443\u0437\u043D\u0430\u0442\u044C, \u043A\u0430\u043A\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A \u0441\u0442\u043E\u0438\u0442 \u0432 Wazzup: ${clipText2(scrub5(cur.error), 120)}. \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043C\u0435\u043D\u044F\u043B.`);
+    const uri = cur.data.webhooksUri.trim();
+    if (on) {
+      if (uri && !sameHook(uri)) {
+        await a.host.alarm(`\u0414\u043E\u0436\u0438\u043C WABA: \u0432 Wazzup \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u0447\u0443\u0436\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A (${originOf(uri)}). \u0421\u0432\u043E\u0439 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0441\u043B\u043E\u043C\u0430\u0442\u044C \u0447\u0443\u0436\u043E\u0435. \u0420\u0435\u0448\u0438, \u043D\u0443\u0436\u0435\u043D \u043B\u0438 \u043E\u043D, \u0438 \u0441\u043D\u0438\u043C\u0438 \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0432 Wazzup.`);
+        return fail2("foreign_hook", `\u0412 Wazzup \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u0447\u0443\u0436\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A (${originOf(uri)}). \u042F \u0435\u0433\u043E \u043D\u0435 \u0442\u0440\u043E\u0433\u0430\u044E. \u0421\u0432\u043E\u0439 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D.`);
+      }
+      const secret = ensureSecret2(a);
+      const r = await wzSetHooks({ webhooksUri: hookUri(secret), subscriptions: SUBS_ON });
+      if (!r.ok) return fail2("wazzup", `Wazzup \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A: ${clipText2(scrub5(r.error), 140)}. \u041E\u043D \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u0442\u0435\u0441\u0442\u043E\u0432\u044B\u043C \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u043C: \u0430\u0434\u0440\u0435\u0441 \u0434\u043E\u043B\u0436\u0435\u043D \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C \u0441\u043D\u0430\u0440\u0443\u0436\u0438.`);
+      a.host.patch({ hookOn: true });
+      a.host.journal({ ev: "dz_hook", on: true });
+      log2("\u0432\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D");
+      return { ok: true, message: `\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D (${hostShown()}). \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u0431\u0443\u0434\u0443\u0442 \u043F\u043E\u043B\u0443\u0447\u0430\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443.` };
+    }
+    if (uri && !sameHook(uri)) return fail2("foreign_hook", `\u0412 Wazzup \u0441\u0442\u043E\u0438\u0442 \u0447\u0443\u0436\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A (${originOf(uri)}), \u043D\u0435 \u043D\u0430\u0448. \u042F \u0435\u0433\u043E \u043D\u0435 \u0441\u043D\u0438\u043C\u0430\u044E.`);
+    if (uri) {
+      let r = await wzSetHooks({ webhooksUri: "", subscriptions: SUBS_OFF });
+      if (!r.ok && r.status >= 400 && r.status < 500) r = await wzSetHooks({ webhooksUri: uri, subscriptions: SUBS_OFF });
+      if (!r.ok) return fail2("wazzup", `Wazzup \u043D\u0435 \u0441\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A: ${clipText2(scrub5(r.error), 140)}.`);
+    }
+    a.host.patch({ hookOn: false });
+    a.host.journal({ ev: "dz_hook", on: false });
+    log2("\u0432\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442");
+    return { ok: true, message: "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442. \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u043E\u0431\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F." };
+  } finally {
+    a.hookBusy = false;
+  }
+}
+var hostShown = () => hostOf2(hookShown());
+async function hookCheck(a) {
+  const now = a.host.now();
+  if (now - a.hookCheckAt < 3 * HOUR2 || a.hookBusy) return;
+  a.hookCheckAt = now;
+  const cur = await wzGetHooks();
+  if (!cur.ok) return;
+  const uri = cur.data.webhooksUri.trim();
+  if (uri && sameHook(uri) && cur.data.subscriptions.messagesAndStatuses !== false) return;
+  await alarmOnce2(a, "hookgone", 6 * HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0432\u0435\u0431\u0445\u0443\u043A Wazzup ${uri ? `\u0442\u0435\u043F\u0435\u0440\u044C \u0447\u0443\u0436\u043E\u0439 (${originOf(uri)})` : "\u043F\u0440\u043E\u043F\u0430\u043B"}. \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u043F\u0440\u0438\u0445\u043E\u0434\u044F\u0442. \u041F\u043E\u0441\u0442\u0430\u0432\u044C \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E \u0432 \u043F\u0443\u043B\u044C\u0442\u0435, \u0431\u043B\u043E\u043A \xAB\u0414\u043E\u0436\u0438\u043C WABA\xBB.`);
+}
+var TPL_CACHE_MS = 6e4;
+var TPL_MIN_GAP_MS = 5e3;
+async function loadTemplates(a, force) {
+  const now = a.host.now();
+  if (a.tpl && (!force || now - a.tpl.callAt < TPL_MIN_GAP_MS) && now - a.tpl.at < TPL_CACHE_MS) return { ok: true, items: a.tpl.items, at: a.tpl.at, cached: true };
+  if (!wzKey()) return { ok: false, code: "no_key", message: "\u041D\u0435\u0442 WAZZUP_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435." };
+  const r = await wzTemplates();
+  if (!r.ok) {
+    const stale = a.tpl && now - a.tpl.at < 10 * MIN2;
+    if (stale) return { ok: true, items: a.tpl.items, at: a.tpl.at, cached: true };
+    return { ok: false, code: "wazzup", message: `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D\u044B Wazzup: ${clipText2(scrub5(r.error), 120)}.` };
+  }
+  a.tpl = { at: now, callAt: now, items: r.data };
+  return { ok: true, items: r.data, at: now, cached: false };
+}
+async function dzTemplates(force = false) {
+  const a = A2;
+  if (!a) return MODULE_OFF2;
+  const t = await loadTemplates(a, force);
+  if (!t.ok) return fail2(t.code, t.message);
+  let list = t.items.filter((x) => x.approved === true);
+  let note = "";
+  if (!list.length) {
+    const unknown = t.items.filter((x) => x.approved === null);
+    if (unknown.length) {
+      list = unknown;
+      note = "Wazzup \u043D\u0435 \u043E\u0442\u0434\u0430\u043B \u0441\u0442\u0430\u0442\u0443\u0441 \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u044E \u0432\u0441\u0435. \u0412\u044B\u0431\u0438\u0440\u0430\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0435.";
+    } else if (t.items.length) note = "\u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442.";
+    else note = "\u0412 Wazzup \u043D\u0435\u0442 \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432 WABA.";
+  }
+  const st = a.host.state();
+  const items = list.map((x) => ({ ...x, map: x.id === st.templateId ? currentMap(a) : st.maps[x.id] ?? defaultMap(x.name, x.title, x.vars) }));
+  return { ok: true, message: note, items, total: t.items.length, at: t.at, cached: t.cached, note };
+}
+var MODULE_OFF2 = fail2("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
+async function dzSave(p) {
+  const a = A2;
+  if (!a) return MODULE_OFF2;
+  if (!p || typeof p !== "object" || Array.isArray(p)) return fail2("bad_request", "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.");
+  const q2 = p;
+  const st = a.host.state();
+  const next = {};
+  if (q2.delayMin !== void 0) {
+    const n = Number(q2.delayMin);
+    if (!Number.isInteger(n) || n < 0 || n > 1440) return fail2("bad_request", "\u0417\u0430\u0434\u0435\u0440\u0436\u043A\u0430: \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043C\u0438\u043D\u0443\u0442 \u043E\u0442 0 \u0434\u043E 1440.");
+    next.delayMin = n;
+  }
+  if (q2.from !== void 0 || q2.to !== void 0) {
+    const from = q2.from === void 0 ? st.from : q2.from;
+    const to = q2.to === void 0 ? st.to : q2.to;
+    if (!validHHMM(from) || !validHHMM(to) || minsOf(from) >= minsOf(to)) return fail2("bad_request", "\u041E\u043A\u043D\u043E \u0447\u0430\u0441\u043E\u0432: \u0432\u0440\u0435\u043C\u044F \u0432\u0438\u0434\u0430 09:00, \u043D\u0430\u0447\u0430\u043B\u043E \u0440\u0430\u043D\u044C\u0448\u0435 \u043A\u043E\u043D\u0446\u0430.");
+    next.from = padHHMM(from);
+    next.to = padHHMM(to);
+  }
+  if (q2.cutoff !== void 0) {
+    if (!validHHMM(q2.cutoff)) return fail2("bad_request", "\u041F\u0440\u0435\u0434\u0435\u043B \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430: \u0432\u0440\u0435\u043C\u044F \u0432\u0438\u0434\u0430 19:30.");
+    next.cutoff = padHHMM(q2.cutoff);
+  }
+  if (q2.dailyLimit !== void 0) {
+    const n = Number(q2.dailyLimit);
+    if (!Number.isInteger(n) || n < 1 || n > 250) return fail2("bad_request", "\u041B\u0438\u043C\u0438\u0442 \u0432 \u0441\u0443\u0442\u043A\u0438: \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 1 \u0434\u043E 250 (\u043F\u0440\u0435\u0434\u0435\u043B Meta 250 \u043D\u043E\u0432\u044B\u0445 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u043E\u043A).");
+    next.dailyLimit = n;
+  }
+  const maps = { ...st.maps };
+  const tid = typeof q2.templateId === "string" && q2.templateId ? q2.templateId : q2.map !== void 0 ? st.templateId : "";
+  if (tid && (tid !== st.templateId || q2.map !== void 0)) {
+    let t = await loadTemplates(a, false);
+    if (!t.ok) return fail2(t.code, t.message);
+    let tpl = t.items.find((x) => x.id === tid);
+    if (!tpl || tpl.approved === false) {
+      const fresh = await loadTemplates(a, true);
+      if (fresh.ok) {
+        t = fresh;
+        tpl = t.items.find((x) => x.id === tid);
+      }
+    }
+    if (!tpl) return fail2("not_found", "\u0422\u0430\u043A\u043E\u0433\u043E \u0448\u0430\u0431\u043B\u043E\u043D\u0430 \u043D\u0435\u0442 \u0432 Wazzup. \u041E\u0431\u043D\u043E\u0432\u0438 \u0441\u043F\u0438\u0441\u043E\u043A \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432.");
+    if (tpl.approved === false) return fail2("not_approved", `\u0428\u0430\u0431\u043B\u043E\u043D \xAB${tpl.title || tpl.name}\xBB \u0435\u0449\u0451 \u043D\u0435 \u043E\u0434\u043E\u0431\u0440\u0435\u043D (${tpl.status || "\u0441\u0442\u0430\u0442\u0443\u0441 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D"}). \u0412\u044B\u0431\u0435\u0440\u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0439.`);
+    let map;
+    if (q2.map !== void 0) {
+      map = cleanMap(q2.map);
+      if (!map) return fail2("bad_request", "\u0421\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D\u043E.");
+    } else map = maps[tpl.id] ?? defaultMap(tpl.name, tpl.title, tpl.vars);
+    if (tpl.vars !== null && map.length !== tpl.vars) return fail2("bad_request", `\u0412 \u0448\u0430\u0431\u043B\u043E\u043D\u0435 ${tpl.vars} \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445, \u0430 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043E ${map.length}.`);
+    for (let i = 0; i < map.length; i++) if (map[i].kind === "text" && !(map[i].text || "").trim()) return fail2("bad_request", `\u0417\u0430\u043F\u043E\u043B\u043D\u0438 \u0442\u0435\u043A\u0441\u0442 \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 {{${i + 1}}}.`);
+    maps[tpl.id] = map;
+    next.maps = maps;
+    next.templateId = tpl.id;
+    next.templateName = tpl.title || tpl.name;
+    next.vars = tpl.vars ?? map.length;
+  }
+  if (!Object.keys(next).length) return { ok: true, code: "same", message: "\u041D\u0435\u0447\u0435\u0433\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C." };
+  a.host.patch(next);
+  a.host.journal({ ev: "dz_save", template: next.templateName ?? st.templateName });
+  return { ok: true, message: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0434\u043E\u0436\u0438\u043C\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B." };
+}
+async function dzSetEnabled(on) {
+  const a = A2;
+  if (!a) return MODULE_OFF2;
+  if (typeof on !== "boolean") return fail2("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (a.toggling) return fail2("busy", "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0435\u0449\u0451 \u0438\u0434\u0451\u0442, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434.");
+  a.toggling = true;
+  try {
+    const st = a.host.state();
+    if (on) {
+      if (st.enabled) return { ok: true, code: "same", message: "\u0414\u043E\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
+      const pre = prerequisites2(a);
+      if (!pre.ok) return fail2("no_config", `${pre.reason} \u0414\u043E\u0436\u0438\u043C \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
+      a.host.patch({ enabled: true });
+      a.host.journal({ ev: "dz_on", by: "panel" });
+      log2("\u0432\u043A\u043B\u044E\u0447\u0451\u043D");
+      return { ok: true, message: `\u0414\u043E\u0436\u0438\u043C \u0432\u043A\u043B\u044E\u0447\u0451\u043D. \u0428\u0430\u0431\u043B\u043E\u043D \xAB${st.templateName}\xBB \u0443\u0445\u043E\u0434\u0438\u0442 \u0442\u0435\u043C, \u043A\u0442\u043E \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0441\u044F \u043D\u0430 \u0432\u043E\u0440\u043A\u0448\u043E\u043F \u0441 \u043D\u043E\u043C\u0435\u0440\u043E\u043C \u041A\u0430\u0437\u0430\u0445\u0441\u0442\u0430\u043D\u0430 \u0438 \u043D\u0435 \u0432\u0441\u0442\u0443\u043F\u0438\u043B \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E: \u0447\u0435\u0440\u0435\u0437 ${st.delayMin} \u043C\u0438\u043D\u0443\u0442 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438, \u0441 ${st.from} \u0434\u043E ${st.to} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.${st.hookOn ? "" : " \u0412\u0435\u0431\u0445\u0443\u043A \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D: \u043E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0442, \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A\xBB."}` };
+    }
+    if (!st.enabled) return { ok: true, code: "same", message: "\u0414\u043E\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D." };
+    a.host.patch({ enabled: false });
+    a.host.journal({ ev: "dz_off", by: "panel" });
+    log2("\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D");
+    return { ok: true, message: "\u0414\u043E\u0436\u0438\u043C \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D: \u043D\u043E\u0432\u044B\u0435 \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F." };
+  } finally {
+    a.toggling = false;
+  }
+}
+async function dzTestSend(numberRaw, nowArg) {
+  const a = A2;
+  if (!a) return MODULE_OFF2;
+  const ph = normalizePhone(numberRaw);
+  if (!ph || ph.digits.length < 10) return fail2("bad_number", "\u041D\u043E\u043C\u0435\u0440: \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u0441 \u043A\u043E\u0434\u043E\u043C \u0441\u0442\u0440\u0430\u043D\u044B, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 77011234567.");
+  const pre = prerequisites2(a);
+  if (!pre.ok) return fail2("no_config", pre.reason);
+  const now = nowArg ?? a.host.now();
+  a.testAt = a.testAt.filter((t) => now - t < HOUR2);
+  if (a.testAt.length && now - a.testAt[a.testAt.length - 1] < 1e4) return fail2("rate", "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0447\u0430\u0441\u0442\u043E, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 10 \u0441\u0435\u043A\u0443\u043D\u0434.");
+  if (a.testAt.length >= 10) return fail2("rate", "\u0422\u0435\u0441\u0442\u043E\u0432 \u0437\u0430 \u0447\u0430\u0441 \u0443\u0436\u0435 10. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.");
+  const st = a.host.state();
+  if (sends24(a, now) >= st.dailyLimit) return fail2("limit", `\u0417\u0430 \u0441\u0443\u0442\u043A\u0438 \u0443\u0436\u0435 ${st.dailyLimit} \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B \u043D\u043E\u043C\u0435\u0440\u0430.`);
+  a.testAt.push(now);
+  const day = a.host.dayOf(now);
+  const src = a.host.leads();
+  const lead = src.leads ? [...src.leads].reverse().find((l) => normalizePhone(l.phone)?.digits === ph.digits) ?? null : null;
+  const nm = await resolveName(a, lead, ph.digits, false);
+  const values = buildValues(currentMap(a), { name: nm.name, day, now, link: a.host.waUrl });
+  if (!values) return fail2("no_config", "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0431\u0440\u0430\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.");
+  const eid = `test-${now}`;
+  const res = await sendTemplate(a, ph.digits, values, `dozhim-${eid}`);
+  if (!res.ok) {
+    appendRow(a, { ts: a.host.now(), ev: "send_fail", to: ph.digits, eid, day, tpl: st.templateId, status: res.status, err: clipText2(res.error, 160), retryable: res.retryable, attempt: 1, final: true, test: true });
+    return fail2("wazzup", `Wazzup \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0442\u0435\u0441\u0442\u043E\u0432\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${clipText2(res.error, 140)}.`);
+  }
+  recordSent(a, { to: ph.digits, eid, day, mid: res.mid, test: true, name: nm.name, from: nm.from, dup: res.dup });
+  log2("\u0442\u0435\u0441\u0442\u043E\u0432\u044B\u0439 \u0448\u0430\u0431\u043B\u043E\u043D \u0443\u0448\u0451\u043B: %s", maskDigits(ph.digits));
+  return { ok: true, message: `\u0422\u0435\u0441\u0442\u043E\u0432\u044B\u0439 \u0448\u0430\u0431\u043B\u043E\u043D \xAB${st.templateName}\xBB \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u043D\u0430 ${maskDigits(ph.digits)}. \u041D\u0430\u0436\u043C\u0438 \u0432 \u043D\u0451\u043C \u043A\u043D\u043E\u043F\u043A\u0443: \u043F\u0440\u0438\u0434\u0451\u0442 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${dateLabel(day)}.` };
+}
+var ddmm3 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+var stamp2 = (ms) => `${ddmm3(dayKeyOf(ms))} ${hhmmOf(ms)}`;
+var agoText2 = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1e3));
+  return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
+};
+function dzPanel(nowArg) {
+  const a = A2;
+  if (!a) return { available: false };
+  const h = a.host;
+  const now = nowArg ?? h.now();
+  const st = h.state();
+  const pre = prerequisites2(a);
+  let reason = "";
+  if (!pre.ok) reason = pre.reason;
+  else if (st.enabled) {
+    const can = h.canRun();
+    if (!can.ok) reason = `\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442: ${can.why}.`;
+    else if (now < a.haltUntil) reason = "\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B \u043D\u0430 \u0447\u0430\u0441 \u043F\u043E\u0441\u043B\u0435 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u043E\u0442\u043A\u0430\u0437\u043E\u0432 Wazzup. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447.";
+  }
+  const ev = evaluate(a, now);
+  if (ev.error) reason = reason || `\u0417\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B: ${ev.error}.`;
+  if (!reason && st.enabled && ev.noTarget.length) reason = `\u041D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u0441 \u0437\u0430\u043C\u0435\u0440\u043E\u043C \u043D\u0430 ${ev.noTarget.map(ddmm3).join(", ")}: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u044D\u0442\u0438 \u0434\u043D\u0438 \u0436\u0434\u0443\u0442, \u0448\u0430\u0431\u043B\u043E\u043D \u0438\u043C \u043D\u0435 \u0443\u0439\u0434\u0451\u0442.`;
+  if (!reason && st.enabled && !st.hookOn) reason = "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D: \u043E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u043E\u0431\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F, \u0441\u0441\u044B\u043B\u043A\u0443 \u043E\u043D\u0438 \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0442. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A\xBB.";
+  const today = dayKeyOf(now);
+  const todayRows = a.rows.filter((r) => dayKeyOf(r.ts) === today);
+  const realSends = todayRows.filter((r) => r.ev === "send" && r.ok === true && r.test !== true);
+  const toNumber = (r) => String(r.to || "");
+  const days = ev.days.map((d) => ({ day: d.day, dayLabel: ddmm3(d.day), applied: d.applied, joined: d.joined, measured: d.measuredAt ? agoText2(now - d.measuredAt) : "", unresolved: d.unresolved }));
+  const targets = h.targets(now);
+  let joinedAfter = 0;
+  for (const r of realSends) {
+    const mem = membersOfDay(a, String(r.day), targets, now, false);
+    if (mem?.has(toNumber(r))) joinedAfter++;
+  }
+  const inToday = new Set(todayRows.filter((r) => r.ev === "in").map((r) => String(r.chat)));
+  const sendRows = a.rows.filter((r) => r.ev === "send" || r.ev === "send_fail");
+  const recent = sendRows.slice(-30).reverse().map((r) => {
+    const to = toNumber(r);
+    const day = String(r.day || "");
+    const base = { t: stamp2(r.ts), who: maskDigits(to), day, dayLabel: day ? ddmm3(day) : "", test: r.test === true };
+    if (r.ev === "send_fail") {
+      const final = r.final === true;
+      return { ...base, status: final ? `\u043E\u0448\u0438\u0431\u043A\u0430: ${clipText2(r.err, 60)}` : `\u043E\u0448\u0438\u0431\u043A\u0430, \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 5 \u043C\u0438\u043D\u0443\u0442 (${clipText2(r.err, 40)})`, tone: final ? "bad" : "wait" };
+    }
+    const c = a.chats.get(to);
+    const mine = c && c.sentAt === r.ts;
+    const joined = day ? membersOfDay(a, day, targets, now, false)?.has(to) : false;
+    if (mine && a.declined.has(to)) return { ...base, status: "\u043E\u0442\u043A\u0430\u0437\u0430\u043B\u0441\u044F", tone: "mute" };
+    if (joined) return { ...base, status: "\u0432\u0441\u0442\u0443\u043F\u0438\u043B", tone: "ok" };
+    if (mine && c.linkAt) return { ...base, status: "\u043F\u043E\u043B\u0443\u0447\u0438\u043B \u0441\u0441\u044B\u043B\u043A\u0443", tone: "ok" };
+    if (mine && c.replyAt) return { ...base, status: "\u043E\u0442\u0432\u0435\u0442\u0438\u043B", tone: "ok" };
+    return { ...base, status: "\u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E", tone: "wait" };
+  });
+  const map = currentMap(a);
+  const waitingTotal = ev.waiting;
+  return {
+    available: true,
+    enabled: st.enabled,
+    canEnable: pre.ok,
+    reason,
+    configured: { key: !!wzKey(), channel: !!wzChannel() },
+    template: { id: st.templateId, name: st.templateName, vars: st.vars },
+    settings: { delayMin: st.delayMin, from: st.from, to: st.to, cutoff: st.cutoff, dailyLimit: st.dailyLimit },
+    map,
+    mapProblem: mapProblem(a),
+    webhook: { on: st.hookOn, url: hostShown(), secretInEnv: !!env6("WAZZUP_HOOK_SECRET") },
+    counters: {
+      candidates: realSends.length + waitingTotal,
+      waiting: waitingTotal,
+      waitingMeasure: ev.needMeasure,
+      sent: realSends.length,
+      replied: inToday.size,
+      links: todayRows.filter((r) => r.ev === "link" && r.ok === true).length,
+      joinedAfter,
+      declined: todayRows.filter((r) => r.ev === "decline").length,
+      failed: todayRows.filter((r) => r.ev === "send_fail" && r.final === true).length
+    },
+    limit: { used: sends24(a, now), max: st.dailyLimit },
+    days,
+    recent,
+    lastTick: a.lastTickAt ? agoText2(now - a.lastTickAt) : "",
+    halted: now < a.haltUntil
+  };
+}
+async function dzCommand(cmd, args) {
+  if (!A2) return MODULE_OFF2.message;
+  if (cmd === "wa_dozhim_test") {
+    const r = await dzTestSend(args);
+    return r.message;
+  }
+  const arg = args.trim().toLowerCase();
+  if (arg === "on" || arg === "off") return (await dzSetEnabled(arg === "on")).message;
+  const p = dzPanel();
+  const c = p.counters;
+  return [
+    `\u0414\u043E\u0436\u0438\u043C WABA: ${p.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0451\u043D" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D"}${p.reason ? `. ${p.reason}` : ""}`,
+    `\u0428\u0430\u0431\u043B\u043E\u043D: ${p.template.name || "\u043D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D"}. \u0412\u0435\u0431\u0445\u0443\u043A Wazzup: ${p.webhook.on ? "\u0441\u0442\u043E\u0438\u0442" : "\u043D\u0435 \u0441\u0442\u043E\u0438\u0442"}.`,
+    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F: \u043A\u0430\u043D\u0434\u0438\u0434\u0430\u0442\u043E\u0432 ${c.candidates}, \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${c.sent}, \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0438 ${c.replied}, \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 \u0441\u0441\u044B\u043B\u043A\u0443 ${c.links}, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E\u0441\u043B\u0435 \u0434\u043E\u0436\u0438\u043C\u0430 ${c.joinedAfter}.`,
+    "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_dozhim on, \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_dozhim off, \u0442\u0435\u0441\u0442 \u043D\u0430 \u0441\u0432\u043E\u0439 \u043D\u043E\u043C\u0435\u0440: /wa_dozhim_test 77011234567"
+  ].join("\n");
+}
+
+// form-api/wa-groups.ts
+var env7 = (k) => (process.env[k] || "").trim();
+var waEnabled = () => env7("WA_GROUPS").toLowerCase() === "on";
+var adminNumbers = () => env7("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
+var MIN3 = 6e4;
+var HOUR3 = 36e5;
 var TICK_MS2 = 3e4;
 var JOINS_TICK_MS = 5e3;
 var LOCK_STALE_MS2 = 3 * TICK_MS2;
@@ -8276,20 +9541,21 @@ var freshState = () => ({
   mode: "daily",
   daily: { enabled: false },
   event: freshEvent(),
-  assistant: { enabled: false, hookOn: false, secret: "" }
+  assistant: { enabled: false, hookOn: false, secret: "" },
+  dozhim: freshDz()
 });
 var defaultDeps2 = {
   now: () => Date.now(),
   sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
   rand: () => Math.random(),
-  notify: (text) => notifyOwners(text)
+  notify: (text2) => notifyOwners(text2)
 };
 var rt = null;
 var initError = "";
-var fJournal = (r) => (0, import_node_path9.join)(r.dir, "wa-journal.jsonl");
-var fJoins = (r) => (0, import_node_path9.join)(r.dir, "wa-joins.jsonl");
-var fState = (r) => (0, import_node_path9.join)(r.dir, "wa-state.json");
-var fLock = (r) => (0, import_node_path9.join)(r.dir, "wa.lock");
+var fJournal = (r) => (0, import_node_path10.join)(r.dir, "wa-journal.jsonl");
+var fJoins = (r) => (0, import_node_path10.join)(r.dir, "wa-joins.jsonl");
+var fState = (r) => (0, import_node_path10.join)(r.dir, "wa-state.json");
+var fLock = (r) => (0, import_node_path10.join)(r.dir, "wa.lock");
 var iso = (ms) => new Date(ms).toISOString();
 var need = () => {
   if (!rt) throw new Error("wa-groups \u043D\u0435 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D");
@@ -8297,15 +9563,15 @@ var need = () => {
 };
 function append2(file, row) {
   try {
-    (0, import_node_fs9.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
+    (0, import_node_fs10.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
   } catch (e) {
     console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C %s:", file, e.message);
   }
 }
 function readJsonl2(file) {
-  if (!(0, import_node_fs9.existsSync)(file)) return [];
+  if (!(0, import_node_fs10.existsSync)(file)) return [];
   const out = [];
-  for (const line of (0, import_node_fs9.readFileSync)(file, "utf8").split("\n")) {
+  for (const line of (0, import_node_fs10.readFileSync)(file, "utf8").split("\n")) {
     const s = line.trim();
     if (!s) continue;
     try {
@@ -8318,8 +9584,8 @@ function readJsonl2(file) {
 function save(r) {
   try {
     const tmp = `${fState(r)}.tmp.${process.pid}`;
-    (0, import_node_fs9.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
-    (0, import_node_fs9.renameSync)(tmp, fState(r));
+    (0, import_node_fs10.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
+    (0, import_node_fs10.renameSync)(tmp, fState(r));
   } catch (e) {
     console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C wa-state.json:", e.message);
   }
@@ -8327,8 +9593,8 @@ function save(r) {
 function loadState(r) {
   const st = freshState();
   try {
-    if (!(0, import_node_fs9.existsSync)(fState(r))) return st;
-    const raw = JSON.parse((0, import_node_fs9.readFileSync)(fState(r), "utf8"));
+    if (!(0, import_node_fs10.existsSync)(fState(r))) return st;
+    const raw = JSON.parse((0, import_node_fs10.readFileSync)(fState(r), "utf8"));
     const num = (x) => typeof x === "number" && Number.isFinite(x) ? x : 0;
     const str = (x) => typeof x === "string" ? x : "";
     st.targets = Array.isArray(raw.targets) ? raw.targets.filter((t) => t && typeof t.id === "string" && typeof t.jid === "string").map((t) => ({ ...t, done: t.done || {}, tries: t.tries || {} })) : [];
@@ -8361,21 +9627,22 @@ function loadState(r) {
     if (st.mode === "event") st.daily.enabled = false;
     const as = raw.assistant;
     if (as && typeof as === "object") st.assistant = { enabled: as.enabled === true, hookOn: as.hookOn === true, secret: typeof as.secret === "string" ? as.secret : "" };
+    st.dozhim = normalizeDz(raw.dozhim);
   } catch {
     console.warn("[wa] wa-state.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0441 \u043F\u0443\u0441\u0442\u043E\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F");
   }
   return st;
 }
 function seriesPath2(explicit) {
-  return explicit || env5("WA_SERIES_FILE") || (0, import_node_path9.join)(__dirname, "wa-series.json");
+  return explicit || env7("WA_SERIES_FILE") || (0, import_node_path10.join)(__dirname, "wa-series.json");
 }
 function initWaGroups(opts = {}) {
-  const cfg = validateWaSeries(JSON.parse((0, import_node_fs9.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
-  const kindEnv = env5("WA_TARGET").toLowerCase();
+  const cfg = validateWaSeries(JSON.parse((0, import_node_fs10.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
+  const kindEnv = env7("WA_TARGET").toLowerCase();
   if (kindEnv === "group" || kindEnv === "community") cfg.target = kindEnv;
   if (opts.kind) cfg.target = opts.kind;
-  const dir = opts.dir || env5("DATA_DIR") || (0, import_node_path9.join)(__dirname, "data");
-  (0, import_node_fs9.mkdirSync)(dir, { recursive: true });
+  const dir = opts.dir || env7("DATA_DIR") || (0, import_node_path10.join)(__dirname, "data");
+  (0, import_node_fs10.mkdirSync)(dir, { recursive: true });
   const r = {
     cfg,
     state: freshState(),
@@ -8444,14 +9711,15 @@ function initWaGroups(opts = {}) {
   rt = r;
   initError = "";
   aiInit(aiHostOf(r));
+  dzInit(dzHostOf(r));
 }
 function aiHostOf(r) {
   return {
     dir: r.dir,
     now: () => r.deps.now(),
     rand: () => r.deps.rand(),
-    alarm: (text) => alarm(r, text),
-    notify: (text) => r.deps.notify(text),
+    alarm: (text2) => alarm(r, text2),
+    notify: (text2) => r.deps.notify(text2),
     journal: (row) => journal(r, row),
     exclusive: (fn) => exclusive(r, fn),
     canSend: () => r.state.paused ? { ok: false, why: "\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435" } : r.conn.state !== "open" ? { ok: false, why: `\u043D\u043E\u043C\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state})` } : r.lockedOutLogged ? { ok: false, why: "\u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441" } : { ok: true },
@@ -8460,7 +9728,72 @@ function aiHostOf(r) {
       Object.assign(r.state.assistant, p);
       save(r);
     },
-    ignoreDigits: () => [...adminNumbers(), digitsOf(r.state.ownerJid)].filter(Boolean)
+    ignoreDigits: () => [...adminNumbers(), digitsOf2(r.state.ownerJid)].filter(Boolean)
+  };
+}
+function dzHostOf(r) {
+  const dayOf = (ts) => {
+    const ev = r.state.event;
+    if (r.state.mode === "event" && ev.date && !ev.done && ev.recruitFrom && ts >= atTime(ev.recruitFrom, "00:00")) return ev.date;
+    return assignStreamDay(ts, tcfg(r));
+  };
+  return {
+    dir: r.dir,
+    now: () => r.deps.now(),
+    rand: () => r.deps.rand(),
+    sleep: (ms) => r.deps.sleep(ms),
+    alarm: (text2) => alarm(r, text2),
+    notify: (text2) => r.deps.notify(text2),
+    journal: (row) => journal(r, row),
+    exclusive: (fn) => exclusive(r, fn),
+    state: () => r.state.dozhim,
+    patch: (p) => {
+      Object.assign(r.state.dozhim, p);
+      save(r);
+    },
+    canRun: () => r.state.paused ? { ok: false, why: "\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435" } : r.conn.state !== "open" ? { ok: false, why: `\u043D\u043E\u043C\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state})` } : r.lockedOutLogged ? { ok: false, why: "\u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441" } : { ok: true },
+    timeCfg: () => tcfg(r),
+    dayOf,
+    targets: (now) => {
+      const c = tcfg(r);
+      const ev = r.state.event;
+      let days;
+      if (r.state.mode === "event") days = new Set(ev.date && !ev.done ? [ev.date] : []);
+      else {
+        const cur = assignStreamDay(now, c);
+        days = /* @__PURE__ */ new Set([dayKeyOf(now), cur, nextStreamAfter(r, cur)]);
+      }
+      return r.state.targets.filter((t) => days.has(t.day) && (r.state.mode === "event" ? t.source === "event" : t.source !== "event") && !!t.sendJid && now < closeAtOf(r, t.day)).map((t) => ({ id: t.id, day: t.day, sendJid: t.sendJid }));
+    },
+    noteMembers: (id, count, at) => {
+      const t = r.state.targets.find((x) => x.id === id);
+      if (!t) return;
+      t.members = count;
+      t.membersAt = at;
+      r.approvedSince.set(id, 0);
+      save(r);
+    },
+    linkFor: (day, now) => linkForDay(r, day, now),
+    leads: () => {
+      try {
+        const x = readLeads({ store: getStore(), cfg: tcfg(r), now: r.deps.now() });
+        return { leads: x.leads, error: x.error };
+      } catch {
+        return { leads: null, error: "\u0445\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0435 \u0431\u043E\u0442\u0430 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u043E" };
+      }
+    },
+    linkedEids: () => {
+      const out = /* @__PURE__ */ new Set();
+      try {
+        for (const sub of getStore().subs.values()) {
+          const o = classifyPayload(sub.payload);
+          if (o.eid) out.add(o.eid);
+        }
+      } catch {
+      }
+      return out;
+    },
+    waUrl: TEMPLATE_URL
   };
 }
 function startWaGroups(opts = {}) {
@@ -8485,6 +9818,7 @@ function startWaGroups(opts = {}) {
   registerWaReport((day) => waReportLine(day));
   const main = setInterval(() => void waTick(), TICK_MS2);
   const joins = setInterval(() => void joinsTick(), JOINS_TICK_MS);
+  const dozhim = setInterval(() => void dzTick(), TICK_MS2);
   const first = setTimeout(() => void waTick(), 5e3);
   const onExit = () => releaseLock2(r);
   process.on("exit", onExit);
@@ -8500,6 +9834,7 @@ function startWaGroups(opts = {}) {
   return () => {
     clearInterval(main);
     clearInterval(joins);
+    clearInterval(dozhim);
     clearTimeout(first);
     process.off("exit", onExit);
     registerWa(null);
@@ -8543,10 +9878,10 @@ function createAtOf(r, day) {
   }
   return atTime(addDays(day, -1), c.streamStart);
 }
-var ddmm3 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
-var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm3(day)) + (seq > 1 ? ` (${seq})` : "");
+var ddmm4 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm4(day)) + (seq > 1 ? ` (${seq})` : "");
 var pad2 = (n) => String(n).padStart(2, "0");
-var minsOf = (hhmm) => {
+var minsOf2 = (hhmm) => {
   const p = parseHHMM(hhmm);
   return p.h * 60 + p.m;
 };
@@ -8554,15 +9889,15 @@ var hhmmFrom = (mins) => {
   const m = (mins % 1440 + 1440) % 1440;
   return `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
 };
-var normHHMM = (s) => hhmmFrom(minsOf(s));
-var startShift = (r, start) => start ? minsOf(start) - minsOf(r.cfg.streamStart) : 0;
-var followsStart = (r, m) => minsOf(m.at) <= minsOf(r.cfg.streamStart) + r.cfg.streamMinutes;
+var normHHMM = (s) => hhmmFrom(minsOf2(s));
+var startShift = (r, start) => start ? minsOf2(start) - minsOf2(r.cfg.streamStart) : 0;
+var followsStart = (r, m) => minsOf2(m.at) <= minsOf2(r.cfg.streamStart) + r.cfg.streamMinutes;
 var AFTER_OFFER = /* @__PURE__ */ new Set(["push", "last-call"]);
 var OFFER_ID = "offer";
 function shiftedPlan(r, t, m) {
   const base = atTime(t.day, m.at);
   const d = startShift(r, t.start);
-  return d && followsStart(r, m) ? base + d * MIN2 : base;
+  return d && followsStart(r, m) ? base + d * MIN3 : base;
 }
 function planOf(r, t, m) {
   const own = shiftedPlan(r, t, m);
@@ -8574,9 +9909,9 @@ var SEND_FROM = 9 * 60;
 var SEND_TO = 23 * 60 + 45;
 var DAY_FROM = 9 * 60;
 var DAY_TO = 23 * 60;
-var minuteOfDay = (ms) => minsOf(hhmmOf(ms));
-var sendableTime = (ms) => minuteOfDay(ms) >= SEND_FROM && minuteOfDay(ms) <= SEND_TO;
-var daytime = (ms) => minuteOfDay(ms) >= DAY_FROM && minuteOfDay(ms) < DAY_TO;
+var minuteOfDay2 = (ms) => minsOf2(hhmmOf(ms));
+var sendableTime = (ms) => minuteOfDay2(ms) >= SEND_FROM && minuteOfDay2(ms) <= SEND_TO;
+var daytime = (ms) => minuteOfDay2(ms) >= DAY_FROM && minuteOfDay2(ms) < DAY_TO;
 function daytimeMs(from, to) {
   if (to <= from) return 0;
   let total = 0;
@@ -8589,12 +9924,12 @@ function daytimeMs(from, to) {
   }
   return total;
 }
-function retime(r, start, text) {
-  if (!start || start === r.cfg.streamStart) return text;
+function retime(r, start, text2) {
+  if (!start || start === r.cfg.streamStart) return text2;
   const base = r.cfg.streamStart;
-  const baseMsk = hhmmFrom(minsOf(base) - 120);
-  const msk = hhmmFrom(minsOf(start) - 120);
-  return text.split(`${baseMsk} \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435`).join(`${msk} \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435`).split(base).join(start);
+  const baseMsk = hhmmFrom(minsOf2(base) - 120);
+  const msk = hhmmFrom(minsOf2(start) - 120);
+  return text2.split(`${baseMsk} \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435`).join(`${msk} \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435`).split(base).join(start);
 }
 function effMsg(r, t, m) {
   if (!t.start || t.start === r.cfg.streamStart) return m;
@@ -8628,6 +9963,12 @@ function waGroupLink(now, served = true) {
     return null;
   }
 }
+function linkForDay(r, day, now) {
+  const ok = (t2) => isReady(t2) && !!t2.link && isValidWhatsAppLink(t2.link) && now < closeAtOf(r, t2.day);
+  const list = targetsOf(r, day);
+  const t = r.state.mode === "event" ? day === r.state.event.date ? list.find((x) => x.source === "event" && ok(x)) : void 0 : list.find((x) => x.source !== "event" && ok(x));
+  return t ? t.link : null;
+}
 var between = (r, rg) => Math.round(rg[0] + r.deps.rand() * (rg[1] - rg[0]));
 var pause = (r, rg) => r.deps.sleep(between(r, rg));
 var sentKey = (msg, part, day, target) => `${msg}:${part}|${day}|${target}`;
@@ -8639,21 +9980,21 @@ function exclusive(r, fn) {
 function journal(r, row) {
   append2(fJournal(r), { ts: iso(r.deps.now()), ...row });
 }
-async function alarm(r, text) {
-  journal(r, { ev: "alarm", text });
-  console.warn("[wa] \u0442\u0440\u0435\u0432\u043E\u0433\u0430: %s", text);
+async function alarm(r, text2) {
+  journal(r, { ev: "alarm", text: text2 });
+  console.warn("[wa] \u0442\u0440\u0435\u0432\u043E\u0433\u0430: %s", text2);
   try {
-    await r.deps.notify(text);
+    await r.deps.notify(text2);
   } catch {
   }
 }
-function pauseModule(r, now, reason, text) {
+function pauseModule(r, now, reason, text2) {
   r.state.paused = true;
   r.state.pausedAt = now;
   r.state.pausedReason = reason.slice(0, 200);
   save(r);
   journal(r, { ev: "pause", reason: r.state.pausedReason });
-  return alarm(r, text);
+  return alarm(r, text2);
 }
 function setConn(r, st, now) {
   const prev = r.conn.state;
@@ -8701,8 +10042,8 @@ function pidAlive2(pid) {
 function holdLock2(r) {
   const f = fLock(r);
   try {
-    if ((0, import_node_fs9.existsSync)(f)) {
-      const cur = JSON.parse((0, import_node_fs9.readFileSync)(f, "utf8"));
+    if ((0, import_node_fs10.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs10.readFileSync)(f, "utf8"));
       if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS2 && pidAlive2(cur.pid)) {
         if (!r.lockedOutLogged) console.warn("[wa] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442", cur.pid);
         r.lockedOutLogged = true;
@@ -8710,7 +10051,7 @@ function holdLock2(r) {
       }
     }
     r.lockedOutLogged = false;
-    (0, import_node_fs9.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    (0, import_node_fs10.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
     return true;
   } catch (e) {
     console.error("[wa] \u0437\u0430\u043C\u043E\u043A \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
@@ -8720,7 +10061,7 @@ function holdLock2(r) {
 function releaseLock2(r) {
   try {
     const f = fLock(r);
-    if ((0, import_node_fs9.existsSync)(f) && JSON.parse((0, import_node_fs9.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs9.unlinkSync)(f);
+    if ((0, import_node_fs10.existsSync)(f) && JSON.parse((0, import_node_fs10.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs10.unlinkSync)(f);
   } catch {
   }
 }
@@ -8733,7 +10074,7 @@ async function checkConnection(r, now) {
   if (st === "open") r.downSince = 0;
   else if (!r.downSince) r.downSince = now;
   if (st === "open") {
-    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR2) {
+    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR3) {
       const i = await fetchInstance();
       if (i.ok && i.data.ownerJid) {
         r.state.ownerJid = i.data.ownerJid;
@@ -8744,20 +10085,20 @@ async function checkConnection(r, now) {
     }
     return true;
   }
-  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN2) {
+  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN3) {
     r.state.lastConnAlertAt = now;
     save(r);
-    const since = r.downSince && now - r.downSince >= 30 * MIN2 ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
+    const since = r.downSince && now - r.downSince >= 30 * MIN3 ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
     await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st}).${since} \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
   }
   return false;
 }
-var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR2).length;
+var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR3).length;
 var capReached = (r, now) => dayCreations(r, now) >= r.cfg.maxNewPerDay;
 function noteCreation(r, now) {
-  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR2), now];
+  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR3), now];
 }
-var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR2;
+var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR3;
 function dueCreateDays(r, now) {
   const out = [];
   if (!daytime(now)) return out;
@@ -8859,7 +10200,7 @@ async function createTarget(r, day, seq, now, opts = {}) {
   noteOk(r);
   return { ok: true, target: t };
 }
-var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm3(t.day)));
+var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm4(t.day)));
 async function setupSteps(r, t) {
   const order = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "link", "avatar", "welcome"];
   let first = true;
@@ -8868,7 +10209,7 @@ async function setupSteps(r, t) {
     const now = r.deps.now();
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
-    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN2)) continue;
+    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN3)) continue;
     if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
@@ -9017,7 +10358,7 @@ function dueSends(r, now) {
     for (const msg of r.cfg.messages) {
       if (msg.enabled === false) continue;
       const plan = planOf(r, t, msg);
-      if (now < plan || now > plan + r.cfg.graceMinutes * MIN2) continue;
+      if (now < plan || now > plan + r.cfg.graceMinutes * MIN3) continue;
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
       if (!sendableTime(plan)) {
@@ -9065,7 +10406,7 @@ function extractMembers(info, announcementJid) {
   return found.length ? Math.max(...found) : void 0;
 }
 async function refreshMembers(r, t, now) {
-  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN2) return false;
+  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN3) return false;
   const x = t.kind === "community" ? await communityInfo(t.jid) : await groupInfo(t.jid);
   t.membersAt = now;
   if (x.ok) {
@@ -9143,7 +10484,7 @@ async function waTick() {
           if (r.state.capAlertDay !== dayKeyOf(now)) {
             r.state.capAlertDay = dayKeyOf(now);
             save(r);
-            await alarm(r, `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm3(day)} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u043F\u043E\u0437\u0436\u0435: /wa_new.`);
+            await alarm(r, `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(day)} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u043F\u043E\u0437\u0436\u0435: /wa_new.`);
           }
           break;
         }
@@ -9206,7 +10547,7 @@ function noteJoinedDay(r, target, day) {
 function nextJoinDelay(r, serving, now) {
   const jp = r.cfg.joinPolling;
   if (!serving) return between(r, jp.otherSec) * 1e3;
-  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN2;
+  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN3;
   return between(r, hot ? jp.servingSec : jp.idleSec) * 1e3;
 }
 async function pollJoins(r, t, now) {
@@ -9275,7 +10616,7 @@ var LIMIT_REFUSAL = /^419$|full|limit/i;
 async function softJoinFail(r, now, what) {
   r.joinFailStreak++;
   console.warn("[wa] \u0437\u0430\u044F\u0432\u043A\u0438, \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s", r.joinFailStreak, what);
-  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR2) {
+  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR3) {
     r.joinAlertAt = now;
     await alarm(r, `WhatsApp: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u0432\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u043D\u0435 \u043E\u0434\u043E\u0431\u0440\u044F\u044E\u0442\u0441\u044F (${r.joinFailStreak} \u043E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434). \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${what}. \u041B\u044E\u0434\u0438 \u0436\u0434\u0443\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F.`);
   }
@@ -9292,7 +10633,7 @@ async function joinsTick() {
       let n = 0;
       for (const t of r.state.targets) {
         if (t.kind !== "community" || !isReady(t)) continue;
-        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN2) continue;
+        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN3) continue;
         if (now < (r.joinNextAt.get(t.id) || 0)) continue;
         n += await pollJoins(r, t, now);
         r.joinNextAt.set(t.id, r.deps.now() + nextJoinDelay(r, serving?.id === t.id, r.deps.now()));
@@ -9306,12 +10647,12 @@ async function joinsTick() {
     r.joining = false;
   }
 }
-var agoText2 = (ms) => {
+var agoText3 = (ms) => {
   const s = Math.max(0, Math.round(ms / 1e3));
   return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
 };
 var inText = (ms) => {
-  const m = Math.max(0, Math.round(ms / MIN2));
+  const m = Math.max(0, Math.round(ms / MIN3));
   if (m < 90) return `\u0447\u0435\u0440\u0435\u0437 ${m} \u043C\u0438\u043D`;
   if (m >= 2880) return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 1440)} \u0434\u043D. ${Math.floor(m % 1440 / 60)} \u0447`;
   return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
@@ -9343,16 +10684,16 @@ function nextMessage(r, now) {
 }
 function nextMessageText(r, now) {
   const b = nextMessage(r, now);
-  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm3(b.day)}), ${inText(b.plan - now)}` : "\u043D\u0435\u0442";
+  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm4(b.day)}), ${inText(b.plan - now)}` : "\u043D\u0435\u0442";
 }
 function targetLine(r, label, day, now) {
   const ts = [...targetsOf(r, day)].reverse().filter((t) => r.state.mode === "event" || t.source !== "event");
   const at = createAtOf(r, day);
-  if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm3(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm3(dayKeyOf(at))}` : `${label} ${ddmm3(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E`;
+  if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm4(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm4(dayKeyOf(at))}` : `${label} ${ddmm4(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E`;
   return ts.map((t) => {
-    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText2(now - (t.membersAt || now))})`;
+    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText3(now - (t.membersAt || now))})`;
     const joined = t.kind === "community" ? `, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${r.joinedCount.get(t.id) || 0}` : "";
-    return `${label} ${ddmm3(day)}: \xAB${t.name}\xBB, ${isReady(t) ? "\u0433\u043E\u0442\u043E\u0432\u043E" : "\u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F"}, ${mem}${joined}`;
+    return `${label} ${ddmm4(day)}: \xAB${t.name}\xBB, ${isReady(t) ? "\u0433\u043E\u0442\u043E\u0432\u043E" : "\u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F"}, ${mem}${joined}`;
   }).join("\n");
 }
 async function cmdStatus(r, now) {
@@ -9382,15 +10723,16 @@ async function cmdStatus(r, now) {
   const ev = r.state.event;
   const lines = [
     `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C: ${r.state.paused ? `\u043D\u0430 \u043F\u0430\u0443\u0437\u0435 (${r.state.pausedReason || "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u0430"})` : "\u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442"}, \u0442\u0438\u043F ${r.cfg.target === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430"}`,
-    r.state.mode === "event" ? `\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440${ev.date ? ` ${ddmm3(ev.date)} \u0432 ${ev.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm3(ev.recruitFrom)}` : ", \u0434\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430"}` : `\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${r.state.daily.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`,
+    r.state.mode === "event" ? `\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440${ev.date ? ` ${ddmm4(ev.date)} \u0432 ${ev.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm4(ev.recruitFrom)}` : ", \u0434\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430"}` : `\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${r.state.daily.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`,
     `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${conn}${conn === "open" ? `, ${number}` : ""}`,
-    ...r.state.mode === "event" ? [ev.date ? eventTarget(r) ? targetLine(r, "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430", ev.date, now) : `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm3(ev.date)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C ${ddmm3(ev.recruitFrom)} \u0432 ${EVENT_CREATE_AT}` : "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442"] : [targetLine(r, "\u042D\u0444\u0438\u0440", cur, now), targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now)],
+    ...r.state.mode === "event" ? [ev.date ? eventTarget(r) ? targetLine(r, "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430", ev.date, now) : `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C ${ddmm4(ev.recruitFrom)} \u0432 ${EVENT_CREATE_AT}` : "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442"] : [targetLine(r, "\u042D\u0444\u0438\u0440", cur, now), targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now)],
     `\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u0435\u0439\u0447\u0430\u0441: ${link ?? "\u0441\u0442\u0430\u0440\u0430\u044F \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F (\u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442)"}`,
     `\u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${nextMessageText(r, now)}`,
     `\u041D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438: ${dayCreations(r, now)} \u0438\u0437 ${r.cfg.maxNewPerDay}`,
     `\u041E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434: ${r.state.failStreak} \u0438\u0437 ${r.cfg.retry.pauseAfter}`,
     // Строка про ассистента только когда он включён: при выключенном вывод /wa прежний.
-    ...r.state.assistant.enabled ? ["\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432 \u043B\u0438\u0447\u043A\u0435: \u0432\u043A\u043B\u044E\u0447\u0451\u043D (/wa_ai \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u0441\u0447\u0451\u0442\u0447\u0438\u043A\u0438 \u0437\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F)"] : []
+    ...r.state.assistant.enabled ? ["\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432 \u043B\u0438\u0447\u043A\u0435: \u0432\u043A\u043B\u044E\u0447\u0451\u043D (/wa_ai \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u0441\u0447\u0451\u0442\u0447\u0438\u043A\u0438 \u0437\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F)"] : [],
+    ...r.state.dozhim.enabled ? ["\u0414\u043E\u0436\u0438\u043C WABA: \u0432\u043A\u043B\u044E\u0447\u0451\u043D (/wa_dozhim \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u0441\u0447\u0451\u0442\u0447\u0438\u043A\u0438 \u0437\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F)"] : []
   ];
   return { text: lines.join("\n") };
 }
@@ -9401,7 +10743,7 @@ function nextStreamAfter(r, day) {
   return d;
 }
 async function cmdQr(r, now) {
-  const wait = r.state.lastQrAt + MIN2 - now;
+  const wait = r.state.lastQrAt + MIN3 - now;
   if (wait > 0) return { text: `QR \u043C\u043E\u0436\u043D\u043E \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C \u0440\u0430\u0437 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u0435\u0449\u0451 ${Math.ceil(wait / 1e3)} \u0441.` };
   r.state.lastQrAt = now;
   save(r);
@@ -9456,20 +10798,20 @@ function cmdResume(r) {
   journal(r, { ev: "resume" });
   return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
 }
-var fail2 = (code, message) => ({ ok: false, code, message });
+var fail3 = (code, message) => ({ ok: false, code, message });
 function eventCreateCheck(r, now) {
   const ev = r.state.event;
-  if (r.state.mode !== "event") return fail2("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0441\u044C \u043D\u0430 \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440.");
-  if (!ev.date) return fail2("no_event", "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438.");
-  if (ev.done || now >= closeAtOf(r, ev.date)) return fail2("over", `\u042D\u0444\u0438\u0440 ${ddmm3(ev.date)} \u0443\u0436\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u0417\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u0443\u044E \u0434\u0430\u0442\u0443.`);
-  if (r.state.pendingCreate) return fail2("pending", "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443 (\u043E\u043D\u0430 \u043E\u0431\u043D\u0443\u043B\u0438\u0442 \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435).");
-  if (r.state.paused) return fail2("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
+  if (r.state.mode !== "event") return fail3("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0441\u044C \u043D\u0430 \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440.");
+  if (!ev.date) return fail3("no_event", "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438.");
+  if (ev.done || now >= closeAtOf(r, ev.date)) return fail3("over", `\u042D\u0444\u0438\u0440 ${ddmm4(ev.date)} \u0443\u0436\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u0417\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u0443\u044E \u0434\u0430\u0442\u0443.`);
+  if (r.state.pendingCreate) return fail3("pending", "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443 (\u043E\u043D\u0430 \u043E\u0431\u043D\u0443\u043B\u0438\u0442 \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435).");
+  if (r.state.paused) return fail3("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
   const existing = eventTarget(r);
   if (existing) {
     syncEventCommunity(r);
-    return { ok: true, code: "exists", message: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm3(ev.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+    return { ok: true, code: "exists", message: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
   }
-  if (capReached(r, now)) return fail2("cap", `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.`);
+  if (capReached(r, now)) return fail3("cap", `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.`);
   return null;
 }
 async function eventCreateNow(r, now) {
@@ -9479,9 +10821,9 @@ async function eventCreateNow(r, now) {
     const late = eventCreateCheck(r, Math.max(now, r.deps.now()));
     if (late) return late;
     const ev = r.state.event;
-    if (!await checkConnection(r, now)) return fail2("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
+    if (!await checkConnection(r, now)) return fail3("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
     const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
-    if (!res.ok) return fail2("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
+    if (!res.ok) return fail3("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
     syncEventCommunity(r);
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
@@ -9493,7 +10835,7 @@ function cmdNewCheck(r, day, now) {
   if (r.state.pendingCreate) return { text: "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u0434\u0435\u043B\u0430\u0439 /wa_resume." };
   if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
   const existing = targetsOf(r, day)[0];
-  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm3(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm4(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
   if (capReached(r, now)) return { text: `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.` };
   return null;
 }
@@ -9511,8 +10853,8 @@ async function cmdNew(r, args, now) {
     day = dayKeyOf(now);
     for (let i = 0; i < 400 && (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)); i++) day = addDays(day, 1);
   }
-  if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `\u042D\u0444\u0438\u0440 ${ddmm3(day)} \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u0430\u043B\u0435\u043A\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0437\u0430 \u0442\u0440\u0438 \u0434\u043D\u044F \u0434\u043E \u043D\u0435\u0433\u043E.` };
-  if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u044D\u0444\u0438\u0440\u044B \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0431\u0435\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430: ${ddmm3(day)}. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u043D\u044C\u0448\u0435 \u0441\u0440\u043E\u043A\u0430, \u0443\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443: /wa_new ${day}` };
+  if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `\u042D\u0444\u0438\u0440 ${ddmm4(day)} \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u0430\u043B\u0435\u043A\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0437\u0430 \u0442\u0440\u0438 \u0434\u043D\u044F \u0434\u043E \u043D\u0435\u0433\u043E.` };
+  if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u044D\u0444\u0438\u0440\u044B \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0431\u0435\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430: ${ddmm4(day)}. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u043D\u044C\u0448\u0435 \u0441\u0440\u043E\u043A\u0430, \u0443\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443: /wa_new ${day}` };
   const early = cmdNewCheck(r, day, now);
   if (early) return early;
   return exclusive(r, async () => {
@@ -9524,7 +10866,7 @@ async function cmdNew(r, args, now) {
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
     const t = res.target;
-    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN2)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
+    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN3)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
   });
 }
 function currentTargets(r, now) {
@@ -9541,8 +10883,8 @@ async function sendSeries(r, id, now) {
   if (r.state.paused) return { ok: false, code: "paused", text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume.", ...zero };
   const { day, list: targets } = currentTargets(r, now);
   if (!targets.length) {
-    const text = r.state.mode === "event" ? day ? `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 (${ddmm3(day)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` : "\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442." : `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm3(dayKeyOf(now))}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.`;
-    return { ok: false, code: "no_target", text, ...zero };
+    const text2 = r.state.mode === "event" ? day ? `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 (${ddmm4(day)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` : "\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442." : `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm4(dayKeyOf(now))}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.`;
+    return { ok: false, code: "no_target", text: text2, ...zero };
   }
   return exclusive(r, async () => {
     if (!await checkConnection(r, now)) return { ok: false, code: "no_connection", text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E.`, ...zero, targets: targets.length };
@@ -9578,6 +10920,7 @@ async function waCommand(cmd, args, now) {
     if (cmd === "wa_new") return await cmdNew(r, args, now);
     if (cmd === "wa_send") return await cmdSend(r, args, now);
     if (cmd === "wa_ai" || cmd === "wa_ai_test") return { text: await aiCommand(cmd, args) };
+    if (cmd === "wa_dozhim" || cmd === "wa_dozhim_test") return { text: await dzCommand(cmd, args) };
     return { text: "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043A\u043E\u043C\u0430\u043D\u0434\u0430 WhatsApp." };
   } catch (e) {
     console.error("[wa] \u043A\u043E\u043C\u0430\u043D\u0434\u0430 %s \u0443\u043F\u0430\u043B\u0430:", cmd, e?.stack || e);
@@ -9594,13 +10937,13 @@ function waReportLine(day) {
   const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t, true)).length, 0);
   return `WhatsApp: \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${joined}, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0441\u0435\u0440\u0438\u0438 \u0443\u0448\u043B\u043E ${done} \u0438\u0437 ${total}.`;
 }
-var MODULE_OFF2 = fail2("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
+var MODULE_OFF3 = fail3("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
 var clock = (r, now) => now ?? r.deps.now();
-var when = (ms) => `${ddmm3(dayKeyOf(ms))} \u0432 ${hhmmOf(ms)}`;
+var when = (ms) => `${ddmm4(dayKeyOf(ms))} \u0432 ${hhmmOf(ms)}`;
 function waSetMode(mode, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
-  if (mode !== "daily" && mode !== "event") return fail2("bad_request", "\u0420\u0435\u0436\u0438\u043C: daily \u0438\u043B\u0438 event.");
+  if (!r) return MODULE_OFF3;
+  if (mode !== "daily" && mode !== "event") return fail3("bad_request", "\u0420\u0435\u0436\u0438\u043C: daily \u0438\u043B\u0438 event.");
   if (r.state.mode === mode) return { ok: true, code: "same", message: "\u042D\u0442\u043E\u0442 \u0440\u0435\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
   r.state.mode = mode;
   if (mode === "event") {
@@ -9616,10 +10959,10 @@ function waSetMode(mode, nowArg) {
 }
 function waSetDaily(enabled, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
-  if (typeof enabled !== "boolean") return fail2("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (!r) return MODULE_OFF3;
+  if (typeof enabled !== "boolean") return fail3("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
   if (!enabled && r.state.mode !== "daily") return { ok: true, code: "same", message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
-  if (r.state.mode !== "daily") return fail2("wrong_mode", "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
+  if (r.state.mode !== "daily") return fail3("wrong_mode", "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
   if (r.state.daily.enabled === enabled) return { ok: true, code: "same", message: enabled ? "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
   r.state.daily.enabled = enabled;
   save(r);
@@ -9627,42 +10970,42 @@ function waSetDaily(enabled, nowArg) {
   const now = clock(r, nowArg);
   if (!enabled) return { ok: true, message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E: \u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u044E\u0442\u0441\u044F. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0434\u043E \u043A\u043E\u043D\u0446\u0430." };
   const nx = nextDailyCreate(r, now);
-  return { ok: true, message: nx ? `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E, \u044D\u0444\u0438\u0440 ${ddmm3(nx.day)}, \u0441\u043E\u0437\u0434\u0430\u043C ${when(nx.at)}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
+  return { ok: true, message: nx ? `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E, \u044D\u0444\u0438\u0440 ${ddmm4(nx.day)}, \u0441\u043E\u0437\u0434\u0430\u043C ${when(nx.at)}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
 }
 var START_MIN = 18 * 60;
 var START_MAX = 21 * 60;
 function waSetEvent(p, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
-  if (r.state.mode !== "event") return fail2("wrong_mode", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440\xBB. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
+  if (!r) return MODULE_OFF3;
+  if (r.state.mode !== "event") return fail3("wrong_mode", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440\xBB. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
   const now = clock(r, nowArg);
   const today = dayKeyOf(now);
   const cur = r.state.event;
-  if (!cur.done && cur.communityId && eventTarget(r)) return fail2("locked", "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0442\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0434\u0430\u0442\u044B \u0438 \u0432\u0440\u0435\u043C\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F. \u041D\u0430\u0436\u043C\u0438 \xAB\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u044D\u0444\u0438\u0440\xBB \u0438 \u0437\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u044B\u0439.");
-  if (!isDayKey(p.date)) return fail2("bad_date", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430.");
-  if (p.date < today) return fail2("bad_date", "\u0414\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430.");
-  if (p.date > addDays(today, 90)) return fail2("bad_date", "\u042D\u0444\u0438\u0440 \u0434\u0430\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 90 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
+  if (!cur.done && cur.communityId && eventTarget(r)) return fail3("locked", "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0442\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0434\u0430\u0442\u044B \u0438 \u0432\u0440\u0435\u043C\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F. \u041D\u0430\u0436\u043C\u0438 \xAB\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u044D\u0444\u0438\u0440\xBB \u0438 \u0437\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u044B\u0439.");
+  if (!isDayKey(p.date)) return fail3("bad_date", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430.");
+  if (p.date < today) return fail3("bad_date", "\u0414\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430.");
+  if (p.date > addDays(today, 90)) return fail3("bad_date", "\u042D\u0444\u0438\u0440 \u0434\u0430\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 90 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
   let start;
   try {
     start = normHHMM(String(p.start || r.cfg.streamStart));
   } catch {
-    return fail2("bad_start", "\u0412\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0432\u0438\u0434\u0430 20:00.");
+    return fail3("bad_start", "\u0412\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0432\u0438\u0434\u0430 20:00.");
   }
-  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail2("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 18:00 \u0434\u043E 21:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440, \u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u0443\u0445\u043E\u0434\u0438\u0442\u044C \u0434\u043E 09:00.");
-  if (!isDayKey(p.recruitFrom)) return fail2("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
-  if (p.recruitFrom > p.date) return fail2("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
-  if (p.recruitFrom < addDays(p.date, -30)) return fail2("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
+  if (minsOf2(start) < START_MIN || minsOf2(start) > START_MAX) return fail3("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 18:00 \u0434\u043E 21:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440, \u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u0443\u0445\u043E\u0434\u0438\u0442\u044C \u0434\u043E 09:00.");
+  if (!isDayKey(p.recruitFrom)) return fail3("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
+  if (p.recruitFrom > p.date) return fail3("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
+  if (p.recruitFrom < addDays(p.date, -30)) return fail3("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
   r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
   syncEventCommunity(r);
   save(r);
   journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
   const at = eventCreateAt(r);
-  const text = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm3(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? daytime(now) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm3(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm3(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B (\u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB).` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm3(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
-  return { ok: true, message: text };
+  const text2 = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm4(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? daytime(now) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm4(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm4(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B (\u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB).` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm4(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
+  return { ok: true, message: text2 };
 }
 function waEventReset() {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
   save(r);
   journal(r, { ev: "event_reset", by: "panel" });
@@ -9670,50 +11013,50 @@ function waEventReset() {
 }
 async function waEventCreateNow(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   try {
     return await eventCreateNow(r, clock(r, nowArg));
   } catch (e) {
-    return fail2("internal", `\u041E\u0448\u0438\u0431\u043A\u0430: ${e?.message || e}`);
+    return fail3("internal", `\u041E\u0448\u0438\u0431\u043A\u0430: ${e?.message || e}`);
   }
 }
 async function waDailyCreateNow(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
-  if (r.state.mode !== "daily") return fail2("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB \u0432 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.");
-  const text = (await cmdNew(r, "", clock(r, nowArg))).text;
-  return { ok: /^Создано:/.test(text) || /сообщество уже есть/.test(text), message: text };
+  if (!r) return MODULE_OFF3;
+  if (r.state.mode !== "daily") return fail3("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB \u0432 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.");
+  const text2 = (await cmdNew(r, "", clock(r, nowArg))).text;
+  return { ok: /^Создано:/.test(text2) || /сообщество уже есть/.test(text2), message: text2 };
 }
 function waPause(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   const was = r.state.paused;
   const reply2 = cmdPause(r, clock(r, nowArg), "panel");
   return { ok: true, code: was ? "same" : "paused", message: reply2.text };
 }
 function waResume() {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   return { ok: true, message: cmdResume(r).text };
 }
 async function waSendSeries(id, nowArg) {
   const r = rt;
-  if (!r) return { ...MODULE_OFF2, sent: 0, skipped: 0, failed: 0, targets: 0 };
-  if (typeof id !== "string" || !id) return { ...fail2("bad_request", "\u0412\u044B\u0431\u0435\u0440\u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438."), sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (!r) return { ...MODULE_OFF3, sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (typeof id !== "string" || !id) return { ...fail3("bad_request", "\u0412\u044B\u0431\u0435\u0440\u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438."), sent: 0, skipped: 0, failed: 0, targets: 0 };
   const x = await sendSeries(r, id, clock(r, nowArg));
   return { ok: x.ok, code: x.code, message: x.text, sent: x.sent, skipped: x.skipped, failed: x.failed, targets: x.targets };
 }
 var numberOf = (r) => r.state.ownerJid ? `+${r.state.ownerJid.replace(/[:@].*$/, "")}` : "";
 async function waConnection(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     if (r.conn.at && now - r.conn.at < 3e3 && r.conn.state !== "open") return { ok: true, state: r.conn.state, number: "", profile: "" };
     const cs = await connectionState();
     if (!cs.ok) {
       setConn(r, "unreachable", now);
-      return fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+      return fail3("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     }
     setConn(r, cs.data.state, now);
     if (cs.data.state === "open") await refreshOwner(r, now);
@@ -9732,11 +11075,11 @@ async function refreshOwner(r, now) {
 var cleanQr = (x) => typeof x === "string" ? x.replace(/^data:image\/\w+;base64,/, "") : "";
 async function waQr(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const cs = await connectionState();
-    if (!cs.ok) return fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+    if (!cs.ok) return fail3("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     const st = cs.data.state;
     setConn(r, st, now);
     if (st === "open") {
@@ -9749,18 +11092,18 @@ async function waQr(nowArg) {
     let qr;
     if (st === "absent") {
       const c = await createInstance();
-      if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
+      if (!c.ok) return fail3("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
       qr = c.data?.qrcode?.base64;
     } else {
       const c = await connectInstance();
-      if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C QR: ${c.error}`);
+      if (!c.ok) return fail3("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C QR: ${c.error}`);
       qr = c.data?.base64;
     }
     const b64 = cleanQr(qr);
     if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64) || b64.length > 4e5) return { ok: true, state: shown, qr: null, message: "QR \u0433\u043E\u0442\u043E\u0432\u0438\u0442\u0441\u044F, \u043E\u043D \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434." };
     const data = `data:image/png;base64,${b64}`;
     r.qrCache = { at: now, state: shown, data };
-    if (now - r.qrJournalAt > 5 * MIN2) {
+    if (now - r.qrJournalAt > 5 * MIN3) {
       r.qrJournalAt = now;
       journal(r, { ev: "qr", by: "panel" });
     }
@@ -9769,11 +11112,11 @@ async function waQr(nowArg) {
 }
 async function waLogout(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const x = await logoutInstance();
-    if (!x.ok) return fail2("evolution", `\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043D\u043E\u043C\u0435\u0440: ${x.error}`);
+    if (!x.ok) return fail3("evolution", `\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043D\u043E\u043C\u0435\u0440: ${x.error}`);
     setConn(r, "close", now);
     r.statusCache = null;
     r.pairCache = null;
@@ -9827,7 +11170,7 @@ function describeStatus(r, state, info, infoErr, now, evoErr = "") {
       tone: "ok",
       title: "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D",
       detail: "\u041D\u043E\u043C\u0435\u0440 \u043D\u0430 \u0441\u0432\u044F\u0437\u0438. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442.",
-      number: maskNumber(digitsOf(owner)),
+      number: maskNumber(digitsOf2(owner)),
       profile: clip(info?.profileName || r.profileName, 60),
       since: r.state.connSince ? when(r.state.connSince) : ""
     };
@@ -9884,7 +11227,7 @@ function describeStatus(r, state, info, infoErr, now, evoErr = "") {
 }
 async function waStatus(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
+  if (!r) return MODULE_OFF3;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const cached = r.statusCache;
@@ -9920,10 +11263,10 @@ var PAIR_MIN_GAP_MS = 15e3;
 var PAIR_TTL_SEC = 60;
 async function waPairing(numberRaw, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF2;
-  const text = typeof numberRaw === "number" ? String(numberRaw) : typeof numberRaw === "string" ? numberRaw : "";
-  const digits = /^[\d\s+()-]+$/.test(text) ? text.replace(/\D/g, "") : "";
-  if (digits.length < 11 || digits.length > 15) return fail2("bad_number", "\u041D\u043E\u043C\u0435\u0440: \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u043E\u0442 11 \u0434\u043E 15, \u0441 \u043A\u043E\u0434\u043E\u043C \u0441\u0442\u0440\u0430\u043D\u044B.");
+  if (!r) return MODULE_OFF3;
+  const text2 = typeof numberRaw === "number" ? String(numberRaw) : typeof numberRaw === "string" ? numberRaw : "";
+  const digits = /^[\d\s+()-]+$/.test(text2) ? text2.replace(/\D/g, "") : "";
+  if (digits.length < 11 || digits.length > 15) return fail3("bad_number", "\u041D\u043E\u043C\u0435\u0440: \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u043E\u0442 11 \u0434\u043E 15, \u0441 \u043A\u043E\u0434\u043E\u043C \u0441\u0442\u0440\u0430\u043D\u044B.");
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const pc = r.pairCache;
@@ -9934,45 +11277,45 @@ async function waPairing(numberRaw, nowArg) {
     const cs = await connectionState();
     if (!cs.ok) {
       setConn(r, "unreachable", now);
-      return fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+      return fail3("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     }
     const st = cs.data.state;
     setConn(r, st, now);
     r.statusCache = null;
-    if (st === "open") return fail2("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
+    if (st === "open") return fail3("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
     const codeOf = (x) => String(x ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     let code = "";
     if (st === "absent") {
       const c = await createInstance(digits);
-      if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
+      if (!c.ok) return fail3("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
       code = codeOf(c.data?.qrcode?.pairingCode);
     } else {
       if (st === "connecting") {
         const i = await fetchInstance();
-        if (i.ok && i.data.ownerJid) return fail2("reconnecting", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.");
+        if (i.ok && i.data.ownerJid) return fail3("reconnecting", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.");
         await logoutInstance();
       }
       for (let attempt = 0; attempt < 3 && !code; attempt++) {
         if (attempt) await r.deps.sleep(2500);
         const c = await connectInstance(digits);
-        if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u043A\u043E\u0434: ${c.error}`);
+        if (!c.ok) return fail3("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u043A\u043E\u0434: ${c.error}`);
         if (c.data?.instance?.state === "open") return { ok: true, state: "open", pairingCode: "", number: maskNumber(digits), ttlSec: 0, cached: false };
         code = codeOf(c.data?.pairingCode);
       }
     }
-    if (code.length !== 8) return fail2("no_code", "Evolution \u043D\u0435 \u0432\u044B\u0434\u0430\u043B \u043A\u043E\u0434. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434\xBB.");
+    if (code.length !== 8) return fail3("no_code", "Evolution \u043D\u0435 \u0432\u044B\u0434\u0430\u043B \u043A\u043E\u0434. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434\xBB.");
     r.qrCache = null;
     r.pairCache = { at: now, digits, code };
     journal(r, { ev: "pair", by: "panel" });
     return { ok: true, state: "connecting", pairingCode: code, number: maskNumber(digits), ttlSec: PAIR_TTL_SEC, cached: false };
   });
 }
-var digitsOf = (x) => typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "";
+var digitsOf2 = (x) => typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "";
 function roleOfGroup(g, me) {
   if (!me) return "unknown";
-  if (digitsOf(g?.owner) === me) return "owner";
+  if (digitsOf2(g?.owner) === me) return "owner";
   if (!Array.isArray(g?.participants)) return "unknown";
-  const mine = g.participants.find((p) => [p?.id, p?.jid, p?.phoneNumber, p?.lid].some((x) => digitsOf(x) === me));
+  const mine = g.participants.find((p) => [p?.id, p?.jid, p?.phoneNumber, p?.lid].some((x) => digitsOf2(x) === me));
   if (!mine) return "unknown";
   return mine.admin === "superadmin" ? "owner" : mine.admin ? "admin" : "member";
 }
@@ -9980,7 +11323,7 @@ var ROLE_LABEL = { owner: "\u0441\u043E\u0437\u0434\u0430\u0442\u0435\u043B\u044
 var TYPE_LABEL = { community: "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E", announce: "\u0432\u043A\u043B\u0430\u0434\u043A\u0430 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439", subgroup: "\u0433\u0440\u0443\u043F\u043F\u0430 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0435", group: "\u0433\u0440\u0443\u043F\u043F\u0430" };
 function groupView(r, g) {
   const type = g?.isCommunity === true ? "community" : g?.isCommunityAnnounce === true ? "announce" : g?.linkedParent ? "subgroup" : "group";
-  const role = roleOfGroup(g, digitsOf(r.state.ownerJid));
+  const role = roleOfGroup(g, digitsOf2(r.state.ownerJid));
   const id = String(g?.id || "");
   const size = typeof g?.size === "number" && Number.isFinite(g.size) ? g.size : Array.isArray(g?.participants) ? g.participants.length : null;
   return {
@@ -9999,20 +11342,20 @@ var GROUPS_CACHE_MS = 6e4;
 var GROUPS_MIN_GAP_MS = 2e4;
 async function waGroups(force = false, nowArg) {
   const r = rt;
-  if (!r) return { ...MODULE_OFF2, items: [], at: 0, cached: false };
+  if (!r) return { ...MODULE_OFF3, items: [], at: 0, cached: false };
   const now = clock(r, nowArg);
   const c = r.groupsCache;
   if (c && (!force ? now - c.at < GROUPS_CACHE_MS : now - r.groupsCallAt < GROUPS_MIN_GAP_MS)) return { ok: true, message: "", items: c.items, at: c.at, cached: true };
   return exclusive(r, async () => {
     r.groupsCallAt = now;
     const cs = await connectionState();
-    if (!cs.ok) return { ...fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (!cs.ok) return { ...fail3("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     setConn(r, cs.data.state, now);
-    if (cs.data.state !== "open") return { ...fail2("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${cs.data.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (cs.data.state !== "open") return { ...fail3("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${cs.data.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     if (!r.state.ownerJid) await refreshOwner(r, now);
     let res = await fetchAllGroups(true);
     if (!res.ok) res = await fetchAllGroups(false);
-    if (!res.ok) return { ...fail2("evolution", `\u0421\u043F\u0438\u0441\u043E\u043A \u0433\u0440\u0443\u043F\u043F \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: ${res.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (!res.ok) return { ...fail3("evolution", `\u0421\u043F\u0438\u0441\u043E\u043A \u0433\u0440\u0443\u043F\u043F \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: ${res.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     const rank = (g) => g.type === "community" ? 0 : g.type === "announce" ? 1 : g.type === "subgroup" ? 2 : 3;
     const items = res.data.slice(0, 300).map((g) => groupView(r, g)).filter((g) => g.id).sort((a, b) => rank(a) - rank(b) || (b.size ?? -1) - (a.size ?? -1) || a.name.localeCompare(b.name));
     r.groupsCache = { at: now, items };
@@ -10021,19 +11364,19 @@ async function waGroups(force = false, nowArg) {
 }
 function readJsonlTail(file, maxBytes = 256 * 1024) {
   try {
-    const size = (0, import_node_fs9.statSync)(file).size;
+    const size = (0, import_node_fs10.statSync)(file).size;
     const start = Math.max(0, size - maxBytes);
     const buf = Buffer.alloc(size - start);
-    const fd = (0, import_node_fs9.openSync)(file, "r");
+    const fd = (0, import_node_fs10.openSync)(file, "r");
     try {
-      (0, import_node_fs9.readSync)(fd, buf, 0, buf.length, start);
+      (0, import_node_fs10.readSync)(fd, buf, 0, buf.length, start);
     } finally {
-      (0, import_node_fs9.closeSync)(fd);
+      (0, import_node_fs10.closeSync)(fd);
     }
-    let text = buf.toString("utf8");
-    if (start > 0) text = text.slice(text.indexOf("\n") + 1);
+    let text2 = buf.toString("utf8");
+    if (start > 0) text2 = text2.slice(text2.indexOf("\n") + 1);
     const out = [];
-    for (const line of text.split("\n")) {
+    for (const line of text2.split("\n")) {
       const s = line.trim();
       if (!s) continue;
       try {
@@ -10046,8 +11389,8 @@ function readJsonlTail(file, maxBytes = 256 * 1024) {
     return [];
   }
 }
-var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip"]);
-var stampOf = (ms) => `${ddmm3(dayKeyOf(ms))} ${hhmmOf(ms)}`;
+var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
+var stampOf = (ms) => `${ddmm4(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 var clip = (s, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
   return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
@@ -10059,80 +11402,97 @@ function journalView(r, limit = 20) {
   return rows.slice(-limit).reverse().map((x) => {
     const ts = Date.parse(String(x.ts || "")) || 0;
     let kind = "info";
-    let text = "";
+    let text2 = "";
     switch (x.ev) {
       case "create":
         kind = "ok";
-        text = `\u0421\u043E\u0437\u0434\u0430\u043D\u043E \xAB${nameOfTarget(x.target) || x.name}\xBB`;
+        text2 = `\u0421\u043E\u0437\u0434\u0430\u043D\u043E \xAB${nameOfTarget(x.target) || x.name}\xBB`;
         break;
       case "send": {
         const part = x.part === "poll" ? ", \u043E\u043F\u0440\u043E\u0441" : x.part === "text" ? ", \u0442\u0435\u043A\u0441\u0442" : "";
         kind = x.ok ? "ok" : "error";
-        text = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : x.unknown ? `\u041D\u0435\u044F\u0441\u043D\u043E, \u0443\u0448\u043B\u043E \u043B\u0438 \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}. \u041F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
+        text2 = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : x.unknown ? `\u041D\u0435\u044F\u0441\u043D\u043E, \u0443\u0448\u043B\u043E \u043B\u0438 \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}. \u041F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
         break;
       }
       case "skip":
-        text = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan} \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 \u043E\u0442 09:00 \u0434\u043E 23:45`;
+        text2 = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan} \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 \u043E\u0442 09:00 \u0434\u043E 23:45`;
         break;
       case "fail":
         kind = "error";
-        text = `\u041E\u0448\u0438\u0431\u043A\u0430 ${x.n} \u043F\u043E\u0434\u0440\u044F\u0434: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
+        text2 = `\u041E\u0448\u0438\u0431\u043A\u0430 ${x.n} \u043F\u043E\u0434\u0440\u044F\u0434: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
         break;
       case "pause":
         kind = "error";
-        text = `\u041F\u0430\u0443\u0437\u0430: ${clip(x.reason, 120)}`;
+        text2 = `\u041F\u0430\u0443\u0437\u0430: ${clip(x.reason, 120)}`;
         break;
       case "resume":
-        text = "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430";
+        text2 = "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430";
         break;
       case "alarm":
         kind = "error";
-        text = `\u0422\u0440\u0435\u0432\u043E\u0433\u0430: ${clip(x.text, 140)}`;
+        text2 = `\u0422\u0440\u0435\u0432\u043E\u0433\u0430: ${clip(x.text, 140)}`;
         break;
       case "mode":
-        text = x.mode === "event" ? "\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440" : "\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439";
+        text2 = x.mode === "event" ? "\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440" : "\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439";
         break;
       case "daily":
-        text = `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435: ${x.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`;
+        text2 = `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435: ${x.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`;
         break;
       case "event_set":
-        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: ${ddmm3(String(x.date))} \u0432 ${x.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm3(String(x.recruitFrom))}`;
+        text2 = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: ${ddmm4(String(x.date))} \u0432 ${x.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm4(String(x.recruitFrom))}`;
         break;
       case "event_reset":
-        text = "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B";
+        text2 = "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B";
         break;
       case "event_done":
-        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 ${ddmm3(String(x.date))} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0441\u0441\u044B\u043B\u043A\u0430 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F`;
+        text2 = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 ${ddmm4(String(x.date))} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0441\u0441\u044B\u043B\u043A\u0430 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F`;
         break;
       case "logout":
         kind = "error";
-        text = "\u041D\u043E\u043C\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D";
+        text2 = "\u041D\u043E\u043C\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D";
         break;
       case "qr":
-        text = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430";
+        text2 = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430";
         break;
       case "pair":
-        text = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D \u043A\u043E\u0434 \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430 \u043F\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0443";
+        text2 = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D \u043A\u043E\u0434 \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430 \u043F\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0443";
         break;
       case "conn":
         kind = x.state === "open" ? "ok" : "error";
-        text = x.state === "open" ? "WhatsApp \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D" : `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${x.state}`;
+        text2 = x.state === "open" ? "WhatsApp \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D" : `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${x.state}`;
         break;
       case "ai_on":
         kind = "ok";
-        text = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D";
+        text2 = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D";
         break;
       case "ai_off":
-        text = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D";
+        text2 = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D";
         break;
       case "ai_handoff":
-        text = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043B ${clip(x.who, 24)} \u0410\u044F\u043D\u0435: ${clip(x.why, 100)}. \u041C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432`;
+        text2 = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043B ${clip(x.who, 24)} \u0410\u044F\u043D\u0435: ${clip(x.why, 100)}. \u041C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432`;
         break;
       case "ai_skip":
-        text = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
+        text2 = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
+        break;
+      case "dz_on":
+        kind = "ok";
+        text2 = "\u0414\u043E\u0436\u0438\u043C WABA \u0432\u043A\u043B\u044E\u0447\u0451\u043D";
+        break;
+      case "dz_off":
+        text2 = "\u0414\u043E\u0436\u0438\u043C WABA \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D";
+        break;
+      case "dz_hook":
+        kind = x.on ? "ok" : "info";
+        text2 = x.on ? "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D" : "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442";
+        break;
+      case "dz_save":
+        text2 = `\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0434\u043E\u0436\u0438\u043C\u0430 WABA \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B: \u0448\u0430\u0431\u043B\u043E\u043D \xAB${clip(x.template, 60)}\xBB`;
+        break;
+      case "dz_tpl":
+        text2 = `\u0428\u0430\u0431\u043B\u043E\u043D WABA \xAB${clip(x.name, 60)}\xBB: \u0441\u0442\u0430\u0442\u0443\u0441 ${clip(x.status, 30) || "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D"}`;
         break;
     }
-    return { ts, t: ts ? stampOf(ts) : "", kind, text };
+    return { ts, t: ts ? stampOf(ts) : "", kind, text: text2 };
   });
 }
 function nextDailyCreate(r, now) {
@@ -10152,14 +11512,14 @@ function cardOf(r, t, now, serving) {
     id: t.id,
     name: t.name,
     day: t.day,
-    dayLabel: ddmm3(t.day),
+    dayLabel: ddmm4(t.day),
     kind: t.kind,
     source: t.source ?? "daily",
     ready: isReady(t),
     link: isReady(t) ? t.link : "",
     onSite: serving?.id === t.id,
     members: t.members ?? null,
-    membersAgo: t.membersAt ? agoText2(now - t.membersAt) : "",
+    membersAgo: t.membersAt ? agoText3(now - t.membersAt) : "",
     joinedToday: r.joinedByDay.get(t.id)?.get(dayKeyOf(now)) ?? 0,
     joinedTotal: r.joinedCount.get(t.id) ?? 0
   };
@@ -10181,12 +11541,12 @@ function waPanel(nowArg) {
   let evText = "\u042D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D. \u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443, \u0432\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438.";
   if (ev.done) {
     evStatus = "done";
-    evText = `\u042D\u0444\u0438\u0440 ${ddmm3(ev.date)} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F.`;
+    evText = `\u042D\u0444\u0438\u0440 ${ddmm4(ev.date)} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F.`;
   } else if (ev.date) {
     const startAt = atTime(ev.date, startEff);
     if (st.mode !== "event") {
       evStatus = "inactive";
-      evText = `\u042D\u0444\u0438\u0440 ${ddmm3(ev.date)} \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C.`;
+      evText = `\u042D\u0444\u0438\u0440 ${ddmm4(ev.date)} \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C.`;
     } else if (!evTarget) {
       if (now < eventCreateAt(r)) {
         evStatus = "scheduled";
@@ -10198,7 +11558,7 @@ function waPanel(nowArg) {
     } else if (now < startAt) {
       evStatus = "recruiting";
       evText = "\u0418\u0434\u0451\u0442 \u043D\u0430\u0431\u043E\u0440: \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430.";
-    } else if (now < startAt + r.cfg.streamMinutes * MIN2) {
+    } else if (now < startAt + r.cfg.streamMinutes * MIN3) {
       evStatus = "live";
       evText = "\u042D\u0444\u0438\u0440 \u0438\u0434\u0451\u0442. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E.";
     } else {
@@ -10206,13 +11566,15 @@ function waPanel(nowArg) {
       evText = `\u042D\u0444\u0438\u0440 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u041E\u0444\u0444\u0435\u0440\u044B \u0441\u0435\u0440\u0438\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0442 \u0434\u043E 00:00, \u043F\u043E\u0442\u043E\u043C \u0440\u0435\u0436\u0438\u043C \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0441\u044F \u0438 \u0441\u0441\u044B\u043B\u043A\u0430 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F \u043D\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0443\u044E.`;
     }
   }
+  const dz = dzPanel(now);
+  const signupsOf = (day) => dz.days?.find((x) => x.day === day) ?? null;
   const cardsOf2 = (day) => [...targetsOf(r, day)].reverse().filter((t) => st.mode === "event" || t.source !== "event").map((t) => cardOf(r, t, now, serving));
   let current = null;
   let next = null;
   if (st.mode === "event") {
     if (ev.date) {
       const cards = cardsOf2(ev.date);
-      current = { title: "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430", day: ev.date, dayLabel: ddmm3(ev.date), cards, pending: cards.length ? "" : evText };
+      current = { title: "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430", day: ev.date, dayLabel: ddmm4(ev.date), cards, pending: cards.length ? "" : evText, signups: signupsOf(ev.date) };
     }
   } else {
     const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
@@ -10220,7 +11582,7 @@ function waPanel(nowArg) {
     const pend = (day) => r.state.daily.enabled ? `\u0411\u0443\u0434\u0435\u0442 \u0441\u043E\u0437\u0434\u0430\u043D\u043E ${when(createAtOf(r, day))}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F.";
     const mk = (title, day) => {
       const cards = cardsOf2(day);
-      return { title, day, dayLabel: ddmm3(day), cards, pending: cards.length ? "" : pend(day) };
+      return { title, day, dayLabel: ddmm4(day), cards, pending: cards.length ? "" : pend(day), signups: signupsOf(day) };
     };
     current = mk("\u042D\u0444\u0438\u0440", cur);
     next = mk("\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", nxt);
@@ -10254,21 +11616,21 @@ function waPanel(nowArg) {
       pendingCreate: !!st.pendingCreate,
       kind: r.cfg.target
     },
-    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText2(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText3(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
     /** Последний статус подключения из памяти (без запроса к Evolution): пульт показывает его сразу, пока приходит свежий. */
     status: r.statusCache ? r.statusCache.value : null,
     mode: st.mode,
     daily: { enabled: st.daily.enabled, next: (() => {
       const n = nextDailyCreate(r, now);
-      return n ? { day: n.day, dayLabel: ddmm3(n.day), at: n.at, text: when(n.at) } : null;
+      return n ? { day: n.day, dayLabel: ddmm4(n.day), at: n.at, text: when(n.at) } : null;
     })() },
     event: {
       date: ev.date,
-      dateLabel: ev.date ? ddmm3(ev.date) : "",
+      dateLabel: ev.date ? ddmm4(ev.date) : "",
       start: startEff,
       startDefault: r.cfg.streamStart,
       recruitFrom: ev.recruitFrom,
-      recruitLabel: ev.recruitFrom ? ddmm3(ev.recruitFrom) : "",
+      recruitLabel: ev.recruitFrom ? ddmm4(ev.recruitFrom) : "",
       createTime: EVENT_CREATE_AT,
       createAt: ev.recruitFrom ? eventCreateAt(r) : 0,
       status: evStatus,
@@ -10287,16 +11649,17 @@ function waPanel(nowArg) {
     },
     current,
     next,
-    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm3(nm.day), inText: inText(nm.plan - now) } : null,
+    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm4(nm.day), inText: inText(nm.plan - now) } : null,
     sendTo: targets.map((t) => t.name),
     series: series2,
     assistant: aiPanel(now),
+    dozhim: dzPanel(now),
     journal: journalView(r, 20)
   };
 }
 
 // form-api/wa-admin.ts
-var MAX_BODY = 4096;
+var MAX_BODY = 8192;
 var STATUS = {
   bad_request: 400,
   bad_number: 400,
@@ -10307,6 +11670,7 @@ var STATUS = {
   no_id: 400,
   confirm: 400,
   evolution: 502,
+  wazzup: 502,
   model: 502,
   rate: 429,
   not_found: 404,
@@ -10348,6 +11712,10 @@ async function handleWaAdmin(req, res, path) {
       }
       if (what === "ai/number") {
         const x = aiNumber(qs.get("id"));
+        return adminJson(res, statusOf(x), x);
+      }
+      if (what === "dozhim/templates") {
+        const x = await dzTemplates(qs.get("refresh") === "1");
         return adminJson(res, statusOf(x), x);
       }
       return adminJson(res, 404, { ok: false, error: "not_found" });
@@ -10395,6 +11763,14 @@ async function handleWaAdmin(req, res, path) {
         const x = await aiTest(body.question);
         return adminJson(res, statusOf(x), x);
       }
+      case "dozhim/toggle":
+        return body.enabled === false || confirmed ? done(await dzSetEnabled(body.enabled)) : done(NEED_CONFIRM);
+      case "dozhim/save":
+        return done(await dzSave(body));
+      case "dozhim/hook":
+        return body.on === false || confirmed ? done(await dzHookSet(body.on)) : done(NEED_CONFIRM);
+      case "dozhim/test":
+        return confirmed ? done(await dzTestSend(body.number)) : done(NEED_CONFIRM);
     }
     return adminJson(res, 404, { ok: false, error: "not_found" });
   } catch (e) {
@@ -10406,7 +11782,7 @@ async function handleWaAdmin(req, res, path) {
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs10.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path10.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs11.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path11.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -10473,18 +11849,18 @@ async function handleLead(req, res) {
   if (!name || name.trim().length < 2) return json(res, 422, { ok: false, error: "Name required" });
   if (!phone || phone.replace(/\D/g, "").length < 8) return json(res, 422, { ok: false, error: "Phone required" });
   if (!consent) return json(res, 422, { ok: false, error: "Consent required" });
-  const cleanName = name.trim();
+  const cleanName2 = name.trim();
   const cleanPhone = phone.trim();
   const cleanTelegram = normalizeTelegram(payload.telegram);
   const siteUrl = eventSourceUrl || req.headers.referer || req.headers.origin || "https://onai.academy/workshop";
   const forwarded = req.headers["x-forwarded-for"];
   const clientIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
   const userAgent = req.headers["user-agent"] || void 0;
-  const metaEventId = eventId || (0, import_node_crypto6.randomUUID)();
+  const metaEventId = eventId || (0, import_node_crypto7.randomUUID)();
   const fbclid = fbc ? fbc.split(".").slice(3).join(".") || void 0 : void 0;
   const captured = await captureLead({
     eventId: metaEventId,
-    name: cleanName,
+    name: cleanName2,
     phone: cleanPhone,
     source,
     utm,
@@ -10494,7 +11870,7 @@ async function handleLead(req, res) {
   void Promise.allSettled([
     persistAmoLead(captured),
     sendLeadEvent({
-      name: cleanName,
+      name: cleanName2,
       phone: cleanPhone,
       eventId: metaEventId,
       eventSourceUrl: siteUrl,
@@ -10506,7 +11882,7 @@ async function handleLead(req, res) {
   ]).then(([crmResult, capiResult]) => {
     const crmStatus = crmResult.status === "fulfilled" ? crmResult.value.ok ? `ok:${crmResult.value.leadId}` : `fail:${crmResult.value.error}` : "throw";
     const capiStatus = capiResult.status === "fulfilled" ? capiResult.value.ok ? `ok:${capiResult.value.received}` : `skip:${capiResult.value.reason}` : "throw";
-    console.log("[lead] name=%s phone=***%s tg=%s source=%s crm=%s capi=%s", cleanName, cleanPhone.slice(-4), cleanTelegram ? "yes" : "no", source, crmStatus, capiStatus);
+    console.log("[lead] name=%s phone=***%s tg=%s source=%s crm=%s capi=%s", cleanName2, cleanPhone.slice(-4), cleanTelegram ? "yes" : "no", source, crmStatus, capiStatus);
   });
   return json(res, 200, { ok: true, redirect: THANKYOU_URL });
 }
@@ -10563,13 +11939,13 @@ function secretOk2(provided) {
   const a = Buffer.from(provided);
   const b = Buffer.from(TG_SECRET);
   if (a.length !== b.length) return false;
-  return (0, import_node_crypto6.timingSafeEqual)(a, b);
+  return (0, import_node_crypto7.timingSafeEqual)(a, b);
 }
-function webhookReply(res, chatId, text) {
-  return json(res, 200, { method: "sendMessage", chat_id: chatId, text, disable_web_page_preview: true });
+function webhookReply(res, chatId, text2) {
+  return json(res, 200, { method: "sendMessage", chat_id: chatId, text: text2, disable_web_page_preview: true });
 }
-function extractUrl(text) {
-  const m = text.match(/https?:\/\/\S+/);
+function extractUrl(text2) {
+  const m = text2.match(/https?:\/\/\S+/);
   if (!m) return null;
   return m[0].replace(/[)\]>!.,'"]+$/, "");
 }
@@ -10585,11 +11961,11 @@ async function handleTgLink(req, res) {
   const msg = update.message || update.edited_message;
   const chatId = msg?.chat?.id;
   const fromId = msg?.from?.id;
-  const text = (msg?.text || "").trim();
+  const text2 = (msg?.text || "").trim();
   if (!fromId || TG_OWNER_IDS.length === 0 || !TG_OWNER_IDS.includes(String(fromId))) {
     return json(res, 200, { ok: true });
   }
-  const url = extractUrl(text);
+  const url = extractUrl(text2);
   if (!url) {
     const cur = readWhatsAppRecord();
     const when2 = cur.updatedAt ? `
@@ -10632,7 +12008,7 @@ function handleCalendar(res) {
 }
 function readVersion() {
   try {
-    return (0, import_node_fs10.readFileSync)((0, import_node_path10.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+    return (0, import_node_fs11.readFileSync)((0, import_node_path11.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
   } catch {
     return "dev";
   }
@@ -10669,6 +12045,7 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
     if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
     if (method === "POST" && url === "/api/wa-hook") return await handleWaHook(req, res);
+    if (url === "/api/wazzup-hook") return await handleWazzupHook(req, res);
     if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);

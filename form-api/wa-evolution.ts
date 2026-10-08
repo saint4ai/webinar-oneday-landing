@@ -261,6 +261,39 @@ function inviteOf(r: EvoOk<any>): EvoResult<{ inviteCode: string; inviteUrl: str
   return { ok: true, status: r.status, data: { inviteCode, inviteUrl } };
 }
 
+/**
+ * Участники группы или вкладки объявлений сообщества: GET /group/participants/{instance}?groupJid=. Evolution 2.3.7 отдаёт каждого
+ * с полями id (…@lid), phoneNumber (77…@s.whatsapp.net) и admin. Ответ: объект { participants: [...] } или сам массив.
+ * Нужен дожиму (wa-dozhim.ts): по phoneNumber видно, кто из записавшихся уже вступил. Большие группы отвечают долго, таймаут минута.
+ */
+export type GroupMember = { id: string; phoneNumber: string; admin: string };
+
+export async function groupParticipants(jid: string): Promise<EvoResult<GroupMember[]>> {
+  const r = await evoCall<any>("GET", `/group/participants/${I()}?groupJid=${encodeURIComponent(jid)}`, undefined, GROUPS_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.participants) ? r.data.participants : null;
+  if (!list) return { ok: false, status: r.status, error: "в ответе participants нет списка", data: r.data };
+  const members: GroupMember[] = [];
+  for (const p of list) {
+    if (!p || typeof p !== "object") continue;
+    members.push({ id: String(p.id ?? p.jid ?? ""), phoneNumber: String(p.phoneNumber ?? p.phone ?? ""), admin: String(p.admin ?? "") });
+  }
+  return { ok: true, status: r.status, data: members };
+}
+
+/**
+ * Имя профиля WhatsApp человека из контактов инстанса: POST /chat/findContacts/{instance} с телом { where: { remoteJid } }
+ * (Evolution 2.3.7, chat.router.ts и fetchContacts в whatsapp.baileys.service.ts). Ответ: массив контактов с pushName.
+ * Пусто, если контакта нет или имя не известно: Evolution хранит только тех, кого видел.
+ */
+export async function contactPushName(digits: string): Promise<EvoResult<string>> {
+  const r = await evoCall<any>("POST", `/chat/findContacts/${I()}`, { where: { remoteJid: `${digits}@s.whatsapp.net` } });
+  if (!r.ok) return r;
+  const list = Array.isArray(r.data) ? r.data : [];
+  const hit = list.find((c: any) => c && typeof c.pushName === "string" && c.pushName.trim());
+  return { ok: true, status: r.status, data: hit ? String(hit.pushName).trim() : "" };
+}
+
 // ───────────────────────── сообщения ─────────────────────────
 
 export type SentMsg = { messageId: string };

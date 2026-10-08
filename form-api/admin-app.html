@@ -193,6 +193,13 @@ details.ser .tm{flex:none;font-weight:800;font-variant-numeric:tabular-nums}
 details.ser .tp{min-width:0;overflow-wrap:anywhere}
 .serbody{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
 .card > .note{margin-top:10px}
+/* WhatsApp: дожим WABA */
+.dzmap{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}
+.dzmap .vn{font-weight:800;font-variant-numeric:tabular-nums}
+.dzmap .sel{width:100%}
+.dzmap .inp{grid-column:2}
+.dzset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.dzrec .top{align-items:center}
 /* WhatsApp: блок «Статус» и подключение по номеру */
 .wst{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;border:1px solid var(--gold);background:var(--gold-soft)}
 .wst .dot{flex:none;width:14px;height:14px;margin-top:5px;border-radius:50%;background:var(--gold)}
@@ -853,7 +860,9 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
 
   // ───────── WhatsApp: пульт сообществ ─────────
   // Вкладка не знает ключей Evolution: всё идёт через form-api (/admin/wa/*), с теми же initData и токеном сессии.
-  var wa = { s: null, st: null, stBusy: false, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, pairNum: '', pair: null, pairNote: '', pairBad: false, pairBusy: false, form: null, dirty: false, timers: {}, aiq: '', aiBusy: false, aiRes: null, aiNums: {} };
+  var wa = { s: null, st: null, stBusy: false, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, pairNum: '', pair: null, pairNote: '', pairBad: false, pairBusy: false, form: null, dirty: false, timers: {}, aiq: '', aiBusy: false, aiRes: null, aiNums: {}, dz: dzFresh() };
+  // Дожим WABA: настройки видны, когда нажали «Настроить» (тогда же подгружаются шаблоны из Wazzup). Форма живёт, пока вкладка открыта.
+  function dzFresh() { return { open: false, tpls: null, tplMsg: '', tplBusy: false, form: null, dirty: false, testNum: '' }; }
   var waSeq = 0, noticeTimer = 0;
 
   function waStop() {
@@ -863,6 +872,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     wa.pair = null; wa.pairNum = ''; wa.pairNote = ''; wa.pairBad = false; wa.pairBusy = false; wa.st = null; wa.stBusy = false;
     // Полные номера людей из списка диалогов ассистента тоже живут только пока открыта вкладка.
     wa.aiNums = {}; wa.aiRes = null; wa.aiBusy = false;
+    wa.dz = dzFresh();
   }
   function waNotice(text, bad) {
     wa.notice = text ? { text: text, bad: !!bad } : null;
@@ -922,6 +932,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     if (st && st.state !== 'open' && st.kind !== 'unreachable') v.appendChild(waPairCard());
     v.appendChild(waModuleCard(s));
     v.appendChild(waAiCard(s));
+    v.appendChild(waDozhimCard(s));
     v.appendChild(waModeCard(s));
     v.appendChild(waLinkCard(s));
     waCommunityCards(s).forEach(function (c) { v.appendChild(c); });
@@ -1216,6 +1227,168 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     });
   }
 
+  // ── дожим «не вступил в сообщество» через WABA ──
+  // Выключатель, счётчики за сегодня, «вступили N из M», настройки (шаблон из одобренных, переменные, задержка, окно часов, лимит),
+  // вебхук Wazzup, тестовая отправка и последние 30 отправок. Номера закрыты (7708***4575), полных на экране нет.
+  var DZ_SRC = [['name', 'Имя'], ['date', 'Дата эфира'], ['link', 'Ссылка /wa'], ['text', 'Свой текст']];
+  function dzForm(d) {
+    if (!wa.dz.form || !wa.dz.dirty) wa.dz.form = { templateId: d.template.id || '', map: d.map.map(function (m) { return { kind: m.kind, text: m.text || '' }; }), delayMin: d.settings.delayMin, from: d.settings.from, to: d.settings.to, cutoff: d.settings.cutoff, dailyLimit: d.settings.dailyLimit };
+    return wa.dz.form;
+  }
+  function waDzTpl(force) {
+    if (wa.dz.tplBusy) return;
+    wa.dz.tplBusy = true; wa.dz.tplMsg = 'Загружаю шаблоны из Wazzup…'; waDraw();
+    api('wa/dozhim/templates', force ? new URLSearchParams({ refresh: '1' }) : null).then(function (r) {
+      wa.dz.tpls = r.items || []; wa.dz.tplMsg = r.note || '';
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      wa.dz.tplMsg = err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером. Попробуйте ещё раз.';
+    }).then(function () { wa.dz.tplBusy = false; if (ui.tab === 'wa') waDraw(); });
+  }
+  function dzTplById(id) {
+    var l = wa.dz.tpls || [];
+    for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i];
+    return null;
+  }
+  function dzCounter(label, value) { return kv(label, String(value)); }
+  function waDozhimCard(s) {
+    var d = s.dozhim, card = h('div', { class: 'card' }, h('h2', { text: 'Дожим WABA' }));
+    if (!d || !d.available) { card.appendChild(h('div', { class: 'note warn', text: 'Дожим недоступен: модуль не запущен.' })); return card; }
+    card.appendChild(h('div', { class: 'hint', text: 'Шаблон WhatsApp через Wazzup тем, кто записался на воркшоп с номером Казахстана и не вступил в сообщество. Каждая отправка платная, поэтому по умолчанию выключено.' }));
+    card.appendChild(h('div', { class: 'swrow' },
+      h('div', null, h('b', { text: 'Писать тем, кто не вступил' }),
+        h('div', { class: 'hint', text: d.enabled ? 'Включено: шаблон «' + d.template.name + '» через ' + d.settings.delayMin + ' мин после заявки, с ' + d.settings.from + ' до ' + d.settings.to + ' по Алматы, в день эфира не позже ' + d.settings.cutoff + '.' : 'Выключено: запросов к Wazzup нет, шаблоны не уходят.' })),
+      h('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': String(d.enabled), 'aria-label': 'Дожим WABA', disabled: !!wa.busy || (!d.enabled && !d.canEnable), onclick: function () {
+        if (d.enabled) waAct('dozhim/toggle', { enabled: false }, 'Выключаю дожим…'); else ask('dz-on')();
+      } }, h('i'))));
+    if (wa.conf === 'dz-on') card.appendChild(confirmBox('Включить дожим? Шаблон «' + d.template.name + '» начнёт уходить людям с номерами Казахстана, которые записались и не вступили в сообщество. Заявок, по которым шаблон ещё не уходил: ' + d.counters.waiting + ' (кто уже вступил, покажет первый замер, тем не пошлём). Не больше ' + d.settings.dailyLimit + ' в сутки, каждое сообщение платное.', 'Включить', function () { waAct('dozhim/toggle', { enabled: true, confirm: true }, 'Включаю дожим…'); }));
+    if (d.reason) card.appendChild(h('div', { class: 'note warn', role: 'status', text: d.reason }));
+    var c = d.counters;
+    card.appendChild(h('div', { class: 'kv wkv' },
+      dzCounter('Кандидатов сегодня', c.candidates),
+      dzCounter('Ждут отправки', c.waiting),
+      dzCounter('Отправлено', c.sent),
+      dzCounter('Ответили', c.replied),
+      dzCounter('Получили ссылку', c.links),
+      dzCounter('Вступили после дожима', c.joinedAfter),
+      c.failed ? dzCounter('Не ушло с ошибкой', c.failed) : null,
+      kv('За 24 часа', d.limit.used + ' из ' + d.limit.max)));
+    if (d.days.length) {
+      card.appendChild(h('div', { class: 'tpl' }, d.days.map(function (x) {
+        return h('div', { class: 'hint', text: 'Эфир ' + x.dayLabel + ': ' + (x.joined === null ? 'нет замера участников' : 'вступили ' + x.joined + ' из ' + x.applied + ' записавшихся') + (x.measured ? ' (замер ' + x.measured + ')' : '') + (x.unresolved ? '. Участников без номера в замере: ' + x.unresolved + ', их сопоставить с заявками нельзя' : '') + '.' });
+      })));
+    }
+    // настройки
+    var set = h('div', { class: 'tpl' });
+    set.appendChild(h('div', { class: 'actions' }, btn(wa.dz.open ? 'Скрыть настройки' : 'Настроить', function () {
+      wa.dz.open = !wa.dz.open;
+      if (wa.dz.open && !wa.dz.tpls) waDzTpl(false); else waDraw();
+    }, 'ghost')));
+    if (wa.dz.open) set.appendChild(waDzSettings(d));
+    card.appendChild(set);
+    // вебхук
+    card.appendChild(h('div', { class: 'tpl' },
+      h('div', { class: 'swrow' }, h('div', null, h('b', { text: 'Вебхук Wazzup' }),
+        h('div', { class: 'hint', text: d.webhook.on ? 'Стоит: ответ на шаблон присылает человеку ссылку на сообщество. Адрес ' + d.webhook.url + '.' : 'Не стоит: ответы людей на шаблон не обрабатываются, ссылку они не получат. Если в Wazzup уже стоит чужой вебхук, я его не трогаю.' })),
+        h('span', { class: 'badge ' + (d.webhook.on ? 'ok' : 'no'), text: d.webhook.on ? 'стоит' : 'не стоит' })),
+      h('div', { class: 'actions' },
+        btn('Поставить вебхук', ask('dz-hook-on'), d.webhook.on ? 'ghost' : '', false),
+        btn('Снять вебхук', function () { waAct('dozhim/hook', { on: false }, 'Снимаю вебхук…'); }, 'ghost', !d.webhook.on))));
+    if (wa.conf === 'dz-hook-on') card.appendChild(confirmBox('Поставить вебхук в Wazzup? Wazzup проверит адрес тестовым запросом. Если там уже стоит чужой вебхук, я его не перезапишу.', 'Поставить', function () { waAct('dozhim/hook', { on: true, confirm: true }, 'Ставлю вебхук…'); }));
+    // тест
+    var ti = h('input', { class: 'inp', type: 'tel', inputmode: 'numeric', autocomplete: 'off', maxlength: '15', placeholder: 'Только цифры, например 77011234567', 'aria-label': 'Номер для тестовой отправки: только цифры, с кодом страны', value: wa.dz.testNum, disabled: !!wa.busy,
+      oninput: function () { var v = ti.value.replace(/\D/g, '').slice(0, 15); if (v !== ti.value) ti.value = v; wa.dz.testNum = v; },
+      onkeydown: function (e) { if (e.key === 'Enter') { e.preventDefault(); ti.blur(); dzTestAsk(d); } } });
+    card.appendChild(h('div', { class: 'tpl' },
+      h('b', { text: 'Тестовая отправка' }),
+      h('div', { class: 'hint', text: 'Выбранный шаблон уходит на этот номер. Нажми кнопку в шаблоне: придёт ссылка на сообщество, как у настоящей заявки.' }),
+      h('label', { class: 'field' }, h('span', { text: 'Номер' }), ti),
+      h('div', { class: 'actions' }, btn('Тестовая отправка', function () { dzTestAsk(d); }, '', !d.template.id))));
+    if (wa.conf === 'dz-test') card.appendChild(confirmBox('Отправить шаблон «' + d.template.name + '» на номер ' + wa.dz.testNum.slice(0, 4) + '***' + wa.dz.testNum.slice(-4) + '? Это платное сообщение WhatsApp.', 'Отправить', function () { waAct('dozhim/test', { number: wa.dz.testNum, confirm: true }, 'Отправляю тестовый шаблон…'); }));
+    // последние отправки
+    card.appendChild(h('div', { class: 'tpl' }, h('b', { text: 'Последние отправки' })));
+    if (!d.recent.length) card.appendChild(h('div', { class: 'empty', text: 'Отправок пока нет.' }));
+    else {
+      var list = h('div', { class: 'list' });
+      d.recent.forEach(function (r) {
+        list.appendChild(h('div', { class: 'row dzrec' },
+          h('div', { class: 'top' }, h('span', { text: r.t }), h('span', null, r.test ? h('span', { class: 'badge mute', text: 'тест' }) : null, h('span', { class: 'badge ' + (r.tone === 'ok' ? 'ok' : r.tone === 'bad' ? 'no' : 'mute'), text: r.status }))),
+          h('div', { class: 'nm', text: r.who }),
+          r.dayLabel ? h('div', { class: 'meta', text: 'эфир ' + r.dayLabel }) : null));
+      });
+      card.appendChild(list);
+    }
+    return card;
+  }
+  function dzTestAsk(d) {
+    var n = wa.dz.testNum.replace(/\D/g, '');
+    if (n.length < 10 || n.length > 15) { waNotice('Номер для теста: только цифры, с кодом страны, от 10 до 15.', true); waDraw(); return; }
+    if (!d.template.id) { waNotice('Сначала выбери шаблон в настройках и сохрани.', true); waDraw(); return; }
+    ask('dz-test')();
+  }
+  function waDzSettings(d) {
+    var f = dzForm(d), box = h('div', { class: 'modebody' });
+    function touch() { wa.dz.dirty = true; }
+    // шаблон
+    var sel = h('select', { class: 'sel full', 'aria-label': 'Шаблон WABA', disabled: !!wa.busy || wa.dz.tplBusy });
+    var list = wa.dz.tpls || [];
+    if (f.templateId && !dzTplById(f.templateId)) sel.appendChild(h('option', { value: f.templateId, text: (d.template.name || 'Выбранный') + ' (сейчас)' }));
+    if (!f.templateId) sel.appendChild(h('option', { value: '', text: 'Выбери шаблон' }));
+    list.forEach(function (t) { sel.appendChild(h('option', { value: t.id, text: (t.title || t.name) + (t.category ? ' · ' + t.category : '') })); });
+    sel.value = f.templateId;
+    sel.addEventListener('change', function () {
+      var t = dzTplById(sel.value);
+      f.templateId = sel.value;
+      if (t) f.map = t.map.map(function (m) { return { kind: m.kind, text: m.text || '' }; });
+      touch(); waDraw();
+    });
+    box.appendChild(h('label', { class: 'field' }, h('span', { text: 'Шаблон из одобренных в Wazzup' }), sel));
+    if (wa.dz.tplMsg) box.appendChild(h('div', { class: 'note', role: 'status', text: wa.dz.tplMsg }));
+    box.appendChild(h('div', { class: 'actions' }, btn(wa.dz.tplBusy ? 'Загружаю…' : 'Обновить список шаблонов', function () { waDzTpl(true); }, 'ghost', wa.dz.tplBusy)));
+    var cur = dzTplById(f.templateId);
+    if (cur && cur.text) box.appendChild(h('div', { class: 'serbody howto', text: cur.text }));
+    // переменные
+    if (f.map.length) {
+      box.appendChild(h('div', { class: 'hint', text: 'Что подставлять вместо переменных шаблона. Имя берётся из заявки, а если там пусто или мусор, из профиля WhatsApp, иначе «друг». Дата эфира: «сегодня, 9 октября» или «завтра, 10 октября».' }));
+      var grid = h('div', { class: 'dzmap' });
+      f.map.forEach(function (m, i) {
+        var ms = h('select', { class: 'sel', 'aria-label': 'Источник переменной ' + (i + 1), disabled: !!wa.busy });
+        DZ_SRC.forEach(function (o) { ms.appendChild(h('option', { value: o[0], text: o[1] })); });
+        ms.value = m.kind;
+        ms.addEventListener('change', function () { m.kind = ms.value; touch(); waDraw(); });
+        grid.appendChild(h('span', { class: 'vn', text: '{{' + (i + 1) + '}}' }));
+        grid.appendChild(ms);
+        if (m.kind === 'text') {
+          var mi = h('input', { class: 'inp', type: 'text', maxlength: '200', autocomplete: 'off', 'aria-label': 'Текст для переменной ' + (i + 1), value: m.text, disabled: !!wa.busy, oninput: function () { m.text = mi.value; touch(); } });
+          grid.appendChild(mi);
+        }
+      });
+      box.appendChild(grid);
+    }
+    // параметры
+    function num(label, key, extra) {
+      var inp = h('input', Object.assign({ class: 'inp', type: 'number', inputmode: 'numeric', value: String(f[key]), 'aria-label': label, disabled: !!wa.busy, oninput: function () { f[key] = inp.value; touch(); } }, extra || {}));
+      return h('label', { class: 'field' }, h('span', { text: label }), inp);
+    }
+    function tm(label, key) {
+      var inp = h('input', { class: 'inp', type: 'time', value: f[key], 'aria-label': label, disabled: !!wa.busy, oninput: function () { f[key] = inp.value; touch(); } });
+      return h('label', { class: 'field' }, h('span', { text: label }), inp);
+    }
+    box.appendChild(h('div', { class: 'dzset' },
+      num('Задержка после заявки, минут', 'delayMin', { min: '0', max: '1440' }),
+      num('Лимит в сутки', 'dailyLimit', { min: '1', max: '250' }),
+      tm('Окно часов, с', 'from'),
+      tm('Окно часов, до', 'to'),
+      tm('В день эфира не позже', 'cutoff')));
+    box.appendChild(h('div', { class: 'hint', text: 'Время по Алматы. Ночные заявки уходят в начале окна. Не больше одного шаблона на заявку за всё время. Предел Meta 250 новых переписок в сутки.' }));
+    box.appendChild(h('div', { class: 'actions' }, btn('Сохранить настройки', function () {
+      var body = { templateId: f.templateId, map: f.map.map(function (m) { return m.kind === 'text' ? { kind: 'text', text: m.text } : { kind: m.kind }; }), delayMin: Number(f.delayMin), from: f.from, to: f.to, cutoff: f.cutoff, dailyLimit: Number(f.dailyLimit) };
+      if (!f.templateId) { waNotice('Выбери шаблон из списка.', true); waDraw(); return; }
+      waAct('dozhim/save', body, 'Сохраняю настройки…', function () { wa.dz.dirty = false; wa.dz.form = null; });
+    }, '', !f.templateId)));
+    return box;
+  }
+
   // ── режим ──
   function waModeCard(s) {
     var card = h('div', { class: 'card' }, h('h2', { text: 'Режим работы' }));
@@ -1313,6 +1486,13 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     [s.current, s.next].forEach(function (g) {
       if (!g) return;
       var card = h('div', { class: 'card' }, h('h2', { text: g.title + ' ' + g.dayLabel }));
+      // Вступили N из M записавшихся на этот день: участники сообщества против заявок (замер идёт, когда включён дожим WABA).
+      if (g.signups) {
+        var x = g.signups;
+        card.appendChild(h('div', { class: 'hint', text: x.joined === null
+          ? 'Записавшихся на этот день: ' + x.applied + '. Кто из них вступил, пока не замеряно: замер идёт, когда включён дожим WABA.'
+          : 'Вступили ' + x.joined + ' из ' + x.applied + ' записавшихся на этот день' + (x.measured ? ' (замер ' + x.measured + ')' : '') + (x.unresolved ? '. Участников без номера в замере: ' + x.unresolved + ', их сопоставить с заявками нельзя' : '') + '.' }));
+      }
       if (g.cards.length) g.cards.forEach(function (c) { card.appendChild(communityRow(c)); });
       else card.appendChild(h('div', { class: 'hint', text: g.pending || 'Сообщества пока нет.' }));
       out.push(card);

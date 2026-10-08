@@ -16,8 +16,9 @@ import { createServer as createNetServer } from "node:net";
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EVO_KEY, evo, INSTANCE_TOKEN, openai, OPENAI_KEY, PNG_B64, runWaPage, tg } from "./wa-testkit";
+import { EVO_KEY, evo, INSTANCE_TOKEN, openai, OPENAI_KEY, PNG_B64, runWaPage, TPL_LINK, TPL_REMINDER, tg, wazzup, WZ_CHANNEL, WZ_KEY, WZ_SECRET, wzInbound } from "./wa-testkit";
 import { aiFlush } from "./wa-assistant";
+import { dzFlush } from "./wa-dozhim";
 import { _waRt, joinsTick, resetWaGroups, waTick } from "./wa-groups";
 import { setUtcOffsetMinutes } from "./tg-time";
 import { readWhatsAppLink } from "../lib/whatsapp-link";
@@ -568,4 +569,114 @@ test("ИИ-ассистент через настоящий сервер: /api/w
   assert.equal(openai.calls.length, calls);
   assert.equal(seen.join("\n").includes(OPENAI_KEY) || seen.join("\n").includes(secret), false, "ни ключа OpenAI, ни секрета вебхука в ответах пульта");
   evo.allowDirect = false;
+});
+
+test("дожим WABA через настоящий сервер: маршруты пульта только под сессией админки и с подтверждением, вебхук Wazzup с секретом в адресе, тест и ответ на кнопку присылают ссылку", async () => {
+  await wazzup.start();
+  const saved = { ...process.env };
+  Object.assign(process.env, { WAZZUP_API_KEY: WZ_KEY, WAZZUP_CHANNEL_ID: WZ_CHANNEL, WAZZUP_HOOK_SECRET: WZ_SECRET, WAZZUP_HOOK_URL: `${base()}/api/wazzup-hook` });
+  const dump: string[] = [];
+  const dz = async (method: "GET" | "POST", path: string, body?: unknown) => {
+    const r = await wa(method, `dozhim/${path}`, body);
+    dump.push(r.text);
+    return r;
+  };
+  const hookUrl = (secret: string) => `${base()}/api/wazzup-hook?s=${secret}`;
+  try {
+    // доступ: без сессии админки все пять маршрутов закрыты
+    for (const [m, path] of [["GET", "templates"], ["POST", "toggle"], ["POST", "save"], ["POST", "hook"], ["POST", "test"]] as const) {
+      assert.equal((await call(m, `/api/admin/wa/dozhim/${path}`, { body: m === "POST" ? { enabled: false, on: false, confirm: true, number: "77011234567" } : undefined })).status, 403, path);
+      assert.equal((await call(m, `/api/admin/wa/dozhim/${path}`, { init: init(), body: m === "POST" ? { confirm: true } : undefined })).status, 401, path);
+    }
+    assert.equal(wazzup.calls.length, 0, "без сессии Wazzup не трогаем");
+
+    // шаблоны: только одобренные; выбрали запасной
+    const tpl = await dz("GET", "templates");
+    assert.equal(tpl.status, 200, tpl.text);
+    assert.deepEqual(tpl.json.items.map((t: any) => t.id), [TPL_REMINDER, TPL_LINK], "основной на модерации не предлагается");
+    assert.equal(tpl.text.includes(WZ_KEY), false);
+    const sv = await dz("POST", "save", { templateId: TPL_REMINDER, delayMin: 30, from: "09:00", to: "21:00", cutoff: "19:30", dailyLimit: 200 });
+    assert.equal(sv.status, 200, sv.text);
+    assert.equal((await dz("POST", "save", { templateId: "нет-такого" })).status, 404);
+    assert.equal((await dz("POST", "save", { delayMin: -5 })).status, 400);
+
+    // состояние пульта содержит блок дожима
+    clock.t += 5000;
+    const st0 = (await wa("GET", "state")).json.dozhim;
+    assert.deepEqual([st0.available, st0.enabled, st0.template.id, st0.canEnable], [true, false, TPL_REMINDER, true]);
+
+    // включение и вебхук только с подтверждением
+    assert.equal((await dz("POST", "toggle", { enabled: true })).status, 400);
+    assert.equal((await dz("POST", "hook", { on: true })).status, 400);
+    assert.equal((await dz("POST", "test", { number: "77011234567" })).status, 400);
+    assert.equal(wazzup.sent.length + wazzup.of("PATCH", "/v3/webhooks").length, 0);
+    const on = await dz("POST", "toggle", { enabled: true, confirm: true });
+    assert.equal(on.status, 200, on.text);
+    const hk = await dz("POST", "hook", { on: true, confirm: true });
+    assert.equal(hk.status, 200, hk.text);
+    // Wazzup проверил адрес тестовым POST на настоящий сервер и получил 200; в ответе пульту секрета нет
+    assert.equal(wazzup.hooks.webhooksUri, hookUrl(WZ_SECRET));
+    assert.equal(hk.text.includes(WZ_SECRET), false);
+
+    // адрес вебхука: только POST и только с верным секретом
+    assert.equal((await fetch(hookUrl(WZ_SECRET))).status, 405);
+    assert.equal((await fetch(hookUrl("wrong"), { method: "POST", body: "{}" })).status, 403);
+    assert.equal((await fetch(`${base()}/api/wazzup-hook`, { method: "POST", body: "{}" })).status, 403);
+    assert.equal((await fetch(hookUrl(WZ_SECRET), { method: "POST", body: JSON.stringify({ test: true }) })).status, 200);
+
+    // тестовая отправка и ответ на кнопку
+    clock.t += 15_000;
+    const t = await dz("POST", "test", { number: "8 701 123 45 67", confirm: true });
+    assert.equal(t.status, 200, t.text);
+    assert.equal(t.text.includes("77011234567"), false, "номер в ответе закрыт");
+    assert.match(t.json.message, /7701\*\*\*4567/);
+    assert.equal(wazzup.sent.length, 1);
+    assert.deepEqual([wazzup.sent[0].chatId, wazzup.sent[0].templateId], ["77011234567", TPL_REMINDER]);
+    wazzup.windows.add("77011234567");
+    const reply = async (text: string, messageId: string) => {
+      const r = await fetch(hookUrl(WZ_SECRET), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wzInbound({ chatId: "77011234567", text, messageId })) });
+      assert.equal(r.status, 200);
+      await dzFlush();
+    };
+    await reply("Да, буду вовремя", "e2e-1");
+    const links = wazzup.sent.filter((x) => x.text !== undefined);
+    assert.equal(links.length, 1);
+    assert.match(links[0].text!, /^Вот ссылка на сообщество участников, ссылка на эфир придёт туда в 19:50: https:\/\/(chat\.whatsapp\.com\/\S+|onai\.academy\/workshop-montazh\/wa)$/);
+    await reply("Да, буду вовремя", "e2e-1");
+    await reply("Спасибо", "e2e-2");
+    assert.equal(wazzup.sent.filter((x) => x.text !== undefined).length, 1, "ссылка одна, дубль messageId без повтора");
+    // чужая переписка номера: ни ответа, ни записи
+    wazzup.windows.add("77090000001");
+    const calls = wazzup.calls.length;
+    const foreign = await fetch(hookUrl(WZ_SECRET), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wzInbound({ chatId: "77090000001", text: "Нет", messageId: "e2e-f1" })) });
+    assert.equal(foreign.status, 200);
+    await dzFlush();
+    assert.equal(wazzup.calls.length, calls);
+
+    // пульт после сценария: счётчики и закрытые номера, секретов нет
+    const st1 = await wa("GET", "state");
+    dump.push(JSON.stringify({ dozhim: st1.json.dozhim, journal: st1.json.journal }));
+    assert.equal(st1.json.dozhim.enabled, true);
+    assert.equal(st1.json.dozhim.webhook.on, true);
+    assert.equal(st1.json.dozhim.recent[0].who, "7701***4567");
+    assert.equal(st1.json.dozhim.recent[0].test, true);
+    assert.ok(st1.json.journal.some((j: any) => j.text === "Дожим WABA включён"));
+    assert.ok(st1.json.journal.some((j: any) => j.text === "Вебхук Wazzup поставлен"));
+
+    // выключили и сняли вебхук: больше ничего не обрабатывается
+    assert.equal((await dz("POST", "toggle", { enabled: false })).status, 200);
+    assert.equal((await dz("POST", "hook", { on: false })).status, 200);
+    assert.equal(wazzup.hooks.webhooksUri, "");
+    const n = wazzup.calls.length;
+    await reply("Пришлите ссылку", "e2e-3");
+    assert.equal(wazzup.calls.length, n, "выключен и вебхук снят: ответ не обрабатывается");
+    const all = dump.join("\n");
+    assert.equal(all.includes(WZ_KEY) || all.includes(WZ_SECRET) || /\b77\d{9}\b/.test(all), false, "ни ключа Wazzup, ни секрета вебхука, ни полных номеров в ответах пульта");
+  } finally {
+    await wazzup.stop();
+    for (const k of ["WAZZUP_API_KEY", "WAZZUP_CHANNEL_ID", "WAZZUP_HOOK_SECRET", "WAZZUP_HOOK_URL", "WAZZUP_API_URL"]) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+  }
 });

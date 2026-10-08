@@ -1,6 +1,6 @@
 /**
- * Подставные Telegram и Evolution для тестов модуля WhatsApp (wa.test.ts и wa-e2e.test.ts). Настоящих запросов нет:
- * оба сервера слушают 127.0.0.1 на свободном порту, адреса кладутся в TG_API_BASE и EVOLUTION_URL.
+ * Подставные Telegram, Evolution и Wazzup для тестов модуля WhatsApp (wa.test.ts, wa-e2e.test.ts, wa-dozhim.test.ts). Настоящих запросов нет:
+ * серверы слушают 127.0.0.1 на свободном порту, адреса кладутся в TG_API_BASE, EVOLUTION_URL и WAZZUP_API_URL.
  * Подставной Evolution хранит состояние подключения (absent, connecting, open, close) и следит за защитой номера:
  * любое сообщение не в группу и любое добавление участников попадает в violations.
  */
@@ -90,6 +90,10 @@ export const evo = {
   /** Картинка QR в ответах create и connect (по умолчанию PNG 1x1; для снимков экрана подставляют рисунок побольше). */
   qrBase64: PNG_B64,
   members: new Map<string, number>(),
+  /** Участники групп и вкладок объявлений для GET /group/participants (поля как у Evolution 2.3.7: id, phoneNumber, admin). */
+  participants: new Map<string, Array<{ id: string; phoneNumber?: string; admin?: string | null }>>(),
+  /** Контакты инстанса для POST /chat/findContacts: remoteJid -> pushName. */
+  contacts: new Map<string, string>(),
   announce: new Map<string, string>(),
   requests: new Map<string, any[]>(),
   rejectJids: new Set<string>(),
@@ -178,6 +182,13 @@ export const evo = {
           case "GET /group/fetchAllGroups": {
             const withP = call.query.get("getParticipants") === "true";
             return send(200, this.allGroups.map(({ participants, ...g }) => ({ ...g, ...(withP && participants ? { participants } : {}) })));
+          }
+          case "GET /group/participants":
+            return send(200, { participants: this.participants.get(jid) ?? [] });
+          case "POST /chat/findContacts": {
+            const rj = String(body?.where?.remoteJid || "");
+            const name = this.contacts.get(rj);
+            return send(200, name ? [{ id: "c1", remoteJid: rj, pushName: name, profilePicUrl: null }] : []);
           }
           case "POST /community/create": {
             const n = ++this.creates;
@@ -274,6 +285,8 @@ export const evo = {
     this.qrCount = 0;
     this.logouts = 0;
     this.members.clear();
+    this.participants.clear();
+    this.contacts.clear();
     this.requests.clear();
     this.rejectJids.clear();
     this.rejectCode = "404";
@@ -296,6 +309,170 @@ export const evo = {
     return this.calls.map((c) => `${c.method} ${c.path.split("/").slice(0, 3).join("/")}`);
   },
 };
+
+// ───────────────────────── подставной Wazzup ─────────────────────────
+
+export const WZ_KEY = "wz-test-api-key-5d81c9e7";
+export const WZ_CHANNEL = "5b0d1f3a-77aa-4c2e-9d11-0f6a2c3d4e55";
+export const WZ_SECRET = "wz-hook-secret-test-31c4a";
+export type WCall = { method: string; path: string; body: any; auth: string | undefined };
+export type WOverride = { status?: number; json?: unknown; hang?: boolean; delay?: number } | null;
+export type MockTemplate = { templateGuid: string; name: string; title: string; text: string; status: string; category: string };
+
+export const TPL_MAIN = "tpl-main-0001";
+export const TPL_REMINDER = "tpl-reminder-0002";
+export const TPL_LINK = "tpl-link-0003";
+
+const defaultTemplates = (): MockTemplate[] => [
+  { templateGuid: TPL_MAIN, name: "vstupite_v_soobshchestvo_1", title: "Вступите в сообщество", category: "utility", status: "pending", text: "Здравствуйте, {{1}}! Вы записаны на воркшоп «Вайб-продакшен» {{2}} в 20:00 по Алматы. Ссылка на эфир придёт в сообщество участников в WhatsApp, а вас там пока нет. Нажмите кнопку ниже, и мы пришлём ссылку для входа." },
+  { templateGuid: TPL_REMINDER, name: "napominanie_o_zapisi_ili_vstreche_1", title: "Напоминание о записи или встрече", category: "utility", status: "approved", text: "Здравствуйте. Это {{1}}. Напоминаем о {{2}} в {{3}}. Скажите, все в силе?" },
+  { templateGuid: TPL_LINK, name: "vstupite_v_soobshchestvo_ssylka_1", title: "Вступите в сообщество ссылка", category: "utility", status: "approved", text: "Здравствуйте, {{1}}! Вы записаны на воркшоп «Вайб-продакшен» {{2}} в 20:00 по Алматы. Вход в сообщество по кнопке ниже." },
+  { templateGuid: "tpl-other-0004", name: "dozvonilis_ne_v_gruppe_1", title: "Дозвонились, не в группе", category: "marketing", status: "rejected", text: "Здравствуйте, {{1}}! Дозвонились." },
+];
+
+/** Отправленное через POST /v3/message. */
+export type WSent = { chatId: string; templateId?: string; templateValues?: string[]; text?: string; crmMessageId: string; messageId: string };
+
+export const wazzup = {
+  server: null as Server | null,
+  calls: [] as WCall[],
+  templates: defaultTemplates(),
+  /** Что сейчас записано в Wazzup как вебхук. */
+  hooks: { webhooksUri: "", subscriptions: {} as Record<string, boolean> },
+  sent: [] as WSent[],
+  crmSeen: new Set<string>(),
+  /** Чаты с открытым окном 24 часа: обычный текст разрешён только им (человек ответил на шаблон). */
+  windows: new Set<string>(),
+  /** Тестовый POST {test:true} на адрес вебхука при установке (как делает настоящий Wazzup). */
+  testHook: true,
+  fail: null as ((c: WCall) => WOverride) | null,
+  /** Нарушения контракта: ключ, канал, форма тела, текст вне окна. */
+  violations: [] as string[],
+  seq: 0,
+  async start() {
+    this.server = createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c) => chunks.push(c));
+      req.on("end", async () => {
+        const url = new URL(req.url || "/", "http://x");
+        let body: any = null;
+        try {
+          body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        } catch {
+          body = null;
+        }
+        const call: WCall = { method: req.method || "GET", path: url.pathname, body, auth: req.headers["authorization"] as string | undefined };
+        this.calls.push(call);
+        const send = (status: number, json: unknown) => {
+          res.writeHead(status, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(json));
+        };
+        if (call.auth !== `Bearer ${WZ_KEY}`) return send(401, { error: "UNAUTHORIZED", description: "Invalid api key" });
+        const o = this.fail?.(call) ?? null;
+        if (o?.delay) await new Promise((r) => setTimeout(r, o.delay));
+        if (o?.hang) return void req.socket.destroy();
+        if (o && !(o.delay && o.status === undefined && o.json === undefined)) return send(o.status ?? 500, o.json ?? { error: "INTERNAL", description: "boom" });
+        const route = `${call.method} ${call.path}`;
+        switch (route) {
+          case "GET /v3/templates/whatsapp":
+            return send(200, this.templates);
+          case "POST /v3/message": {
+            const b = body || {};
+            const bad = (why: string) => {
+              this.violations.push(why);
+              return send(400, { error: "VALIDATION_ERROR", description: why });
+            };
+            if (b.channelId !== WZ_CHANNEL) return bad(`channelId: ${b.channelId}`);
+            if (b.chatType !== "whatsapp") return bad(`chatType: ${b.chatType}`);
+            if (typeof b.chatId !== "string" || !/^\d{10,15}$/.test(b.chatId)) return bad(`chatId: ${b.chatId}`);
+            if (typeof b.crmMessageId !== "string" || !b.crmMessageId) return bad("нет crmMessageId");
+            if (this.crmSeen.has(b.crmMessageId)) return send(400, { error: "REPEATED_CRM_MESSAGE_ID", description: "crmMessageId repeated" });
+            if (b.templateId !== undefined) {
+              const t = this.templates.find((x) => x.templateGuid === b.templateId);
+              if (!t) return bad(`templateId неизвестен: ${b.templateId}`);
+              if (t.status !== "approved") return bad(`шаблон не одобрен: ${t.name}`);
+              const n = Math.max(0, ...[...t.text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1])));
+              if (!Array.isArray(b.templateValues) || b.templateValues.length !== n || b.templateValues.some((v: unknown) => typeof v !== "string" || !v.trim())) return bad(`templateValues: ${JSON.stringify(b.templateValues)} при ${n} переменных`);
+              if ("text" in b) return bad("и шаблон, и текст");
+            } else {
+              if (typeof b.text !== "string" || !b.text.trim()) return bad("нет text");
+              if (!this.windows.has(b.chatId)) return bad(`текст вне окна 24 часов: ${b.chatId}`);
+            }
+            this.crmSeen.add(b.crmMessageId);
+            const messageId = `wzmsg-${++this.seq}`;
+            this.sent.push({ chatId: b.chatId, ...(b.templateId ? { templateId: b.templateId, templateValues: b.templateValues } : { text: b.text }), crmMessageId: b.crmMessageId, messageId });
+            return send(201, { messageId, chatId: b.chatId });
+          }
+          case "GET /v3/webhooks":
+            return send(200, this.hooks);
+          case "PATCH /v3/webhooks": {
+            const b = body || {};
+            if (typeof b.webhooksUri !== "string" || !b.subscriptions || typeof b.subscriptions !== "object") {
+              this.violations.push("PATCH /v3/webhooks: нет webhooksUri или subscriptions");
+              return send(400, { error: "VALIDATION_ERROR", description: "webhooksUri, subscriptions" });
+            }
+            if (b.webhooksUri && this.testHook) {
+              let ok = false;
+              try {
+                const r = await fetch(b.webhooksUri, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ test: true }) });
+                ok = r.status === 200;
+              } catch {
+                ok = false;
+              }
+              if (!ok) return send(400, { error: "WEBHOOK_TEST_FAILED", description: "test request did not return 200" });
+            }
+            this.hooks = { webhooksUri: b.webhooksUri, subscriptions: b.subscriptions };
+            return send(200, {});
+          }
+        }
+        return send(404, { error: "NOT_FOUND", description: `${route}` });
+      });
+    });
+    await new Promise<void>((r) => this.server!.listen(0, "127.0.0.1", r));
+    process.env.WAZZUP_API_URL = `http://127.0.0.1:${(this.server!.address() as { port: number }).port}`;
+  },
+  async stop() {
+    await new Promise<void>((r) => {
+      this.server!.closeAllConnections?.();
+      this.server!.close(() => r());
+    });
+  },
+  reset() {
+    this.calls = [];
+    this.templates = defaultTemplates();
+    this.hooks = { webhooksUri: "", subscriptions: {} };
+    this.sent = [];
+    this.crmSeen = new Set();
+    this.windows = new Set();
+    this.testHook = true;
+    this.fail = null;
+    this.violations = [];
+    this.seq = 0;
+  },
+  /** Вызовы по методу и пути. */
+  of(method: string, path: string) {
+    return this.calls.filter((c) => c.method === method && c.path === path);
+  },
+};
+
+/** Входящее сообщение из вебхука Wazzup (messagesAndStatuses): поля как в документации v3. */
+export function wzInbound(o: { chatId: string; text?: string; messageId?: string; isEcho?: boolean; chatType?: string; channelId?: string; type?: string }) {
+  return {
+    messages: [
+      {
+        messageId: o.messageId ?? `in-${Math.random().toString(36).slice(2)}`,
+        channelId: o.channelId ?? WZ_CHANNEL,
+        chatType: o.chatType ?? "whatsapp",
+        chatId: o.chatId,
+        type: o.type ?? "text",
+        isEcho: o.isEcho ?? false,
+        text: o.text ?? "",
+        status: o.isEcho ? "sent" : "inbound",
+        dateTime: "2026-10-08T15:00:00.000Z",
+      },
+    ],
+  };
+}
 
 // ───────────────────────── подставной OpenAI ─────────────────────────
 
