@@ -265,7 +265,7 @@ export function M_NoFaceFormats() {
 }
 
 /** Телефон с рилсом: запуск и пауза по клику, звук включён, поверх счётчик просмотров. Включённый телефон гасит остальные (active). */
-function ReelPhone({ file, views, width, i, active, setActive }: { file: string; views: string; width: string; i: number; active: number | null; setActive: (n: number | null) => void }) {
+export function ReelPhone({ file, views, width, i, active, setActive }: { file: string; views: string; width: string; i: number; active: number | null; setActive: (n: number | null) => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   // включили другой рилс: этот ставим на паузу
@@ -282,7 +282,7 @@ function ReelPhone({ file, views, width, i, active, setActive }: { file: string;
         <video ref={ref} src={`/montage/noface/${file}.mp4`} poster={`/montage/noface/${file}.jpg`} preload="metadata" playsInline
           onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); setActive(null); }}
           className="absolute inset-0 h-full w-full object-cover" />
-        <Views value={views} size="0.8cqw" style={{ position: "absolute", left: "0.7cqw", bottom: "0.8cqw" }} />
+        {views && <Views value={views} size="0.8cqw" style={{ position: "absolute", left: "0.7cqw", bottom: "0.8cqw" }} />}
         {/* pointer-events: auto — слой слайда в колоде пропускает клики насквозь, кнопке их нужно вернуть */}
         <button type="button" aria-label={playing ? "Пауза" : "Включить рилс со звуком"} aria-pressed={playing}
           onClick={(e) => { e.stopPropagation(); toggle(); }}

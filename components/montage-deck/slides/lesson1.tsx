@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
+import { ReelPhone } from "./pipeline";
 import { ReelRail, Views } from "../ReelRail";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
@@ -359,12 +360,13 @@ export function M_ReadyReel() {
 }
 
 const FORMATS = [
-  { f: "01-polovina-ekrana", t: "Половина экрана" },
-  { f: "02-polovina-okno", t: "Половина и окно в углу" },
-  { f: "03-kartochka-spikera", t: "Карточка спикера" },
-  { f: "04-spiker-vnizu", t: "Спикер внизу, графика сверху" },
-  { f: "05-bez-lica", t: "Без лица, на весь кадр", noFace: true },
-  { f: "06-podcast", t: "Подкаст" },
+  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026
+  { f: "01-polovina-ekrana", t: "Половина экрана", full: "face-half-connectors", views: "120 тыс." },
+  { f: "02-polovina-okno", t: "Половина и окно в углу", full: "face-corner-jarvis", views: "9,6 тыс." },
+  { f: "03-kartochka-spikera", t: "Карточка спикера", full: "face-card-unlazy", views: "3,1 тыс." },
+  { f: "04-spiker-vnizu", t: "Спикер внизу, графика сверху", full: "face-bottom-github", views: "112 тыс." },
+  { f: "05-bez-lica", t: "Без лица, на весь кадр", noFace: true, full: "noface-puppet-zashita", views: "16,4 тыс." },
+  { f: "06-podcast", t: "Подкаст", full: "face-podcast-dilorom", views: "6,1 тыс." },
 ];
 
 /**
@@ -375,6 +377,7 @@ const FORMATS = [
 export function M_NoFace() {
   const [k, setK] = useState(4);
   const [run, setRun] = useState(0); // счётчик включений: новый ключ запускает видео сначала
+  const [playing, setPlaying] = useState<number | null>(null); // какой рилс играет со звуком
   const pick = (i: number) => { setK(i); setRun((r) => r + 1); };
   const pickRef = useRef(pick);
   pickRef.current = pick;
@@ -403,7 +406,7 @@ export function M_NoFace() {
         <div className="relative" style={{ width: "13.5cqw", aspectRatio: "9/19" }}>
           <AnimatePresence mode="popLayout">
             <motion.div key={`${cur.f}-${run}`} className="absolute inset-0" initial={{ opacity: 0, scale: 0.92, rotateY: -25 }} animate={{ opacity: 1, scale: 1, rotateY: 0 }} exit={{ opacity: 0, scale: 1.04, rotateY: 20 }} transition={{ duration: 0.55, ease: EASE }}>
-              <Phone video={`/montage/formats/${cur.f}.mp4`} src={`/montage/formats/${cur.f}.jpg`} width="13.5cqw" chrome={false} />
+              <ReelPhone file={cur.full} views={cur.views} width="13.5cqw" i={k} active={playing} setActive={setPlaying} />
             </motion.div>
           </AnimatePresence>
         </div>
@@ -426,7 +429,7 @@ export function M_NoFace() {
           </button>
         ))}
       </div>
-      <Note>Голос, графика и персонаж-рассказчик. Кадры моих настоящих роликов</Note>
+      <Note>Мои настоящие рилсы целиком, клик по телефону включает со звуком. Просмотры: Instagram API, 8 октября 2026</Note>
     </Statement>
   );
 }

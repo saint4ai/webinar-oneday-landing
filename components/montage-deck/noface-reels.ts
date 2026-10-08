@@ -17,4 +17,7 @@ export type NoFaceReel = {
   source: string;
 };
 
-export const NOFACE_REELS: NoFaceReel[] = [];
+export const NOFACE_REELS: NoFaceReel[] = [
+  { file: "noface-puppet-zashita", format: "Анимированная голова-рассказчик", title: "AI-стартап: 5 точек защиты", views: "16,4 тыс.", source: "Просмотры: Instagram API, 8 октября 2026" },
+  { file: "noface-voice-searchconsole", format: "Закадровый голос и графика", title: "Search Console: тренды", views: "", source: "Просмотры: Instagram API, 8 октября 2026" },
+];
