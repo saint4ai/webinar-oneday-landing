@@ -627,14 +627,14 @@ test("кнопки: пустой {PAY} выпадает, новые {PREPAY_KZ} 
     [{ text: "Оплатить", url: "{PAY}" }],
     [{ text: "Kaspi", url: "{PREPAY_KZ}" }],
     [{ text: "Россия", url: "{PREPAY_INTL}" }],
-    [{ text: "Аяне", url: "{MANAGER}" }],
+    [{ text: "Менеджеру", url: "{MANAGER}" }],
     [{ text: "WhatsApp", url: "{WHATSAPP_TEMPLATE}" }],
     [{ text: "Эфир", url: "{STREAM}" }, { text: "Кейсы", url: "{CASES}" }, { text: "Игра", url: "{GAME}" }],
     [{ text: "Я оплатил", callback: "paid" }],
     [{ text: "Мусор", url: "{UNKNOWN}" }],
   ];
   const kb = buildKeyboard(rows, ctxFor(sr))!;
-  assert.deepEqual(kb.map((r) => r.map((b) => b.text)), [["Kaspi"], ["Россия"], ["Аяне"], ["WhatsApp"], ["Эфир", "Кейсы", "Игра"], ["Я оплатил"]]);
+  assert.deepEqual(kb.map((r) => r.map((b) => b.text)), [["Kaspi"], ["Россия"], ["Менеджеру"], ["WhatsApp"], ["Эфир", "Кейсы", "Игра"], ["Я оплатил"]]);
   assert.equal(kb[0][0].url, "https://pay.kaspi.kz/pay/abc");
   assert.equal(kb[1][0].url, "https://pay.example.ru/x");
   assert.equal(kb[2][0].url, sr.links.manager);
@@ -758,6 +758,11 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
     /tg-dva/, /\/dva/, /Vibe-Coding-PRO/, /plus-PRO/, /offer-bundle/, /topic-p[23]/, /Три практики/i,
   ];
   for (const re of bad) assert.equal(re.test(everything), false, String(re));
+  // имя менеджера нигде не пишем (Александр, 09.10): только «менеджер», он может смениться
+  assert.equal(/Аян/.test(readFileSync(seriesFile, "utf8")), false, "в tg-series.json нет имени менеджера");
+  assert.equal(raw.links.managerName, "менеджер");
+  assert.equal(raw.welcome.other, "Этот бот не читает сообщения. Вопрос по эфиру, обучению или оплате? Напиши менеджеру: @futleid");
+  assert.equal(raw.welcome.paidAck, "Спасибо! Больше не напоминаю про оплату. Пришли чек менеджеру @futleid: он проверит оплату и напишет, что дальше.");
   // PDF только один: презентация Vibe Production (файлом в 10:30 следующего дня)
   const decks = [...everything.matchAll(/assets\/decks\/[^"\\]+/g)].map((m) => m[0]);
   assert.ok(decks.length >= 1);
@@ -788,7 +793,7 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   for (const m of sr.messages) assert.equal(/^\[/.test(m.text), false, m.id + ": метка [Видео ...] не идёт в подпись");
   // убранные из ленты сообщения
   for (const id of ["topic-p1", "topic-reel", "nudge-2030", "nudge-2050", "push-2130"]) assert.equal(byId.has(id), false, id);
-  // шаблон для Аяны из оффера убран: ссылка на менеджера теперь кнопкой
+  // шаблон для менеджера из оффера убран: ссылка на менеджера теперь кнопкой
   assert.equal(/\{TEMPLATE\}|<code>/.test(JSON.stringify(sr.messages)), false, "в сообщениях серии нет {TEMPLATE}");
   // аудитории: кнопка эфира и ссылка идут тем, кто ещё не перешёл; оффер и дожимы только тем, кто был на эфире и не оплатил
   for (const id of ["live-2000", "nudge-2010", "last-link-2015", "bonus-miss-2115", "next-day-1100", "replay-link-1950"]) assert.equal(byId.get(id)!.audience, "notClicked", id);
@@ -824,7 +829,7 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   assert.ok(offerLen > 1024 && offerLen < 4096, `оффер ${offerLen} знаков`);
 });
 
-test("tg-series.json: кнопки оплаты ведут прямо на бронь и менеджера, шаблона для Аяны нет (лента v3.3)", () => {
+test("tg-series.json: кнопки оплаты ведут прямо на бронь и менеджера, шаблона для менеджера нет (лента v3.3)", () => {
   const sr = validateSeries(JSON.parse(readFileSync(seriesFile, "utf8")));
   const byId = new Map(sr.messages.map((m) => [m.id, m]));
   const CHAT = "https://onai.academy/workshop-montazh/chat";
