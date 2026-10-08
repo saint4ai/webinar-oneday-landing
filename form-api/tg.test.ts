@@ -759,9 +759,11 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   }
   // перерисованные картинки отдаются с новой версией в адресе, иначе бот пришлёт старую из кеша file_id
   assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0810a$/);
-  for (const id of ["topic-p1", "warm-1700", "training-2058", "offer-2118"]) {
+  for (const id of ["topic-p1", "warm-1700", "training-2058"]) {
     assert.match(sr.messages.find((m) => m.id === id)!.media!.url, /\.jpg\?v=0810a$/, id);
   }
+  // карточка оффера перерисована второй раз (третий бонус на плашке «В подарок»): версия 0810b
+  assert.match(sr.messages.find((m) => m.id === "offer-2118")!.media!.url, /offer\.jpg\?v=0810b$/);
   // оффер и дожимы дня эфира идут только тем, кто был на эфире (нажал кнопку), остальным цену не называем
   const byId = new Map(sr.messages.map((m) => [m.id, m]));
   for (const id of ["offer-2118", "push-2130", "push-2230", "push-2330"]) assert.equal(byId.get(id)!.audience, "clickedNotPaid", id);
@@ -770,12 +772,22 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
     if (m.audience === "notClicked" || (m.dayOffset ?? 0) === 0 && m.at < "21:18") assert.equal(/₸/.test(m.text), false, m.id + ": цена до эфира или тем, кто не был на эфире");
   }
   assert.match(byId.get("next-day-1100")!.text, /специальную цену/);
-  // бонус за покупку до конца дня есть во всех офферах и дожимах: модуль 3 «AI-креатор» и 6 месяцев доступа вместо 3
-  for (const id of ["offer-2118", "push-2130", "push-2230", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) {
+  // бонус за покупку до конца дня из трёх частей есть во всех офферах и дожимах (и в ленте эфира 20:58):
+  // модуль 3 «AI-креатор», 6 месяцев доступа вместо 3 и модуль по рекламе через Claude со скиллом AI-таргетолога
+  for (const id of ["training-2058", "offer-2118", "push-2130", "push-2230", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) {
     const t = byId.get(id)!.text;
     assert.match(t, /AI-креатор/, id);
-    assert.match(t, /6 месяцев/, id);
+    assert.match(t, /6 месяцев доступа вместо 3/, id);
+    assert.match(t, /модуль по рекламе через Claude (с моим|со) скиллом AI-таргетолога/, id);
   }
+  // бронь и предоплата закрепляют цену и весь бонус, а не только его часть
+  for (const id of ["offer-2118", "push-2230", "push-2330"]) assert.match(byId.get(id)!.text, /цену и весь бонус/, id);
+  // расходы: обязательна только Claude от $20 в месяц, прежнего «около $51 в месяц» нигде нет
+  assert.match(byId.get("offer-2118")!.text, /Из подписок обязательна только Claude, от \$20 в месяц\. Остальное по желанию\./);
+  assert.equal(/\$51/.test(JSON.stringify([raw.welcome, raw.messages])), false, "«$51 в месяц» убрано");
+  assert.equal(/Подписки на сервисы отдельно/.test(JSON.stringify(raw.messages)), false);
+  // подпись оффера с самым длинным именем влезает в 1024, картинка и текст идут одним сообщением
+  assert.deepEqual(seriesWarnings(sr).filter((w) => w.startsWith("offer-2118")), []);
 });
 
 test("tg-series.json: дожим следующего дня follow-* и next-day-1100 (зов пропустивших на сегодня)", () => {

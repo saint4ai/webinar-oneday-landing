@@ -70,9 +70,11 @@ html,body{width:1080px;height:1350px}
 .offer .until{position:absolute;left:80px;top:604px;display:inline-flex;align-items:center;gap:18px;height:92px;padding:0 42px;border-radius:999px;
   border:2px solid var(--gold);background:linear-gradient(135deg,rgba(227,192,123,.22),rgba(227,192,123,.06));font-weight:800;font-size:40px;color:var(--cream);box-shadow:0 14px 40px rgba(0,0,0,.35)}
 .offer .until b{display:block;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 7px rgba(227,192,123,.2)}
-.offer .gift{left:80px;top:744px;width:372px;padding:30px 28px 32px;border-radius:30px}
+.offer .gift{left:80px;top:744px;width:384px;padding:30px 26px 30px;border-radius:30px}
 .offer .gift .k{font-weight:800;font-size:26px;letter-spacing:.14em;color:var(--gold)}
-.offer .gift .t{margin-top:14px;font-weight:700;font-size:35px;line-height:1.24;color:var(--cream);white-space:nowrap}
+.offer .gift .t{margin-top:12px;font-weight:700;font-size:33px;line-height:1.24;color:var(--cream);white-space:nowrap}
+.offer .gift .k+.t{margin-top:14px}
+.offer .gift .t+.t{margin-top:14px;padding-top:14px;border-top:1px solid rgba(227,192,123,.28)}
 </style></head>
 <body>
 <div class="card" id="card"></div>
@@ -126,7 +128,7 @@ const cards = {
       <div class="light-floor" style="left:330px;top:640px;width:780px;height:700px;opacity:.55"></div>
       <div class="shadow-floor" style="left:500px;top:1196px;width:520px;height:56px"></div>
       <img style="position:absolute;left:468px;top:708px;width:560px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${L}lg-s41-deadline.webp" alt="">
-      <div class="glass gift"><div class="k">В ПОДАРОК</div><div class="t">Модуль 3<br>«AI-креатор»<br>и 6&nbsp;месяцев<br>доступа вместо&nbsp;3</div></div>${LOGO}`
+      <div class="glass gift"><div class="k">В ПОДАРОК</div><div class="t">Модуль 3<br>«AI-креатор»</div><div class="t">6&nbsp;месяцев доступа<br>вместо&nbsp;3</div><div class="t">Модуль по рекламе<br>через Claude</div></div>${LOGO}`
   },
 
   // Карточки рассылки (Telegram и WhatsApp): до эфира, в эфире, последний звонок
