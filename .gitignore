@@ -51,3 +51,6 @@ _screenshots/
 .claude/
 *.backup_*
 **/_backup/
+
+# видеоурок 933 МБ (лимит GitHub 100 МБ), на MacBook передаётся отдельно
+/public/montage/lesson/*.mp4
