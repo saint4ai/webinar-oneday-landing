@@ -12,7 +12,12 @@
  *  - около лимита участников открывает следующее сообщество того же эфира «(2)»;
  *  - защита номера: никаких личных сообщений и добавления людей (кроме WA_ADMIN_NUMBERS у запасного типа «группа»),
  *    паузы между отправками, не больше 3 новых сообществ в сутки, все запросы к Evolution строго по одному,
- *    пауза модуля и тревога владельцам в Telegram после 3 ошибок подряд, тревога раз в час при потере подключения.
+ *    пауза модуля и тревога владельцам в Telegram после 3 ошибок подряд, тревога раз в час при потере подключения;
+ *  - неясный исход отправки (таймаут, 5xx): часть помечается отправленной (unknown в журнале), сама не повторяется, владельцам тревога;
+ *    вручную (/wa_send) её можно отправить ещё раз;
+ *  - ночь по Алматы: по расписанию шлётся только то, что запланировано с 09:00 до 23:45; создание по догонялке и приветствие только с 09:00
+ *    до 23:00 (ночное откладывается до 09:00); тревога о потере подключения с 23:00 до 09:00 не шлётся, утром одна сводная;
+ *  - заявки: перед каждым пакетом считается заполнение (замер плюс одобренные после него), у лимита не одобряем и сразу открываем следующее.
  *
  * Два режима работы (переключаются в пульте админки, docs/tasks/wa_control_panel.md), состояние в wa-state.json:
  *  - daily: «Ежедневное создание» вкл/выкл (по умолчанию выкл: пока Александр не включил, ничего не создаётся);
@@ -283,8 +288,16 @@ type Rt = {
   dir: string;
   deps: Deps;
   timeOverride?: TimeCfg;
-  /** Ключи «сообщение:часть|день|цель» успешных отправок. */
+  /** Ключи «сообщение:часть|день|цель» успешных отправок и отправок с неясным исходом (unknown): вторые автоматически не повторяются. */
   sent: Set<string>;
+  /** Часть ключей sent, у которых исход неясен (таймаут или 5xx): сообщение могло уйти, а могло и нет. Вручную (/wa_send) их можно отправить ещё раз. */
+  unknown: Set<string>;
+  /** Сколько заявок одобрено в сообществе после последнего обновления числа участников (members): вместе они дают оценку заполнения. */
+  approvedSince: Map<string, number>;
+  /** Сообщения, пропущенные из-за ночного времени: пишем в журнал по одному разу. */
+  nightSkipped: Set<string>;
+  /** С какого момента нет подключения к WhatsApp (0, если оно есть): для утренней сводной тревоги. */
+  downSince: number;
   /** Заявки, по которым уже писали строку «request»: ключ «сообщество|jid». */
   seenReq: Set<string>;
   /** Одобренные заявки: ключ «сообщество|jid». */
@@ -427,6 +440,10 @@ export function initWaGroups(opts: InitOpts = {}): void {
     deps: { ...defaultDeps, ...(opts.deps || {}) },
     timeOverride: opts.timeCfg,
     sent: new Set(),
+    unknown: new Set(),
+    approvedSince: new Map(),
+    nightSkipped: new Set(),
+    downSince: 0,
     seenReq: new Set(),
     approved: new Set(),
     approveFails: new Map(),
@@ -452,7 +469,16 @@ export function initWaGroups(opts: InitOpts = {}): void {
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
   for (const row of readJsonl<any>(fJournal(r))) {
-    if (row?.ev === "send" && row.ok && row.msg && row.day && row.target) r.sent.add(sentKey(row.msg, row.part || "main", row.day, row.target));
+    if (row?.ev !== "send" || !row.msg || !row.day || !row.target) continue;
+    const key = sentKey(row.msg, row.part || "main", row.day, row.target);
+    // Неясный исход (unknown) тоже считается отправленным: после рестарта автоматически не повторяем. Более поздняя удачная отправка (вручную) его снимает.
+    if (row.ok) {
+      r.sent.add(key);
+      r.unknown.delete(key);
+    } else if (row.unknown === true) {
+      r.sent.add(key);
+      r.unknown.add(key);
+    }
   }
   for (const row of readJsonl<any>(fJoins(r))) {
     if (!row?.community || !row.jid) continue;
@@ -463,7 +489,12 @@ export function initWaGroups(opts: InitOpts = {}): void {
       if (row.target) {
         r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
         const ms = Date.parse(String(row.ts || ""));
-        if (Number.isFinite(ms)) noteJoinedDay(r, row.target, dayKeyOf(ms));
+        if (Number.isFinite(ms)) {
+          noteJoinedDay(r, row.target, dayKeyOf(ms));
+          // Одобренные после последнего замера числа участников: нужны для оценки заполнения сообщества.
+          const t = r.state.targets.find((x) => x.id === row.target);
+          if (t?.membersAt && ms > t.membersAt) r.approvedSince.set(t.id, (r.approvedSince.get(t.id) || 0) + 1);
+        }
       }
     }
   }
@@ -530,7 +561,8 @@ export function startWaGroups(opts: InitOpts = {}): () => void {
 /** Блок waGroups для /health: без ключей и ссылок. */
 export function waHealth() {
   if (!waEnabled()) return { enabled: false };
-  if (!rt) return { enabled: true, running: false, ...(initError ? { error: initError } : {}) };
+  // Публичный /health: только признак ошибки запуска. Текст initError (пути, детали расписания) виден в админке и в логах.
+  if (!rt) return { enabled: true, running: false, ...(initError ? { error: "init" } : {}) };
   return {
     enabled: true,
     running: true,
@@ -602,11 +634,53 @@ const startShift = (r: Rt, start?: string) => (start ? minsOf(start) - minsOf(r.
  */
 const followsStart = (r: Rt, m: WaMsg) => minsOf(m.at) <= minsOf(r.cfg.streamStart) + r.cfg.streamMinutes;
 
-/** Плановое время сообщения для цели: время дня эфира плюс сдвиг старта, если старт не 20:00. */
-function planOf(r: Rt, t: { day: string; start?: string }, m: WaMsg): number {
+/** Сообщения, которые не могут уйти раньше оффера того же дня: дожим и «последние 30 минут». */
+const AFTER_OFFER = new Set(["push", "last-call"]);
+const OFFER_ID = "offer";
+
+/** Время сообщения без поправки на оффер: время дня эфира плюс сдвиг старта, если старт не 20:00. */
+function shiftedPlan(r: Rt, t: { day: string; start?: string }, m: WaMsg): number {
   const base = atTime(t.day, m.at);
   const d = startShift(r, t.start);
   return d && followsStart(r, m) ? base + d * MIN : base;
+}
+
+/**
+ * Плановое время сообщения для цели: время дня эфира плюс сдвиг старта, если старт не 20:00.
+ * Дожим (push) и last-call никогда не раньше планового времени оффера того же дня: оффер сдвигается вместе со стартом, они нет.
+ */
+function planOf(r: Rt, t: { day: string; start?: string }, m: WaMsg): number {
+  const own = shiftedPlan(r, t, m);
+  if (!AFTER_OFFER.has(m.id)) return own;
+  const offer = r.cfg.messages.find((x) => x.id === OFFER_ID);
+  return offer ? Math.max(own, shiftedPlan(r, t, offer)) : own;
+}
+
+// ───────────────────────── ночное время ─────────────────────────
+
+/** Рассылка по расписанию: плановое время сообщения от 09:00 до 23:45 по Алматы. Раньше и позже не шлём (старый сохранённый старт эфира). */
+const SEND_FROM = 9 * 60;
+const SEND_TO = 23 * 60 + 45;
+/** Создание и приветствие по догонялке (не по кнопке): только днём, с 09:00 до 23:00 по Алматы. Ночное откладывается до 09:00. */
+const DAY_FROM = 9 * 60;
+const DAY_TO = 23 * 60;
+
+const minuteOfDay = (ms: number) => minsOf(hhmmOf(ms));
+const sendableTime = (ms: number) => minuteOfDay(ms) >= SEND_FROM && minuteOfDay(ms) <= SEND_TO;
+const daytime = (ms: number) => minuteOfDay(ms) >= DAY_FROM && minuteOfDay(ms) < DAY_TO;
+
+/** Сколько миллисекунд между from и to приходится на дневные часы (с 09:00 до 23:00 по Алматы). */
+function daytimeMs(from: number, to: number): number {
+  if (to <= from) return 0;
+  let total = 0;
+  let day = dayKeyOf(from);
+  const last = dayKeyOf(to);
+  for (let i = 0; i < 400 && day <= last; i++, day = addDays(day, 1)) {
+    const a = Math.max(from, atTime(day, hhmmFrom(DAY_FROM)));
+    const b = Math.min(to, atTime(day, hhmmFrom(DAY_TO)));
+    if (b > a) total += b - a;
+  }
+  return total;
 }
 
 /**
@@ -791,6 +865,8 @@ async function checkConnection(r: Rt, now: number): Promise<boolean> {
   r.conn = { state: st, at: now };
   // Смену состояния подключения пишем в журнал (в пульте видно, когда номер отвалился и вернулся). Первый тик после старта: только если не open.
   if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
+  if (st === "open") r.downSince = 0;
+  else if (!r.downSince) r.downSince = now;
   if (st === "open") {
     if (!r.state.ownerJid || now - r.state.ownerAt > HOUR) {
       const i = await evo.fetchInstance();
@@ -803,10 +879,13 @@ async function checkConnection(r: Rt, now: number): Promise<boolean> {
     }
     return true;
   }
-  if (now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN) {
+  // С 23:00 до 09:00 по Алматы тревогу не шлём (владельцы спят): первый тик после 09:00 присылает одну сводную, дальше раз в положенный срок.
+  // Потеря и возврат подключения при этом остаются в журнале (строки conn).
+  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN) {
     r.state.lastConnAlertAt = now;
     save(r);
-    await alarm(r, `WhatsApp не подключён (состояние: ${st}). Рассылка, создание сообществ и одобрение заявок остановлены. /wa_qr пришлёт QR для подключения.`);
+    const since = r.downSince && now - r.downSince >= 30 * MIN ? ` Подключения нет с ${when(r.downSince)}.` : "";
+    await alarm(r, `WhatsApp не подключён (состояние: ${st}).${since} Рассылка, создание сообществ и одобрение заявок остановлены. /wa_qr пришлёт QR для подключения.`);
   }
   return false;
 }
@@ -820,16 +899,22 @@ function noteCreation(r: Rt, now: number) {
   r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR), now];
 }
 
-/** Дни эфира, для которых пора создавать сообщество и которых ещё нет: окно [createAt, createAt + догонка). */
+/**
+ * Окно создания сообщества, назначенного на момент at: открыто с at, пока не прошло createCatchupHours дневных часов.
+ * Ночные часы (с 23:00 до 09:00 по Алматы) в окно не входят: опоздавшее ночью создание переносится на 09:00, а не пропадает.
+ */
+const createWindowOpen = (r: Rt, at: number, now: number) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR;
+
+/** Дни эфира, для которых пора создавать сообщество и которых ещё нет: окно [createAt, createAt + догонка), создаём только днём. */
 function dueCreateDays(r: Rt, now: number): string[] {
   const out: string[] = [];
+  if (!daytime(now)) return out;
   const c = tcfg(r);
   const today = dayKeyOf(now);
   for (let i = 0; i < 14; i++) {
     const day = addDays(today, i);
     if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
-    const at = createAtOf(r, day);
-    if (now >= at && now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) out.push(day);
+    if (createWindowOpen(r, createAtOf(r, day), now) && now < closeAtOf(r, day)) out.push(day);
   }
   return out;
 }
@@ -840,12 +925,12 @@ export const eventCreateAt = (r: Rt) => atTime(r.state.event.recruitFrom, EVENT_
 /** Сообщество живого эфира, созданное или принятое под дату эфира (самое новое из переполнений). */
 const eventTarget = (r: Rt): Target | null => (r.state.event.date ? targetsOf(r, r.state.event.date)[0] ?? null : null);
 
-/** Живой эфир ждёт создания: режим event, дата и начало набора заданы, сообщества ещё нет, эфир не закончился. */
+/** Живой эфир ждёт создания: режим event, дата и начало набора заданы, сообщества ещё нет, эфир не закончился. Само создаётся только днём. */
 function eventDue(r: Rt, now: number): boolean {
   const ev = r.state.event;
   if (r.state.mode !== "event" || ev.done || !ev.date || !ev.recruitFrom) return false;
   if (eventTarget(r)) return false;
-  return now >= eventCreateAt(r) && now < closeAtOf(r, ev.date);
+  return now >= eventCreateAt(r) && now < closeAtOf(r, ev.date) && daytime(now);
 }
 
 /** Дни, для которых пора создавать сообщество: в ежедневном режиме при включённом создании по расписанию, в живом эфире день эфира. */
@@ -887,6 +972,8 @@ async function createTarget(r: Rt, day: string, seq: number, now: number, opts: 
   const name = nameOf(r, day, seq);
   const description = retime(r, opts.start, r.cfg.description);
   let created: { jid: string; sendJid: string };
+  // Последний рубеж против дубля: сообщество с таким id уже есть (другой путь успел раньше), второго не открываем.
+  if (r.state.targets.some((x) => x.id === `${day}#${seq}`)) return { ok: false, error: "сообщество уже есть" };
   if (kind === "group" && !adminNumbers().length) {
     await noteFail(r, `создание ${name}`, "для обычной группы нужен хотя бы один номер в WA_ADMIN_NUMBERS");
     return { ok: false, error: "нет WA_ADMIN_NUMBERS" };
@@ -961,7 +1048,8 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
-    if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t))) continue;
+    // Приветствие ночью не шлём: оно уйдёт на ближайшем тике после 09:00 по Алматы.
+    if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
     t.tries[s] = (t.tries[s] || 0) + 1;
@@ -1023,13 +1111,31 @@ function partsOf(r: Rt, m: WaMsg): string[] {
   return parts;
 }
 
-const isDone = (r: Rt, m: WaMsg, t: Target) => partsOf(r, m).every((p) => r.sent.has(sentKey(m.id, p, t.day, t.id)));
+/**
+ * Все части сообщения отправлены. Часть с неясным исходом (unknown) для плановой рассылки считается отправленной (повторять нельзя),
+ * а при strict (ручная отправка, строка итогов) нет: её можно отправить ещё раз и нельзя назвать доставленной.
+ */
+const isDone = (r: Rt, m: WaMsg, t: Target, strict = false) =>
+  partsOf(r, m).every((p) => {
+    const k = sentKey(m.id, p, t.day, t.id);
+    return r.sent.has(k) && !(strict && r.unknown.has(k));
+  });
 
-/** Отправить одну часть и записать строку журнала. Уже отправленную часть не повторяет. */
-async function sendPart(r: Rt, t: Target, msgId: string, part: string, run: () => Promise<evo.EvoResult<evo.SentMsg>>, manual: boolean, extra: Record<string, unknown> = {}): Promise<{ ok: true } | { ok: false; error: string; timeout?: boolean }> {
+/** Исход отправки неясен: таймаут, 5xx или обрыв связи после отправки. Запрос мог выполниться, поэтому повторять его самим нельзя. */
+const unclearSend = (f: evo.EvoFail) => ambiguous(f) && f.error !== "no_api_key";
+
+type PartRes = { ok: true } | { ok: false; error: string; unknown?: boolean };
+
+/**
+ * Отправить одну часть и записать строку журнала. Уже отправленную часть не повторяет.
+ * Таймаут или 5xx: часть помечается отправленной с неясным исходом (unknown: true в журнале, переживает рестарт),
+ * автоматически не повторяется, владельцам уходит тревога. Вручную (manual) такую часть отправить ещё раз можно.
+ */
+async function sendPart(r: Rt, t: Target, msgId: string, part: string, run: () => Promise<evo.EvoResult<evo.SentMsg>>, manual: boolean, extra: Record<string, unknown> = {}): Promise<PartRes> {
   const key = sentKey(msgId, part, t.day, t.id);
-  if (r.sent.has(key)) return { ok: true };
+  if (r.sent.has(key) && !(manual && r.unknown.has(key))) return { ok: true };
   const x = await run();
+  const unknown = !x.ok && unclearSend(x);
   journal(r, {
     ev: "send",
     msg: msgId,
@@ -1039,14 +1145,27 @@ async function sendPart(r: Rt, t: Target, msgId: string, part: string, run: () =
     jid: t.sendJid,
     ok: x.ok,
     ...(x.ok ? { mid: x.data.messageId } : { err: x.error }),
+    ...(unknown ? { unknown: true } : {}),
     ...(manual ? { manual: true } : {}),
     ...extra,
   });
   if (x.ok) {
     r.sent.add(key);
+    r.unknown.delete(key);
     return { ok: true };
   }
-  return { ok: false, error: x.error, ...(x.timeout ? { timeout: true } : {}) };
+  if (unknown) {
+    r.sent.add(key);
+    r.unknown.add(key);
+    await alarm(
+      r,
+      msgId === "welcome"
+        ? `Не уверен, что приветствие ушло в «${t.name}». Проверь в WhatsApp.`
+        : `Не уверен, что ушло ${msgId} в «${t.name}». Проверь в WhatsApp, при необходимости /wa_send ${msgId}`,
+    );
+    return { ok: false, error: x.error, unknown: true };
+  }
+  return { ok: false, error: x.error };
 }
 
 /** Отправить сообщение серии в цель: картинка или видео с подписью (или текст), отдельный текст, опрос. Возвращает false при первой неудаче. */
@@ -1054,10 +1173,11 @@ async function sendMessageTo(r: Rt, t: Target, base: WaMsg, manual: boolean): Pr
   const m = effMsg(r, t, base);
   let first = true;
   for (const part of partsOf(r, m)) {
-    if (r.sent.has(sentKey(m.id, part, t.day, t.id))) continue;
+    const key = sentKey(m.id, part, t.day, t.id);
+    if (r.sent.has(key) && !(manual && r.unknown.has(key))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
-    let res: { ok: true } | { ok: false; error: string; timeout?: boolean };
+    let res: PartRes;
     if (part === "poll") {
       const p = m.poll as NonNullable<WaMsg["poll"]>;
       res = await sendPart(r, t, m.id, part, () => evo.sendPoll(t.sendJid, { name: p.name, values: p.options, selectableCount: p.selectableCount ?? 1 }), manual);
@@ -1067,15 +1187,16 @@ async function sendMessageTo(r: Rt, t: Target, base: WaMsg, manual: boolean): Pr
       const media = m.media;
       const caption = m.text.length <= r.cfg.captionLimit ? m.text : undefined;
       res = await sendPart(r, t, m.id, part, () => evo.sendMedia(t.sendJid, { mediatype: media.type, url: media.url, caption }), manual);
-      if (!res.ok && !res.timeout) {
-        // Картинка не ушла: тот же текст обычным сообщением, владельцам одно предупреждение на файл.
+      if (!res.ok && !res.unknown) {
+        // Картинка явно не ушла (ответ 4xx): тот же текст обычным сообщением, владельцам одно предупреждение на файл.
+        // При таймауте или 5xx текст вместо картинки не шлём: она могла уйти, было бы два сообщения.
         console.warn("[wa] медиа %s не ушло (%s), шлю текстом", media.url, res.error);
         if (!r.mediaWarned.has(media.url)) {
           r.mediaWarned.add(media.url);
           void alarm(r, `Не отправилась картинка или видео ${media.url}: ${res.error}. Шлю тот же текст без неё. Проверь, что файл выложен на сайт.`);
         }
         const fb = await sendPart(r, t, m.id, part, () => evo.sendText(t.sendJid, m.text), manual, { fallback: "text" });
-        if (fb.ok) res = fb;
+        if (fb.ok || fb.unknown) res = fb;
       }
     } else {
       res = await sendPart(r, t, m.id, part, () => evo.sendText(t.sendJid, m.text), manual);
@@ -1091,6 +1212,15 @@ async function sendMessageTo(r: Rt, t: Target, base: WaMsg, manual: boolean): Pr
 
 export type Due = { t: Target; msg: WaMsg; plan: number };
 
+/** Запись в журнал о сообщении, не ушедшем из-за ночного времени: один раз на сообщение и цель. */
+function noteNightSkip(r: Rt, t: Target, msg: WaMsg, plan: number) {
+  const key = `${msg.id}|${t.day}|${t.id}`;
+  if (r.nightSkipped.has(key)) return;
+  r.nightSkipped.add(key);
+  journal(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
+  console.warn("[wa] «%s» в %s пропущено: плановое время %s вне окна 09:00 до 23:45", msg.id, t.id, hhmmOf(plan));
+}
+
 /** Сообщения, которые сейчас в окне отправки: [плановое время дня эфира, плюс grace], не раньше создания цели. */
 export function dueSends(r: Rt, now: number): Due[] {
   const out: Due[] = [];
@@ -1103,6 +1233,11 @@ export function dueSends(r: Rt, now: number): Due[] {
       // Прошлые сообщения новому сообществу не досылаем.
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
+      // Ночью (плановое время раньше 09:00 или позже 23:45 по Алматы) не шлём: пропуск остаётся в журнале, тревоги нет.
+      if (!sendableTime(plan)) {
+        noteNightSkip(r, t, msg, plan);
+        continue;
+      }
       out.push({ t, msg, plan });
     }
   }
@@ -1157,7 +1292,11 @@ async function refreshMembers(r: Rt, t: Target, now: number): Promise<boolean> {
   t.membersAt = now;
   if (x.ok) {
     const n = extractMembers(x.data, t.sendJid);
-    if (n !== undefined) t.members = n;
+    if (n !== undefined) {
+      t.members = n;
+      // Свежий замер уже включает тех, кого одобрили раньше: счёт «одобрено после замера» начинается заново.
+      r.approvedSince.set(t.id, 0);
+    }
   } else {
     console.warn("[wa] число участников %s не получено: %s", t.id, x.error);
   }
@@ -1165,27 +1304,41 @@ async function refreshMembers(r: Rt, t: Target, now: number): Promise<boolean> {
   return x.ok;
 }
 
-async function runMemberChecks(r: Rt, now: number) {
-  const t = servingTarget(r, now);
-  if (!t || r.state.paused) return;
-  await refreshMembers(r, t, now);
+/** Оценка числа участников: последний замер плюс одобренные после него заявки. */
+const heldMembers = (r: Rt, t: Target) => (t.members ?? 0) + (r.approvedSince.get(t.id) || 0);
+
+/**
+ * Открыть следующее сообщество того же эфира («(2)»). Один раз: только у самого нового сообщества дня, пока день не закрыт.
+ * Лимит новых сообществ в сутки и пауза модуля действуют; при исчерпанном лимите владельцам одна тревога в день.
+ */
+async function openNext(r: Rt, t: Target, now: number, members: number) {
+  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt) return;
+  if (targetsOf(r, t.day)[0].id !== t.id || now >= closeAtOf(r, t.day)) return;
   const limit = r.cfg.overflowAt[t.kind];
-  // Следующее открываем один раз: только у самого нового сообщества дня.
-  if (t.members === undefined || t.members < limit || targetsOf(r, t.day)[0].id !== t.id) return;
   if (capReached(r, now)) {
     if (r.state.capAlertDay !== dayKeyOf(now)) {
       r.state.capAlertDay = dayKeyOf(now);
       save(r);
-      await alarm(r, `В «${t.name}» уже ${t.members} участников, а лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Следующее не открыто, ссылка прежняя. Открыть вручную: /wa_new.`);
+      await alarm(r, `В «${t.name}» уже ${members} участников, а лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Следующее не открыто, ссылка прежняя. Открыть вручную: /wa_new.`);
     }
     return;
   }
   await pause(r, r.cfg.pacing.betweenStepsMs);
   const c = await createTarget(r, t.day, t.seq + 1, r.deps.now(), { source: t.source ?? "daily", start: t.start });
   if (!c.ok) return;
-  await alarm(r, `В «${t.name}» ${t.members} участников из ${limit}. Открыто следующее: «${c.target.name}», ссылка на сайте переключится на него, как только оно будет готово.`);
+  await alarm(r, `В «${t.name}» ${members} участников из ${limit}. Открыто следующее: «${c.target.name}», ссылка на сайте переключится на него, как только оно будет готово.`);
   await pause(r, r.cfg.pacing.betweenStepsMs);
   await setupSteps(r, c.target);
+}
+
+async function runMemberChecks(r: Rt, now: number) {
+  const t = servingTarget(r, now);
+  if (!t || r.state.paused) return;
+  await refreshMembers(r, t, now);
+  if (t.members === undefined) return;
+  const held = heldMembers(r, t);
+  if (held < r.cfg.overflowAt[t.kind]) return;
+  await openNext(r, t, now, held);
 }
 
 // ───────────────────────── тик ─────────────────────────
@@ -1319,34 +1472,59 @@ async function pollJoins(r: Rt, t: Target, now: number): Promise<number> {
     r.seenReq.add(k);
     append(fJoins(r), { ts: iso(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q.jid, phone: phoneOf(q.raw), raw: q.raw });
   }
-  const todo = reqs.map((q) => q.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3).slice(0, r.cfg.joinPolling.batch);
-  if (!todo.length) {
+  const waiting = reqs.map((q) => q.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3);
+  if (!waiting.length) {
     r.joinFailStreak = 0;
     return 0;
   }
+  // Перед каждым пакетом считаем заполнение: замер участников плюс одобренные после него. Лимит достигнут: не одобряем, сразу открываем
+  // следующее сообщество (ждать пятиминутного замера нельзя, в большой день за это время набегают сотни человек).
+  const limit = r.cfg.overflowAt[t.kind];
+  const room = limit - heldMembers(r, t);
+  if (room <= 0) {
+    await openNext(r, t, now, heldMembers(r, t));
+    return 0;
+  }
+  const todo = waiting.slice(0, Math.min(room, r.cfg.joinPolling.batch));
   const d = await evo.communityDecide(t.jid, todo, "approve");
   if (!d.ok) {
-    for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
+    // Сбой самого Evolution (таймаут, 5xx, сеть) не вина людей: счётчик отказов не трогаем, заявки уйдут в следующий пакет.
     append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
     await softJoinFail(r, now, `одобрение заявок ${t.id}: ${d.error}`);
     return 0;
   }
   r.joinFailStreak = 0;
   let n = 0;
+  let full = false;
   for (const x of normalizeDecisions(d.data, todo)) {
     const k = `${t.jid}|${x.jid}`;
     append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
     if (x.ok) {
       r.approved.add(k);
       r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
+      r.approvedSince.set(t.id, (r.approvedSince.get(t.id) || 0) + 1);
       noteJoinedDay(r, t.id, dayKeyOf(r.deps.now()));
       n++;
+    } else if (LIMIT_REFUSAL.test(x.status)) {
+      // Отказ из-за лимита сообщества: заявку в новое сообщество не перенести, а повтор после замера возможен, поэтому в отказы не считаем.
+      full = true;
     } else {
       r.approveFails.set(k, (r.approveFails.get(k) || 0) + 1);
     }
   }
+  if (full) {
+    // WhatsApp говорит «полно»: считаем сообщество заполненным до следующего замера и сразу открываем следующее.
+    t.members = Math.max(t.members ?? 0, limit);
+    t.membersAt = r.deps.now();
+    r.approvedSince.set(t.id, 0);
+    save(r);
+    await openNext(r, t, r.deps.now(), t.members);
+  }
   return n;
 }
+
+/** Статус отказа по человеку, означающий «в сообществе нет места» (419 у WhatsApp, либо слова full и limit в тексте). */
+const LIMIT_REFUSAL = /^419$|full|limit/i;
 
 async function softJoinFail(r: Rt, now: number, what: string) {
   r.joinFailStreak++;
@@ -1411,7 +1589,7 @@ function nextMessage(r: Rt, now: number): NextMsg | null {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
       const plan = planOf(r, { day, start }, m);
-      if (plan >= now && plan < closeAtOf(r, day) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
+      if (plan >= now && plan < closeAtOf(r, day) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
   };
   if (r.state.mode === "event") {
@@ -1568,23 +1746,37 @@ export type Act = { ok: boolean; code?: string; message: string };
 const fail = (code: string, message: string): Act => ({ ok: false, code, message });
 
 /**
- * Создать сообщество живого эфира сейчас (кнопка «Создать сейчас», в режиме event команда /wa_new делает то же).
- * Защита номера та же: пауза, неподтверждённое создание, лимит в сутки, подключение, пауза между шагами.
+ * Проверки перед ручным созданием сообщества эфира: режим, дата, неподтверждённое создание, пауза, уже созданное, лимит в сутки.
+ * null: создавать можно. Вызывается дважды: сразу (быстрый ответ) и первой строкой внутри очереди exclusive: пока запрос ждал очередь,
+ * тик или другой вызов мог уже создать сообщество, и без повтора проверок получилось бы второе сообщество того же эфира.
  */
-async function eventCreateNow(r: Rt, now: number): Promise<Act> {
+function eventCreateCheck(r: Rt, now: number): Act | null {
   const ev = r.state.event;
   if (r.state.mode !== "event") return fail("wrong_mode", "Сейчас включён ежедневный режим. Переключись на живой эфир.");
   if (!ev.date) return fail("no_event", "Сначала задай дату эфира и сохрани.");
   if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `Эфир ${ddmm(ev.date)} уже закончился. Задай новую дату.`);
-  if (r.state.paused) return fail("paused", "Модуль на паузе. Сначала сними паузу.");
   if (r.state.pendingCreate) return fail("pending", "Прошлое создание не подтверждено. Проверь телефон и сними паузу (она обнулит ожидание).");
+  if (r.state.paused) return fail("paused", "Модуль на паузе. Сначала сними паузу.");
   const existing = eventTarget(r);
   if (existing) {
     syncEventCommunity(r);
     return { ok: true, code: "exists", message: `Для эфира ${ddmm(ev.date)} сообщество уже есть: «${existing.name}»${existing.link ? `, ссылка ${existing.link}` : ", ссылка ещё не готова"}.` };
   }
   if (capReached(r, now)) return fail("cap", `Лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Подожди.`);
+  return null;
+}
+
+/**
+ * Создать сообщество живого эфира сейчас (кнопка «Создать сейчас», в режиме event команда /wa_new делает то же).
+ * Защита номера та же: пауза, неподтверждённое создание, лимит в сутки, подключение, пауза между шагами.
+ */
+async function eventCreateNow(r: Rt, now: number): Promise<Act> {
+  const early = eventCreateCheck(r, now);
+  if (early) return early;
   return exclusive(r, async () => {
+    const late = eventCreateCheck(r, Math.max(now, r.deps.now()));
+    if (late) return late;
+    const ev = r.state.event;
     if (!(await checkConnection(r, now))) return fail("no_connection", `WhatsApp не подключён (${r.conn.state}). Подключи номер по QR.`);
     const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
     if (!res.ok) return fail("create_failed", r.state.paused ? "Создание не подтверждено, модуль на паузе. Подробности в тревоге в Telegram." : `Не создалось: ${res.error}`);
@@ -1594,6 +1786,16 @@ async function eventCreateNow(r: Rt, now: number): Promise<Act> {
     const t = res.target;
     return { ok: true, code: isReady(t) ? "created" : "building", message: `Создано: «${t.name}». ${isReady(t) ? `Ссылка: ${t.link}. На сайте она действует до 00:00 после эфира.` : done ? "Достраивается." : "Настройки не закончены, модуль повторит на ближайших тиках."}` };
   });
+}
+
+/** Проверки перед /wa_new для дня day (неподтверждённое создание, пауза, уже созданное, лимит). null: можно. Повторяются внутри очереди exclusive. */
+function cmdNewCheck(r: Rt, day: string, now: number): WaReply | null {
+  if (r.state.pendingCreate) return { text: "Прошлое создание не подтверждено. Проверь телефон и сделай /wa_resume." };
+  if (r.state.paused) return { text: "Модуль на паузе. Сначала /wa_resume." };
+  const existing = targetsOf(r, day)[0];
+  if (existing) return { text: `Для эфира ${ddmm(day)} сообщество уже есть: «${existing.name}»${existing.link ? `, ссылка ${existing.link}` : ", ссылка ещё не готова"}.` };
+  if (capReached(r, now)) return { text: `Лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Подожди.` };
+  return null;
 }
 
 /** /wa_new [YYYY-MM-DD]: создать сообщество ближайшего эфира, для которого его ещё нет, вручную сейчас. В режиме живого эфира то же, что «Создать сейчас». */
@@ -1614,10 +1816,12 @@ async function cmdNew(r: Rt, args: string, now: number): Promise<WaReply> {
   // Без даты создаём не дальше завтрашнего эфира, с датой не дальше трёх дней вперёд.
   if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `Эфир ${ddmm(day)} слишком далеко: сообщество можно создать не раньше чем за три дня до него.` };
   if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `Сообщества на ближайшие эфиры уже есть. Следующий без сообщества: ${ddmm(day)}. Если нужно создать раньше срока, укажи дату: /wa_new ${day}` };
-  const existing = targetsOf(r, day)[0];
-  if (existing) return { text: `Для эфира ${ddmm(day)} сообщество уже есть: «${existing.name}»${existing.link ? `, ссылка ${existing.link}` : ", ссылка ещё не готова"}.` };
-  if (capReached(r, now)) return { text: `Лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Подожди.` };
+  const early = cmdNewCheck(r, day, now);
+  if (early) return early;
   return exclusive(r, async () => {
+    // Пока запрос ждал очередь, тик или другой вызов мог создать сообщество этого эфира: проверяем заново.
+    const late = cmdNewCheck(r, day, Math.max(now, r.deps.now()));
+    if (late) return late;
     if (!(await checkConnection(r, now))) return { text: `WhatsApp не подключён (${r.conn.state}). /wa_qr пришлёт QR.` };
     const res = await createTarget(r, day, 1, r.deps.now());
     if (!res.ok) return { text: r.state.paused ? "Создание не подтверждено, модуль на паузе. Подробности в тревоге выше." : `Не создалось: ${res.error}` };
@@ -1662,7 +1866,8 @@ async function sendSeries(r: Rt, id: string, now: number): Promise<SendRes> {
     let failed = 0;
     let first = true;
     for (const t of targets) {
-      if (isDone(r, msg, t)) {
+      // Часть с неясным исходом (таймаут, 5xx) вручную можно отправить ещё раз: поэтому она не считается «уже было».
+      if (isDone(r, msg, t, true)) {
         skipped++;
         continue;
       }
@@ -1707,7 +1912,7 @@ export function waReportLine(day: string): string {
   if (!ts.length) return "";
   const joined = ts.reduce((s, t) => s + (r.joinedCount.get(t.id) || 0), 0);
   const total = r.cfg.messages.filter((m) => m.enabled !== false).length * ts.length;
-  const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t)).length, 0);
+  const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t, true)).length, 0);
   return `WhatsApp: вступили по заявкам ${joined}, сообщений серии ушло ${done} из ${total}.`;
 }
 
@@ -1760,8 +1965,9 @@ export function waSetDaily(enabled: unknown, nowArg?: number): Act {
   return { ok: true, message: nx ? `Ежедневное создание включено. Ближайшее сообщество, эфир ${ddmm(nx.day)}, создам ${when(nx.at)}.` : "Ежедневное создание включено." };
 }
 
-const START_MIN = 12 * 60;
-const START_MAX = 22 * 60;
+/** Допустимый старт живого эфира: с 18:00 до 21:00 по Алматы. Раньше утренние сообщения серии уходят до 09:00, позже оффер встаёт позже дожима. */
+const START_MIN = 18 * 60;
+const START_MAX = 21 * 60;
 
 /** Сохранить настройки живого эфира: дата эфира, время старта, день начала набора. Только в режиме event, пока сообщество не создано. */
 export function waSetEvent(p: { date?: unknown; start?: unknown; recruitFrom?: unknown }, nowArg?: number): Act {
@@ -1781,7 +1987,7 @@ export function waSetEvent(p: { date?: unknown; start?: unknown; recruitFrom?: u
   } catch {
     return fail("bad_start", "Время старта вида 20:00.");
   }
-  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "Старт эфира от 12:00 до 22:00 по Алматы: серия написана под вечерний эфир.");
+  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "Старт эфира от 18:00 до 21:00 по Алматы: серия написана под вечерний эфир, утренние сообщения не должны уходить до 09:00.");
   if (!isDayKey(p.recruitFrom)) return fail("bad_recruit", "Укажи день начала набора.");
   if (p.recruitFrom > p.date) return fail("bad_recruit", "Набор не может начаться позже дня эфира.");
   if (p.recruitFrom < addDays(p.date, -30)) return fail("bad_recruit", "Набор длиннее 30 дней: проверь дату.");
@@ -1793,7 +1999,9 @@ export function waSetEvent(p: { date?: unknown; start?: unknown; recruitFrom?: u
   const text = eventTarget(r)
     ? `Сохранено. Для эфира ${ddmm(p.date)} сообщество уже есть, ссылка на сайте ведёт в него.`
     : now >= at
-      ? `Сохранено: эфир ${ddmm(p.date)} в ${start}. Набор уже идёт, сообщество создам в ближайшие 30 секунд.`
+      ? daytime(now)
+        ? `Сохранено: эфир ${ddmm(p.date)} в ${start}. Набор уже идёт, сообщество создам в ближайшие 30 секунд.`
+        : `Сохранено: эфир ${ddmm(p.date)} в ${start}. Набор уже идёт, но сейчас ночь: сообщество создам после 09:00 по Алматы (или нажми «Создать сейчас»).`
       : `Сохранено: эфир ${ddmm(p.date)} в ${start}. Сообщество создам ${when(at)}, ссылка на сайте поведёт в него сразу после этого.`;
   return { ok: true, message: text };
 }
@@ -2069,7 +2277,7 @@ function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
 
 export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
 
-const JOURNAL_EVENTS = new Set(["create", "send", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
+const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
 const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 const clip = (s: unknown, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -2096,9 +2304,16 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
         case "send": {
           const part = x.part === "poll" ? ", опрос" : x.part === "text" ? ", текст" : "";
           kind = x.ok ? "ok" : "error";
-          text = x.ok ? `Отправлено «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}${x.manual ? " (вручную)" : ""}` : `Не ушло «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
+          text = x.ok
+            ? `Отправлено «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}${x.manual ? " (вручную)" : ""}`
+            : x.unknown
+              ? `Неясно, ушло ли «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}: ${clip(x.err, 100)}. Повторно не отправляется, проверь в WhatsApp`
+              : `Не ушло «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
           break;
         }
+        case "skip":
+          text = `Пропущено «${topicOf(x.msg)}» в ${nameOfTarget(x.target)}: плановое время ${x.plan} вне окна от 09:00 до 23:45`;
+          break;
         case "fail":
           kind = "error";
           text = `Ошибка ${x.n} подряд: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
@@ -2154,7 +2369,7 @@ function nextDailyCreate(r: Rt, now: number): { day: string; at: number } | null
     const day = addDays(today, i);
     if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
     const at = createAtOf(r, day);
-    if (now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) return { day, at };
+    if ((now < at || createWindowOpen(r, at, now)) && now < closeAtOf(r, day)) return { day, at };
   }
   return null;
 }
@@ -2225,7 +2440,11 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
         evText = `Сообщество будет создано ${when(eventCreateAt(r))}. Ссылка на сайте поведёт в него сразу после этого.`;
       } else {
         evStatus = "creating";
-        evText = st.paused ? "Время создания наступило, но модуль на паузе. Сними паузу." : "Время создания наступило: сообщество создаётся (до 30 секунд) или нажми «Создать сейчас».";
+        evText = st.paused
+          ? "Время создания наступило, но модуль на паузе. Сними паузу."
+          : !daytime(now)
+            ? "Время создания наступило, но сейчас ночь: сообщество создам после 09:00 по Алматы или нажми «Создать сейчас»."
+            : "Время создания наступило: сообщество создаётся (до 30 секунд) или нажми «Создать сейчас».";
       }
     } else if (now < startAt) {
       evStatus = "recruiting";

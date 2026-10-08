@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Выкладка только статики лендинга воркшопа одним заходом: index.html, thank-you.html, efir.js, assets/js/join.js
-# (и новые файлы assets, если они есть в архиве). form-api и бот не трогаются.
+# (и wa.html, постоянную ссылку для кнопки шаблона WABA, и новые файлы assets, если они есть в архиве). form-api и бот не трогаются.
 #
 # Архив собирается из корня репозитория:
-#   tar -czf landing.tgz -C workshop-montazh index.html thank-you.html efir.js assets/js/join.js [assets/...]
+#   tar -czf landing.tgz -C workshop-montazh index.html thank-you.html efir.js assets/js/join.js [wa.html] [assets/...]
 # Запуск на сервере от root:
 #   bash deploy-landing.sh /tmp/landing.tgz
 #
@@ -56,7 +56,7 @@ LIST="$(tar -tzf "$PKG")"
 while IFS= read -r p; do
   [[ -z "$p" || "$p" == */ ]] && continue
   case "$p" in
-    index.html|thank-you.html|efir.js|assets/*) ;;
+    index.html|thank-you.html|wa.html|efir.js|assets/*) ;;
     *) fail "в архиве лишний путь: $p" ;;
   esac
   case "$p" in /*|*..*) fail "небезопасный путь в архиве: $p" ;; esac
@@ -82,9 +82,12 @@ redirect_ok <"$TMP/index.html" || fail "в index.html есть переход н
 grep -q "location.href=FALLBACK" "$TMP/index.html" || fail "в index.html нет запасного пути окна"
 grep -q 'id="tpl-done"' "$TMP/index.html" || fail "в index.html нет шаблона окна «Готово»"
 
-( cd "$TMP" && find index.html thank-you.html efir.js assets -type f | sort ) > "$TMP/files.list"
+# wa.html (постоянная ссылка для кнопки шаблона WABA) необязательна: если её нет в архиве, она просто не выкладывается.
+PAGES="index.html thank-you.html"
+if [[ -s "$TMP/wa.html" ]]; then PAGES="$PAGES wa.html"; fi
+( cd "$TMP" && find $PAGES efir.js assets -type f | sort ) > "$TMP/files.list"
 # страницы последними
-{ grep -v -E '^(index\.html|thank-you\.html|efir\.js)$' "$TMP/files.list" || true; echo efir.js; echo index.html; echo thank-you.html; } > "$TMP/order.list"
+{ grep -v -E '^(index\.html|thank-you\.html|wa\.html|efir\.js)$' "$TMP/files.list" || true; echo efir.js; echo index.html; echo thank-you.html; if [[ -s "$TMP/wa.html" ]]; then echo wa.html; fi; } > "$TMP/order.list"
 
 echo "== бэкап заменяемых файлов в $B"
 mkdir -p "$B"
@@ -141,6 +144,10 @@ c1="$(code "$BASE_URL/")"
 c2="$(code "$BASE_URL/thank-you.html")"
 chk "лендинг отвечает 200 ($c1)" "$([[ "$c1" == 200 ]] && echo ok || echo no)"
 chk "«Спасибо» отвечает 200 ($c2)" "$([[ "$c2" == 200 ]] && echo ok || echo no)"
+if [[ -s "$TMP/wa.html" ]]; then
+  c3="$(code "$BASE_URL/wa.html")"
+  chk "wa.html отвечает 200 ($c3)" "$([[ "$c3" == 200 ]] && echo ok || echo no)"
+fi
 LIVE="$(curl -s -m 10 "$BASE_URL/" || true)"
 chk "в index.html нет перехода на thank-you.html вне запасного пути" "$([[ -n "$LIVE" ]] && redirect_ok <<<"$LIVE" && echo ok || echo no)"
 chk "в index.html свежие ?v=$V у efir.js и join.js" "$([[ "$LIVE" == *"efir.js?v=$V"* && "$LIVE" == *"assets/js/join.js?v=$V"* ]] && echo ok || echo no)"

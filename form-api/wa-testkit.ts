@@ -54,7 +54,11 @@ export const tg = {
 // ───────────────────────── подставной Evolution ─────────────────────────
 
 export type ECall = { method: string; path: string; query: URLSearchParams; body: any; key: string | undefined };
-export type Override = { status?: number; json?: unknown; hang?: boolean } | null;
+/**
+ * Подмена ответа. status и json: ответить ошибкой; hang: оборвать соединение; delay: ответить через delay мс
+ * (одного delay достаточно: запрос выполнится как обычно, только медленно, клиент с коротким таймаутом его не дождётся).
+ */
+export type Override = { status?: number; json?: unknown; hang?: boolean; delay?: number } | null;
 
 /** Группа в ответе fetchAllGroups: поля как у Evolution 2.3.7 (participants только при getParticipants=true). */
 export type MockGroup = { id: string; subject: string; size: number; owner?: string; announce?: boolean; isCommunity?: boolean; isCommunityAnnounce?: boolean; linkedParent?: string; participants?: Array<{ id: string; admin: string | null }> };
@@ -79,6 +83,8 @@ export const evo = {
   announce: new Map<string, string>(),
   requests: new Map<string, any[]>(),
   rejectJids: new Set<string>(),
+  /** Статус отказа по человеку из rejectJids в ответе на решение по заявкам (по умолчанию 404; 419 это «группа заполнена»). */
+  rejectCode: "404",
   allGroups: defaultGroups(),
   fail: null as ((c: ECall) => Override) | null,
   /** Нарушения защиты номера: сообщение не в группу или добавление участников. */
@@ -87,7 +93,7 @@ export const evo = {
     this.server = createServer((req, res) => {
       const chunks: Buffer[] = [];
       req.on("data", (c) => chunks.push(c));
-      req.on("end", () => {
+      req.on("end", async () => {
         const url = new URL(req.url || "/", "http://x");
         let body: any = null;
         try {
@@ -103,8 +109,9 @@ export const evo = {
         };
         if (call.key !== EVO_KEY) return send(401, { status: 401, error: "Unauthorized", response: { message: "Unauthorized" } });
         const o = this.fail?.(call) ?? null;
+        if (o?.delay) await new Promise((r) => setTimeout(r, o.delay));
         if (o?.hang) return void req.socket.destroy();
-        if (o) return send(o.status ?? 500, o.json ?? { status: o.status ?? 500, error: "Internal Server Error", response: { message: "boom" } });
+        if (o && !(o.delay && o.status === undefined && o.json === undefined)) return send(o.status ?? 500, o.json ?? { status: o.status ?? 500, error: "Internal Server Error", response: { message: "boom" } });
         const [, a, b] = call.path.split("/");
         const jid = call.query.get("communityJid") || call.query.get("groupJid") || "";
         const route = `${call.method} /${a}/${b}`;
@@ -151,7 +158,7 @@ export const evo = {
           case "POST /community/requests": {
             const asked: string[] = body?.participants || [];
             const pending = this.requests.get(jid) || [];
-            const results = asked.map((p) => ({ status: this.rejectJids.has(p) ? "404" : "200", jid: p }));
+            const results = asked.map((p) => ({ status: this.rejectJids.has(p) ? this.rejectCode : "200", jid: p }));
             this.requests.set(jid, pending.filter((r) => !asked.includes(r.jid) || this.rejectJids.has(r.jid)));
             return send(200, results);
           }
@@ -192,6 +199,7 @@ export const evo = {
     this.members.clear();
     this.requests.clear();
     this.rejectJids.clear();
+    this.rejectCode = "404";
     this.allGroups = defaultGroups();
   },
   /** Человек отсканировал QR на телефоне: подключение стало open. */

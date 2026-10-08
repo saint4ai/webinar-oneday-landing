@@ -29,7 +29,7 @@ fi
 
 echo "== распаковка"
 tar -xzf "$PKG" -C "$TMP"
-for f in form/server.js form/tg-setup.js form/tg-series.json form/wa-series.json form/admin-app.html form/VERSION landing/thank-you.html landing/efir.js landing/index.html static/thank-you.html secrets.env; do
+for f in form/server.js form/tg-setup.js form/tg-series.json form/wa-series.json form/admin-app.html form/VERSION landing/thank-you.html landing/efir.js landing/index.html landing/wa.html static/thank-you.html secrets.env; do
   test -s "$TMP/$f" || { echo "нет $f в архиве"; exit 1; }
 done
 
@@ -88,6 +88,8 @@ cat >"/root/rollback-workshop-$TS.sh" <<ROLLBACK
 set -e
 cp -a $B/server.js $F/server.js
 for f in efir.js index.html thank-you.html; do cp -a $B/workshop-montazh/\$f $W/\$f; done
+# wa.html добавлена этой выкладкой: если в бэкапе её не было, откат её убирает.
+if [ -f $B/workshop-montazh/wa.html ]; then cp -a $B/workshop-montazh/wa.html $W/wa.html; else rm -f $W/wa.html; fi
 cp -a $B/static-thank-you.html $S/thank-you.html
 if [ -f $B/static-thank-you-index.html ]; then cp -a $B/static-thank-you-index.html $S/thank-you/index.html; else rm -f $S/thank-you/index.html; fi
 $PM2 restart workshop-form
@@ -111,6 +113,7 @@ while read -r f; do place "$f"; done < "$TMP/assets.list"
 place efir.js
 place index.html
 place thank-you.html
+place wa.html
 install -m 644 "$TMP/static/thank-you.html" "$S/thank-you.html.new.$TS" && mv -f "$S/thank-you.html.new.$TS" "$S/thank-you.html"
 # Адрес со слешем на конце (/workshop/thank-you/) тоже ведём на новую страницу.
 if [[ -d "$S/thank-you" ]]; then
@@ -125,6 +128,7 @@ echo "== проверки снаружи"
 code() { curl -s -o /dev/null -w '%{http_code}' -m 8 "$1"; }
 echo "лендинг: $(code https://onai.academy/workshop-montazh/)"
 echo "спасибо: $(code https://onai.academy/workshop-montazh/thank-you.html)"
+echo "wa.html (постоянная ссылка шаблона WABA): $(code https://onai.academy/workshop-montazh/wa.html)"
 echo "health: $(curl -s -m 8 https://onai.academy/workshop/api/health)"
 echo "переход в эфир: $(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -m 8 https://onai.academy/workshop/api/go/bad)"
 echo "кнопка Telegram на «Спасибо»: $(curl -s -m 8 https://onai.academy/workshop-montazh/thank-you.html | grep -c 'workshop_aiprod_bot')"

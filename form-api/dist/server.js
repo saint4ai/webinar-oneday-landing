@@ -7560,6 +7560,10 @@ function initWaGroups(opts = {}) {
     deps: { ...defaultDeps2, ...opts.deps || {} },
     timeOverride: opts.timeCfg,
     sent: /* @__PURE__ */ new Set(),
+    unknown: /* @__PURE__ */ new Set(),
+    approvedSince: /* @__PURE__ */ new Map(),
+    nightSkipped: /* @__PURE__ */ new Set(),
+    downSince: 0,
     seenReq: /* @__PURE__ */ new Set(),
     approved: /* @__PURE__ */ new Set(),
     approveFails: /* @__PURE__ */ new Map(),
@@ -7585,7 +7589,15 @@ function initWaGroups(opts = {}) {
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
   for (const row of readJsonl2(fJournal(r))) {
-    if (row?.ev === "send" && row.ok && row.msg && row.day && row.target) r.sent.add(sentKey(row.msg, row.part || "main", row.day, row.target));
+    if (row?.ev !== "send" || !row.msg || !row.day || !row.target) continue;
+    const key = sentKey(row.msg, row.part || "main", row.day, row.target);
+    if (row.ok) {
+      r.sent.add(key);
+      r.unknown.delete(key);
+    } else if (row.unknown === true) {
+      r.sent.add(key);
+      r.unknown.add(key);
+    }
   }
   for (const row of readJsonl2(fJoins(r))) {
     if (!row?.community || !row.jid) continue;
@@ -7596,7 +7608,11 @@ function initWaGroups(opts = {}) {
       if (row.target) {
         r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
         const ms = Date.parse(String(row.ts || ""));
-        if (Number.isFinite(ms)) noteJoinedDay(r, row.target, dayKeyOf(ms));
+        if (Number.isFinite(ms)) {
+          noteJoinedDay(r, row.target, dayKeyOf(ms));
+          const t = r.state.targets.find((x) => x.id === row.target);
+          if (t?.membersAt && ms > t.membersAt) r.approvedSince.set(t.id, (r.approvedSince.get(t.id) || 0) + 1);
+        }
       }
     }
   }
@@ -7649,7 +7665,7 @@ function startWaGroups(opts = {}) {
 }
 function waHealth() {
   if (!waEnabled()) return { enabled: false };
-  if (!rt) return { enabled: true, running: false, ...initError ? { error: initError } : {} };
+  if (!rt) return { enabled: true, running: false, ...initError ? { error: "init" } : {} };
   return {
     enabled: true,
     running: true,
@@ -7697,10 +7713,37 @@ var hhmmFrom = (mins) => {
 var normHHMM = (s) => hhmmFrom(minsOf(s));
 var startShift = (r, start) => start ? minsOf(start) - minsOf(r.cfg.streamStart) : 0;
 var followsStart = (r, m) => minsOf(m.at) <= minsOf(r.cfg.streamStart) + r.cfg.streamMinutes;
-function planOf(r, t, m) {
+var AFTER_OFFER = /* @__PURE__ */ new Set(["push", "last-call"]);
+var OFFER_ID = "offer";
+function shiftedPlan(r, t, m) {
   const base = atTime(t.day, m.at);
   const d = startShift(r, t.start);
   return d && followsStart(r, m) ? base + d * MIN : base;
+}
+function planOf(r, t, m) {
+  const own = shiftedPlan(r, t, m);
+  if (!AFTER_OFFER.has(m.id)) return own;
+  const offer = r.cfg.messages.find((x) => x.id === OFFER_ID);
+  return offer ? Math.max(own, shiftedPlan(r, t, offer)) : own;
+}
+var SEND_FROM = 9 * 60;
+var SEND_TO = 23 * 60 + 45;
+var DAY_FROM = 9 * 60;
+var DAY_TO = 23 * 60;
+var minuteOfDay = (ms) => minsOf(hhmmOf(ms));
+var sendableTime = (ms) => minuteOfDay(ms) >= SEND_FROM && minuteOfDay(ms) <= SEND_TO;
+var daytime = (ms) => minuteOfDay(ms) >= DAY_FROM && minuteOfDay(ms) < DAY_TO;
+function daytimeMs(from, to) {
+  if (to <= from) return 0;
+  let total = 0;
+  let day = dayKeyOf(from);
+  const last = dayKeyOf(to);
+  for (let i = 0; i < 400 && day <= last; i++, day = addDays(day, 1)) {
+    const a = Math.max(from, atTime(day, hhmmFrom(DAY_FROM)));
+    const b = Math.min(to, atTime(day, hhmmFrom(DAY_TO)));
+    if (b > a) total += b - a;
+  }
+  return total;
 }
 function retime(r, start, text) {
   if (!start || start === r.cfg.streamStart) return text;
@@ -7829,6 +7872,8 @@ async function checkConnection(r, now) {
   const prev = r.conn.state;
   r.conn = { state: st, at: now };
   if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
+  if (st === "open") r.downSince = 0;
+  else if (!r.downSince) r.downSince = now;
   if (st === "open") {
     if (!r.state.ownerJid || now - r.state.ownerAt > HOUR) {
       const i = await fetchInstance();
@@ -7841,10 +7886,11 @@ async function checkConnection(r, now) {
     }
     return true;
   }
-  if (now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN) {
+  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN) {
     r.state.lastConnAlertAt = now;
     save(r);
-    await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st}). \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
+    const since = r.downSince && now - r.downSince >= 30 * MIN ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
+    await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st}).${since} \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
   }
   return false;
 }
@@ -7853,15 +7899,16 @@ var capReached = (r, now) => dayCreations(r, now) >= r.cfg.maxNewPerDay;
 function noteCreation(r, now) {
   r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR), now];
 }
+var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR;
 function dueCreateDays(r, now) {
   const out = [];
+  if (!daytime(now)) return out;
   const c = tcfg(r);
   const today = dayKeyOf(now);
   for (let i = 0; i < 14; i++) {
     const day = addDays(today, i);
     if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
-    const at = createAtOf(r, day);
-    if (now >= at && now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) out.push(day);
+    if (createWindowOpen(r, createAtOf(r, day), now) && now < closeAtOf(r, day)) out.push(day);
   }
   return out;
 }
@@ -7871,7 +7918,7 @@ function eventDue(r, now) {
   const ev = r.state.event;
   if (r.state.mode !== "event" || ev.done || !ev.date || !ev.recruitFrom) return false;
   if (eventTarget(r)) return false;
-  return now >= eventCreateAt(r) && now < closeAtOf(r, ev.date);
+  return now >= eventCreateAt(r) && now < closeAtOf(r, ev.date) && daytime(now);
 }
 function dueCreates(r, now) {
   if (r.state.mode === "event") return eventDue(r, now) ? [r.state.event.date] : [];
@@ -7903,6 +7950,7 @@ async function createTarget(r, day, seq, now, opts = {}) {
   const name = nameOf(r, day, seq);
   const description = retime(r, opts.start, r.cfg.description);
   let created;
+  if (r.state.targets.some((x) => x.id === `${day}#${seq}`)) return { ok: false, error: "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C" };
   if (kind === "group" && !adminNumbers().length) {
     await noteFail(r, `\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${name}`, "\u0434\u043B\u044F \u043E\u0431\u044B\u0447\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u044B \u043D\u0443\u0436\u0435\u043D \u0445\u043E\u0442\u044F \u0431\u044B \u043E\u0434\u0438\u043D \u043D\u043E\u043C\u0435\u0440 \u0432 WA_ADMIN_NUMBERS");
     return { ok: false, error: "\u043D\u0435\u0442 WA_ADMIN_NUMBERS" };
@@ -7963,7 +8011,7 @@ async function setupSteps(r, t) {
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
-    if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t))) continue;
+    if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
     t.tries[s] = (t.tries[s] || 0) + 1;
@@ -8020,11 +8068,16 @@ function partsOf(r, m) {
   if (m.poll) parts.push("poll");
   return parts;
 }
-var isDone = (r, m, t) => partsOf(r, m).every((p) => r.sent.has(sentKey(m.id, p, t.day, t.id)));
+var isDone = (r, m, t, strict = false) => partsOf(r, m).every((p) => {
+  const k = sentKey(m.id, p, t.day, t.id);
+  return r.sent.has(k) && !(strict && r.unknown.has(k));
+});
+var unclearSend = (f) => ambiguous(f) && f.error !== "no_api_key";
 async function sendPart(r, t, msgId, part, run, manual, extra = {}) {
   const key = sentKey(msgId, part, t.day, t.id);
-  if (r.sent.has(key)) return { ok: true };
+  if (r.sent.has(key) && !(manual && r.unknown.has(key))) return { ok: true };
   const x = await run();
+  const unknown = !x.ok && unclearSend(x);
   journal(r, {
     ev: "send",
     msg: msgId,
@@ -8034,20 +8087,32 @@ async function sendPart(r, t, msgId, part, run, manual, extra = {}) {
     jid: t.sendJid,
     ok: x.ok,
     ...x.ok ? { mid: x.data.messageId } : { err: x.error },
+    ...unknown ? { unknown: true } : {},
     ...manual ? { manual: true } : {},
     ...extra
   });
   if (x.ok) {
     r.sent.add(key);
+    r.unknown.delete(key);
     return { ok: true };
   }
-  return { ok: false, error: x.error, ...x.timeout ? { timeout: true } : {} };
+  if (unknown) {
+    r.sent.add(key);
+    r.unknown.add(key);
+    await alarm(
+      r,
+      msgId === "welcome" ? `\u041D\u0435 \u0443\u0432\u0435\u0440\u0435\u043D, \u0447\u0442\u043E \u043F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u0443\u0448\u043B\u043E \u0432 \xAB${t.name}\xBB. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp.` : `\u041D\u0435 \u0443\u0432\u0435\u0440\u0435\u043D, \u0447\u0442\u043E \u0443\u0448\u043B\u043E ${msgId} \u0432 \xAB${t.name}\xBB. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp, \u043F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 /wa_send ${msgId}`
+    );
+    return { ok: false, error: x.error, unknown: true };
+  }
+  return { ok: false, error: x.error };
 }
 async function sendMessageTo(r, t, base, manual) {
   const m = effMsg(r, t, base);
   let first = true;
   for (const part of partsOf(r, m)) {
-    if (r.sent.has(sentKey(m.id, part, t.day, t.id))) continue;
+    const key = sentKey(m.id, part, t.day, t.id);
+    if (r.sent.has(key) && !(manual && r.unknown.has(key))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
     let res;
@@ -8060,14 +8125,14 @@ async function sendMessageTo(r, t, base, manual) {
       const media = m.media;
       const caption = m.text.length <= r.cfg.captionLimit ? m.text : void 0;
       res = await sendPart(r, t, m.id, part, () => sendMedia2(t.sendJid, { mediatype: media.type, url: media.url, caption }), manual);
-      if (!res.ok && !res.timeout) {
+      if (!res.ok && !res.unknown) {
         console.warn("[wa] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", media.url, res.error);
         if (!r.mediaWarned.has(media.url)) {
           r.mediaWarned.add(media.url);
           void alarm(r, `\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0430\u0441\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0438\u043B\u0438 \u0432\u0438\u0434\u0435\u043E ${media.url}: ${res.error}. \u0428\u043B\u044E \u0442\u043E\u0442 \u0436\u0435 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
         }
         const fb = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual, { fallback: "text" });
-        if (fb.ok) res = fb;
+        if (fb.ok || fb.unknown) res = fb;
       }
     } else {
       res = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual);
@@ -8080,6 +8145,13 @@ async function sendMessageTo(r, t, base, manual) {
   }
   return true;
 }
+function noteNightSkip(r, t, msg, plan) {
+  const key = `${msg.id}|${t.day}|${t.id}`;
+  if (r.nightSkipped.has(key)) return;
+  r.nightSkipped.add(key);
+  journal(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
+  console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F %s \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 09:00 \u0434\u043E 23:45", msg.id, t.id, hhmmOf(plan));
+}
 function dueSends(r, now) {
   const out = [];
   for (const t of r.state.targets) {
@@ -8090,6 +8162,10 @@ function dueSends(r, now) {
       if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
+      if (!sendableTime(plan)) {
+        noteNightSkip(r, t, msg, plan);
+        continue;
+      }
       out.push({ t, msg, plan });
     }
   }
@@ -8136,33 +8212,44 @@ async function refreshMembers(r, t, now) {
   t.membersAt = now;
   if (x.ok) {
     const n = extractMembers(x.data, t.sendJid);
-    if (n !== void 0) t.members = n;
+    if (n !== void 0) {
+      t.members = n;
+      r.approvedSince.set(t.id, 0);
+    }
   } else {
     console.warn("[wa] \u0447\u0438\u0441\u043B\u043E \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %s \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u043E: %s", t.id, x.error);
   }
   save(r);
   return x.ok;
 }
-async function runMemberChecks(r, now) {
-  const t = servingTarget(r, now);
-  if (!t || r.state.paused) return;
-  await refreshMembers(r, t, now);
+var heldMembers = (r, t) => (t.members ?? 0) + (r.approvedSince.get(t.id) || 0);
+async function openNext(r, t, now, members) {
+  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt) return;
+  if (targetsOf(r, t.day)[0].id !== t.id || now >= closeAtOf(r, t.day)) return;
   const limit = r.cfg.overflowAt[t.kind];
-  if (t.members === void 0 || t.members < limit || targetsOf(r, t.day)[0].id !== t.id) return;
   if (capReached(r, now)) {
     if (r.state.capAlertDay !== dayKeyOf(now)) {
       r.state.capAlertDay = dayKeyOf(now);
       save(r);
-      await alarm(r, `\u0412 \xAB${t.name}\xBB \u0443\u0436\u0435 ${t.members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432, \u0430 \u043B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u043E, \u0441\u0441\u044B\u043B\u043A\u0430 \u043F\u0440\u0435\u0436\u043D\u044F\u044F. \u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E: /wa_new.`);
+      await alarm(r, `\u0412 \xAB${t.name}\xBB \u0443\u0436\u0435 ${members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432, \u0430 \u043B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u043E, \u0441\u0441\u044B\u043B\u043A\u0430 \u043F\u0440\u0435\u0436\u043D\u044F\u044F. \u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E: /wa_new.`);
     }
     return;
   }
   await pause(r, r.cfg.pacing.betweenStepsMs);
   const c = await createTarget(r, t.day, t.seq + 1, r.deps.now(), { source: t.source ?? "daily", start: t.start });
   if (!c.ok) return;
-  await alarm(r, `\u0412 \xAB${t.name}\xBB ${t.members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0438\u0437 ${limit}. \u041E\u0442\u043A\u0440\u044B\u0442\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435: \xAB${c.target.name}\xBB, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043D\u0430 \u043D\u0435\u0433\u043E, \u043A\u0430\u043A \u0442\u043E\u043B\u044C\u043A\u043E \u043E\u043D\u043E \u0431\u0443\u0434\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E.`);
+  await alarm(r, `\u0412 \xAB${t.name}\xBB ${members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0438\u0437 ${limit}. \u041E\u0442\u043A\u0440\u044B\u0442\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435: \xAB${c.target.name}\xBB, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043D\u0430 \u043D\u0435\u0433\u043E, \u043A\u0430\u043A \u0442\u043E\u043B\u044C\u043A\u043E \u043E\u043D\u043E \u0431\u0443\u0434\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E.`);
   await pause(r, r.cfg.pacing.betweenStepsMs);
   await setupSteps(r, c.target);
+}
+async function runMemberChecks(r, now) {
+  const t = servingTarget(r, now);
+  if (!t || r.state.paused) return;
+  await refreshMembers(r, t, now);
+  if (t.members === void 0) return;
+  const held = heldMembers(r, t);
+  if (held < r.cfg.overflowAt[t.kind]) return;
+  await openNext(r, t, now, held);
 }
 async function waTick() {
   const r = rt;
@@ -8273,34 +8360,52 @@ async function pollJoins(r, t, now) {
     r.seenReq.add(k);
     append(fJoins(r), { ts: iso(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q2.jid, phone: phoneOf(q2.raw), raw: q2.raw });
   }
-  const todo = reqs.map((q2) => q2.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3).slice(0, r.cfg.joinPolling.batch);
-  if (!todo.length) {
+  const waiting = reqs.map((q2) => q2.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3);
+  if (!waiting.length) {
     r.joinFailStreak = 0;
     return 0;
   }
+  const limit = r.cfg.overflowAt[t.kind];
+  const room = limit - heldMembers(r, t);
+  if (room <= 0) {
+    await openNext(r, t, now, heldMembers(r, t));
+    return 0;
+  }
+  const todo = waiting.slice(0, Math.min(room, r.cfg.joinPolling.batch));
   const d = await communityDecide(t.jid, todo, "approve");
   if (!d.ok) {
-    for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
     append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
     await softJoinFail(r, now, `\u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A ${t.id}: ${d.error}`);
     return 0;
   }
   r.joinFailStreak = 0;
   let n = 0;
+  let full = false;
   for (const x of normalizeDecisions(d.data, todo)) {
     const k = `${t.jid}|${x.jid}`;
     append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
     if (x.ok) {
       r.approved.add(k);
       r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
+      r.approvedSince.set(t.id, (r.approvedSince.get(t.id) || 0) + 1);
       noteJoinedDay(r, t.id, dayKeyOf(r.deps.now()));
       n++;
+    } else if (LIMIT_REFUSAL.test(x.status)) {
+      full = true;
     } else {
       r.approveFails.set(k, (r.approveFails.get(k) || 0) + 1);
     }
   }
+  if (full) {
+    t.members = Math.max(t.members ?? 0, limit);
+    t.membersAt = r.deps.now();
+    r.approvedSince.set(t.id, 0);
+    save(r);
+    await openNext(r, t, r.deps.now(), t.members);
+  }
   return n;
 }
+var LIMIT_REFUSAL = /^419$|full|limit/i;
 async function softJoinFail(r, now, what) {
   r.joinFailStreak++;
   console.warn("[wa] \u0437\u0430\u044F\u0432\u043A\u0438, \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s", r.joinFailStreak, what);
@@ -8351,7 +8456,7 @@ function nextMessage(r, now) {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
       const plan = planOf(r, { day, start }, m);
-      if (plan >= now && plan < closeAtOf(r, day) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
+      if (plan >= now && plan < closeAtOf(r, day) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
   };
   if (r.state.mode === "event") {
@@ -8484,20 +8589,28 @@ function cmdResume(r) {
   return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
 }
 var fail = (code, message) => ({ ok: false, code, message });
-async function eventCreateNow(r, now) {
+function eventCreateCheck(r, now) {
   const ev = r.state.event;
   if (r.state.mode !== "event") return fail("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0441\u044C \u043D\u0430 \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440.");
   if (!ev.date) return fail("no_event", "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438.");
   if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0443\u0436\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u0417\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u0443\u044E \u0434\u0430\u0442\u0443.`);
-  if (r.state.paused) return fail("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
   if (r.state.pendingCreate) return fail("pending", "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443 (\u043E\u043D\u0430 \u043E\u0431\u043D\u0443\u043B\u0438\u0442 \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435).");
+  if (r.state.paused) return fail("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
   const existing = eventTarget(r);
   if (existing) {
     syncEventCommunity(r);
     return { ok: true, code: "exists", message: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(ev.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
   }
   if (capReached(r, now)) return fail("cap", `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.`);
+  return null;
+}
+async function eventCreateNow(r, now) {
+  const early = eventCreateCheck(r, now);
+  if (early) return early;
   return exclusive(r, async () => {
+    const late = eventCreateCheck(r, Math.max(now, r.deps.now()));
+    if (late) return late;
+    const ev = r.state.event;
     if (!await checkConnection(r, now)) return fail("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
     const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
     if (!res.ok) return fail("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
@@ -8507,6 +8620,14 @@ async function eventCreateNow(r, now) {
     const t = res.target;
     return { ok: true, code: isReady(t) ? "created" : "building", message: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043E\u043D\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043E 00:00 \u043F\u043E\u0441\u043B\u0435 \u044D\u0444\u0438\u0440\u0430.` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
   });
+}
+function cmdNewCheck(r, day, now) {
+  if (r.state.pendingCreate) return { text: "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u0434\u0435\u043B\u0430\u0439 /wa_resume." };
+  if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
+  const existing = targetsOf(r, day)[0];
+  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+  if (capReached(r, now)) return { text: `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.` };
+  return null;
 }
 async function cmdNew(r, args, now) {
   if (r.state.mode === "event") return { text: (await eventCreateNow(r, now)).message };
@@ -8524,10 +8645,11 @@ async function cmdNew(r, args, now) {
   }
   if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `\u042D\u0444\u0438\u0440 ${ddmm2(day)} \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u0430\u043B\u0435\u043A\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0437\u0430 \u0442\u0440\u0438 \u0434\u043D\u044F \u0434\u043E \u043D\u0435\u0433\u043E.` };
   if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u044D\u0444\u0438\u0440\u044B \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0431\u0435\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430: ${ddmm2(day)}. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u043D\u044C\u0448\u0435 \u0441\u0440\u043E\u043A\u0430, \u0443\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443: /wa_new ${day}` };
-  const existing = targetsOf(r, day)[0];
-  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
-  if (capReached(r, now)) return { text: `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.` };
+  const early = cmdNewCheck(r, day, now);
+  if (early) return early;
   return exclusive(r, async () => {
+    const late = cmdNewCheck(r, day, Math.max(now, r.deps.now()));
+    if (late) return late;
     if (!await checkConnection(r, now)) return { text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR.` };
     const res = await createTarget(r, day, 1, r.deps.now());
     if (!res.ok) return { text: r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432\u044B\u0448\u0435." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}` };
@@ -8561,7 +8683,7 @@ async function sendSeries(r, id, now) {
     let failed = 0;
     let first = true;
     for (const t of targets) {
-      if (isDone(r, msg, t)) {
+      if (isDone(r, msg, t, true)) {
         skipped++;
         continue;
       }
@@ -8600,7 +8722,7 @@ function waReportLine(day) {
   if (!ts.length) return "";
   const joined = ts.reduce((s, t) => s + (r.joinedCount.get(t.id) || 0), 0);
   const total = r.cfg.messages.filter((m) => m.enabled !== false).length * ts.length;
-  const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t)).length, 0);
+  const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t, true)).length, 0);
   return `WhatsApp: \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${joined}, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0441\u0435\u0440\u0438\u0438 \u0443\u0448\u043B\u043E ${done} \u0438\u0437 ${total}.`;
 }
 var MODULE_OFF = fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
@@ -8638,8 +8760,8 @@ function waSetDaily(enabled, nowArg) {
   const nx = nextDailyCreate(r, now);
   return { ok: true, message: nx ? `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E, \u044D\u0444\u0438\u0440 ${ddmm2(nx.day)}, \u0441\u043E\u0437\u0434\u0430\u043C ${when(nx.at)}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
 }
-var START_MIN = 12 * 60;
-var START_MAX = 22 * 60;
+var START_MIN = 18 * 60;
+var START_MAX = 21 * 60;
 function waSetEvent(p, nowArg) {
   const r = rt;
   if (!r) return MODULE_OFF;
@@ -8657,7 +8779,7 @@ function waSetEvent(p, nowArg) {
   } catch {
     return fail("bad_start", "\u0412\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0432\u0438\u0434\u0430 20:00.");
   }
-  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 12:00 \u0434\u043E 22:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440.");
+  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 18:00 \u0434\u043E 21:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440, \u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u0443\u0445\u043E\u0434\u0438\u0442\u044C \u0434\u043E 09:00.");
   if (!isDayKey(p.recruitFrom)) return fail("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
   if (p.recruitFrom > p.date) return fail("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
   if (p.recruitFrom < addDays(p.date, -30)) return fail("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
@@ -8666,7 +8788,7 @@ function waSetEvent(p, nowArg) {
   save(r);
   journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
   const at = eventCreateAt(r);
-  const text = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
+  const text = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? daytime(now) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B (\u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB).` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
   return { ok: true, message: text };
 }
 function waEventReset() {
@@ -8873,7 +8995,7 @@ function readJsonlTail(file, maxBytes = 256 * 1024) {
     return [];
   }
 }
-var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
+var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
 var stampOf = (ms) => `${ddmm2(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 var clip = (s, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -8895,9 +9017,12 @@ function journalView(r, limit = 20) {
       case "send": {
         const part = x.part === "poll" ? ", \u043E\u043F\u0440\u043E\u0441" : x.part === "text" ? ", \u0442\u0435\u043A\u0441\u0442" : "";
         kind = x.ok ? "ok" : "error";
-        text = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
+        text = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : x.unknown ? `\u041D\u0435\u044F\u0441\u043D\u043E, \u0443\u0448\u043B\u043E \u043B\u0438 \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}. \u041F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
         break;
       }
+      case "skip":
+        text = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan} \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 \u043E\u0442 09:00 \u0434\u043E 23:45`;
+        break;
       case "fail":
         kind = "error";
         text = `\u041E\u0448\u0438\u0431\u043A\u0430 ${x.n} \u043F\u043E\u0434\u0440\u044F\u0434: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
@@ -8951,7 +9076,7 @@ function nextDailyCreate(r, now) {
     const day = addDays(today, i);
     if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
     const at = createAtOf(r, day);
-    if (now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) return { day, at };
+    if ((now < at || createWindowOpen(r, at, now)) && now < closeAtOf(r, day)) return { day, at };
   }
   return null;
 }
@@ -9001,7 +9126,7 @@ function waPanel(nowArg) {
         evText = `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u0443\u0434\u0435\u0442 \u0441\u043E\u0437\u0434\u0430\u043D\u043E ${when(eventCreateAt(r))}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
       } else {
         evStatus = "creating";
-        evText = st.paused ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443." : "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434) \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.";
+        evText = st.paused ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443." : !daytime(now) ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB." : "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434) \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.";
       }
     } else if (now < startAt) {
       evStatus = "recruiting";

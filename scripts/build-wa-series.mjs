@@ -47,7 +47,7 @@ const messages = chain.whatsapp.map((m) => {
 const series = {
   _about:
     "Расписание WhatsApp-сообщества эфира. Сообщения собираются скриптом scripts/build-wa-series.mjs из секции whatsapp в docs/mailings/chain-v2.json (правь chain-v2 и запускай скрипт, а не этот файл). Время по Алматы, день эфира D, сообщения идут в день D. Название, описание и приветствие написаны под модуль и уходят в WhatsApp только после «ок» Александра.",
-  version: "2026-10-08.1",
+  version: "2026-10-08.2",
   timezone: "Asia/Almaty",
   streamStart: "20:00",
   streamMinutes: 80,
@@ -62,7 +62,8 @@ const series = {
   captionLimit: 1024,
   pacing: { betweenSendsMs: [4000, 9000], betweenStepsMs: [2000, 4000] },
   retry: { backoffSec: [60, 180], pauseAfter: 3 },
-  joinPolling: { servingSec: [15, 30], otherSec: [90, 150], batch: 20, keepAfterCloseMin: 60 },
+  // idleSec и hotMinutes: щадящий режим. Горячий интервал 15 до 30 с действует 10 минут после выдачи ссылки или найденных заявок, в остальное время опрос раз в 2 до 4 минут.
+  joinPolling: { servingSec: [15, 30], otherSec: [90, 150], batch: 20, keepAfterCloseMin: 60, idleSec: [120, 240], hotMinutes: 10 },
   alarms: { connectionEveryMinutes: 60 },
   name: "Вайб-продакшен · эфир {date}",
   description:

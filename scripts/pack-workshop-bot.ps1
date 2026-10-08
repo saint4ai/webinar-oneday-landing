@@ -10,7 +10,8 @@ $stage = Join-Path ([IO.Path]::GetTempPath()) ("wsbot-" + [guid]::NewGuid().ToSt
 New-Item -ItemType Directory -Force "$stage\landing\assets\tg", "$stage\form", "$stage\static" | Out-Null
 
 $utf8 = New-Object Text.UTF8Encoding $false
-foreach ($f in "efir.js", "index.html", "thank-you.html") { Copy-Item "$root\workshop-montazh\$f" "$stage\landing\$f" }
+# wa.html: постоянная ссылка для кнопки шаблона WABA, переадресует в сообщество текущего набора.
+foreach ($f in "efir.js", "index.html", "thank-you.html", "wa.html") { Copy-Item "$root\workshop-montazh\$f" "$stage\landing\$f" }
 Copy-Item "$root\workshop-montazh\assets\tg\*" "$stage\landing\assets\tg\" -Recurse
 Copy-Item "$root\form-api\dist\server.js" "$stage\form\server.js"
 Copy-Item "$root\form-api\dist\tg-setup.js" "$stage\form\tg-setup.js"

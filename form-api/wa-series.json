@@ -1,6 +1,6 @@
 {
   "_about": "Расписание WhatsApp-сообщества эфира. Сообщения собираются скриптом scripts/build-wa-series.mjs из секции whatsapp в docs/mailings/chain-v2.json (правь chain-v2 и запускай скрипт, а не этот файл). Время по Алматы, день эфира D, сообщения идут в день D. Название, описание и приветствие написаны под модуль и уходят в WhatsApp только после «ок» Александра.",
-  "version": "2026-10-08.1",
+  "version": "2026-10-08.2",
   "timezone": "Asia/Almaty",
   "streamStart": "20:00",
   "streamMinutes": 80,
@@ -43,7 +43,12 @@
       150
     ],
     "batch": 20,
-    "keepAfterCloseMin": 60
+    "keepAfterCloseMin": 60,
+    "idleSec": [
+      120,
+      240
+    ],
+    "hotMinutes": 10
   },
   "alarms": {
     "connectionEveryMinutes": 60
