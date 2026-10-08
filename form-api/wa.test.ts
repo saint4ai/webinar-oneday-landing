@@ -37,6 +37,8 @@ const CHAIN = join(REPO, "docs", "mailings", "chain-v2.json");
 const tmp = () => mkdtempSync(join(tmpdir(), "wa-test-"));
 /** Момент по часам Алматы (UTC+5). */
 const alm = (y: number, m: number, d: number, h: number, mi = 0, s = 0) => Date.UTC(y, m - 1, d, h - 5, mi, s);
+/** Включённые сообщения дня эфира в wa-series.json (без «+1 день» и без выключенных): их число в итоге эфира «ушло X из N». */
+const DAY0 = () => JSON.parse(readFileSync(join(process.cwd(), "form-api", "wa-series.json"), "utf8")).messages.filter((m: any) => m.enabled !== false && !m.dayOffset).length as number;
 const readJsonl = (file: string): any[] => (existsSync(file) ? readFileSync(file, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
 
 
@@ -135,28 +137,60 @@ async function createFor(w: ReturnType<typeof boot>, dayOfMonth: number) {
 test("wa-series.json: проходит проверку и совпадает с секцией whatsapp в chain-v2 (время, тексты, картинки, опрос)", () => {
   const s = validateWaSeries(JSON.parse(readFileSync(WA_SERIES, "utf8")));
   const chain = JSON.parse(readFileSync(CHAIN, "utf8"));
-  assert.equal(s.messages.length, 14);
+  // лента v3.3: 18 сообщений дня эфира и 4 на следующий день
+  assert.equal(s.messages.length, 22);
   assert.equal(s.messages.length, chain.whatsapp.length);
+  assert.equal(s.messages.filter((m) => m.dayOffset).length, 4);
   chain.whatsapp.forEach((c: any, i: number) => {
     const m = s.messages[i];
-    assert.equal(m.at, c.at, `время ${c.at}`);
-    assert.equal(m.text, c.text, `текст ${c.at}`);
-    if (c.media) assert.equal(m.media?.url, `https://onai.academy/workshop-montazh/assets/tg/${c.media}`, `картинка ${c.at}`);
-    else assert.equal(m.media, undefined, `без картинки ${c.at}`);
+    const next = /^\+(\d+) день (\d{1,2}:\d{2})$/.exec(c.at);
+    assert.equal(m.at, next ? next[2] : c.at, `время ${c.at}`);
+    assert.equal(m.dayOffset ?? 0, next ? Number(next[1]) : 0, `день ${c.at}`);
+    // метка места под видео в начале («[Видео Александра, 15 с]») в подпись не идёт, остальной текст дословно из chain-v2
+    const isVideo = /\.mp4$/i.test(c.media || "");
+    assert.equal(m.text, isVideo ? c.text.replace(/^\[[^\]\n]+\]\n\n/, "") : c.text, `текст ${c.at}`);
+    if (c.media) {
+      assert.equal(m.media?.url, `https://onai.academy/workshop-montazh/assets/tg/${c.media}`, `картинка ${c.at}`);
+      assert.equal(m.media?.type, isVideo ? "video" : "image", `тип ${c.at}`);
+    } else assert.equal(m.media, undefined, `без картинки ${c.at}`);
   });
+  // видео Александра 15:00 ещё не снято: сообщение выключено, пока файла нет; остальные включены
+  assert.deepEqual(s.messages.filter((m) => m.enabled === false).map((m) => m.id), ["personal"]);
+  // имя менеджера нигде не пишем, длинного тире нет
+  assert.equal(/Аян/.test(readFileSync(WA_SERIES, "utf8")), false);
+  for (const m of s.messages) assert.equal(/^\[/.test(m.text), false, `${m.id}: метка [Видео ...] не идёт в подпись`);
+  // id и времена ленты v3.3
+  assert.deepEqual(s.messages.map((m) => `${m.dayOffset ? "+1 " : ""}${m.at} ${m.id}`), [
+    "11:30 morning", "12:00 reel-119k", "12:30 reg-bonus", "14:00 warm-edits", "15:00 personal", "16:00 noface", "17:00 numbers", "17:30 video-ai",
+    "19:00 live-bonus", "19:30 t-minus-30", "19:50 t-minus-10", "20:00 live-now", "20:10 live-10", "20:15 last-link", "20:58 training", "21:18 offer",
+    "22:30 push", "23:30 last-call", "+1 10:30 next-1030", "+1 15:00 next-1500", "+1 19:50 replay-link", "+1 21:45 next-2145",
+  ]);
+  // убранные из ленты времена (20:30 «живой догрев», 21:20 оффер) и старые id не остались
+  for (const id of ["faceless", "cases", "live-warm", "reel-119k-old"]) assert.equal(s.messages.some((m) => m.id === id), false, id);
   // опрос только у утреннего сообщения: варианты из chain-v2
   assert.deepEqual(s.messages.filter((m) => m.poll).map((m) => m.id), ["morning"]);
   assert.deepEqual(s.messages[0].poll?.options, ["Буду", "Постараюсь", "Не успеваю"]);
   assert.equal(s.messages[0].poll?.name, "Придёшь сегодня на эфир?");
-  // время по возрастанию, все подписи влезают в лимит
-  assert.deepEqual(s.messages.map((m) => m.at), [...s.messages.map((m) => m.at)].sort());
-  for (const m of s.messages) assert.ok(m.text.length <= s.captionLimit, `${m.id}: подпись до ${s.captionLimit}`);
+  // время по возрастанию внутри дня (сначала день эфира, потом +1 день)
+  const key = (m: { dayOffset?: number; at: string }) => `${m.dayOffset ?? 0}|${m.at}`;
+  assert.deepEqual(s.messages.map(key), [...s.messages.map(key)].sort());
+  // подпись к картинке длиннее лимита (1024) бот делит на картинку и отдельный текст; такой в серии один, оффер 21:18
+  assert.deepEqual(s.messages.filter((m) => m.media && m.text.length > s.captionLimit).map((m) => m.id), ["offer"]);
+  for (const m of s.messages) assert.ok(m.text.length <= 4096, `${m.id}: текст до 4096`);
 });
 
 test("wa-series.json: файлы картинок и аватарок лежат в репозитории; аватарка квадратная", () => {
   const s = JSON.parse(readFileSync(WA_SERIES, "utf8"));
   const local = (u: string) => join(REPO, "workshop-montazh", "assets", "tg", u.split("/").pop() as string);
-  for (const m of s.messages) if (m.media) assert.ok(existsSync(local(m.media.url)), m.media.url);
+  // Карточки WhatsApp для +1 дня 10:30 и 21:45 (с суффиксом -wa) дорисовываются отдельно: пока файла нет, имя обязано быть в этом списке
+  // (когда файл появился, его можно убрать отсюда, тест зелёный и так и так). Выключенные сообщения (видео Александра 15:00) не проверяем.
+  const PENDING = new Set(["next-1030-wa.jpg", "next-2145-wa.jpg"]);
+  const missing: string[] = [];
+  for (const m of s.messages) {
+    if (!m.media || m.enabled === false) continue;
+    if (!existsSync(local(m.media.url)) && !PENDING.has(m.media.url.split("/").pop() as string)) missing.push(`${m.id}: ${m.media.url}`);
+  }
+  assert.deepEqual(missing, [], "файла нет в репозитории и в списке дорисовываемых");
   for (const u of s.avatar) assert.ok(existsSync(local(u)), u);
   const buf = readFileSync(local(s.avatar[0]));
   // JPEG: ищем маркер SOF0 или SOF2 и читаем высоту и ширину
@@ -185,6 +219,7 @@ test("validateWaSeries: отвергает длинное тире, плохое
   bad((s) => (s.target = "channel"), /community или group/);
   bad((s) => (s.messages[0].poll.options = ["один"]), /poll/);
   bad((s) => (s.messages[1].media = { type: "image", url: "http://x/y.jpg" }), /media/);
+  for (const v of [-1, 4, 1.5, "1"]) bad((s) => (s.messages[1].dayOffset = v), /dayOffset целое от 0 до 3/);
   bad((s) => (s.pacing.betweenSendsMs = [9000, 4000]), /по возрастанию/);
   bad((s) => (s.joinPolling.hotMinutes = 0), /hotMinutes/);
   bad((s) => (s.joinPolling.idleSec = [180, 120]), /idleSec/);
@@ -515,7 +550,7 @@ test("прогрев: в два сообщества эфира уходит п�
 });
 
 test("прогрев: подпись длиннее лимита уходит картинкой без подписи и отдельным текстом; сбой картинки заменяется текстом", async () => {
-  const w = boot({ edit: (s) => (s.messages[1].text = "Длинный текст. ".repeat(80)) });
+  const w = boot({ edit: (s) => (s.messages.find((m: any) => m.id === "reg-bonus").text = "Длинный текст. ".repeat(80)) });
   const t = await createFor(w, 9);
   evo.calls = [];
   at(9, 12, 30, 5);
@@ -533,12 +568,136 @@ test("прогрев: подпись длиннее лимита уходит к
   at(9, 14, 0, 5);
   const r = await waTick();
   assert.equal(r.sent, 1);
-  assert.match(evo.of("/message/sendText")[0].body.text, /Как я правлю монтаж/);
+  assert.match(evo.of("/message/sendText")[0].body.text, /Правишь монтаж словами/);
   const row = w2.journal().find((x) => x.msg === "warm-edits" && x.ok);
   assert.equal(row.fallback, "text");
   assert.equal(alarms.filter((a) => a.includes("Не отправилась картинка")).length, 1);
   assert.equal(w2.state().failStreak, 0, "текстовая замена спасла отправку: ошибки нет");
   void t;
+});
+
+// ───────────────────────── сообщения «+1 день» ─────────────────────────
+
+test("«+1 день»: уходят в сообщество вчерашнего эфира ровно один раз, в сообщество сегодняшнего эфира не уходят, после конца следующего дня не шлются", async () => {
+  const w = boot();
+  const t9 = await createFor(w, 9); // эфир 9 октября, создано 8-го
+  const t10 = await createFor(w, 10); // эфир 10 октября, создано 9-го в 20:00
+  assert.notEqual(t9.sendJid, t10.sendJid);
+  const sentTo = (jid: string) => evo.calls.filter((c) => c.path.startsWith("/message/send") && c.body.number === jid);
+  const file = (c: any) => String(c.body.media).split("/").pop();
+
+  // 10-го в 10:29 ничего (11:30 эфира 10-го ещё не наступило, 10:30 вчерашнего ещё нет)
+  evo.calls = [];
+  at(10, 10, 29, 55);
+  await waTick();
+  assert.equal(evo.of("/message/").length, 0);
+
+  // 10:30: «+1 день» вчерашнему сообществу, сегодняшнему нет. Сообщество 9-го закрыто для эфира с 00:00 (closeAt), но до конца 10-го принимает «+1»
+  at(10, 10, 30, 5);
+  assert.equal((await waTick()).sent, 1);
+  assert.deepEqual(sentTo(t9.sendJid).map(file), ["next-1030-wa.jpg"]);
+  assert.equal(sentTo(t10.sendJid).length, 0, "в сообщество сегодняшнего эфира сообщение «+1 день» не идёт");
+  const series = JSON.parse(readFileSync(WA_SERIES, "utf8"));
+  assert.equal(sentTo(t9.sendJid)[0].body.caption, series.messages.find((m: any) => m.id === "next-1030").text);
+
+  // повтор тика и тик позже в окне ничего не дублируют
+  at(10, 10, 31, 0);
+  await waTick();
+  at(10, 10, 40, 0);
+  await waTick();
+  assert.equal(sentTo(t9.sendJid).length, 1, "ровно один раз");
+
+  // 11:30 эфира 10-го: утреннее сообщение уходит в сообщество 10-го, а не вчерашнего
+  at(10, 11, 30, 5);
+  await waTick();
+  assert.equal(sentTo(t10.sendJid).map(file)[0], "cover-bizon.jpg");
+  assert.equal(sentTo(t9.sendJid).length, 1, "утреннее сообщение 10-го вчерашнему сообществу не идёт");
+
+  // 15:00, 19:50 и 21:45 вчерашнему; в 19:50 сегодняшнему идёт своё («Через 10 минут начинаем»)
+  at(10, 15, 0, 5);
+  await waTick();
+  at(10, 19, 50, 5);
+  await waTick();
+  at(10, 21, 45, 5);
+  await waTick();
+  assert.deepEqual(sentTo(t9.sendJid).map(file), ["next-1030-wa.jpg", "next-1500.jpg", "next-1950.jpg", "next-2145-wa.jpg"]);
+  const todays = sentTo(t10.sendJid).map(file);
+  assert.ok(todays.includes("cover-bizon.jpg") && todays.includes("t-minus-10.jpg"), "своё расписание сообщество 10-го получает");
+  for (const f of ["next-1030-wa.jpg", "next-1500.jpg", "next-1950.jpg", "next-2145-wa.jpg"]) assert.equal(todays.includes(f), false, f + " в сообщество 10-го не идёт");
+
+  // журнал: у каждого «+1» сообщения одна запись об отправке, цель и день эфира вчерашние
+  for (const id of ["next-1030", "next-1500", "replay-link", "next-2145"]) {
+    const rows = w.journal().filter((r) => r.ev === "send" && r.msg === id && r.ok);
+    assert.deepEqual(rows.map((r) => [r.target, r.day]), [[t9.id, "2026-10-09"]], id);
+  }
+
+  // 11-го сообщество 9-го закрыто окончательно: ничего не шлёт, а сообщество 10-го получает свои «+1»
+  evo.calls = [];
+  at(11, 10, 30, 5);
+  await waTick();
+  assert.deepEqual(sentTo(t9.sendJid).map(file), [], "после конца следующего дня вчерашнее сообщество молчит");
+  assert.deepEqual(sentTo(t10.sendJid).map(file), ["next-1030-wa.jpg"], "сообщество 10-го получает свои «+1» 11-го");
+});
+
+test("«+1 день»: ночное окно 09:00 до 23:45 действует, пропуск в журнале; выключенное сообщение не уходит", async () => {
+  const w = boot({
+    edit: (s) => {
+      s.messages.find((m: any) => m.id === "next-1030").at = "08:30"; // ночью (до 09:00) не шлём
+      s.messages.find((m: any) => m.id === "next-1500").enabled = false;
+    },
+  });
+  const t9 = await createFor(w, 9);
+  evo.calls = [];
+  for (const [h, mi] of [[8, 30], [8, 40], [15, 0], [15, 5]]) {
+    at(10, h, mi, 5);
+    await waTick();
+  }
+  assert.equal(evo.calls.filter((c) => c.path.startsWith("/message/send") && c.body.number === t9.sendJid).length, 0, "ни ночное, ни выключенное не ушло");
+  const skips = w.journal().filter((r) => r.ev === "skip");
+  assert.deepEqual(skips.map((r) => [r.msg, r.reason, r.plan, r.day]), [["next-1030", "night", "08:30", "2026-10-09"]]);
+});
+
+test("«+1 день»: в сообщество разового живого эфира не идут", async () => {
+  const w = bootEvent({ recruitFrom: "2026-10-11" });
+  at(8, 12, 0, 0);
+  assert.equal((await waEventCreateNow()).ok, true);
+  evo.calls = [];
+  for (const [d, h, mi] of [[13, 10, 30], [13, 15, 0], [13, 19, 50], [13, 21, 45]]) {
+    at(d, h, mi, 5);
+    await waTick();
+  }
+  assert.equal(evo.of("/message/").length, 0);
+  void w;
+});
+
+test("«+1 день»: /wa_send шлёт такое сообщение в сообщество вчерашнего эфира, повторно не шлёт; ближайшее сообщение в /wa и пульте тоже видит «+1»", async () => {
+  const w = boot();
+  const t9 = await createFor(w, 9);
+  const t10 = await createFor(w, 10);
+  evo.calls = [];
+  // 10-го утром ближайшее по расписанию это «+1» вчерашнего сообщества в 10:30, раньше утреннего 11:30 сегодняшнего
+  at(10, 9, 0, 0);
+  const nm = (waPanel(clock.t) as any).nextMessage;
+  assert.deepEqual([nm.id, nm.at, nm.dayLabel], ["next-1030", "10:30", "09.10"]);
+  assert.match((await ownerSay("/wa"))[0], /10:30 next-1030 \(эфир 09\.10\)/);
+  // вручную: во вчерашнее сообщество, не в сегодняшнее
+  const first = (await ownerSay("/wa_send next-2145"))[0];
+  assert.match(first, /«next-2145»: отправлено 1, уже было 0, не ушло 0/);
+  const sends = evo.calls.filter((c) => c.path.startsWith("/message/send"));
+  assert.deepEqual(sends.map((c) => c.body.number), [t9.sendJid]);
+  assert.notEqual(t9.sendJid, t10.sendJid);
+  assert.match((await ownerSay("/wa_send next-2145"))[0], /отправлено 0, уже было 1/);
+  // обычное сообщение вручную по-прежнему в сегодняшнее
+  evo.calls = [];
+  assert.match((await ownerSay("/wa_send morning"))[0], /«morning»: отправлено 1, уже было 0/);
+  assert.equal(evo.calls.filter((c) => c.path.startsWith("/message/send"))[0].body.number, t10.sendJid);
+  // плановое время «+1» подошло: уже отправленное вручную не повторяется
+  evo.calls = [];
+  at(10, 21, 45, 5);
+  await waTick();
+  assert.equal(evo.calls.filter((c) => c.path.startsWith("/message/send") && c.body.number === t9.sendJid && String(c.body.media).includes("next-2145")).length, 0);
+  // итог эфира за день 9 октября считает только сообщения дня эфира, «+1» в него не входят
+  assert.match(waReportLine("2026-10-09"), new RegExp("сообщений серии ушло \\d+ из " + DAY0() + "\\.$"));
 });
 
 // ───────────────────────── ошибки, пауза, подключение ─────────────────────────
@@ -718,7 +877,7 @@ test("заявки: автоодобрение, журнал «кто вступ
   assert.equal(w.joins().filter((r) => r.ev === "request" && r.jid === bad.jid).length, 1, "заявка записана один раз");
   // отчёт и счётчики
   assert.equal(w.rt().joinedCount.get(t.id), 2);
-  assert.equal(waReportLine("2026-10-09"), `WhatsApp: вступили по заявкам 2, сообщений серии ушло 0 из ${14}.`);
+  assert.equal(waReportLine("2026-10-09"), `WhatsApp: вступили по заявкам 2, сообщений серии ушло 0 из ${DAY0()}.`);
   assert.match(dayReportText(getStore(), "2026-10-09"), /\nWhatsApp: вступили по заявкам 2/);
   // после рестарта журнал восстанавливает «уже одобрено», повторно не одобряем
   const dir = w.dir;
@@ -970,7 +1129,9 @@ test("/wa_send <id>: отправляет сообщение серии в со�
   assert.match((await ownerSay("/wa_send offer"))[0], /«offer»: отправлено 1, уже было 0, не ушло 0/);
   const m = evo.of("/message/sendMedia")[0].body;
   assert.equal(m.number, t.sendJid);
-  assert.match(m.caption, /Для участников эфира: обучение Vibe Production за 150 000/);
+  // оффер длиннее лимита подписи: картинка без подписи, текст отдельным сообщением
+  assert.equal(m.caption, undefined);
+  assert.match(evo.of("/message/sendText")[0].body.text, /Цена для участников эфира: курс Vibe Production за 150 000/);
   assert.ok(w.journal().find((r) => r.msg === "offer" && r.manual === true));
   assert.match((await ownerSay("/wa_send offer"))[0], /отправлено 0, уже было 1/);
   // плановое время подошло: уже отправленное не повторяется
@@ -1224,7 +1385,8 @@ test("живой эфир: создание само в день начала н
   at(12, 21, 20, 5);
   evo.calls = [];
   await waTick();
-  assert.match(evo.of("/message/sendMedia")[0].body.caption, /Для участников эфира: обучение Vibe Production/);
+  assert.equal(evo.of("/message/sendMedia")[0].body.caption, undefined, "оффер длиннее лимита подписи: картинка без подписи");
+  assert.match(evo.of("/message/sendText")[0].body.text, /Цена для участников эфира: курс Vibe Production/);
   at(12, 23, 30, 5);
   await waTick();
   assert.match(evo.of("/message/sendMedia").pop()!.body.caption, /Через 30 минут цена/);
@@ -1304,14 +1466,15 @@ test("живой эфир: старт не в 20:00 сдвигает серию 
   assert.equal(planOf("morning"), "10:30");
   assert.equal(planOf("live-now"), "19:00");
   assert.equal(planOf("t-minus-10"), "18:50");
-  assert.equal(planOf("offer"), "20:20");
+  assert.equal(planOf("offer"), "20:18");
   assert.equal(planOf("push"), "22:30", "дожим привязан к 23:59, а не к старту");
   assert.equal(planOf("last-call"), "23:30");
   const txt = _internals.retime(r, "19:00", rawMsgs["morning"].text);
-  assert.match(txt, /Сегодня в 19:00 по Алматы \(17:00 по Москве\)/);
+  assert.match(txt, /Сегодня в 19:00 по Алматы покажу/);
+  assert.match(txt, /Бесплатный эфир «Вайб-продакшен», 17:00 по Москве\./);
   assert.equal(txt.includes("20:00"), false);
   assert.equal(_internals.retime(r, "20:00", rawMsgs["morning"].text), rawMsgs["morning"].text, "обычный старт ничего не меняет");
-  assert.equal(_internals.retime(r, "19:00", rawMsgs["offer"].text).includes("до 23:59 по Алматы (21:59 по Москве)"), true, "дедлайн оффера не трогаем");
+  assert.equal(_internals.retime(r, "19:00", rawMsgs["offer"].text).includes("До 23:59 по Алматы (21:59 по Москве)"), true, "дедлайн оффера не трогаем");
 
   // создание, описание и приветствие с нужным стартом
   at(12, 9, 0, 0);
@@ -1325,7 +1488,8 @@ test("живой эфир: старт не в 20:00 сдвигает серию 
   evo.calls = [];
   at(12, 10, 30, 5);
   assert.equal((await waTick()).sent, 1);
-  assert.match(evo.of("/message/sendMedia")[0].body.caption, /в 19:00 по Алматы \(17:00 по Москве\)/);
+  assert.match(evo.of("/message/sendMedia")[0].body.caption, /Сегодня в 19:00 по Алматы покажу/);
+  assert.match(evo.of("/message/sendMedia")[0].body.caption, /17:00 по Москве/);
   assert.equal(evo.of("/message/sendPoll").length, 1);
   // панель показывает серию такой, какой она уйдёт
   const p = waPanel(clock.t) as any;
@@ -1547,8 +1711,11 @@ test("пульт: экран собирается из состояния: со�
   assert.match(p.next.pending, /Будет создано 09\.10 в 20:00/);
   assert.deepEqual([p.link.kind, p.link.url], ["daily", t.link]);
   assert.deepEqual([p.nextMessage.id, p.nextMessage.at, p.nextMessage.dayLabel, p.nextMessage.inText], ["morning", "11:30", "09.10", "через 1 ч 30 мин"]);
-  assert.equal(p.series.length, 14);
+  assert.equal(p.series.length, 22);
   assert.deepEqual([p.series[0].id, p.series[0].at, p.series[0].media, p.series[0].poll], ["morning", "11:30", "image", "Придёшь сегодня на эфир?"]);
+  // сообщения следующего дня в списке с пометкой «+1»
+  assert.deepEqual(p.series.slice(-4).map((x: any) => [x.id, x.at, x.dayOffset]), [["next-1030", "+1 10:30", 1], ["next-1500", "+1 15:00", 1], ["replay-link", "+1 19:50", 1], ["next-2145", "+1 21:45", 1]]);
+  assert.equal(p.series.find((x: any) => x.id === "personal").enabled, false);
   // вступившие «сегодня» считаются по дню Алматы, а не за всё время
   assert.deepEqual([...w.rt().joinedByDay.get(t.id)!], [["2026-10-09", 2]]);
   // после перезапуска счётчик восстанавливается из журнала заявок
@@ -1877,7 +2044,7 @@ test("ревью п.2: таймаут у картинки не повторяе�
   await waTick();
   assert.equal(evo.of("/message/sendMedia").length, 1, "после рестарта тоже");
   assert.equal(alarms.filter((a) => a.startsWith("Не уверен")).length, 1, "тревога одна");
-  assert.equal(waReportLine("2026-10-09"), "WhatsApp: вступили по заявкам 0, сообщений серии ушло 0 из 14.", "неясное в итог «ушло» не входит");
+  assert.equal(waReportLine("2026-10-09"), `WhatsApp: вступили по заявкам 0, сообщений серии ушло 0 из ${DAY0()}.`, "неясное в итог «ушло» не входит");
 
   // владелец проверил и решил отправить ещё раз: /wa_send повторяет только неясную часть
   const [reply] = await ownerSay("/wa_send morning");
@@ -1977,7 +2144,7 @@ test("ревью п.3: старт эфира только 18:00 до 21:00; пр
       await waTick();
     }
     const sent = w.journal().filter((x) => x.ev === "send" && x.ok && x.msg !== "welcome" && x.part === "main");
-    assert.equal(sent.length, 14, `${start}: ушли все 14 сообщений серии`);
+    assert.equal(sent.length, DAY0(), `${start}: ушли все ${DAY0()} включённых сообщений дня эфира (+1 день в живой эфир не идёт)`);
     for (const x of sent) assert.ok(almHM(x.ts) >= "09:00" && almHM(x.ts) <= "23:57", `${start}: ${x.msg} ушло в ${almHM(x.ts)}`);
     const order = sent.map((x) => x.msg);
     assert.ok(order.indexOf("offer") < order.indexOf("push"), `${start}: оффер раньше дожима`);
@@ -2002,22 +2169,22 @@ test("ревью п.3: старт эфира только 18:00 до 21:00; пр
   await runDay(0, 9 * 60); // ночь и утро до 09:00: плановое время 03:30, 04:30, 06:00, 08:00
   assert.equal(w.journal().filter((x) => x.ev === "send" && x.ok && x.msg !== "welcome").length, 0, "до 09:00 ничего не ушло");
   const skipped = w.journal().filter((x) => x.ev === "skip");
-  assert.deepEqual(skipped.map((x) => `${x.msg} ${x.plan}`), ["morning 03:30", "reg-bonus 04:30", "warm-edits 06:00", "faceless 08:00"]);
+  assert.deepEqual(skipped.map((x) => `${x.msg} ${x.plan}`), ["morning 03:30", "reel-119k 04:00", "reg-bonus 04:30", "warm-edits 06:00", "noface 08:00"]);
   assert.ok(skipped.every((x) => x.reason === "night"));
   assert.equal(alarms.length, 0, "пропуск без тревоги");
   // пульт показывает пропуск простыми словами
-  assert.ok((waPanel(clock.t) as any).journal.some((x: any) => /^Пропущено «Утро: опрос, кто придёт» в .*03:30/.test(x.text)));
+  assert.ok((waPanel(clock.t) as any).journal.some((x: any) => /^Пропущено «Утро: что будем делать вечером» в .*03:30/.test(x.text)));
   await runDay(9 * 60, 24 * 60);
   const sent = w.journal().filter((x) => x.ev === "send" && x.ok && x.msg !== "welcome" && x.part === "main");
-  assert.equal(sent.length, 10, "остальные 10 сообщений ушли, утренние 4 пропущены");
+  assert.equal(sent.length, DAY0() - 5, "остальные сообщения ушли, утренние 5 пропущены");
   for (const x of sent) assert.ok(almHM(x.ts) >= "09:00", `${x.msg} ушло в ${almHM(x.ts)}`);
-  assert.equal(w.journal().filter((x) => x.ev === "skip").length, 4, "по одной строке на сообщение, повторов нет");
+  assert.equal(w.journal().filter((x) => x.ev === "skip").length, 5, "по одной строке на сообщение, повторов нет");
   assert.equal(alarms.length, 0);
 
   // сдвиг оффера за дожим (старт 22:00 записан в старом состоянии): дожим ждёт оффера
   const r = w.rt();
   const planAt = (id: string, start: string) => _internals.planOf(r, { day: EVENT_DAY, start }, r.cfg.messages.find((m) => m.id === id)!);
-  assert.equal(planAt("offer", "22:00"), alm(2026, 10, 12, 23, 20));
+  assert.equal(planAt("offer", "22:00"), alm(2026, 10, 12, 23, 18));
   assert.equal(planAt("push", "22:00"), planAt("offer", "22:00"), "дожим не раньше оффера");
   assert.equal(planAt("push", "20:00"), alm(2026, 10, 12, 22, 30), "при обычном старте дожим на своём месте");
 });

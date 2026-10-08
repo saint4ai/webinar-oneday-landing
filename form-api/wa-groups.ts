@@ -50,7 +50,7 @@ import { classifyPayload, readLeads } from "./tg-admin";
 const env = (k: string) => (process.env[k] || "").trim();
 
 export const waEnabled = () => env("WA_GROUPS").toLowerCase() === "on";
-/** Номера менеджера (Аяна) через запятую, только цифры: добавляются и становятся админами только у запасного типа «группа». */
+/** Номера менеджера через запятую, только цифры: добавляются и становятся админами только у запасного типа «группа». */
 export const adminNumbers = () => env("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
 
 const MIN = 60_000;
@@ -65,6 +65,11 @@ export type Kind = "community" | "group";
 export type WaMsg = {
   id: string;
   at: string;
+  /**
+   * Сдвиг в днях от дня эфира сообщества (0 по умолчанию). dayOffset 1: «+1 день HH:MM», сообщение уходит на следующий день
+   * в то же сообщество, а в сообщество следующего эфира нет. Сообщество для рассылки не закрывается, пока не кончится этот день.
+   */
+  dayOffset?: number;
   topic?: string;
   enabled?: boolean;
   text: string;
@@ -165,6 +170,9 @@ export function validateWaSeries(raw: unknown): WaSeries {
       parseHHMM(String(m.at));
     } catch {
       throw new Error(`wa-series: сообщение ${m.id}: at вида HH:MM`);
+    }
+    if (m.dayOffset !== undefined && (!Number.isInteger(m.dayOffset) || (m.dayOffset as number) < 0 || (m.dayOffset as number) > 3)) {
+      throw new Error(`wa-series: сообщение ${m.id}: dayOffset целое от 0 до 3`);
     }
     if (typeof m.text !== "string" || !m.text.trim()) throw new Error(`wa-series: сообщение ${m.id}: нужен текст`);
     if (m.media !== undefined) {
@@ -735,6 +743,13 @@ function tcfg(r: Rt): TimeCfg {
 export const closeAtOf = (r: Rt, day: string) => atTime(addDays(day, 1), r.cfg.closeAt);
 
 /**
+ * До какого момента сообщению серии можно уйти в сообщество эфира D. Обычное сообщение (dayOffset 0): до конца рассылки
+ * сообщества (closeAtOf). Сообщение «+1 день»: ещё на сутки дольше, до closeAt дня D+2 (сообщество остаётся в рассылке
+ * весь следующий день, до 23:59). Ссылку на сайте, заявки, создание и приветствие это не продлевает.
+ */
+export const sendUntilOf = (r: Rt, day: string, m: { dayOffset?: number }) => closeAtOf(r, day) + (m.dayOffset ?? 0) * 24 * HOUR;
+
+/**
  * Когда создавать сообщество эфира X: в старт эфира предыдущего дня эфира (обычно накануне в 20:00).
  * Перед первым днём и после перерыва берём календарную вчера.
  */
@@ -780,9 +795,10 @@ const OFFER_ID = "offer";
 
 /** Время сообщения без поправки на оффер: время дня эфира плюс сдвиг старта, если старт не 20:00. */
 function shiftedPlan(r: Rt, t: { day: string; start?: string }, m: WaMsg): number {
-  const base = atTime(t.day, m.at);
+  const base = atTime(addDays(t.day, m.dayOffset ?? 0), m.at);
   const d = startShift(r, t.start);
-  return d && followsStart(r, m) ? base + d * MIN : base;
+  // Сообщения следующего дня (dayOffset) привязаны к часам этого дня, а не к старту эфира: не сдвигаются.
+  return d && !m.dayOffset && followsStart(r, m) ? base + d * MIN : base;
 }
 
 /**
@@ -837,7 +853,8 @@ function retime(r: Rt, start: string | undefined, text: string): string {
 
 /** Сообщение серии таким, как оно уйдёт в цель: часы в тексте и в вопросе опроса подогнаны под её старт. */
 function effMsg(r: Rt, t: { start?: string }, m: WaMsg): WaMsg {
-  if (!t.start || t.start === r.cfg.streamStart) return m;
+  // Сообщения следующего дня говорят про повтор в обычные 20:00: часы в них не подменяются.
+  if (!t.start || t.start === r.cfg.streamStart || m.dayOffset) return m;
   return { ...m, text: retime(r, t.start, m.text), ...(m.poll ? { poll: { ...m.poll, name: retime(r, t.start, m.poll.name) } } : {}) };
 }
 
@@ -1396,9 +1413,13 @@ function noteNightSkip(r: Rt, t: Target, msg: WaMsg, plan: number) {
 export function dueSends(r: Rt, now: number): Due[] {
   const out: Due[] = [];
   for (const t of r.state.targets) {
-    if (!isReady(t) || now >= closeAtOf(r, t.day)) continue;
+    if (!isReady(t)) continue;
     for (const msg of r.cfg.messages) {
       if (msg.enabled === false) continue;
+      // Конец рассылки у каждого сообщения свой: «+1 день» может уйти в сообщество вчерашнего эфира, пока не кончился следующий день.
+      if (now >= sendUntilOf(r, t.day, msg)) continue;
+      // Сообщения «+1 день» написаны под ежедневный эфир с повтором в 20:00; в сообщество разового живого эфира они не идут.
+      if (msg.dayOffset && t.source === "event") continue;
       const plan = planOf(r, t, msg);
       if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
       // Прошлые сообщения новому сообществу не досылаем.
@@ -1766,25 +1787,27 @@ export type NextMsg = { plan: number; id: string; topic: string; day: string };
  */
 function nextMessage(r: Rt, now: number): NextMsg | null {
   let best: NextMsg | null = null;
-  const consider = (day: string, start?: string) => {
+  const consider = (day: string, start?: string, event = false) => {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
+      if (event && m.dayOffset) continue;
       const plan = planOf(r, { day, start }, m);
-      if (plan >= now && plan < closeAtOf(r, day) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
+      if (plan >= now && plan < sendUntilOf(r, day, m) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
   };
   if (r.state.mode === "event") {
     const ev = r.state.event;
-    if (ev.date && !ev.done) consider(ev.date, eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : undefined));
+    if (ev.date && !ev.done) consider(ev.date, eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : undefined), true);
     return best;
   }
   const c = tcfg(r);
   const today = dayKeyOf(now);
-  for (let i = 0; i < 4; i++) {
+  // С вчерашнего дня: у его сообщества ещё могут быть сообщения «+1 день». Прошлому дню без сообщества ничего не уйдёт.
+  for (let i = -1; i < 4; i++) {
     const day = addDays(today, i);
     if (!isStreamDay(day, c)) continue;
     const ts = targetsOf(r, day).filter((t) => t.source !== "event");
-    if (!ts.length && !r.state.daily.enabled) continue;
+    if (!ts.length && (i < 0 || !r.state.daily.enabled)) continue;
     consider(day, ts[0]?.start);
   }
   return best;
@@ -2020,10 +2043,11 @@ async function cmdNew(r: Rt, args: string, now: number): Promise<WaReply> {
  * Готовые сообщества, куда идёт ручная отправка «сейчас». Ежедневный режим: сообщества сегодняшнего эфира (кроме живого эфира).
  * Живой эфир: сообщества его даты, в любой день до 00:00 после эфира.
  */
-function currentTargets(r: Rt, now: number): { day: string; list: Target[] } {
-  const day = r.state.mode === "event" ? r.state.event.date : dayKeyOf(now);
+function currentTargets(r: Rt, now: number, dayOffset = 0): { day: string; list: Target[] } {
+  // Сообщение «+1 день» уходит в сообщества вчерашнего эфира (сегодняшнее ещё не отэфирилось); у живого эфира таких сообщений нет.
+  const day = r.state.mode === "event" ? r.state.event.date : addDays(dayKeyOf(now), -dayOffset);
   const list = day
-    ? [...targetsOf(r, day)].reverse().filter((t) => (r.state.mode === "event" ? true : t.source !== "event") && isReady(t) && now < closeAtOf(r, t.day))
+    ? [...targetsOf(r, day)].reverse().filter((t) => (r.state.mode === "event" ? true : t.source !== "event") && isReady(t) && now < closeAtOf(r, t.day) + dayOffset * 24 * HOUR)
     : [];
   return { day, list };
 }
@@ -2038,9 +2062,17 @@ async function sendSeries(r: Rt, id: string, now: number): Promise<SendRes> {
   const msg = r.cfg.messages.find((m) => m.id === id);
   if (!msg) return { ok: false, code: "bad_id", text: `Нет сообщения «${id}». Список: ${ids}`, ...zero };
   if (r.state.paused) return { ok: false, code: "paused", text: "Модуль на паузе. Сначала /wa_resume.", ...zero };
-  const { day, list: targets } = currentTargets(r, now);
+  if (msg.dayOffset && r.state.mode === "event") return { ok: false, code: "event_next_day", text: `«${id}» это сообщение следующего дня, у живого эфира таких нет.`, ...zero };
+  const { day, list: targets } = currentTargets(r, now, msg.dayOffset ?? 0);
   if (!targets.length) {
-    const text = r.state.mode === "event" ? (day ? `Для эфира (${ddmm(day)}) нет готового сообщества.` : "Живой эфир не задан, сообщества нет.") : `Для сегодняшнего эфира (${ddmm(dayKeyOf(now))}) нет готового сообщества.`;
+    const text =
+      r.state.mode === "event"
+        ? day
+          ? `Для эфира (${ddmm(day)}) нет готового сообщества.`
+          : "Живой эфир не задан, сообщества нет."
+        : msg.dayOffset
+          ? `Для вчерашнего эфира (${ddmm(day)}) нет готового сообщества, куда ещё можно слать «${id}».`
+          : `Для сегодняшнего эфира (${ddmm(dayKeyOf(now))}) нет готового сообщества.`;
     return { ok: false, code: "no_target", text, ...zero };
   }
   return exclusive(r, async () => {
@@ -2097,8 +2129,10 @@ export function waReportLine(day: string): string {
   const ts = targetsOf(r, day);
   if (!ts.length) return "";
   const joined = ts.reduce((s, t) => s + (r.joinedCount.get(t.id) || 0), 0);
-  const total = r.cfg.messages.filter((m) => m.enabled !== false).length * ts.length;
-  const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t, true)).length, 0);
+  // Сообщения следующего дня (dayOffset) в итог эфира не входят: они ещё не ушли.
+  const todays = r.cfg.messages.filter((m) => m.enabled !== false && !m.dayOffset);
+  const total = todays.length * ts.length;
+  const done = ts.reduce((s, t) => s + todays.filter((m) => isDone(r, m, t, true)).length, 0);
   return `WhatsApp: вступили по заявкам ${joined}, сообщений серии ушло ${done} из ${total}.`;
 }
 
@@ -2791,7 +2825,7 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
           text = "ИИ-ассистент выключен";
           break;
         case "ai_handoff":
-          text = `ИИ-ассистент передал ${clip(x.who, 24)} Аяне: ${clip(x.why, 100)}. Молчит с ним 12 часов`;
+          text = `ИИ-ассистент передал ${clip(x.who, 24)} менеджеру: ${clip(x.why, 100)}. Молчит с ним 12 часов`;
           break;
         case "ai_skip":
           text = `ИИ-ассистент не ответил ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
@@ -2943,7 +2977,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
   // Серия: время и текст такими, какими они уйдут в сообщество (со сдвигом старта живого эфира).
   const series = r.cfg.messages.map((m) => {
     const e = effMsg(r, { start: eventStart }, m);
-    return { id: m.id, at: hhmmOf(planOf(r, { day: "2000-01-01", start: eventStart }, m)), topic: m.topic || m.id, text: e.text, media: m.media?.type ?? null, poll: m.poll ? m.poll.name : null, enabled: m.enabled !== false };
+    return { id: m.id, at: (m.dayOffset ? `+${m.dayOffset} ` : "") + hhmmOf(planOf(r, { day: "2000-01-01", start: eventStart }, m)), ...(m.dayOffset ? { dayOffset: m.dayOffset } : {}), topic: m.topic || m.id, text: e.text, media: m.media?.type ?? null, poll: m.poll ? m.poll.name : null, enabled: m.enabled !== false };
   });
   const nm = nextMessage(r, now);
   const targets = currentTargets(r, now).list;

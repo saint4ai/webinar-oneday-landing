@@ -192,7 +192,7 @@ test("пульт: состояние по умолчанию: ежедневны
   assert.equal(s.link.kind, "permanent");
   assert.equal(await link(), PERMANENT, "модуль включён, сообщества нет: постоянная ссылка");
   await pageGoes(PERMANENT, "кнопка шаблона без сообщества ведёт на постоянную");
-  assert.equal(s.series.length, 14);
+  assert.equal(s.series.length, 22, "18 сообщений дня эфира и 4 на следующий день (лента v3.3)");
   assert.deepEqual(s.journal, []);
   // создавать нечего: тик в 20:00 ничего не делает при выключенном создании
   at(8, 20, 0, 0);
@@ -434,7 +434,9 @@ test("ссылка весь период набора; прогрев тольк
   at(12, 21, 20, 5);
   evo.calls = [];
   await waTick();
-  assert.match(evo.of("/message/sendMedia")[0].body.caption, /Для участников эфира: обучение Vibe Production/);
+  // оффер длиннее лимита подписи: картинка без подписи, текст отдельным сообщением
+  assert.equal(evo.of("/message/sendMedia")[0].body.caption, undefined);
+  assert.match(evo.of("/message/sendText")[0].body.text, /Цена для участников эфира: курс Vibe Production/);
   at(12, 23, 59, 0);
   assert.equal(await link(), t.link, "до 00:00 ссылка ещё на сообществе эфира");
   // после 00:00 ссылка постоянная, режим завершён
