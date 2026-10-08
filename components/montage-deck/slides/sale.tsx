@@ -8,7 +8,7 @@ import { ExtrudedNumber } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Statement } from "../Statement";
-import { BOOKING_PRICE, BUNDLE_PRICE, PRO_SOLO_PRICE, SEPARATE_PRICE, money, moneyBoth, moneyUsd } from "../prices";
+import { BOOKING_PRICE, BUNDLE_PRICE, PRO_SOLO_PRICE, money, moneyBoth, moneyUsd } from "../prices";
 import { NUM_ACCENT, LT, T, card, goldButton, goldText, pricePlate } from "../theme";
 import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, UsdTag, at, nb, thousands, txt } from "../ui";
 
@@ -95,7 +95,7 @@ export function M_Want() {
 export function M_WhoFirst() {
   return (
     <Statement obj="lg-s32-hand" kicker="Что нужно для первого ролика" title={<>Кто выпустит первый ролик <Em>на этой неделе</Em>?</>} size="3cqw"
-      lead="Первый ролик на этой неделе отличает тех, у кого получится. Напишите +, если готовы. Дальше покажу обучение, а потом урок 3: как просмотр сам становится заявкой." />
+      lead="Первый ролик на этой неделе отличает тех, у кого получится. Напишите +, если готовы. Дальше покажу обучение." />
   );
 }
 
@@ -107,10 +107,10 @@ export function M_NotCourse() {
   return (
     <Statement obj="lg-s49-factory" kicker="Vibe Production" title={<>Я продаю не курс, а <Em><span style={{ whiteSpace: "nowrap" }}>контент-завод</span></Em></>} size="2.9cqw">
       <div className="flex items-center gap-[0.8cqw]">
-        {["Ролик", "Реклама", "Заявка"].map((c, i) => (
+        {["Ролик", "Заявка", "Реклама"].map((c, i) => (
           <div key={c} className="flex items-center gap-[0.8cqw]">
             <Stagger i={i * 2} style={{ ...card, borderRadius: 999, padding: "0.8cqw 1.6cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.15cqw", color: T.ink,
-              ...(i === 2 ? { ...goldButton, border: `1px solid ${T.gold2}` } : null) }}>{c}</Stagger>
+              ...(i === 1 ? { ...goldButton, border: `1px solid ${T.gold2}` } : null) }}>{c}</Stagger>
             {i < 2 && <DrawLine delay={at(i * 2 + 1, 0.4)} />}
           </div>
         ))}
@@ -214,7 +214,7 @@ export function M_Discount() {
   const after = useCountUp(150000, 1, 1.3);
   return (
     <Statement kicker="Только для участников эфира" title={<>Ваша цена: <Em>{nb("150 000 ₸")}</Em> <UsdTag n={150000} /></>} size="3cqw"
-      lead="Вы здесь и смотрите практику вживую, поэтому для вас цена ниже. Напишите МОНТАЖ в чат, менеджер закрепит её за вами.">
+      lead="Вы на эфире до этого момента, поэтому для вас цена ниже. Напишите МОНТАЖ в чат, менеджер закрепит её за вами.">
       <div className="flex items-center gap-[1.2cqw]">
         <Stagger i={0}>
           <div style={{ ...txt, fontSize: "0.9cqw", color: T.muted }}>Полная цена</div>
@@ -235,7 +235,10 @@ export function M_Discount() {
   );
 }
 
-/** 40 · Первым 5 броням 6 месяцев вместо 3: полоса доступа растёт вдвое. */
+/**
+ * 40 · 6 месяцев вместо 3: полоса доступа растёт вдвое. С 08.10 условие «если купите до конца дня» (раньше «первым 5 броням»).
+ * Из показа убран: то же самое («6 месяцев доступа») говорит слайд bon (slides/pipeline.tsx). Вернуть: вставить M_SixMonths с ключом 40 после bon.
+ */
 export function M_SixMonths() {
   const Bar = ({ label, months, gold, i }: { label: string; months: number; gold?: boolean; i: number }) => (
     <div>
@@ -250,10 +253,10 @@ export function M_SixMonths() {
     </div>
   );
   return (
-    <Statement kicker="Условие эфира" title={<>Первым 5 броням: доступ <Em>6 месяцев</Em> вместо 3</>} size="2.7cqw" lead="5 мест по условиям эфира. Шестой получит стандартные 3 месяца.">
+    <Statement kicker="Бонус до конца дня" title={<>Если купите до конца дня: доступ <Em>6 месяцев</Em> вместо 3</>} size="2.7cqw">
       <Stagger i={0} className="grid gap-[1.1cqw]" style={{ ...card, borderRadius: 22, padding: "1.4cqw 1.6cqw", maxWidth: "40cqw" }}>
         <Bar i={0} label="Стандартный доступ" months={3} />
-        <Bar i={1} label="Первые 5 броней" months={6} gold />
+        <Bar i={1} label="Покупка до конца дня" months={6} gold />
       </Stagger>
     </Statement>
   );
@@ -304,22 +307,30 @@ export function M_Inaction() {
   );
 }
 
-/** 53 · Всё на одном экране: три модуля, под ними условия золотыми чипами. */
+/** 53 · Всё на одном экране: три модуля (08.10: AI-креатор стал модулем 3 с золотой пометкой «бонус до конца дня»), под ними условия золотыми чипами. */
 export function M_OneScreen() {
-  const mods = [["Модуль 1", "AI-монтаж", "Рилсы без знаний монтажа", "lg-i-clapper"], ["Модуль 2", "AI-креатор", "Реклама товара из фото", "lg-i-box"], ["Модуль 3", "Автоматизация", "Заявки из директа сами", "lg-i-chatkey"]];
+  const mods = [["Модуль 1", "AI-монтаж", "Рилсы без знаний монтажа", "lg-i-clapper"], ["Модуль 2", "Автоматизация", "Заявки из директа сами", "lg-i-chatkey"], ["Модуль 3", "AI-креатор", "Реклама товара из фото", "lg-i-box"]];
   return (
     <Statement kicker="Коротко" title={<>Всё на <Em>одном экране</Em></>} size="3cqw">
       <div className="grid grid-cols-3 gap-[0.9cqw]" style={{ maxWidth: "54cqw" }}>
-        {mods.map(([no, t, d, ic], i) => <Stagger key={no} i={i}><Card icon={ic} no={no} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
+        {mods.map(([no, t, d, ic], i) => (
+          <Stagger key={no} i={i} className="relative">
+            <Card icon={ic} no={no} title={t} text={d} accent={i === 2} style={{ height: "100%" }} />
+            {i === 2 && (
+              <span style={{ position: "absolute", top: "0.9cqw", right: "0.9cqw", borderRadius: 999, padding: "0.3cqw 0.8cqw", ...goldButton, border: `1px solid ${T.gold2}`, ...txt, color: LT.ink, fontWeight: 700, fontSize: "0.78cqw", whiteSpace: "nowrap" }}>
+                бонус до конца дня
+              </span>
+            )}
+          </Stagger>
+        ))}
       </div>
       <div className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "1.4cqw" }}>
-        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${moneyBoth(150000)} вместо ${moneyBoth(250000)} для участников эфира`, `или от ${moneyBoth(6250)} в месяц`, "первым 5 броням 6 месяцев доступа"].map((c, i) => (
+        {["1 месяц обучения", "Доступ к урокам 3 месяца", `${moneyBoth(150000)} вместо ${moneyBoth(250000)} для участников эфира`, `или от ${moneyBoth(6250)} в месяц`, "6 месяцев доступа, если купите до конца дня"].map((c, i) => (
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
         <Stagger i={8}><GoldChip>Разбор работ в общем чате потока</GoldChip></Stagger>
       </div>
-      {/* пакет двух курсов (07.10): отдельной строкой внизу, цены из prices.ts */}
-      <Stagger i={9} style={{ marginTop: "0.9cqw" }}><GoldChip size="1.1cqw">Оба курса вместе: {moneyBoth(BUNDLE_PRICE)} вместо {moneyBoth(SEPARATE_PRICE)}</GoldChip></Stagger>
+      {/* строка про пакет двух курсов (07.10) убрана 08.10: продаём только Vibe Production. Вернуть: GoldChip с BUNDLE_PRICE и SEPARATE_PRICE из prices.ts */}
     </Statement>
   );
 }
@@ -346,7 +357,7 @@ export function M_Doubts() {
 
 /** 55 · Что ещё понадобится: подписки строками по очереди, итог золотом. */
 export function M_Subscriptions() {
-  const rows = [["Claude Pro", "агент-монтажёр, модули 1 и 3", "$20"], ["Higgsfield", "реклама из фото", "$15"], ["SYNTX", "кадры и движение", "около $10"], ["ElevenLabs", "копия голоса", "$6"]];
+  const rows = [["Claude Pro", "агент-монтажёр, модули 1 и 2", "$20"], ["Higgsfield", "реклама из фото", "$15"], ["SYNTX", "кадры и движение", "около $10"], ["ElevenLabs", "копия голоса", "$6"]];
   return (
     <Statement kicker="Без сюрпризов" title={<>Что ещё <Em>понадобится</Em></>} size="2.8cqw">
       <Stagger i={0} style={{ ...card, borderRadius: 22, padding: "1.2cqw 1.6cqw", maxWidth: "44cqw" }}>
@@ -364,12 +375,14 @@ export function M_Subscriptions() {
         </motion.div>
       </Stagger>
       <Note>Claude Max за $200 в месяц хватает на 150 роликов. Цены на 26 сентября 2026</Note>
-      <Note style={{ marginTop: "0.3cqw" }}>Для Vibe Coding PRO нужна подписка Claude от $20 в месяц</Note>
     </Statement>
   );
 }
 
-/** 56 ✦ · Осталось N из 5. Ведущий переключает занятые места клавишами 0–5: занятое место гаснет и оседает. */
+/**
+ * 56 ✦ · Осталось N из 5. Ведущий переключает занятые места клавишами 0–5: занятое место гаснет и оседает.
+ * Из показа убран 08.10: условие «первым 5 броням» заменил бонус «купите до конца дня» (слайд bon). Вернуть: вставить M_Slots с ключом 56 после 54, текст под новое условие.
+ */
 export function M_Slots() {
   const [taken, setTaken] = useState(0);
   useEffect(() => {

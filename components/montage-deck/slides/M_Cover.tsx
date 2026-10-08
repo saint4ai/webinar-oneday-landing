@@ -33,13 +33,13 @@ export function M_Cover() {
         <Rise><Logo night height="1.8cqw" style={{ marginBottom: "3cqw" }} /></Rise>
         <Rise delay={STEP}><Kicker color={T.gold}>Эфир · Vibe Production</Kicker></Rise>
         <Rise delay={STEP * 2}><H size="4.6cqw" color={T.nightText} style={{ lineHeight: 1.04 }}>Рилсы без знаний <Em night>монтажа</Em></H></Rise>
-        {/* 06.10 Александр: продающая подача, особенно про презентации и сайты */}
+        {/* 08.10 Александр: воркшоп только про AI-монтаж, акцент на блог без лица (раньше здесь были презентация и сайт) */}
         <Rise delay={STEP * 3}><Lead color={T.nightMuted} style={{ marginTop: "1.8cqw", fontSize: "1.35cqw" }}>
-          <span style={{ color: T.nightText }}>Рилс, презентация и сайт за один вечер.</span> Делает ИИ-агент по вашему голосу, без монтажёра, дизайнера и программиста.
+          <span style={{ color: T.nightText }}>ИИ-агент монтирует рилсы по вашему голосу.</span> Можно без монтажёра и без лица в кадре.
         </Lead></Rise>
         <Rise delay={STEP * 4} className="flex flex-wrap gap-[0.6cqw]" style={{ marginTop: "2cqw" }}>
           {/* без конкретной даты: Александр 06.10 «просто сегодня в 20:00» */}
-          <Chip gold>Сегодня в 20:00</Chip><Chip night>3 практики за вечер</Chip>
+          <Chip gold>Сегодня в 20:00</Chip><Chip night>Весь путь рилса за вечер</Chip>
         </Rise>
         {/* Призыв к действию, пока зрители подключаются: что сделать сейчас и зачем оставаться до конца (гайды — слайд 58, скидка — 57g) */}
         <Rise delay={STEP * 5} style={{ marginTop: "1.6cqw", borderRadius: 18, padding: "1cqw 1.2cqw", background: "rgba(251,243,228,.06)", border: `1px solid ${T.nightLine}`,

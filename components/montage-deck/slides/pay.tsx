@@ -10,9 +10,10 @@ import { EASE, Em, Lead, Note, STEP, glue, txt } from "../ui";
 /**
  * Слайд оплаты с двумя QR (Александр, 07.10.2026): «Сделайте два QR-кода. Первый со ссылкой на Каспи, второй для СНГ или других карт мира.
  * Этот QR будет повторяться несколько раз». Один слайд, три варианта текста над QR (variant): production, bundle, final.
- * Вставка в колоду (MontageDeck.tsx): три слайда с разными ключами, например
+ * С 08.10 в показе только Vibe Production: идут production (после 41) и final (после 57g). Вариант bundle (оба курса, 390 000 ₸)
+ * из показа ушёл вместе с блоком Vibe Coding PRO; код оставлен, чтобы его можно было вернуть одной вставкой слайда.
+ * Вставка в колоду (MontageDeck.tsx): слайды с разными ключами, например
  *   <M_PayQR key="pay1" variant="production" />  после M_HowToBook (41);
- *   <M_PayQR key="pay2" variant="bundle" />      после M_VcBook (v6);
  *   <M_PayQR key="pay3" variant="final" />       после M_GameBonus (57g) или M_FinalCTA (57).
  * Есть и готовые обёртки M_PayProduction, M_PayBundle, M_PayFinal.
  *

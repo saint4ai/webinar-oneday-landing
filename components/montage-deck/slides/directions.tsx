@@ -20,6 +20,8 @@ import { DirectPhone } from "./lesson3";
  * Каждый модуль — цех: одно превращение (голос → ролик, фото → реклама, комментарий → заявка), одно доказательство цифрой,
  * уроки конвейером внизу. 37w переворачивает карточки опроса со слайда 03, 37v — «сами или с обучением» (паттерн прошлых воркшопов).
  * Раскадровка и тексты: docs/tasks/deck_wave4_directions.md. Всё в левых 60% кадра.
+ * 08.10 (решение Александра): модулей по-прежнему три, меняется порядок. Модуль 1 AI-монтаж (35), модуль 2 ассистенты и автоматизация (37),
+ * модуль 3 AI-креатор (36): он же бонус за покупку до конца дня, в колоде стоит после рассрочки 39 и слайда bon (slides/pipeline.tsx).
  */
 
 const unb = (size: string, color: string = T.ink): CSSProperties => ({ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: size, lineHeight: 1, color });
@@ -38,7 +40,7 @@ const CrossIcon = ({ color = T.brownLt, size = "1.05cqw" }: { color?: string; si
 function ChainHeader({ active }: { active: number }) {
   return (
     <div className="flex items-center" style={{ gap: "0.5cqw", marginBottom: "1.3cqw" }}>
-      {["Ролик", "Реклама", "Заявка"].map((l, i) => (
+      {["Ролик", "Заявка", "Реклама"].map((l, i) => (
         <div key={l} className="flex items-center" style={{ gap: "0.5cqw" }}>
           <motion.span initial={{ opacity: 0, y: "-0.5cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.05 + i * 0.06, duration: 0.35, ease: EASE }}
             style={{ display: "inline-block", borderRadius: 999, padding: "0.45cqw 1.05cqw", ...unb("0.8cqw", i === active ? LT.ink : T.muted),
@@ -120,9 +122,9 @@ function ResultLine({ delay, children }: { delay: number; children: ReactNode })
   );
 }
 
-/** Каркас цеха: цепочка, кикер, заголовок-обещание, слева превращение, справа доказательство, внизу конвейер уроков. */
-function Shop({ active, kicker, title, visual, side, lessons, conveyorStart, visualWidth = "22cqw" }: {
-  active: number; kicker: string; title: ReactNode; visual: ReactNode; side: ReactNode; lessons: string[]; conveyorStart: number; visualWidth?: string;
+/** Каркас цеха: цепочка (active — какой цех золотой), кикер, заголовок-обещание, слева превращение, справа доказательство, внизу конвейер уроков (no — номер модуля). */
+function Shop({ active, no, kicker, title, visual, side, lessons, conveyorStart, visualWidth = "22cqw" }: {
+  active: number; no: number; kicker: string; title: ReactNode; visual: ReactNode; side: ReactNode; lessons: string[]; conveyorStart: number; visualWidth?: string;
 }) {
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg />} contentMinWidth={0}>
@@ -133,7 +135,7 @@ function Shop({ active, kicker, title, visual, side, lessons, conveyorStart, vis
         {visual}
         <div className="min-w-0">{side}</div>
       </div>
-      <Conveyor no={active + 1} lessons={lessons} start={conveyorStart} />
+      <Conveyor no={no} lessons={lessons} start={conveyorStart} />
     </SlideLayout>
   );
 }
@@ -143,7 +145,7 @@ function Shop({ active, kicker, title, visual, side, lessons, conveyorStart, vis
 export function M_ShopReel() {
   const views = useCountUp(RESULTS.totalViewsNum, 1.1, 0.8);
   return (
-    <Shop active={0} kicker="Модуль 1 · AI-монтаж · 5 уроков" title={<>30 роликов в месяц <Em>без монтажёра</Em></>} conveyorStart={1.5}
+    <Shop active={0} no={1} kicker="Модуль 1 · AI-монтаж · 5 уроков" title={<>30 роликов в месяц <Em>без монтажёра</Em></>} conveyorStart={1.5}
       lessons={["Рабочее место", "Сценарий и 3 секунды", "Выбор стиля", "Сборка ролика", "Серия роликов"]}
       visual={
         <div className="relative" style={{ width: "22cqw", height: "20.6cqw" }}>
@@ -182,10 +184,10 @@ export function M_ShopReel() {
   );
 }
 
-/* ───────────── 36 · Цех «Реклама»: фото → реклама ───────────── */
+/* ───────────── 36 · Цех «Реклама», модуль 3 «AI-креатор»: фото → реклама (с 08.10 бонус за покупку до конца дня) ───────────── */
 
 /**
- * Видеоурок модуля 2 (public/montage/lessons/ai-creator-lesson.mp4, 16:9, 2 мин 17 с, со звуком): в окне браузера, запускается по клику ведущего.
+ * Видеоурок модуля 3 AI-креатор (public/montage/lessons/ai-creator-lesson.mp4, 16:9, 2 мин 17 с, со звуком): в окне браузера, запускается по клику ведущего.
  * Клик и кнопка слайды не листают (stopPropagation), звук включён, автозапуска нет. Слой слайда пропускает клики насквозь, поэтому pointer-events: auto.
  */
 function LessonPlayer() {
@@ -225,7 +227,7 @@ function LessonPlayer() {
 
 export function M_ShopAd() {
   return (
-    <Shop active={1} kicker="Модуль 2 · AI-креатор · 5 уроков, около часа" title={<>Реклама товара из фото, <Em>без камеры и студии</Em></>} conveyorStart={1.7}
+    <Shop active={2} no={3} kicker="Модуль 3 · AI-креатор · бонус, если купите до конца дня" title={<>Реклама товара из фото, <Em>без камеры и студии</Em></>} conveyorStart={1.7}
       lessons={["Сценарий и два кадра", "Движение между кадрами", "Реклама по шаблону", "Предметная motion-реклама", "Сборка и копия голоса"]}
       visualWidth="30cqw" visual={<LessonPlayer />}
       side={
@@ -252,9 +254,10 @@ const LEAD_MSGS = [
 ];
 
 export function M_ShopLead() {
-  const leads = useCountUp(Number(RESULTS.inquiries.total), 1, 1.0);
+  // total хранится строкой с пробелом («2 218», results.ts): Number("2 218") давал NaN на слайде 37, берём только цифры
+  const leads = useCountUp(Number(String(RESULTS.inquiries.total).replace(/\D/g, "")), 1, 1.0);
   return (
-    <Shop active={2} kicker="Модуль 3 · Ассистенты и автоматизация · 5 уроков" title={<>Ролик приводит заявку, <Em>агент отвечает в директе</Em></>} conveyorStart={2.0}
+    <Shop active={1} no={2} kicker="Модуль 2 · Ассистенты и автоматизация · 5 уроков" title={<>Ролик приводит заявку, <Em>агент отвечает в директе</Em></>} conveyorStart={2.0}
       lessons={["Вайбкодинг в личных делах", "ИИ-менеджер в WhatsApp и Instagram", "Автоматизация процессов", "Документы и презентации", "Контент-завод целиком"]}
       visual={
         <div className="relative" style={{ width: "22cqw", height: "22.8cqw" }}>

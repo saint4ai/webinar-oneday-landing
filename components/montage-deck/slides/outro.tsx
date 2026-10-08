@@ -133,16 +133,16 @@ export function M_ServicesOffer() {
   );
 }
 
-/** o3 · Игра Token Runner как комьюнити вайбкодеров: скидка на обучение и еженедельный приз топ-3. Здесь Александр прощается. */
+/** o3 · Игра Token Runner: скидка на обучение и еженедельный приз топ-3. Здесь Александр прощается. Кикер с 08.10 «Игра Token Runner» (раньше «Комьюнити вайбкодеров»). */
 export function M_GameCommunity() {
   return (
-    <Offer kicker="Комьюнити вайбкодеров" title={<>Играйте в игру и <Em>учитесь со скидкой</Em></>}
+    <Offer kicker="Игра Token Runner" title={<>Играйте в игру и <Em>учитесь со скидкой</Em></>}
       get={<>Пройдите игру Token Runner в Telegram и получите скидку {nb(`10 000 ₸ (${moneyUsd(10_000)})`)} на Vibe Production.</>}
       points={[
         "Нужно пройти 3 испытания, игра выдаст код на скидку",
         // ревью Б7, 07.10: «играй и забирай бесплатно» противоречило продаже; бесплатно только топ-3, остальным скидка
         "Каждую неделю трое, кто набрал больше всех баллов, получают модули бесплатно",
-        "Игру мы сделали как комьюнити для вайбкодеров, играть можно в Telegram",
+        "Играть можно в Telegram, старт за минуту",
       ]}
       extra={
         <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: "1.1cqw" }}>
@@ -161,11 +161,11 @@ export function M_GameCommunity() {
   );
 }
 
-/** o4 · Блог про вайбкодинг: кадр блога в окне браузера и QR на подписку. */
+/** o4 · Блог про AI-агентов (с 08.10, раньше «про вайбкодинг»): кадр блога в окне браузера и QR на подписку. */
 export function M_Blog() {
   return (
-    <Offer kicker="Блог про вайбкодинг" title={<>Читайте, как собирать продукты <Em>{nw("с AI-агентами")}</Em></>}
-      get="Новые выпуски про вайбкодинг: подкасты, решения и кейсы."
+    <Offer kicker="Блог про AI-агентов" title={<>Читайте, как собирать продукты <Em>{nw("с AI-агентами")}</Em></>}
+      get="Новые выпуски про AI-агентов: подкасты, решения и кейсы."
       points={[
         <>Подкасты о том, как собирать продукты с {nw("AI-агентами")}</>,
         "Решения и кейсы без программистов в штате",
@@ -178,7 +178,7 @@ export function M_Blog() {
             {[T.gold, T.brownLt, T.line].map((col, k) => <span key={k} style={{ width: "0.55cqw", height: "0.55cqw", borderRadius: 99, background: col }} />)}
             <span style={{ ...txt, fontSize: "0.75cqw", color: T.muted, marginLeft: "0.6cqw" }}>onai.academy/blog</span>
           </div>
-          <img src="/montage/blog-shot.webp" alt="Блог saint4ai про vibe coding" draggable={false} style={{ display: "block", width: "100%", aspectRatio: "16 / 8.6", objectFit: "cover", objectPosition: "top" }} />
+          <img src="/montage/blog-shot.webp" alt="Блог saint4ai" draggable={false} style={{ display: "block", width: "100%", aspectRatio: "16 / 8.6", objectFit: "cover", objectPosition: "top" }} />
         </div>
       }
       qr={<Qr src="/montage/qr-blog.svg" alt="QR-код: блог onai.academy/blog" caption="onai.academy/blog" sub="Подпишитесь на новые выпуски" />} />
@@ -189,7 +189,7 @@ export function M_Blog() {
 export function M_Instagram() {
   return (
     <Offer kicker="Instagram" title={<>Рилсы про AI каждый день <Em>на @saint4ai</Em></>}
-      get={<>Каждый день новые рилсы про {nw("AI-агентов")}, вайбкодинг и автоматизации.</>}
+      get={<>Каждый день новые рилсы про {nw("AI-агентов")}, монтаж и автоматизации.</>}
       points={[
         "Материалы по кодовым словам из рилсов приходят вам в директ",
         "Подпишитесь по QR и не пропускайте новые рилсы",

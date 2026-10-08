@@ -25,7 +25,7 @@ export function M_Bottleneck() {
     ["Не выкладываю", "Снял, а монтировать некогда", "lg-i-calendar"],
   ];
   return (
-    <Statement kicker="Практика 1 · Проблема" title={<>Рилсы нужны. Монтаж стал <Em>узким местом</Em></>} size="3.3cqw">
+    <Statement kicker="Проблема" title={<>Рилсы нужны. Монтаж стал <Em>узким местом</Em></>} size="3.3cqw">
       <div className="grid grid-cols-3 gap-[1cqw]" style={{ maxWidth: "54cqw" }}>
         {ways.map(([t, d, ic], i) => <Stagger key={t} i={i}><Card icon={ic} no={`Путь ${i + 1}`} title={t} text={d} style={{ height: "100%" }} /></Stagger>)}
       </div>
@@ -398,7 +398,7 @@ export function M_NoFace() {
   }, []);
   const cur = FORMATS[k];
   return (
-    <Statement obj="lg-s23-noface" kicker="Практика 1 · Формат без лица" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.8cqw" leftSize="19cqw"
+    <Statement obj="lg-s23-noface" kicker="Блог без лица · Форматы" title={<>А если не хочу в кадр? <Em>Можно так</Em></>} size="2.8cqw" leftSize="19cqw"
       left={
         <div className="relative" style={{ width: "13.5cqw", aspectRatio: "9/19" }}>
           <AnimatePresence mode="popLayout">
