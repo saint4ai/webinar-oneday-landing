@@ -155,7 +155,7 @@ test("wa-series.json: проходит проверку и совпадает с
     } else assert.equal(m.media, undefined, `без картинки ${c.at}`);
   });
   // видео Александра 15:00 ещё не снято: сообщение выключено, пока файла нет; остальные включены
-  assert.deepEqual(s.messages.filter((m) => m.enabled === false).map((m) => m.id), ["personal", "video-ai"]); // 15:00 ждёт видео Александра, 17:30 ждёт новый прогрев на 40 с
+  assert.deepEqual(s.messages.filter((m) => m.enabled === false).map((m) => m.id), ["personal"]); // 15:00 ждёт видео Александра
   // имя менеджера нигде не пишем, длинного тире нет
   assert.equal(/Аян/.test(readFileSync(WA_SERIES, "utf8")), false);
   for (const m of s.messages) assert.equal(/^\[/.test(m.text), false, `${m.id}: метка [Видео ...] не идёт в подпись`);
