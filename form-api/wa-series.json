@@ -145,6 +145,7 @@
       "id": "video-ai",
       "at": "17:30",
       "topic": "Видео-прогрев: почему AI-монтаж сейчас",
+      "enabled": false,
       "media": {
         "type": "video",
         "url": "https://onai.academy/workshop-montazh/assets/tg/video-ai-montage.mp4"
