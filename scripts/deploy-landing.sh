@@ -16,7 +16,7 @@
 set -euo pipefail
 
 PKG="${1:?нужен путь к архиву (tgz)}"
-V="${V:-20261006b}"
+V="${V:-20261008a}"
 TS="$(date +%Y%m%d-%H%M%S)"
 W="${W:-/var/www/workshop-montazh}"
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups}"

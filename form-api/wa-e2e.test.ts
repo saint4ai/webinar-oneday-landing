@@ -250,6 +250,63 @@ test("отключение номера: без подтверждения 400, 
   await waTick(); // тик возвращает модуль в рабочее состояние
 });
 
+test("статус WhatsApp и код по номеру через настоящий сервер: доступ, состояния, причина отключения, номер закрыт, подключение по коду", async () => {
+  // без initData и без сессии статус и код недоступны
+  assert.equal((await call("GET", "/api/admin/wa/status")).status, 403);
+  assert.equal((await call("GET", "/api/admin/wa/status", { init: init() })).status, 401);
+  assert.equal((await call("POST", "/api/admin/wa/pairing", { init: init(), body: { number: "447911123456" } })).status, 401);
+  assert.equal((await call("POST", "/api/admin/wa/pairing", { body: { number: "447911123456" } })).status, 403);
+  // подключён: номер с закрытой серединой
+  clock.t += 5000;
+  const ok = keep(await wa("GET", "status"));
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("cache-control"), "no-store");
+  assert.deepEqual([ok.json.ok, ok.json.kind, ok.json.tone, ok.json.title, ok.json.number, ok.json.profile], [true, "connected", "ok", "Подключён", "7700***2233", "Тест"]);
+  assert.equal(ok.text.includes("77001112233"), false);
+  // вышел из устройства
+  evo.disconnectWith(401, "Logged Out");
+  clock.t += 5000;
+  const out = keep(await wa("GET", "status"));
+  assert.deepEqual([out.status, out.json.kind, out.json.title, out.json.reasonCode], [200, "logged_out", "Номер вышел из устройства (logout), нужно подключить заново", 401]);
+  // заблокирован
+  evo.disconnectWith(403, "Forbidden");
+  clock.t += 5000;
+  const ban = keep(await wa("GET", "status"));
+  assert.deepEqual([ban.json.kind, ban.json.title], ["banned", "Номер заблокирован WhatsApp"]);
+  // экран получает последний статус вместе с остальным состоянием
+  assert.equal((await wa("GET", "state")).json.status.kind, "banned");
+  // Evolution молчит: тоже статус, ответ 200
+  const savedUrl = process.env.EVOLUTION_URL;
+  process.env.EVOLUTION_URL = "http://127.0.0.1:1";
+  clock.t += 5000;
+  const down = keep(await wa("GET", "status"));
+  process.env.EVOLUTION_URL = savedUrl;
+  assert.deepEqual([down.status, down.json.ok, down.json.kind, down.json.title], [200, true, "unreachable", "Evolution не отвечает"]);
+  // код по номеру: плохие номера 400, хороший отдаёт код и закрытый номер
+  const callsBefore = evo.calls.length;
+  for (const bad of [undefined, "", "abc", "12345", "1".repeat(16)]) {
+    const r = keep(await wa("POST", "pairing", { number: bad }));
+    assert.deepEqual([r.status, r.json.code], [400, "bad_number"], String(bad));
+  }
+  assert.equal(evo.calls.length, callsBefore, "плохой номер до Evolution не доходит");
+  clock.t += 5000;
+  const code = keep(await wa("POST", "pairing", { number: "447911123456" }));
+  assert.equal(code.status, 200, code.text);
+  assert.deepEqual([code.json.state, code.json.pairingCode, code.json.number, code.json.ttlSec], ["connecting", "PC013456", "4479***3456", 60]);
+  assert.equal(code.text.includes("447911123456"), false, "номер в ответе закрыт");
+  assert.equal(evo.of("/instance/connect/").at(-1)!.query.get("number"), "447911123456");
+  assert.equal((await wa("GET", "status")).json.kind, "waiting");
+  // человек ввёл код на телефоне
+  evo.scan();
+  clock.t += 5000;
+  const done = keep(await wa("GET", "status"));
+  assert.deepEqual([done.json.kind, done.json.number], ["connected", "7700***2233"]);
+  const again = keep(await wa("POST", "pairing", { number: "447911123456" }));
+  assert.deepEqual([again.status, again.json.code], [409, "connected"], "подключённому номеру код не нужен");
+  assert.ok((await wa("GET", "state")).json.journal.some((j: any) => j.text === "Запрошен код для подключения номера по телефону"));
+  await waTick();
+});
+
 test("защита действий: переключение режима, создание и отправка не принимаются без подтверждения; ежедневное в живом эфире закрыто", async () => {
   assert.equal((await wa("POST", "mode", { mode: "event" })).status, 400);
   assert.equal((await wa("POST", "mode", { mode: "weekly", confirm: true })).status, 400);
@@ -437,6 +494,8 @@ test("итог: ключ Evolution и токен инстанса не попа�
   assert.equal(all.includes(INSTANCE_TOKEN), false);
   assert.equal(all.includes(BOT_TOKEN), false);
   assert.equal(files.includes(PNG_B64), false, "QR на диск не пишется");
+  assert.equal(all.includes("447911123456"), false, "номер, по которому просили код, нигде не лежит целиком");
+  assert.equal(/PC\d{2}4575/.test(files), false, "код подключения на диск не пишется");
   assert.ok(seen.some((x) => x.includes(PNG_B64)), "а в ответ пульту QR попадает: он для того и нужен");
   assert.deepEqual(evo.violations, []);
   for (const c of evo.of("/message/")) assert.ok(String(c.body.number).endsWith("@g.us"), "сообщения только в группы");

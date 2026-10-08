@@ -98,20 +98,64 @@ export async function connectionState(): Promise<EvoResult<{ state: string }>> {
   return r;
 }
 
-/** Данные инстанса: номер владельца (ownerJid) и имя профиля. Токен инстанса из ответа не берём. */
-export async function fetchInstance(): Promise<EvoResult<{ ownerJid: string; profileName: string }>> {
+/**
+ * Данные инстанса из GET /instance/fetchInstances?instanceName=: номер владельца, имя профиля и причина последнего отключения.
+ * Поля строки таблицы Instance в Evolution 2.3.7 (prisma/postgresql-schema.prisma): connectionStatus, ownerJid, profileName, number,
+ * disconnectionReasonCode (Int), disconnectionObject (JSON: Evolution кладёт туда JSON.stringify(lastDisconnect) события connection.update),
+ * disconnectionAt. Причина записывается, когда Baileys закрыл соединение кодом из списка «не переподключаться»: loggedOut 401,
+ * forbidden 403, а также 402 и 406. Токен инстанса из ответа не берём. Инстанса нет: found: false.
+ */
+export type InstanceInfo = {
+  found: boolean;
+  ownerJid: string;
+  profileName: string;
+  number: string;
+  connectionStatus: string;
+  disconnectionReasonCode: number | null;
+  /** JSON-строка lastDisconnect как её записал Evolution (до 4000 знаков). Разбор и очистка в wa-groups. */
+  disconnectionObject: string;
+  disconnectionAt: string;
+};
+
+export async function fetchInstance(): Promise<EvoResult<InstanceInfo>> {
   const r = await evoCall<any>("GET", `/instance/fetchInstances?instanceName=${I()}`);
-  if (!r.ok) return r;
+  if (!r.ok) {
+    // Инстанса нет: Evolution отвечает 404 (или пустым списком), это не сбой.
+    if (r.status === 404) return { ok: true, status: 404, data: emptyInstance() };
+    return r;
+  }
   const row = Array.isArray(r.data) ? r.data[0] : r.data;
-  return { ok: true, status: r.status, data: { ownerJid: String(row?.ownerJid || ""), profileName: String(row?.profileName || "") } };
+  if (!row || typeof row !== "object") return { ok: true, status: r.status, data: emptyInstance() };
+  const obj = row.disconnectionObject;
+  const code = Number(row.disconnectionReasonCode);
+  return {
+    ok: true,
+    status: r.status,
+    data: {
+      found: true,
+      ownerJid: String(row.ownerJid || ""),
+      profileName: String(row.profileName || ""),
+      number: String(row.number || ""),
+      connectionStatus: String(row.connectionStatus || ""),
+      disconnectionReasonCode: row.disconnectionReasonCode === null || row.disconnectionReasonCode === undefined || !Number.isFinite(code) ? null : code,
+      disconnectionObject: obj === null || obj === undefined ? "" : (typeof obj === "string" ? obj : JSON.stringify(obj)).slice(0, 4000),
+      disconnectionAt: String(row.disconnectionAt || ""),
+    },
+  };
 }
 
-/** Создать инстанс Baileys. С qrcode: true Evolution ждёт пять секунд и отдаёт QR в ответе. */
-export function createInstance(): Promise<EvoResult<any>> {
+const emptyInstance = (): InstanceInfo => ({ found: false, ownerJid: "", profileName: "", number: "", connectionStatus: "", disconnectionReasonCode: null, disconnectionObject: "", disconnectionAt: "" });
+
+/**
+ * Создать инстанс Baileys. С qrcode: true Evolution ждёт пять секунд и отдаёт QR в ответе. С number (только цифры) подключение
+ * идёт по коду: в ответе qrcode.pairingCode, 8 знаков.
+ */
+export function createInstance(number?: string): Promise<EvoResult<any>> {
   return evoCall("POST", "/instance/create", {
     instanceName: evoInstance(),
     integration: "WHATSAPP-BAILEYS",
     qrcode: true,
+    ...(number ? { number } : {}),
     rejectCall: false,
     groupsIgnore: false,
     alwaysOnline: false,
@@ -121,9 +165,13 @@ export function createInstance(): Promise<EvoResult<any>> {
   }, 30_000);
 }
 
-/** Запросить QR у существующего инстанса. Ответ: { base64, code, pairingCode, count } или состояние open. */
-export function connectInstance(): Promise<EvoResult<any>> {
-  return evoCall("GET", `/instance/connect/${I()}`, undefined, 30_000);
+/**
+ * Запросить QR у существующего инстанса. Ответ: { base64, code, pairingCode, count } или состояние open.
+ * С number (только цифры) Evolution 2.3.7 начинает подключение по коду, но только если инстанс закрыт (close): у инстанса в состоянии
+ * connecting он отдаёт прежний QR без кода (InstanceController.connectToWhatsapp использует number лишь в ветке close).
+ */
+export function connectInstance(number?: string): Promise<EvoResult<any>> {
+  return evoCall("GET", `/instance/connect/${I()}${number ? `?number=${encodeURIComponent(number)}` : ""}`, undefined, 30_000);
 }
 
 /** Отвязать номер (DELETE /instance/logout/{instance}). Инстанс остаётся в Evolution, для нового подключения нужен QR. */

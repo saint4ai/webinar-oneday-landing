@@ -1387,6 +1387,8 @@ test("вебхук: секрет, лимит 64 КБ (больше: 200 и вы�
     assert.deepEqual(await ok.json(), { ok: true });
     await waitFor(() => fake.calls.length > 0);
     assert.equal(store.subs.get(80)!.payload, "site");
+    // На /start бот в вечернее окно эфира шлёт два сообщения (приветствие и «эфир идёт»): даём второму дойти, иначе счёт зависит от времени суток.
+    await new Promise((r) => setTimeout(r, 300));
     const callsAfterFirst = fake.calls.length;
     // тот же update_id ещё раз (Telegram повторил доставку): не обрабатывается
     assert.equal((await post(u, auth)).status, 200);

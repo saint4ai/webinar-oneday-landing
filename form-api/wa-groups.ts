@@ -17,7 +17,9 @@
  *    вручную (/wa_send) её можно отправить ещё раз;
  *  - ночь по Алматы: по расписанию шлётся только то, что запланировано с 09:00 до 23:45; создание по догонялке и приветствие только с 09:00
  *    до 23:00 (ночное откладывается до 09:00); тревога о потере подключения с 23:00 до 09:00 не шлётся, утром одна сводная;
- *  - заявки: перед каждым пакетом считается заполнение (замер плюс одобренные после него), у лимита не одобряем и сразу открываем следующее.
+ *  - заявки: перед каждым пакетом считается заполнение (замер плюс одобренные после него), у лимита не одобряем и сразу открываем следующее;
+ *  - пульт показывает статус подключения (waStatus: подключён, ждёт подключения, отключён с причиной, номер заблокирован, вышел из устройства,
+ *    Evolution не отвечает; причина из fetchInstances) и подключает номер двумя способами: QR (waQr) и кодом по номеру телефона (waPairing).
  *
  * Два режима работы (переключаются в пульте админки, docs/tasks/wa_control_panel.md), состояние в wa-state.json:
  *  - daily: «Ежедневное создание» вкл/выкл (по умолчанию выкл: пока Александр не включил, ничего не создаётся);
@@ -239,6 +241,8 @@ export type State = {
   capAlertDay: string;
   ownerJid: string;
   ownerAt: number;
+  /** С какого момента подключение открыто (замечено нами): для строки «подключён с» в пульте. 0, если не открыто. */
+  connSince: number;
   /** Режим работы и его настройки. После первого включения: daily с выключенным созданием. */
   mode: Mode;
   daily: { enabled: boolean };
@@ -262,6 +266,7 @@ const freshState = (): State => ({
   capAlertDay: "",
   ownerJid: "",
   ownerAt: 0,
+  connSince: 0,
   mode: "daily",
   daily: { enabled: false },
   event: freshEvent(),
@@ -327,6 +332,10 @@ type Rt = {
   /** Список групп номера: кеш на минуту, обновление не чаще раза в 20 секунд. */
   groupsCache: { at: number; items: PanelGroup[] } | null;
   groupsCallAt: number;
+  /** Последний статус подключения для пульта (не чаще раза в 3 секунды опрашиваем Evolution). */
+  statusCache: { at: number; value: WaStatus } | null;
+  /** Последний код подключения по номеру: тот же номер не просим у Evolution чаще раза в 15 секунд. Сам номер не храним. */
+  pairCache: { at: number; digits: string; code: string } | null;
 };
 
 let rt: Rt | null = null;
@@ -396,6 +405,7 @@ function loadState(r: Rt): State {
     st.capAlertDay = str(raw.capAlertDay);
     st.ownerJid = str(raw.ownerJid);
     st.ownerAt = num(raw.ownerAt);
+    st.connSince = num(raw.connSince);
     st.mode = raw.mode === "event" ? "event" : "daily";
     st.daily = { enabled: raw.daily?.enabled === true };
     const ev = raw.event;
@@ -465,6 +475,8 @@ export function initWaGroups(opts: InitOpts = {}): void {
     qrJournalAt: 0,
     groupsCache: null,
     groupsCallAt: 0,
+    statusCache: null,
+    pairCache: null,
   };
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
@@ -782,6 +794,26 @@ function pauseModule(r: Rt, now: number, reason: string, text: string) {
   return alarm(r, text);
 }
 
+/**
+ * Записать состояние подключения. Заодно ведём «подключён с»: момент, когда мы увидели переход в open (после close, connecting
+ * или отсутствия инстанса). Первое наблюдение после запуска модуля или после недоступности Evolution срока не сбрасывает.
+ */
+function setConn(r: Rt, st: string, now: number) {
+  const prev = r.conn.state;
+  r.conn = { state: st, at: now };
+  if (st === "open") {
+    // Подключились: выданный код подключения больше не нужен и повторно не отдаётся.
+    r.pairCache = null;
+    if (!r.state.connSince || prev === "close" || prev === "connecting" || prev === "absent") {
+      r.state.connSince = now;
+      save(r);
+    }
+  } else if (st !== "unreachable" && r.state.connSince) {
+    r.state.connSince = 0;
+    save(r);
+  }
+}
+
 function noteOk(r: Rt) {
   if (r.state.failStreak || r.state.retryAt) {
     r.state.failStreak = 0;
@@ -862,7 +894,7 @@ async function checkConnection(r: Rt, now: number): Promise<boolean> {
   const c = await evo.connectionState();
   const st = c.ok ? c.data.state : "unreachable";
   const prev = r.conn.state;
-  r.conn = { state: st, at: now };
+  setConn(r, st, now);
   // Смену состояния подключения пишем в журнал (в пульте видно, когда номер отвалился и вернулся). Первый тик после старта: только если не open.
   if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
   if (st === "open") r.downSince = 0;
@@ -1637,7 +1669,7 @@ export type { WaReply };
 async function cmdStatus(r: Rt, now: number): Promise<WaReply> {
   const conn = await exclusive(r, async () => {
     const c = await evo.connectionState();
-    r.conn = { state: c.ok ? c.data.state : "unreachable", at: now };
+    setConn(r, c.ok ? c.data.state : "unreachable", now);
     if (r.conn.state === "open" && !r.state.ownerJid) {
       const i = await evo.fetchInstance();
       if (i.ok && i.data.ownerJid) {
@@ -2077,10 +2109,10 @@ export async function waConnection(nowArg?: number): Promise<(Act & Partial<Conn
     if (r.conn.at && now - r.conn.at < 3000 && r.conn.state !== "open") return { ok: true as const, state: r.conn.state, number: "", profile: "" };
     const cs = await evo.connectionState();
     if (!cs.ok) {
-      r.conn = { state: "unreachable", at: now };
+      setConn(r, "unreachable", now);
       return fail("evolution", `Evolution не отвечает: ${cs.error}`);
     }
-    r.conn = { state: cs.data.state, at: now };
+    setConn(r, cs.data.state, now);
     if (cs.data.state === "open") await refreshOwner(r, now);
     return { ok: true as const, state: cs.data.state, number: cs.data.state === "open" ? numberOf(r) : "", profile: cs.data.state === "open" ? r.profileName : "" };
   });
@@ -2110,7 +2142,7 @@ export async function waQr(nowArg?: number): Promise<(Act & { state?: string }) 
     const cs = await evo.connectionState();
     if (!cs.ok) return fail("evolution", `Evolution не отвечает: ${cs.error}`);
     const st = cs.data.state;
-    r.conn = { state: st, at: now };
+    setConn(r, st, now);
     if (st === "open") {
       r.qrCache = null;
       await refreshOwner(r, now);
@@ -2148,7 +2180,9 @@ export async function waLogout(nowArg?: number): Promise<Act> {
     const now = clock(r, nowArg);
     const x = await evo.logoutInstance();
     if (!x.ok) return fail("evolution", `Не получилось отключить номер: ${x.error}`);
-    r.conn = { state: "close", at: now };
+    setConn(r, "close", now);
+    r.statusCache = null;
+    r.pairCache = null;
     r.state.ownerJid = "";
     r.state.ownerAt = 0;
     r.profileName = "";
@@ -2158,6 +2192,243 @@ export async function waLogout(nowArg?: number): Promise<Act> {
     save(r);
     journal(r, { ev: "logout", by: "panel" });
     return { ok: true, message: "Номер отключён. Рассылка и создание сообществ остановлены, пока не подключишь номер заново по QR." };
+  });
+}
+
+// ───────────────────────── пульт: статус подключения ─────────────────────────
+
+/** Номер с закрытой серединой: 77085834575 -> 7708***4575. Целиком номер в ответы нового статуса и в журнал не попадает. */
+export const maskNumber = (digits: string) => (digits.length >= 9 ? `${digits.slice(0, 4)}***${digits.slice(-4)}` : digits ? "***" : "");
+
+export type WaStatus = {
+  /** connected: подключён; waiting: ждёт QR или кода; disconnected: отключён с причиной; banned: заблокирован; logged_out: вышел из устройства; unreachable: Evolution молчит. */
+  kind: "connected" | "waiting" | "disconnected" | "banned" | "logged_out" | "unreachable";
+  /** Цвет блока: ok зелёный, wait жёлтый, bad красный. */
+  tone: "ok" | "wait" | "bad";
+  title: string;
+  detail: string;
+  /** Состояние у Evolution как есть: open, connecting, close, absent, unreachable. */
+  state: string;
+  /** Номер в виде 7708***4575, только когда подключён. */
+  number: string;
+  profile: string;
+  /** «08.10 в 14:30»: с какого времени подключён (когда мы это увидели). */
+  since: string;
+  /** Код отключения Baileys (401, 403 и так далее) из Evolution, если есть. */
+  reasonCode: number | null;
+  /** Причина словами, если номер отключён. */
+  reason: string;
+  at: number;
+  /** Когда проверили, HH:MM по Алматы. */
+  checked: string;
+};
+
+/** Коды отключения Baileys (DisconnectReason) и коды, после которых Evolution 2.3.7 сам не переподключается (401, 403, 402, 406). */
+const DISCONNECT_REASON: Record<number, string> = {
+  401: "номер вышел из связанных устройств (loggedOut)",
+  402: "WhatsApp отказал в подключении (код 402)",
+  403: "WhatsApp закрыл доступ номеру (forbidden)",
+  406: "WhatsApp отказал в подключении (код 406)",
+  408: "WhatsApp не ответил вовремя (timedOut)",
+  411: "рассинхрон устройств (multideviceMismatch)",
+  428: "соединение закрыто (connectionClosed)",
+  440: "сессию открыли на другом устройстве (connectionReplaced)",
+  500: "сессия повреждена (badSession)",
+  515: "нужен перезапуск (restartRequired)",
+};
+const NO_RECONNECT = new Set([401, 402, 403, 406]);
+/** Явные признаки блокировки в записанной причине отключения (кроме кода 403). */
+const BAN_RE = /\bban(ned)?\b|temporar\w*[ _-]ban|\bblocked\b|suspend|account[ _-]?(restricted|disabled)/i;
+
+/** Короткий текст ответа WhatsApp из записанного lastDisconnect (error.output.payload.message). Длинные числа закрываются. */
+function disconnectMessage(raw: string): string {
+  let o: any = raw;
+  for (let i = 0; i < 2 && typeof o === "string" && o; i++) {
+    try {
+      o = JSON.parse(o);
+    } catch {
+      break;
+    }
+  }
+  const m = o?.error?.output?.payload?.message ?? o?.error?.message ?? o?.message ?? "";
+  return typeof m === "string" ? m.replace(/\d{8,}/g, "***").replace(/\s+/g, " ").trim().slice(0, 100) : "";
+}
+
+/** Статус словами по состоянию подключения и данным инстанса. Без запросов, чистая функция от входа. */
+function describeStatus(r: Rt, state: string, info: evo.InstanceInfo | null, infoErr: string, now: number, evoErr = ""): WaStatus {
+  const base = { state, number: "", profile: "", since: "", reasonCode: null as number | null, reason: "", at: now, checked: hhmmOf(now) };
+  if (state === "unreachable") {
+    return { ...base, kind: "unreachable", tone: "bad", title: "Evolution не отвечает", detail: `WhatsApp-сервис (Evolution) не ответил: ${clip(evoErr, 120)}. Рассылка, создание сообществ и одобрение заявок стоят, пока он не вернётся. Проверь сервер.` };
+  }
+  if (state === "open") {
+    const owner = info?.ownerJid || r.state.ownerJid;
+    return {
+      ...base,
+      kind: "connected",
+      tone: "ok",
+      title: "Подключён",
+      detail: "Номер на связи. Рассылка и одобрение заявок работают.",
+      number: maskNumber(digitsOf(owner)),
+      profile: clip(info?.profileName || r.profileName, 60),
+      since: r.state.connSince ? when(r.state.connSince) : "",
+    };
+  }
+  if (state === "absent") {
+    return { ...base, kind: "waiting", tone: "wait", title: "Ждёт подключения", detail: "Подключение ещё не создано. Нажми «Подключить по QR» или введи номер телефона и получи код." };
+  }
+  if (state === "connecting") {
+    const paired = !!info?.ownerJid;
+    return {
+      ...base,
+      kind: "waiting",
+      tone: "wait",
+      title: "Ждёт подключения",
+      detail: paired ? "Номер уже привязан, идёт переподключение. Если статус не меняется больше минуты, подключи номер заново." : "QR или код ещё не введены. Отсканируй QR или введи код на телефоне.",
+    };
+  }
+  if (state !== "close") {
+    return { ...base, kind: "disconnected", tone: "bad", title: "Отключён", detail: `Evolution назвал состояние «${clip(state, 30)}». Нажми «Проверить сейчас», если статус не меняется, подключи номер заново.`, reason: "состояние неизвестно" };
+  }
+  // close: причина из записи об отключении
+  if (!info) {
+    return { ...base, kind: "disconnected", tone: "bad", title: "Отключён", detail: `Причину узнать не удалось: ${clip(infoErr, 100) || "Evolution не отдал данные инстанса"}. Подключи номер заново.`, reason: "причина неизвестна" };
+  }
+  const code = info.disconnectionReasonCode;
+  const ms = info.disconnectionAt ? Date.parse(info.disconnectionAt) : NaN;
+  const at = Number.isFinite(ms) ? ` (${when(ms)})` : "";
+  const msg = disconnectMessage(info.disconnectionObject);
+  const tail = msg ? ` Ответ WhatsApp: ${msg}.` : "";
+  if (code === 403 || BAN_RE.test(info.disconnectionObject)) {
+    return {
+      ...base,
+      kind: "banned",
+      tone: "bad",
+      title: "Номер заблокирован WhatsApp",
+      detail: `WhatsApp закрыл доступ этому номеру${code ? ` (код ${code})` : ""}${at}. Рассылка и создание сообществ остановлены. Скорее всего, этот номер уже не подключить: нужен другой номер или обращение в поддержку WhatsApp.${tail}`,
+      reasonCode: code,
+      reason: "заблокирован",
+    };
+  }
+  if (code === 401) {
+    return {
+      ...base,
+      kind: "logged_out",
+      tone: "bad",
+      title: "Номер вышел из устройства (logout), нужно подключить заново",
+      detail: `Сессию завершили${at}: номер убрали из связанных устройств на телефоне или вышли через logout. Подключи его заново: по QR или по номеру телефона.${tail}`,
+      reasonCode: code,
+      reason: "logout (401)",
+    };
+  }
+  const why = code === null ? "причина не записана" : DISCONNECT_REASON[code] || `код ${code}`;
+  const hint =
+    code !== null && NO_RECONNECT.has(code)
+      ? "Evolution сам не переподключится: подключи номер заново."
+      : code === null
+        ? "Если Evolution не вернул подключение сам, подключи номер заново."
+        : "Evolution пробует переподключиться сам; если статус не меняется, подключи номер заново.";
+  return { ...base, kind: "disconnected", tone: "bad", title: "Отключён", detail: `Причина: ${why}${at}. ${hint}${tail}`, reasonCode: code, reason: why };
+}
+
+/**
+ * Статус WhatsApp для пульта: состояние подключения у Evolution и, если номер не подключён, причина отключения
+ * (GET /instance/fetchInstances: disconnectionReasonCode, disconnectionObject, disconnectionAt). Не чаще раза в 3 секунды.
+ * Недоступность Evolution это тоже статус («Evolution не отвечает»), а не ошибка запроса. Ключ и номер целиком в ответ не попадают.
+ */
+export async function waStatus(nowArg?: number): Promise<Act | ({ ok: true } & WaStatus)> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const cached = r.statusCache;
+    if (cached && now - cached.at < 3000) return { ok: true as const, ...cached.value };
+    const cs = await evo.connectionState();
+    let value: WaStatus;
+    if (!cs.ok) {
+      setConn(r, "unreachable", now);
+      value = describeStatus(r, "unreachable", null, "", now, cs.error);
+    } else {
+      const st = cs.data.state;
+      setConn(r, st, now);
+      let info: evo.InstanceInfo | null = null;
+      let infoErr = "";
+      if (st !== "absent") {
+        const i = await evo.fetchInstance();
+        if (i.ok) info = i.data;
+        else infoErr = i.error;
+      }
+      if (st === "open" && info?.ownerJid) {
+        r.state.ownerJid = info.ownerJid;
+        r.state.ownerAt = now;
+        r.profileName = info.profileName;
+        save(r);
+      }
+      value = describeStatus(r, st, info, infoErr, now);
+    }
+    r.statusCache = { at: now, value };
+    return { ok: true as const, ...value };
+  });
+}
+
+const PAIR_MIN_GAP_MS = 15_000;
+/** Сколько секунд живёт код подключения по номеру (около минуты). */
+const PAIR_TTL_SEC = 60;
+
+/**
+ * Код для подключения по номеру телефона: пульт показывает его, человек вводит на телефоне (Связанные устройства, Привязать по номеру).
+ * Инстанса нет: POST /instance/create с number. Инстанс закрыт: GET /instance/connect?number=. У инстанса в состоянии connecting
+ * Evolution отдаёт прежний QR без кода, поэтому ещё не привязанную попытку сначала закрываем (logout), а привязанный номер
+ * (идёт переподключение) не трогаем. Номер в логи и журнал не пишем, в ответе он закрыт (7708***4575).
+ */
+export async function waPairing(numberRaw: unknown, nowArg?: number): Promise<Act | { ok: true; state: string; pairingCode: string; number: string; ttlSec: number; cached: boolean; message?: string }> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  const text = typeof numberRaw === "number" ? String(numberRaw) : typeof numberRaw === "string" ? numberRaw : "";
+  const digits = /^[\d\s+()-]+$/.test(text) ? text.replace(/\D/g, "") : "";
+  if (digits.length < 11 || digits.length > 15) return fail("bad_number", "Номер: только цифры, от 11 до 15, с кодом страны.");
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const pc = r.pairCache;
+    if (pc && pc.digits === digits && now - pc.at < PAIR_MIN_GAP_MS) {
+      const left = Math.ceil((PAIR_MIN_GAP_MS - (now - pc.at)) / 1000);
+      return { ok: true as const, state: "connecting", pairingCode: pc.code, number: maskNumber(digits), ttlSec: PAIR_TTL_SEC, cached: true, message: `Код ещё действует. Новый можно получить через ${left} с.` };
+    }
+    const cs = await evo.connectionState();
+    if (!cs.ok) {
+      setConn(r, "unreachable", now);
+      return fail("evolution", `Evolution не отвечает: ${cs.error}`);
+    }
+    const st = cs.data.state;
+    setConn(r, st, now);
+    r.statusCache = null;
+    if (st === "open") return fail("connected", "Номер уже подключён. Чтобы подключить другой, сначала отключи этот.");
+    const codeOf = (x: unknown) => String(x ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    let code = "";
+    if (st === "absent") {
+      const c = await evo.createInstance(digits);
+      if (!c.ok) return fail("evolution", `Не удалось создать подключение: ${c.error}`);
+      code = codeOf(c.data?.qrcode?.pairingCode);
+    } else {
+      if (st === "connecting") {
+        const i = await evo.fetchInstance();
+        if (i.ok && i.data.ownerJid) return fail("reconnecting", "Номер уже привязан, идёт переподключение. Подожди минуту и нажми «Проверить сейчас».");
+        // Попытка по QR ещё никем не завершена: закрываем её, иначе Evolution вернёт прежний QR без кода. Сбой тут не страшен.
+        await evo.logoutInstance();
+      }
+      for (let attempt = 0; attempt < 3 && !code; attempt++) {
+        // Код Evolution выдаёт на событие QR после старта сокета: если его ещё нет, подождём и спросим снова.
+        if (attempt) await r.deps.sleep(2500);
+        const c = await evo.connectInstance(digits);
+        if (!c.ok) return fail("evolution", `Не удалось запросить код: ${c.error}`);
+        if (c.data?.instance?.state === "open") return { ok: true as const, state: "open", pairingCode: "", number: maskNumber(digits), ttlSec: 0, cached: false };
+        code = codeOf(c.data?.pairingCode);
+      }
+    }
+    if (code.length !== 8) return fail("no_code", "Evolution не выдал код. Подожди несколько секунд и нажми «Новый код».");
+    r.qrCache = null;
+    r.pairCache = { at: now, digits, code };
+    journal(r, { ev: "pair", by: "panel" });
+    return { ok: true as const, state: "connecting", pairingCode: code, number: maskNumber(digits), ttlSec: PAIR_TTL_SEC, cached: false };
   });
 }
 
@@ -2229,7 +2500,7 @@ export async function waGroups(force = false, nowArg?: number): Promise<Act & { 
     r.groupsCallAt = now;
     const cs = await evo.connectionState();
     if (!cs.ok) return { ...fail("evolution", `Evolution не отвечает: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
-    r.conn = { state: cs.data.state, at: now };
+    setConn(r, cs.data.state, now);
     if (cs.data.state !== "open") return { ...fail("no_connection", `WhatsApp не подключён (${cs.data.state}). Подключи номер по QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     if (!r.state.ownerJid) await refreshOwner(r, now);
     let res = await evo.fetchAllGroups(true);
@@ -2281,7 +2552,7 @@ function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
 
 export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
 
-const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
+const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn"]);
 const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 const clip = (s: unknown, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -2354,6 +2625,9 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
           break;
         case "qr":
           text = "Запрошен QR для подключения номера";
+          break;
+        case "pair":
+          text = "Запрошен код для подключения номера по телефону";
           break;
         case "conn":
           kind = x.state === "open" ? "ok" : "error";
@@ -2517,6 +2791,8 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
       kind: r.cfg.target,
     },
     conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    /** Последний статус подключения из памяти (без запроса к Evolution): пульт показывает его сразу, пока приходит свежий. */
+    status: r.statusCache ? r.statusCache.value : null,
     mode: st.mode,
     daily: { enabled: st.daily.enabled, next: (() => { const n = nextDailyCreate(r, now); return n ? { day: n.day, dayLabel: ddmm(n.day), at: n.at, text: when(n.at) } : null; })() },
     event: {

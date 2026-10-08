@@ -17,7 +17,7 @@ import { dayReportText, getStore, HELP_TEXT, initTgWorkshop, notifyOwners, parse
 import {
   _internals, _waRt, adminNumbers, extractMembers, initWaGroups, joinsTick, normalizeRequests, resetWaGroups, startWaGroups,
   validateWaSeries, waCommand, waConnection, waEventCreateNow, waEventReset, waGroupLink, waGroups, waHealth, waLogout, waPanel, waPause,
-  waQr, waReportLine, waResume, waSendSeries, waSetDaily, waSetEvent, waSetMode, waTick, type Kind,
+  maskNumber, waPairing, waQr, waReportLine, waResume, waSendSeries, waSetDaily, waSetEvent, waSetMode, waStatus, waTick, type Kind,
 } from "./wa-groups";
 
 process.env.TG_WORKSHOP_BOT_TOKEN = "WATEST:tgtoken123";
@@ -2211,4 +2211,280 @@ test("ревью п.4: wa.html (постоянная ссылка шаблона
   assert.match(land, /index\.html\|thank-you\.html\|wa\.html\|efir\.js\|assets\/\*\) ;;/, "путь wa.html разрешён в проверке архива");
   assert.match(land, /echo wa\.html/, "wa.html в порядке замены (страницы последними)");
   assert.match(land, /added\.list/, "бэкап и откат общие со всеми страницами");
+});
+
+// ───────────────────────── ТЗ wa_status_panel: статус подключения и код по номеру ─────────────────────────
+
+const stat = async () => (await waStatus()) as any;
+/** Следующий замер статуса: статус кешируется на 3 секунды, поэтому часы сдвигаем. */
+const statNext = async () => {
+  clock.t += 4000;
+  return stat();
+};
+
+test("статус WhatsApp: подключён, ждёт подключения, отключён с причиной, logout (401), заблокирован (403 и признаки бана), Evolution не отвечает; номер закрыт", async () => {
+  const w = boot();
+  at(8, 12, 0, 0);
+  const seen: any[] = [];
+  const keep = (s: any) => (seen.push(s), s);
+  // подключён: номер закрыт серединой, имя профиля, с какого времени
+  let s = keep(await stat());
+  assert.deepEqual([s.ok, s.kind, s.tone, s.title, s.state], [true, "connected", "ok", "Подключён", "open"]);
+  assert.deepEqual([s.number, s.profile, s.since, s.checked], ["7700***2233", "Тест", "08.10 в 12:00", "12:00"]);
+  assert.equal(maskNumber("77085834575"), "7708***4575");
+  assert.equal(w.state().connSince, clock.t, "«подключён с» переживает рестарт: лежит в состоянии");
+  // тот же замер в пределах 3 секунд: Evolution не спрашиваем
+  evo.calls = [];
+  clock.t += 1500;
+  assert.equal((await stat()).checked, "12:00");
+  assert.equal(evo.calls.length, 0);
+  // через 3 секунды новый замер: «подключён с» остаётся прежним
+  s = keep(await statNext());
+  assert.equal(s.since, "08.10 в 12:00");
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState", "GET /instance/fetchInstances"]);
+
+  // logout с телефона: код 401
+  evo.disconnectWith(401, "Logged Out");
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.tone, s.state, s.reasonCode, s.reason], ["logged_out", "bad", "close", 401, "logout (401)"]);
+  assert.equal(s.title, "Номер вышел из устройства (logout), нужно подключить заново");
+  assert.match(s.detail, /\(08\.10 в 14:30\)/, "время отключения по Алматы");
+  assert.match(s.detail, /Ответ WhatsApp: Logged Out\./);
+  assert.deepEqual([s.number, s.since], ["", ""]);
+  assert.equal(w.state().connSince, 0, "отключился: «подключён с» сброшен");
+
+  // блокировка: код 403
+  evo.disconnectWith(403, "Forbidden");
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.tone, s.reasonCode, s.title], ["banned", "bad", 403, "Номер заблокирован WhatsApp"]);
+  assert.match(s.detail, /\(код 403\)/);
+  assert.match(s.detail, /нужен другой номер/);
+  // явные признаки бана в записанной причине при другом коде
+  evo.disconnectWith(401, "Account banned by WhatsApp");
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.title], ["banned", "Номер заблокирован WhatsApp"]);
+  // обычные закрытия блокировкой не считаются
+  for (const [code, msg, part] of [[428, "Connection Closed", "connectionClosed"], [440, "Stream Errored (conflict)", "на другом устройстве"], [500, "Bad Session", "badSession"], [515, "Restart Required", "restartRequired"], [411, "Multidevice Mismatch", "multideviceMismatch"]] as const) {
+    evo.disconnectWith(code, msg);
+    s = keep(await statNext());
+    assert.deepEqual([s.kind, s.title, s.reasonCode], ["disconnected", "Отключён", code], `код ${code}`);
+    assert.ok(s.detail.includes(part), `код ${code}: ${s.detail}`);
+    assert.match(s.detail, /Ответ WhatsApp:/);
+  }
+  // 402 и 406: Evolution сам не переподключается
+  evo.disconnectWith(406, "Not Acceptable");
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.reasonCode], ["disconnected", 406]);
+  assert.match(s.detail, /сам не переподключится/);
+  // причина не записана
+  evo.disconnectWith(null, "");
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.reasonCode], ["disconnected", null]);
+  assert.match(s.detail, /причина не записана/);
+  // Evolution закрыл подключение, а данные инстанса отдать не смог: причину не знаем, но статус есть
+  evo.disconnectWith(401);
+  evo.fail = (c) => (c.path.startsWith("/instance/fetchInstances") ? { status: 500 } : null);
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.tone], ["disconnected", "bad"]);
+  assert.match(s.detail, /^Причину узнать не удалось/);
+  evo.fail = null;
+
+  // ждёт подключения: QR или код ещё не введены; номер уже привязан и переподключается
+  evo.disconnect = null;
+  evo.state = "connecting";
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.tone, s.title, s.state], ["waiting", "wait", "Ждёт подключения", "connecting"]);
+  assert.match(s.detail, /QR или код ещё не введены/);
+  evo.paired = true;
+  s = keep(await statNext());
+  assert.equal(s.kind, "waiting");
+  assert.match(s.detail, /идёт переподключение/);
+  evo.paired = false;
+  // инстанса нет вовсе: данные инстанса не запрашиваем
+  evo.state = "absent";
+  evo.calls = [];
+  s = keep(await statNext());
+  assert.deepEqual([s.kind, s.title], ["waiting", "Ждёт подключения"]);
+  assert.match(s.detail, /ещё не создано/);
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState"]);
+
+  // подключили снова: «подключён с» начинается с этого момента
+  evo.state = "open";
+  s = keep(await statNext());
+  assert.equal(s.kind, "connected");
+  assert.equal(s.since, `${String(dayKeyOf(clock.t)).slice(8, 10)}.10 в ${almHM(new Date(clock.t).toISOString())}`);
+  assert.equal(w.state().connSince, clock.t);
+
+  // Evolution не отвечает: это статус, а не исключение
+  const saved = process.env.EVOLUTION_URL;
+  process.env.EVOLUTION_URL = "http://127.0.0.1:1";
+  s = keep(await statNext());
+  process.env.EVOLUTION_URL = saved;
+  assert.deepEqual([s.ok, s.kind, s.tone, s.title, s.state], [true, "unreachable", "bad", "Evolution не отвечает", "unreachable"]);
+  assert.match(s.detail, /Рассылка, создание сообществ и одобрение заявок стоят/);
+  assert.equal(w.rt().conn.state, "unreachable");
+  assert.equal(w.state().connSince > 0, true, "недоступность Evolution срок подключения не обнуляет");
+  // вернулся: срок прежний, статус снова «Подключён»
+  const sinceBefore = w.state().connSince;
+  s = keep(await statNext());
+  assert.equal(s.kind, "connected");
+  assert.equal(w.state().connSince, sinceBefore);
+
+  // экран получает последний статус из памяти без запроса
+  assert.deepEqual([(waPanel(clock.t) as any).status.kind, (waPanel(clock.t) as any).status.number], ["connected", "7700***2233"]);
+  // ни ключа, ни токена инстанса, ни полного номера
+  const all = JSON.stringify(seen) + JSON.stringify(waPanel(clock.t));
+  assert.equal(all.includes(EVO_KEY) || all.includes(INSTANCE_TOKEN), false);
+  assert.equal(JSON.stringify(seen).includes("77001112233"), false, "номер в статусе закрыт");
+});
+
+test("статус WhatsApp: до первой проверки экран получает status: null; без модуля ответ «модуль не запущен»", async () => {
+  boot();
+  at(8, 12, 0, 0);
+  assert.equal((waPanel(clock.t) as any).status, null);
+  resetWaGroups();
+  const off: any = await waStatus();
+  assert.deepEqual([off.ok, off.code], [false, "module_off"]);
+  const offP: any = await waPairing("77085834575");
+  assert.deepEqual([offP.ok, offP.code], [false, "module_off"]);
+});
+
+test("подключение по номеру: проверка номера, create без инстанса, connect?number у закрытого, незавершённая попытка по QR закрывается, привязанный номер не трогаем, код из кеша 15 секунд", async () => {
+  const w = boot();
+  at(8, 12, 0, 0);
+  const results: any[] = [];
+  const keep = (x: any) => (results.push(x), x);
+  // плохие номера: до Evolution дело не доходит
+  for (const bad of ["", "123", "abc77085834575", "7708583457512345", "+7 (708) 583", null, undefined, {}, 77085]) {
+    const r: any = await waPairing(bad);
+    assert.deepEqual([r.ok, r.code], [false, "bad_number"], String(bad));
+  }
+  assert.equal(evo.calls.length, 0);
+
+  // инстанса нет: создаётся сразу с номером, код приходит в ответе create
+  evo.state = "absent";
+  evo.calls = [];
+  const p1 = keep(await waPairing("+7 708 583 45 75"));
+  assert.deepEqual([p1.ok, p1.state, p1.pairingCode, p1.number, p1.ttlSec, p1.cached], [true, "connecting", "PC014575", "7708***4575", 60, false]);
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState", "POST /instance/create"]);
+  const created = evo.of("/instance/create")[0].body;
+  assert.deepEqual([created.number, created.integration, created.qrcode], ["77085834575", "WHATSAPP-BAILEYS", true]);
+  // «Новый код» в пределах 15 секунд: тот же код, Evolution не трогаем
+  clock.t += 5000;
+  evo.calls = [];
+  const p2 = keep(await waPairing("77085834575"));
+  assert.deepEqual([p2.cached, p2.pairingCode], [true, "PC014575"]);
+  assert.match(p2.message, /Новый можно получить через 10 с/);
+  assert.equal(evo.calls.length, 0);
+  // другой номер в те же 15 секунд кеш не подхватывает
+  evo.calls = [];
+  const pOther = keep(await waPairing("77011112233"));
+  assert.equal(pOther.cached, false);
+  assert.ok(evo.calls.length > 0);
+
+  // через 15 секунд код новый. Инстанс в режиме кода (connecting, номер ещё не привязан): прежняя попытка закрывается, потом connect с номером
+  clock.t += 20_000;
+  evo.calls = [];
+  const p3 = keep(await waPairing("77085834575"));
+  assert.equal(p3.cached, false);
+  assert.match(p3.pairingCode, /^PC\d{2}4575$/);
+  assert.notEqual(p3.pairingCode, "PC014575");
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState", "GET /instance/fetchInstances", "DELETE /instance/logout", "GET /instance/connect"]);
+  assert.equal(evo.of("/instance/connect/")[0].query.get("number"), "77085834575");
+
+  // та же картина, если ждали по QR: у connecting Evolution вернул бы прежний QR без кода, поэтому сначала logout
+  evo.scan();
+  evo.state = "connecting";
+  evo.pairingNumber = null;
+  clock.t += 20_000;
+  evo.calls = [];
+  const p4 = keep(await waPairing("77085834575"));
+  assert.match(p4.pairingCode, /^PC\d{2}4575$/);
+  assert.equal(evo.of("/instance/logout").length, 1);
+
+  // закрытый инстанс (например, после logout или блокировки): сразу connect с номером, logout не нужен
+  evo.disconnectWith(403, "Forbidden");
+  clock.t += 20_000;
+  evo.calls = [];
+  const p5 = keep(await waPairing("77085834575"));
+  assert.equal(p5.ok, true);
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState", "GET /instance/connect"]);
+  assert.equal(evo.disconnect, null, "после новой попытки старая причина Evolution не держит");
+
+  // номер уже привязан и переподключается: ничего не сбрасываем
+  evo.state = "connecting";
+  evo.paired = true;
+  evo.pairingNumber = null;
+  clock.t += 20_000;
+  evo.calls = [];
+  const logoutsBefore = evo.logouts;
+  const p6: any = keep(await waPairing("77085834575"));
+  assert.deepEqual([p6.ok, p6.code], [false, "reconnecting"]);
+  assert.equal(evo.logouts, logoutsBefore);
+  assert.equal(evo.of("/instance/connect/").length, 0);
+  evo.paired = false;
+
+  // уже подключён: код не нужен
+  evo.state = "open";
+  evo.calls = [];
+  const p7: any = keep(await waPairing("77085834575"));
+  assert.deepEqual([p7.ok, p7.code], [false, "connected"]);
+  assert.equal(evo.of("/instance/connect/").length + evo.of("/instance/create").length, 0);
+
+  // код появляется не сразу (Evolution выдаёт его на событие QR): пауза и повторный запрос
+  evo.state = "close";
+  evo.pairLate = 1;
+  sleeps.length = 0;
+  clock.t += 20_000;
+  evo.calls = [];
+  const p8 = keep(await waPairing("77085834575"));
+  assert.equal(p8.ok, true);
+  assert.equal(evo.of("/instance/connect/").length, 2);
+  assert.deepEqual(sleeps, [2500]);
+  // код не пришёл вовсе: три попытки и понятная ошибка
+  evo.state = "close";
+  evo.pairLate = 99;
+  sleeps.length = 0;
+  clock.t += 20_000;
+  evo.calls = [];
+  const p9: any = keep(await waPairing("77085834575"));
+  assert.deepEqual([p9.ok, p9.code], [false, "no_code"]);
+  assert.equal(evo.of("/instance/connect/").length, 3);
+  assert.deepEqual(sleeps, [2500, 2500]);
+  evo.pairLate = 0;
+  // Evolution ответил ошибкой или молчит
+  evo.state = "close";
+  evo.fail = (c) => (c.path.startsWith("/instance/connect/") ? { status: 500 } : null);
+  clock.t += 20_000;
+  const p10: any = keep(await waPairing("77085834575"));
+  assert.deepEqual([p10.ok, p10.code], [false, "evolution"]);
+  assert.match(p10.message, /Не удалось запросить код/);
+  evo.fail = null;
+  const saved = process.env.EVOLUTION_URL;
+  process.env.EVOLUTION_URL = "http://127.0.0.1:1";
+  clock.t += 20_000;
+  const p11: any = keep(await waPairing("77085834575"));
+  process.env.EVOLUTION_URL = saved;
+  assert.deepEqual([p11.ok, p11.code], [false, "evolution"]);
+
+  // человек ввёл код на телефоне: статус «Подключён»
+  evo.state = "close";
+  clock.t += 20_000;
+  assert.equal(((await waPairing("77085834575")) as any).ok, true);
+  assert.equal((await stat()).kind, "waiting", "код выдан, но ещё не введён");
+  evo.scan();
+  const done = await statNext();
+  assert.deepEqual([done.kind, done.title, done.number], ["connected", "Подключён", "7700***2233"]);
+
+  // номер и коды нигде не лежат: ни в ответах (номер закрыт), ни в состоянии, ни в журнале; ключа и токена тоже нет
+  const files = ["wa-state.json", "wa-journal.jsonl"].map((f) => readFileSync(join(w.dir, f), "utf8")).join("\n");
+  const blob = JSON.stringify(results);
+  assert.equal(blob.includes("77085834575"), false, "в ответах номер закрыт");
+  assert.equal(files.includes("77085834575"), false, "номер не пишем на диск");
+  assert.equal(/PC\d{2}4575/.test(files), false, "код подключения на диск не пишем");
+  assert.equal(blob.includes(EVO_KEY) || blob.includes(INSTANCE_TOKEN) || files.includes(EVO_KEY), false);
+  const pairs = w.journal().filter((r) => r.ev === "pair");
+  assert.ok(pairs.length >= 3);
+  for (const row of pairs) assert.deepEqual(Object.keys(row).sort(), ["by", "ev", "ts"]);
+  assert.ok((waPanel(clock.t) as any).journal.some((j: any) => j.text === "Запрошен код для подключения номера по телефону"));
 });

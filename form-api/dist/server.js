@@ -7267,15 +7267,36 @@ async function connectionState() {
 }
 async function fetchInstance() {
   const r = await evoCall("GET", `/instance/fetchInstances?instanceName=${I()}`);
-  if (!r.ok) return r;
+  if (!r.ok) {
+    if (r.status === 404) return { ok: true, status: 404, data: emptyInstance() };
+    return r;
+  }
   const row = Array.isArray(r.data) ? r.data[0] : r.data;
-  return { ok: true, status: r.status, data: { ownerJid: String(row?.ownerJid || ""), profileName: String(row?.profileName || "") } };
+  if (!row || typeof row !== "object") return { ok: true, status: r.status, data: emptyInstance() };
+  const obj = row.disconnectionObject;
+  const code = Number(row.disconnectionReasonCode);
+  return {
+    ok: true,
+    status: r.status,
+    data: {
+      found: true,
+      ownerJid: String(row.ownerJid || ""),
+      profileName: String(row.profileName || ""),
+      number: String(row.number || ""),
+      connectionStatus: String(row.connectionStatus || ""),
+      disconnectionReasonCode: row.disconnectionReasonCode === null || row.disconnectionReasonCode === void 0 || !Number.isFinite(code) ? null : code,
+      disconnectionObject: obj === null || obj === void 0 ? "" : (typeof obj === "string" ? obj : JSON.stringify(obj)).slice(0, 4e3),
+      disconnectionAt: String(row.disconnectionAt || "")
+    }
+  };
 }
-function createInstance() {
+var emptyInstance = () => ({ found: false, ownerJid: "", profileName: "", number: "", connectionStatus: "", disconnectionReasonCode: null, disconnectionObject: "", disconnectionAt: "" });
+function createInstance(number) {
   return evoCall("POST", "/instance/create", {
     instanceName: evoInstance(),
     integration: "WHATSAPP-BAILEYS",
     qrcode: true,
+    ...number ? { number } : {},
     rejectCall: false,
     groupsIgnore: false,
     alwaysOnline: false,
@@ -7284,8 +7305,8 @@ function createInstance() {
     syncFullHistory: false
   }, 3e4);
 }
-function connectInstance() {
-  return evoCall("GET", `/instance/connect/${I()}`, void 0, 3e4);
+function connectInstance(number) {
+  return evoCall("GET", `/instance/connect/${I()}${number ? `?number=${encodeURIComponent(number)}` : ""}`, void 0, 3e4);
 }
 var logoutInstance = () => evoCall("DELETE", `/instance/logout/${I()}`, void 0, 3e4);
 var GROUPS_TIMEOUT_MS = 6e4;
@@ -7454,6 +7475,7 @@ var freshState = () => ({
   capAlertDay: "",
   ownerJid: "",
   ownerAt: 0,
+  connSince: 0,
   mode: "daily",
   daily: { enabled: false },
   event: freshEvent()
@@ -7524,6 +7546,7 @@ function loadState(r) {
     st.capAlertDay = str(raw.capAlertDay);
     st.ownerJid = str(raw.ownerJid);
     st.ownerAt = num(raw.ownerAt);
+    st.connSince = num(raw.connSince);
     st.mode = raw.mode === "event" ? "event" : "daily";
     st.daily = { enabled: raw.daily?.enabled === true };
     const ev = raw.event;
@@ -7584,7 +7607,9 @@ function initWaGroups(opts = {}) {
     qrCache: null,
     qrJournalAt: 0,
     groupsCache: null,
-    groupsCallAt: 0
+    groupsCallAt: 0,
+    statusCache: null,
+    pairCache: null
   };
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
@@ -7811,6 +7836,20 @@ function pauseModule(r, now, reason, text) {
   journal(r, { ev: "pause", reason: r.state.pausedReason });
   return alarm(r, text);
 }
+function setConn(r, st, now) {
+  const prev = r.conn.state;
+  r.conn = { state: st, at: now };
+  if (st === "open") {
+    r.pairCache = null;
+    if (!r.state.connSince || prev === "close" || prev === "connecting" || prev === "absent") {
+      r.state.connSince = now;
+      save(r);
+    }
+  } else if (st !== "unreachable" && r.state.connSince) {
+    r.state.connSince = 0;
+    save(r);
+  }
+}
 function noteOk(r) {
   if (r.state.failStreak || r.state.retryAt) {
     r.state.failStreak = 0;
@@ -7870,7 +7909,7 @@ async function checkConnection(r, now) {
   const c = await connectionState();
   const st = c.ok ? c.data.state : "unreachable";
   const prev = r.conn.state;
-  r.conn = { state: st, at: now };
+  setConn(r, st, now);
   if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
   if (st === "open") r.downSince = 0;
   else if (!r.downSince) r.downSince = now;
@@ -8495,7 +8534,7 @@ function targetLine(r, label, day, now) {
 async function cmdStatus(r, now) {
   const conn = await exclusive(r, async () => {
     const c2 = await connectionState();
-    r.conn = { state: c2.ok ? c2.data.state : "unreachable", at: now };
+    setConn(r, c2.ok ? c2.data.state : "unreachable", now);
     if (r.conn.state === "open" && !r.state.ownerJid) {
       const i = await fetchInstance();
       if (i.ok && i.data.ownerJid) {
@@ -8846,10 +8885,10 @@ async function waConnection(nowArg) {
     if (r.conn.at && now - r.conn.at < 3e3 && r.conn.state !== "open") return { ok: true, state: r.conn.state, number: "", profile: "" };
     const cs = await connectionState();
     if (!cs.ok) {
-      r.conn = { state: "unreachable", at: now };
+      setConn(r, "unreachable", now);
       return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     }
-    r.conn = { state: cs.data.state, at: now };
+    setConn(r, cs.data.state, now);
     if (cs.data.state === "open") await refreshOwner(r, now);
     return { ok: true, state: cs.data.state, number: cs.data.state === "open" ? numberOf(r) : "", profile: cs.data.state === "open" ? r.profileName : "" };
   });
@@ -8872,7 +8911,7 @@ async function waQr(nowArg) {
     const cs = await connectionState();
     if (!cs.ok) return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     const st = cs.data.state;
-    r.conn = { state: st, at: now };
+    setConn(r, st, now);
     if (st === "open") {
       r.qrCache = null;
       await refreshOwner(r, now);
@@ -8908,7 +8947,9 @@ async function waLogout(nowArg) {
     const now = clock(r, nowArg);
     const x = await logoutInstance();
     if (!x.ok) return fail("evolution", `\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043D\u043E\u043C\u0435\u0440: ${x.error}`);
-    r.conn = { state: "close", at: now };
+    setConn(r, "close", now);
+    r.statusCache = null;
+    r.pairCache = null;
     r.state.ownerJid = "";
     r.state.ownerAt = 0;
     r.profileName = "";
@@ -8917,6 +8958,186 @@ async function waLogout(nowArg) {
     save(r);
     journal(r, { ev: "logout", by: "panel" });
     return { ok: true, message: "\u041D\u043E\u043C\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B, \u043F\u043E\u043A\u0430 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0448\u044C \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E \u043F\u043E QR." };
+  });
+}
+var maskNumber = (digits) => digits.length >= 9 ? `${digits.slice(0, 4)}***${digits.slice(-4)}` : digits ? "***" : "";
+var DISCONNECT_REASON = {
+  401: "\u043D\u043E\u043C\u0435\u0440 \u0432\u044B\u0448\u0435\u043B \u0438\u0437 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0445 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432 (loggedOut)",
+  402: "WhatsApp \u043E\u0442\u043A\u0430\u0437\u0430\u043B \u0432 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0438 (\u043A\u043E\u0434 402)",
+  403: "WhatsApp \u0437\u0430\u043A\u0440\u044B\u043B \u0434\u043E\u0441\u0442\u0443\u043F \u043D\u043E\u043C\u0435\u0440\u0443 (forbidden)",
+  406: "WhatsApp \u043E\u0442\u043A\u0430\u0437\u0430\u043B \u0432 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0438 (\u043A\u043E\u0434 406)",
+  408: "WhatsApp \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B \u0432\u043E\u0432\u0440\u0435\u043C\u044F (timedOut)",
+  411: "\u0440\u0430\u0441\u0441\u0438\u043D\u0445\u0440\u043E\u043D \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432 (multideviceMismatch)",
+  428: "\u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u0435 \u0437\u0430\u043A\u0440\u044B\u0442\u043E (connectionClosed)",
+  440: "\u0441\u0435\u0441\u0441\u0438\u044E \u043E\u0442\u043A\u0440\u044B\u043B\u0438 \u043D\u0430 \u0434\u0440\u0443\u0433\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435 (connectionReplaced)",
+  500: "\u0441\u0435\u0441\u0441\u0438\u044F \u043F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u0430 (badSession)",
+  515: "\u043D\u0443\u0436\u0435\u043D \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u043A (restartRequired)"
+};
+var NO_RECONNECT = /* @__PURE__ */ new Set([401, 402, 403, 406]);
+var BAN_RE = /\bban(ned)?\b|temporar\w*[ _-]ban|\bblocked\b|suspend|account[ _-]?(restricted|disabled)/i;
+function disconnectMessage(raw) {
+  let o = raw;
+  for (let i = 0; i < 2 && typeof o === "string" && o; i++) {
+    try {
+      o = JSON.parse(o);
+    } catch {
+      break;
+    }
+  }
+  const m = o?.error?.output?.payload?.message ?? o?.error?.message ?? o?.message ?? "";
+  return typeof m === "string" ? m.replace(/\d{8,}/g, "***").replace(/\s+/g, " ").trim().slice(0, 100) : "";
+}
+function describeStatus(r, state, info, infoErr, now, evoErr = "") {
+  const base = { state, number: "", profile: "", since: "", reasonCode: null, reason: "", at: now, checked: hhmmOf(now) };
+  if (state === "unreachable") {
+    return { ...base, kind: "unreachable", tone: "bad", title: "Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442", detail: `WhatsApp-\u0441\u0435\u0440\u0432\u0438\u0441 (Evolution) \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B: ${clip(evoErr, 120)}. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u0441\u0442\u043E\u044F\u0442, \u043F\u043E\u043A\u0430 \u043E\u043D \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u0435\u0440\u0432\u0435\u0440.` };
+  }
+  if (state === "open") {
+    const owner = info?.ownerJid || r.state.ownerJid;
+    return {
+      ...base,
+      kind: "connected",
+      tone: "ok",
+      title: "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D",
+      detail: "\u041D\u043E\u043C\u0435\u0440 \u043D\u0430 \u0441\u0432\u044F\u0437\u0438. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442.",
+      number: maskNumber(digitsOf(owner)),
+      profile: clip(info?.profileName || r.profileName, 60),
+      since: r.state.connSince ? when(r.state.connSince) : ""
+    };
+  }
+  if (state === "absent") {
+    return { ...base, kind: "waiting", tone: "wait", title: "\u0416\u0434\u0451\u0442 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F", detail: "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0435\u0449\u0451 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u043E QR\xBB \u0438\u043B\u0438 \u0432\u0432\u0435\u0434\u0438 \u043D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0438 \u043F\u043E\u043B\u0443\u0447\u0438 \u043A\u043E\u0434." };
+  }
+  if (state === "connecting") {
+    const paired = !!info?.ownerJid;
+    return {
+      ...base,
+      kind: "waiting",
+      tone: "wait",
+      title: "\u0416\u0434\u0451\u0442 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F",
+      detail: paired ? "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u0415\u0441\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043D\u0435 \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F \u0431\u043E\u043B\u044C\u0448\u0435 \u043C\u0438\u043D\u0443\u0442\u044B, \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E." : "QR \u0438\u043B\u0438 \u043A\u043E\u0434 \u0435\u0449\u0451 \u043D\u0435 \u0432\u0432\u0435\u0434\u0435\u043D\u044B. \u041E\u0442\u0441\u043A\u0430\u043D\u0438\u0440\u0443\u0439 QR \u0438\u043B\u0438 \u0432\u0432\u0435\u0434\u0438 \u043A\u043E\u0434 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435."
+    };
+  }
+  if (state !== "close") {
+    return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `Evolution \u043D\u0430\u0437\u0432\u0430\u043B \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \xAB${clip(state, 30)}\xBB. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB, \u0435\u0441\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043D\u0435 \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F, \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.`, reason: "\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E" };
+  }
+  if (!info) {
+    return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `\u041F\u0440\u0438\u0447\u0438\u043D\u0443 \u0443\u0437\u043D\u0430\u0442\u044C \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C: ${clip(infoErr, 100) || "Evolution \u043D\u0435 \u043E\u0442\u0434\u0430\u043B \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u043D\u0441\u0442\u0430\u043D\u0441\u0430"}. \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.`, reason: "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430" };
+  }
+  const code = info.disconnectionReasonCode;
+  const ms = info.disconnectionAt ? Date.parse(info.disconnectionAt) : NaN;
+  const at = Number.isFinite(ms) ? ` (${when(ms)})` : "";
+  const msg = disconnectMessage(info.disconnectionObject);
+  const tail = msg ? ` \u041E\u0442\u0432\u0435\u0442 WhatsApp: ${msg}.` : "";
+  if (code === 403 || BAN_RE.test(info.disconnectionObject)) {
+    return {
+      ...base,
+      kind: "banned",
+      tone: "bad",
+      title: "\u041D\u043E\u043C\u0435\u0440 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D WhatsApp",
+      detail: `WhatsApp \u0437\u0430\u043A\u0440\u044B\u043B \u0434\u043E\u0441\u0442\u0443\u043F \u044D\u0442\u043E\u043C\u0443 \u043D\u043E\u043C\u0435\u0440\u0443${code ? ` (\u043A\u043E\u0434 ${code})` : ""}${at}. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. \u0421\u043A\u043E\u0440\u0435\u0435 \u0432\u0441\u0435\u0433\u043E, \u044D\u0442\u043E\u0442 \u043D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C: \u043D\u0443\u0436\u0435\u043D \u0434\u0440\u0443\u0433\u043E\u0439 \u043D\u043E\u043C\u0435\u0440 \u0438\u043B\u0438 \u043E\u0431\u0440\u0430\u0449\u0435\u043D\u0438\u0435 \u0432 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0443 WhatsApp.${tail}`,
+      reasonCode: code,
+      reason: "\u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D"
+    };
+  }
+  if (code === 401) {
+    return {
+      ...base,
+      kind: "logged_out",
+      tone: "bad",
+      title: "\u041D\u043E\u043C\u0435\u0440 \u0432\u044B\u0448\u0435\u043B \u0438\u0437 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0430 (logout), \u043D\u0443\u0436\u043D\u043E \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0437\u0430\u043D\u043E\u0432\u043E",
+      detail: `\u0421\u0435\u0441\u0441\u0438\u044E \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0438${at}: \u043D\u043E\u043C\u0435\u0440 \u0443\u0431\u0440\u0430\u043B\u0438 \u0438\u0437 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0445 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 \u0438\u043B\u0438 \u0432\u044B\u0448\u043B\u0438 \u0447\u0435\u0440\u0435\u0437 logout. \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E: \u043F\u043E QR \u0438\u043B\u0438 \u043F\u043E \u043D\u043E\u043C\u0435\u0440\u0443 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430.${tail}`,
+      reasonCode: code,
+      reason: "logout (401)"
+    };
+  }
+  const why = code === null ? "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u0430" : DISCONNECT_REASON[code] || `\u043A\u043E\u0434 ${code}`;
+  const hint = code !== null && NO_RECONNECT.has(code) ? "Evolution \u0441\u0430\u043C \u043D\u0435 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F: \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E." : code === null ? "\u0415\u0441\u043B\u0438 Evolution \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0441\u0430\u043C, \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E." : "Evolution \u043F\u0440\u043E\u0431\u0443\u0435\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C\u0441\u044F \u0441\u0430\u043C; \u0435\u0441\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043D\u0435 \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F, \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.";
+  return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `\u041F\u0440\u0438\u0447\u0438\u043D\u0430: ${why}${at}. ${hint}${tail}`, reasonCode: code, reason: why };
+}
+async function waStatus(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const cached = r.statusCache;
+    if (cached && now - cached.at < 3e3) return { ok: true, ...cached.value };
+    const cs = await connectionState();
+    let value;
+    if (!cs.ok) {
+      setConn(r, "unreachable", now);
+      value = describeStatus(r, "unreachable", null, "", now, cs.error);
+    } else {
+      const st = cs.data.state;
+      setConn(r, st, now);
+      let info = null;
+      let infoErr = "";
+      if (st !== "absent") {
+        const i = await fetchInstance();
+        if (i.ok) info = i.data;
+        else infoErr = i.error;
+      }
+      if (st === "open" && info?.ownerJid) {
+        r.state.ownerJid = info.ownerJid;
+        r.state.ownerAt = now;
+        r.profileName = info.profileName;
+        save(r);
+      }
+      value = describeStatus(r, st, info, infoErr, now);
+    }
+    r.statusCache = { at: now, value };
+    return { ok: true, ...value };
+  });
+}
+var PAIR_MIN_GAP_MS = 15e3;
+var PAIR_TTL_SEC = 60;
+async function waPairing(numberRaw, nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  const text = typeof numberRaw === "number" ? String(numberRaw) : typeof numberRaw === "string" ? numberRaw : "";
+  const digits = /^[\d\s+()-]+$/.test(text) ? text.replace(/\D/g, "") : "";
+  if (digits.length < 11 || digits.length > 15) return fail("bad_number", "\u041D\u043E\u043C\u0435\u0440: \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u043E\u0442 11 \u0434\u043E 15, \u0441 \u043A\u043E\u0434\u043E\u043C \u0441\u0442\u0440\u0430\u043D\u044B.");
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const pc = r.pairCache;
+    if (pc && pc.digits === digits && now - pc.at < PAIR_MIN_GAP_MS) {
+      const left = Math.ceil((PAIR_MIN_GAP_MS - (now - pc.at)) / 1e3);
+      return { ok: true, state: "connecting", pairingCode: pc.code, number: maskNumber(digits), ttlSec: PAIR_TTL_SEC, cached: true, message: `\u041A\u043E\u0434 \u0435\u0449\u0451 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442. \u041D\u043E\u0432\u044B\u0439 \u043C\u043E\u0436\u043D\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0447\u0435\u0440\u0435\u0437 ${left} \u0441.` };
+    }
+    const cs = await connectionState();
+    if (!cs.ok) {
+      setConn(r, "unreachable", now);
+      return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+    }
+    const st = cs.data.state;
+    setConn(r, st, now);
+    r.statusCache = null;
+    if (st === "open") return fail("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
+    const codeOf = (x) => String(x ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    let code = "";
+    if (st === "absent") {
+      const c = await createInstance(digits);
+      if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
+      code = codeOf(c.data?.qrcode?.pairingCode);
+    } else {
+      if (st === "connecting") {
+        const i = await fetchInstance();
+        if (i.ok && i.data.ownerJid) return fail("reconnecting", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.");
+        await logoutInstance();
+      }
+      for (let attempt = 0; attempt < 3 && !code; attempt++) {
+        if (attempt) await r.deps.sleep(2500);
+        const c = await connectInstance(digits);
+        if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u043A\u043E\u0434: ${c.error}`);
+        if (c.data?.instance?.state === "open") return { ok: true, state: "open", pairingCode: "", number: maskNumber(digits), ttlSec: 0, cached: false };
+        code = codeOf(c.data?.pairingCode);
+      }
+    }
+    if (code.length !== 8) return fail("no_code", "Evolution \u043D\u0435 \u0432\u044B\u0434\u0430\u043B \u043A\u043E\u0434. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434\xBB.");
+    r.qrCache = null;
+    r.pairCache = { at: now, digits, code };
+    journal(r, { ev: "pair", by: "panel" });
+    return { ok: true, state: "connecting", pairingCode: code, number: maskNumber(digits), ttlSec: PAIR_TTL_SEC, cached: false };
   });
 }
 var digitsOf = (x) => typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "";
@@ -8959,7 +9180,7 @@ async function waGroups(force = false, nowArg) {
     r.groupsCallAt = now;
     const cs = await connectionState();
     if (!cs.ok) return { ...fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
-    r.conn = { state: cs.data.state, at: now };
+    setConn(r, cs.data.state, now);
     if (cs.data.state !== "open") return { ...fail("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${cs.data.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     if (!r.state.ownerJid) await refreshOwner(r, now);
     let res = await fetchAllGroups(true);
@@ -8998,7 +9219,7 @@ function readJsonlTail(file, maxBytes = 256 * 1024) {
     return [];
   }
 }
-var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
+var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn"]);
 var stampOf = (ms) => `${ddmm2(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 var clip = (s, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -9062,6 +9283,9 @@ function journalView(r, limit = 20) {
         break;
       case "qr":
         text = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430";
+        break;
+      case "pair":
+        text = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D \u043A\u043E\u0434 \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430 \u043F\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0443";
         break;
       case "conn":
         kind = x.state === "open" ? "ok" : "error";
@@ -9191,6 +9415,8 @@ function waPanel(nowArg) {
       kind: r.cfg.target
     },
     conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    /** Последний статус подключения из памяти (без запроса к Evolution): пульт показывает его сразу, пока приходит свежий. */
+    status: r.statusCache ? r.statusCache.value : null,
     mode: st.mode,
     daily: { enabled: st.daily.enabled, next: (() => {
       const n = nextDailyCreate(r, now);
@@ -9232,6 +9458,7 @@ function waPanel(nowArg) {
 var MAX_BODY = 4096;
 var STATUS = {
   bad_request: 400,
+  bad_number: 400,
   bad_date: 400,
   bad_start: 400,
   bad_recruit: 400,
@@ -9267,6 +9494,10 @@ async function handleWaAdmin(req, res, path) {
         const x = await waConnection();
         return adminJson(res, statusOf(x), x);
       }
+      if (what === "status") {
+        const x = await waStatus();
+        return adminJson(res, statusOf(x), x);
+      }
       if (what === "groups") {
         const x = await waGroups(qs.get("refresh") === "1");
         return adminJson(res, statusOf(x), x);
@@ -9281,6 +9512,10 @@ async function handleWaAdmin(req, res, path) {
     switch (what) {
       case "qr": {
         const x = await waQr();
+        return adminJson(res, statusOf(x), x);
+      }
+      case "pairing": {
+        const x = await waPairing(body.number);
         return adminJson(res, statusOf(x), x);
       }
       case "logout":

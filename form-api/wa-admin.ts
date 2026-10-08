@@ -3,8 +3,11 @@
  *
  *   GET  /api/admin/wa/state          всё для экрана: режим, подключение, сообщества, ближайшее сообщение, серия, журнал
  *   GET  /api/admin/wa/connection     состояние подключения у Evolution прямо сейчас, номер и имя профиля
+ *   GET  /api/admin/wa/status         блок «Статус WhatsApp»: подключён, ждёт подключения, отключён с причиной, заблокирован,
+ *                                     вышел из устройства (logout), Evolution не отвечает; номер закрыт (7708***4575); пульт зовёт раз в 15 секунд
  *   GET  /api/admin/wa/groups         группы и сообщества номера (?refresh=1 обновить, не чаще раза в 20 секунд)
  *   POST /api/admin/wa/qr             QR для подключения (инстанса нет: создаётся); пульт зовёт раз в 15 до 20 секунд
+ *   POST /api/admin/wa/pairing        код для подключения по номеру телефона            {number:"77001234567"}
  *   POST /api/admin/wa/logout         отключить номер                                   {confirm:true}
  *   POST /api/admin/wa/mode           режим                                             {mode:"daily"|"event", confirm:true}
  *   POST /api/admin/wa/daily          ежедневное создание вкл/выкл                      {enabled:bool, confirm:true при включении}
@@ -31,6 +34,7 @@ const MAX_BODY = 4096;
 /** Код причины отказа в статус ответа. Всё неизвестное, что не ok, это конфликт состояния (409). */
 const STATUS: Record<string, number> = {
   bad_request: 400,
+  bad_number: 400,
   bad_date: 400,
   bad_start: 400,
   bad_recruit: 400,
@@ -72,6 +76,11 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
         const x = await wa.waConnection();
         return adminJson(res, statusOf(x), x);
       }
+      if (what === "status") {
+        // Недоступность Evolution тоже статус (kind: "unreachable"), поэтому ответ 200, а не 502.
+        const x = await wa.waStatus();
+        return adminJson(res, statusOf(x), x);
+      }
       if (what === "groups") {
         const x = await wa.waGroups(qs.get("refresh") === "1");
         return adminJson(res, statusOf(x), x);
@@ -88,6 +97,11 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
     switch (what) {
       case "qr": {
         const x = await wa.waQr();
+        return adminJson(res, statusOf(x), x);
+      }
+      case "pairing": {
+        // Код по номеру безопасен без подтверждения, как и QR: это только начало подключения, ничего не рассылается.
+        const x = await wa.waPairing(body.number);
         return adminJson(res, statusOf(x), x);
       }
       case "logout":

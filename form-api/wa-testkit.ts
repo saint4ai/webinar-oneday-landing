@@ -77,6 +77,16 @@ export const evo = {
   msgSeq: 0,
   qrCount: 0,
   logouts: 0,
+  /** Причина последнего отключения, как её хранит Evolution в таблице Instance (disconnectionReasonCode, disconnectionObject, disconnectionAt). */
+  disconnect: null as { code: number | null; object: string; at: string } | null,
+  /** Номер уже привязан (есть ownerJid), даже когда состояние не open: идёт переподключение. */
+  paired: false,
+  /** Номер, под который инстанс запущен в режиме кода (connect?number= у закрытого инстанса или create с number). */
+  pairingNumber: null as string | null,
+  pairSeq: 0,
+  pairingCalls: 0,
+  /** Сколько первых запросов connect не получают кода (Evolution выдаёт его на событие QR чуть позже). */
+  pairLate: 0,
   /** Картинка QR в ответах create и connect (по умолчанию PNG 1x1; для снимков экрана подставляют рисунок побольше). */
   qrBase64: PNG_B64,
   members: new Map<string, number>(),
@@ -119,17 +129,45 @@ export const evo = {
           case "GET /instance/connectionState":
             if (this.state === "absent") return send(404, { status: 404, error: "Not Found", response: { message: ['The "workshop" instance does not exist'] } });
             return send(200, { instance: { instanceName: "workshop", state: this.state } });
-          case "GET /instance/fetchInstances":
-            return send(200, [{ name: "workshop", ownerJid: this.state === "open" ? OWNER_JID : null, profileName: this.state === "open" ? "Тест" : null, token: INSTANCE_TOKEN, connectionStatus: this.state }]);
+          case "GET /instance/fetchInstances": {
+            // Инстанса нет: Evolution отвечает 404, как для неизвестного имени.
+            if (this.state === "absent") return send(404, { status: 404, error: "Not Found", response: { message: ['Instance "workshop" not found'] } });
+            const own = this.state === "open" || this.paired;
+            return send(200, [{
+              id: "inst-1", name: "workshop", ownerJid: own ? OWNER_JID : null, profileName: own ? "Тест" : null, token: INSTANCE_TOKEN, connectionStatus: this.state,
+              number: this.pairingNumber ?? (own ? OWNER_JID.replace(/@.*/, "") : null),
+              disconnectionReasonCode: this.disconnect?.code ?? null, disconnectionObject: this.disconnect?.object ?? null, disconnectionAt: this.disconnect?.at ?? null,
+            }]);
+          }
           case "POST /instance/create":
             this.state = "connecting";
             this.qrCount = 1;
+            this.disconnect = null;
+            if (body?.number) {
+              this.pairingNumber = String(body.number);
+              this.pairingCalls = 1;
+              return send(201, { instance: { instanceName: "workshop" }, hash: INSTANCE_TOKEN, qrcode: { base64: `data:image/png;base64,${this.qrBase64}`, code: "2@abc", count: 1, pairingCode: this.pairCode() } });
+            }
             return send(201, { instance: { instanceName: "workshop" }, hash: INSTANCE_TOKEN, qrcode: { base64: `data:image/png;base64,${this.qrBase64}`, code: "2@abc", count: 1 } });
-          case "GET /instance/connect":
+          case "GET /instance/connect": {
             if (this.state === "open") return send(200, { instance: { instanceName: "workshop", state: "open" } });
+            // Как в Evolution 2.3.7: number учитывается только у закрытого инстанса; у connecting отдаётся прежний QR (код только если инстанс запущен под номер).
+            const number = call.query.get("number");
+            if (number && this.state === "close") {
+              this.state = "connecting";
+              this.pairingNumber = number;
+              this.pairingCalls = 0;
+              this.disconnect = null;
+            }
+            if (this.pairingNumber && this.state === "connecting") {
+              const code = ++this.pairingCalls > this.pairLate ? this.pairCode() : null;
+              return send(200, { pairingCode: code, code: "2@abc", count: 1 });
+            }
             return send(200, { base64: `data:image/png;base64,${this.qrBase64}`, code: "2@abc", count: ++this.qrCount });
+          }
           case "DELETE /instance/logout":
             this.logouts++;
+            this.pairingNumber = null;
             this.state = "close";
             return send(200, { status: "SUCCESS", error: false, response: { message: "Instance logged out" } });
           case "GET /group/fetchAllGroups": {
@@ -190,8 +228,28 @@ export const evo = {
   async stop() {
     await new Promise<void>((r) => this.server!.close(() => r()));
   },
+  /** Код подключения по номеру: восемь знаков, у каждого запроса свой (PC, счётчик, последние четыре цифры номера). */
+  pairCode() {
+    return `PC${String(++this.pairSeq).padStart(2, "0")}${String(this.pairingNumber).slice(-4)}`;
+  },
+  /** Evolution закрыл соединение с причиной (так он записывает lastDisconnect в таблицу Instance): состояние close. */
+  disconnectWith(code: number | null, message = "Connection Failure", at = "2026-10-08T09:30:00.000Z") {
+    this.state = "close";
+    this.pairingNumber = null;
+    this.disconnect = {
+      code,
+      object: JSON.stringify({ error: { data: null, isBoom: true, isServer: false, output: { statusCode: code, payload: { statusCode: code, error: "Unauthorized", message }, headers: {} } }, date: at }),
+      at,
+    };
+  },
   reset() {
     this.calls = [];
+    this.disconnect = null;
+    this.paired = false;
+    this.pairingNumber = null;
+    this.pairSeq = 0;
+    this.pairingCalls = 0;
+    this.pairLate = 0;
     this.state = "open";
     this.fail = null;
     this.qrCount = 0;
@@ -202,9 +260,11 @@ export const evo = {
     this.rejectCode = "404";
     this.allGroups = defaultGroups();
   },
-  /** Человек отсканировал QR на телефоне: подключение стало open. */
+  /** Человек отсканировал QR или ввёл код на телефоне: подключение стало open. */
   scan() {
     this.state = "open";
+    this.pairingNumber = null;
+    this.disconnect = null;
   },
   /** Вызовы по префиксу пути. */
   of(prefix: string) {

@@ -193,6 +193,22 @@ details.ser .tm{flex:none;font-weight:800;font-variant-numeric:tabular-nums}
 details.ser .tp{min-width:0;overflow-wrap:anywhere}
 .serbody{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
 .card > .note{margin-top:10px}
+/* WhatsApp: блок «Статус» и подключение по номеру */
+.wst{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;border:1px solid var(--gold);background:var(--gold-soft)}
+.wst .dot{flex:none;width:14px;height:14px;margin-top:5px;border-radius:50%;background:var(--gold)}
+.wst > div{min-width:0}
+.wst-t{font-size:20px;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.wst-d{margin-top:4px;font-size:14px;line-height:1.4;color:var(--hint);overflow-wrap:anywhere}
+.wst.ok{border-color:var(--good);background:rgba(47,125,79,.12)}
+.wst.ok .dot{background:var(--good)}
+.wst.bad{border-color:var(--bad);background:var(--warn-bg)}
+.wst.bad .dot{background:var(--bad)}
+.wst.bad .wst-t{color:var(--bad)}
+.card .wkv{margin-top:12px}
+.pairbox{margin-top:12px;padding:14px 10px;border-radius:14px;border:1px solid var(--gold);background:var(--gold-soft);text-align:center}
+.paircode{font-size:clamp(26px,9vw,36px);font-weight:800;letter-spacing:.1em;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;user-select:all}
+.pairbox .hint{margin-top:6px}
+.howto{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
 .row > .kv{margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 @media (max-height:700px){.login{padding:14px 20px;gap:8px}.login .logo{height:30px;margin-bottom:0}.login h1{font-size:22px}.pinform{gap:8px}.keypad{gap:8px}}
@@ -837,12 +853,14 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
 
   // ───────── WhatsApp: пульт сообществ ─────────
   // Вкладка не знает ключей Evolution: всё идёт через form-api (/admin/wa/*), с теми же initData и токеном сессии.
-  var wa = { s: null, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, form: null, dirty: false, timers: {} };
+  var wa = { s: null, st: null, stBusy: false, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, pairNum: '', pair: null, pairNote: '', pairBad: false, pairBusy: false, form: null, dirty: false, timers: {} };
   var waSeq = 0, noticeTimer = 0;
 
   function waStop() {
     Object.keys(wa.timers).forEach(function (k) { clearInterval(wa.timers[k]); });
     wa.timers = {}; wa.qr = null; wa.conf = null;
+    // Номер телефона для кода живёт только пока открыта вкладка: уходим со вкладки, поле снова пустое.
+    wa.pair = null; wa.pairNum = ''; wa.pairNote = ''; wa.pairBad = false; wa.pairBusy = false; wa.st = null; wa.stBusy = false;
   }
   function waNotice(text, bad) {
     wa.notice = text ? { text: text, bad: !!bad } : null;
@@ -857,11 +875,14 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
   function waOpen() {
     if (wa.s) waDraw(); else loading();
     waRefresh();
-    // Подключение в состоянии берётся из последнего тика (на паузе он не идёт): при открытии вкладки проверяем его заново.
-    api('wa/connection').catch(function () { /* состояние покажет «Evolution не отвечает» */ }).then(function () { if (ui.tab === 'wa') waRefresh(true); });
+    // Статус берётся у Evolution заново при открытии вкладки и потом раз в 15 секунд, пока вкладка открыта и видна.
+    waStatusRefresh(true);
     if (!wa.timers.state) wa.timers.state = setInterval(function () {
       if (ui.tab === 'wa' && document.visibilityState !== 'hidden' && !wa.busy) waRefresh(true);
     }, 20000);
+    if (!wa.timers.status) wa.timers.status = setInterval(function () {
+      if (ui.tab === 'wa' && document.visibilityState !== 'hidden' && !wa.busy) waStatusRefresh(true);
+    }, 15000);
   }
   function waRefresh(quiet) {
     var my = ++waSeq;
@@ -893,8 +914,11 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     if (wa.busy) v.appendChild(h('div', { class: 'note', role: 'status', text: wa.busy }));
     if (!s.enabled) { v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'WhatsApp' }), h('div', { class: 'note warn', text: 'Модуль WhatsApp выключен на сервере: нет WA_GROUPS=on. Пульт заработает после включения.' }))); return; }
     if (!s.running) { v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'WhatsApp' }), h('div', { class: 'note warn', text: 'Модуль не запущен: ' + (s.error || 'причина неизвестна') + '.' }))); return; }
-    v.appendChild(waHead(s));
+    var st = waStatusOf(s);
+    v.appendChild(waStatusCard(st));
     if (wa.qr) v.appendChild(waQrCard());
+    if (st && st.state !== 'open' && st.kind !== 'unreachable') v.appendChild(waPairCard());
+    v.appendChild(waModuleCard(s));
     v.appendChild(waModeCard(s));
     v.appendChild(waLinkCard(s));
     waCommunityCards(s).forEach(function (c) { v.appendChild(c); });
@@ -942,55 +966,105 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     }).catch(function (err) {
       if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); wa.busy = ''; fail(err); return; }
       waNotice(err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Не получилось: нет связи с сервером. Проверьте состояние позже.', true);
-    }).then(function () { wa.busy = ''; if (ui.tab === 'wa') { waDraw(); waRefresh(true); } });
+    }).then(function () { wa.busy = ''; if (ui.tab === 'wa') { waDraw(); waRefresh(true); waStatusRefresh(true); } });
   }
 
-  // ── шапка: подключение, пауза ──
-  function waHead(s) {
-    var m = s.module, c = s.conn, open = c.state === 'open';
-    var stateText = open ? 'подключён' : c.state === 'connecting' ? 'ждёт сканирования QR' : c.state === 'absent' ? 'не настроен' : c.state === 'unknown' ? 'ещё не проверяли' : c.state === 'unreachable' ? 'Evolution не отвечает' : 'отключён';
-    var card = h('div', { class: 'card' }, h('h2', { text: 'WhatsApp' }),
+  // ── статус WhatsApp ──
+  // Статус берёт сервер у Evolution: подключён, ждёт подключения, отключён с причиной, номер заблокирован,
+  // вышел из устройства (logout), Evolution не отвечает. Вкладка сама спрашивает его раз в 15 секунд.
+  function waStatusOf(s) {
+    var a = wa.st, b = s.status;
+    return a && (!b || a.at >= b.at) ? a : b;
+  }
+  function waStatusRefresh(quiet) {
+    if (wa.stBusy) return;
+    wa.stBusy = true;
+    if (!quiet) { spin(true); waDraw(); }
+    api('wa/status').then(function (r) {
+      wa.stBusy = false; if (!quiet) spin(false);
+      if (ui.tab !== 'wa') return;
+      wa.st = r;
+      if (r.state === 'open' && (wa.qr || wa.pair)) { waConnected(); return; }
+      waDraw();
+    }).catch(function (err) {
+      wa.stBusy = false; if (!quiet) spin(false);
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      if (ui.tab === 'wa' && !quiet) { waNotice(err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером. Попробуйте ещё раз.', true); waDraw(); }
+    });
+  }
+  function waStatusCard(st) {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Статус WhatsApp' }));
+    if (!st) { card.appendChild(h('div', { class: 'note', role: 'status', text: 'Проверяю подключение…' })); return card; }
+    var open = st.state === 'open';
+    card.appendChild(h('div', { class: 'wst ' + st.tone, role: 'status', 'aria-live': 'polite' },
+      h('i', { class: 'dot', 'aria-hidden': 'true' }),
+      h('div', null, h('div', { class: 'wst-t', text: st.title }), h('div', { class: 'wst-d', text: st.detail }))));
+    card.appendChild(h('div', { class: 'kv wkv' },
+      open && st.number ? kv('Номер', st.number) : null,
+      open && st.profile ? kv('Профиль', st.profile) : null,
+      open && st.since ? kv('Подключён с', st.since) : null,
+      kv('Проверено', st.checked + ', дальше само раз в 15 секунд')));
+    var acts = h('div', { class: 'actions' }, btn(wa.stBusy ? 'Проверяю…' : 'Проверить сейчас', function () { waStatusRefresh(false); }, 'ghost', wa.stBusy));
+    // Подключён: кнопки подключения спрятаны, вместо них «Отключить номер».
+    if (open) acts.appendChild(btn('Отключить номер', ask('logout'), 'ghost'));
+    else if (st.kind !== 'unreachable') acts.appendChild(btn(wa.qr ? 'Скрыть QR' : 'Подключить по QR', function () { wa.qr ? waQrStop() : waQrStart(); waDraw(); }));
+    card.appendChild(acts);
+    if (open && wa.conf === 'logout') card.appendChild(confirmBox('Отключить номер? Рассылка и создание сообществ остановятся. Чтобы подключить снова, понадобится QR или код с телефона.', 'Да, отключить', function () { waAct('logout', { confirm: true }, 'Отключаю номер…'); }, true));
+    return card;
+  }
+
+  // ── модуль: пауза, счётчики ──
+  function waModuleCard(s) {
+    var m = s.module;
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Модуль сообществ' }),
       h('div', { class: 'kv' },
-        h('div', null, h('span', { text: 'Модуль' }), h('span', { class: 'badge ' + (m.paused ? 'no' : 'ok'), text: m.paused ? 'на паузе' : 'работает' })),
-        h('div', null, h('span', { text: 'Подключение' }), h('span', { class: 'badge ' + (open ? 'ok' : 'no'), text: stateText })),
-        open && c.number ? kv('Номер', c.number + (c.profile ? ' · ' + c.profile : '')) : null,
-        c.ago ? kv('Статус проверен', c.ago) : null,
+        h('div', null, h('span', { text: 'Состояние' }), h('span', { class: 'badge ' + (m.paused ? 'no' : 'ok'), text: m.paused ? 'на паузе' : 'работает' })),
         kv('Новых сообществ за сутки', m.creationsToday + ' из ' + m.creationsMax),
         kv('Ошибок подряд', m.failStreak + ' из ' + m.failMax)));
     if (m.paused) card.appendChild(h('div', { class: 'note warn', text: 'Пауза: ' + (m.pausedReason || 'причина не записана') + '. Рассылка, создание и одобрение заявок остановлены.' }));
     if (m.pendingCreate) card.appendChild(h('div', { class: 'note warn', text: 'Прошлое создание сообщества не подтверждено. Проверь список чатов на телефоне, потом нажми «Продолжить».' }));
-    var acts = h('div', { class: 'actions' },
-      m.paused ? btn('Продолжить', function () { waAct('resume', {}, 'Снимаю паузу…'); }) : btn('Пауза', function () { waAct('pause', {}, 'Ставлю на паузу…'); }, 'ghost'),
-      open ? btn('Отключить номер', ask('logout'), 'ghost') : btn(wa.qr ? 'Скрыть QR' : 'Подключить номер', function () { wa.qr ? waQrStop() : waQrStart(); waDraw(); }));
-    card.appendChild(acts);
-    if (wa.conf === 'logout') card.appendChild(confirmBox('Отключить номер? Рассылка и создание сообществ остановятся. Чтобы подключить снова, понадобится QR с телефона.', 'Да, отключить', function () { waAct('logout', { confirm: true }, 'Отключаю номер…'); }, true));
+    card.appendChild(h('div', { class: 'actions' },
+      m.paused ? btn('Продолжить', function () { waAct('resume', {}, 'Снимаю паузу…'); }) : btn('Пауза', function () { waAct('pause', {}, 'Ставлю на паузу…'); }, 'ghost')));
     return card;
+  }
+
+  // Подключились (по QR или по коду): гасим QR, код и частую проверку.
+  function waConnected() {
+    waQrStop(); waPairStop();
+    waNotice('Номер подключён.', false);
+    toast('Номер подключён');
+    waDraw();
+    waRefresh(true);
+    waStatusRefresh(true);
+  }
+  // Быстрая проверка, не подключился ли номер: раз в 3,5 секунды, пока на экране QR или код.
+  function waWatch() { if (!wa.timers.conn) wa.timers.conn = setInterval(waConnWatch, 3500); }
+  function waWatchStop() { if (!wa.qr && !wa.pair && wa.timers.conn) { clearInterval(wa.timers.conn); delete wa.timers.conn; } }
+  function waConnWatch() {
+    if ((!wa.qr && !wa.pair) || wa.qrBusy || document.visibilityState === 'hidden') return;
+    api('wa/connection').then(function (r) { if ((wa.qr || wa.pair) && r.state === 'open') waConnected(); }).catch(function () { /* следующая проверка через несколько секунд */ });
   }
 
   // ── QR ──
   function waQrStart() {
     wa.qr = { img: '', note: 'Готовлю QR…', state: '' };
+    waPairStop();
     waQrFetch();
     wa.timers.qr = setInterval(waQrFetch, 17000);
-    wa.timers.conn = setInterval(waQrWatch, 3500);
+    waWatch();
   }
   function waQrStop() {
-    clearInterval(wa.timers.qr); clearInterval(wa.timers.conn);
-    delete wa.timers.qr; delete wa.timers.conn;
+    clearInterval(wa.timers.qr);
+    delete wa.timers.qr;
     wa.qr = null;
-  }
-  function waQrDone(r) {
-    waQrStop();
-    waNotice('Номер подключён: ' + (r.number || '') + (r.profile ? ' · ' + r.profile : '') + '.', false);
-    toast('Номер подключён');
-    waRefresh(true);
+    waWatchStop();
   }
   function waQrFetch() {
     if (!wa.qr || wa.qrBusy) return;
     wa.qrBusy = true;
     api('wa/qr', null, { method: 'POST', body: '{}' }).then(function (r) {
       if (!wa.qr) return;
-      if (r.state === 'open') { waQrDone(r); return; }
+      if (r.state === 'open') { waConnected(); return; }
       wa.qr.state = r.state;
       if (r.qr && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(r.qr)) { wa.qr.img = r.qr; wa.qr.note = ''; wa.qr.at = Date.now(); }
       else wa.qr.note = r.message || 'QR пока не готов, он появится через несколько секунд.';
@@ -1000,22 +1074,69 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
       if (wa.qr) { wa.qr.note = err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером.'; waDraw(); }
     }).then(function () { wa.qrBusy = false; });
   }
-  // Быстрая проверка, не отсканировали ли QR: раз в 3,5 секунды, пока окно открыто.
-  function waQrWatch() {
-    if (!wa.qr || wa.qrBusy || document.visibilityState === 'hidden') return;
-    api('wa/connection').then(function (r) { if (wa.qr && r.state === 'open') waQrDone(r); }).catch(function () { /* следующая проверка через несколько секунд */ });
-  }
   function waQrCard() {
     var q = wa.qr;
     var box = h('div', { class: 'qrbox' });
     if (q.img) box.appendChild(h('img', { src: q.img, alt: 'QR для подключения WhatsApp', width: '260', height: '260' }));
     else box.appendChild(h('div', { class: 'qrwait', text: q.note || 'Готовлю QR…' }));
-    return h('div', { class: 'card' }, h('h2', { text: 'Подключение номера' }), box,
+    return h('div', { class: 'card' }, h('h2', { text: 'Подключение по QR' }), box,
       h('ol', { class: 'steps' },
         h('li', { text: 'Открой WhatsApp на телефоне с отдельной SIM.' }),
         h('li', { text: 'Настройки, Связанные устройства, Привязать устройство.' }),
         h('li', { text: 'Наведи камеру на QR выше.' })),
       h('div', { class: 'hint', text: 'QR обновляется сам каждые 15 секунд, пока номер не подключится. Не пересылай его никому.' + (q.img && q.note ? ' ' + q.note : '') }));
+  }
+
+  // ── подключение по номеру телефона ──
+  // Номер уходит на сервер только в теле запроса (не в адресе), на экране после ответа показан закрытым (7708***4575).
+  function waPairStop() {
+    clearInterval(wa.timers.pairTick);
+    delete wa.timers.pairTick;
+    wa.pair = null; wa.pairNote = ''; wa.pairBad = false;
+    waWatchStop();
+  }
+  function pairLeft() {
+    var left = Math.max(0, wa.pair.ttl - Math.floor((Date.now() - wa.pair.at) / 1000));
+    return left > 0 ? 'Код действует ещё около ' + left + ' с.' : 'Код устарел. Нажми «Новый код».';
+  }
+  function waPairGet() {
+    if (wa.pairBusy || wa.busy) return;
+    var digits = wa.pairNum.replace(/\D/g, '');
+    if (digits.length < 11 || digits.length > 15) { wa.pairNote = 'Номер: только цифры, от 11 до 15, с кодом страны.'; wa.pairBad = true; waDraw(); return; }
+    wa.pairBusy = true; wa.pairNote = 'Запрашиваю код…'; wa.pairBad = false; waDraw();
+    api('wa/pairing', null, { method: 'POST', body: JSON.stringify({ number: digits }) }).then(function (r) {
+      if (ui.tab !== 'wa') return;
+      if (r.state === 'open') { waConnected(); return; }
+      waQrStop();
+      wa.pair = { code: String(r.pairingCode || ''), mask: r.number || '', at: Date.now(), ttl: r.ttlSec || 60 };
+      wa.pairNote = r.message || '';
+      clearInterval(wa.timers.pairTick);
+      wa.timers.pairTick = setInterval(function () { var el = $('pair-left'); if (el && wa.pair) el.textContent = pairLeft(); }, 1000);
+      waWatch();
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      wa.pairNote = err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером. Попробуйте ещё раз.';
+      wa.pairBad = true;
+    }).then(function () { wa.pairBusy = false; if (ui.tab === 'wa') waDraw(); });
+  }
+  function waPairCard() {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Подключить по номеру телефона' }),
+      h('div', { class: 'hint', text: 'Вместо QR. Введи номер WhatsApp, который подключаешь, с кодом страны и только цифрами. Придёт код из 8 знаков: его вводят на телефоне с этим номером.' }));
+    var inp = h('input', { class: 'inp', type: 'tel', inputmode: 'numeric', autocomplete: 'off', maxlength: '15', placeholder: 'Только цифры, с кодом страны', 'aria-label': 'Номер телефона для подключения: только цифры, с кодом страны', value: wa.pairNum, disabled: wa.pairBusy,
+      oninput: function () { var v = inp.value.replace(/\D/g, '').slice(0, 15); if (v !== inp.value) inp.value = v; wa.pairNum = v; },
+      onkeydown: function (e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); waPairGet(); } } });
+    card.appendChild(h('label', { class: 'field' }, h('span', { text: 'Номер телефона' }), inp));
+    card.appendChild(h('div', { class: 'actions' }, btn(wa.pair ? 'Новый код' : 'Получить код', waPairGet, '', wa.pairBusy)));
+    if (wa.pairNote) card.appendChild(h('div', { class: 'note' + (wa.pairBad ? ' warn' : ''), role: 'status', text: wa.pairNote }));
+    if (wa.pair && wa.pair.code) {
+      var c = wa.pair.code;
+      card.appendChild(h('div', { class: 'pairbox' },
+        h('div', { class: 'paircode', 'aria-label': 'Код: ' + c.split('').join(' '), text: c.replace(/(.{4})(?=.)/g, '$1-') }),
+        h('div', { class: 'hint', id: 'pair-left', text: pairLeft() }),
+        wa.pair.mask ? h('div', { class: 'hint', text: 'Номер: ' + wa.pair.mask }) : null));
+      card.appendChild(h('div', { class: 'howto', text: 'WhatsApp на телефоне → Настройки → Связанные устройства → Привязать устройство → Привязать по номеру телефона → ввести код' }));
+    }
+    return card;
   }
 
   // ── режим ──
