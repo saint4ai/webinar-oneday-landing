@@ -761,6 +761,16 @@ async function plain(chatId: number, text: string, markup?: InlineButton[][]): P
   );
 }
 
+/** Картинка из памяти (QR WhatsApp) владельцу: multipart через общий ограничитель. Файл нигде не сохраняется. */
+async function sendPhotoBytes(chatId: number, data: Buffer, caption?: string): Promise<SendResult> {
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  if (caption) form.append("caption", caption);
+  form.append("photo", new Blob([new Uint8Array(data)], { type: "image/png" }), "qr.png");
+  await acquireSlot("hi");
+  return toSend(await botCall("sendPhoto", form, 30_000));
+}
+
 /** Сообщение всем владельцам (предупреждения, отчёты). Возвращает, скольким дошло. */
 export async function notifyOwners(text: string): Promise<number> {
   let delivered = 0;
@@ -864,7 +874,23 @@ type TgCallback = { id: string; from: TgUser; message?: { message_id?: number; c
 type TgMemberUpdate = { chat: TgChat; from?: TgUser; new_chat_member?: { status?: string } };
 export type TgUpdate = { update_id?: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate };
 
-const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send"]);
+
+// ───────────────────────── WhatsApp-модуль (wa-groups) ─────────────────────────
+
+/** Ответ команды /wa*: текст и, для /wa_qr, картинка с QR. */
+export type WaReply = { text: string; photo?: { data: Buffer; caption?: string } };
+type WaHook = (cmd: string, args: string, now: number) => Promise<WaReply>;
+let waHook: WaHook | null = null;
+let waReport: ((day: string) => string) | null = null;
+/** Модуль WhatsApp регистрирует сюда команды: так tg-workshop не импортирует его по кругу. null снимает. */
+export function registerWa(h: WaHook | null) {
+  waHook = h;
+}
+/** Строка про WhatsApp для итогового отчёта эфира владельцам. */
+export function registerWaReport(h: ((day: string) => string) | null) {
+  waReport = h;
+}
 
 /** Справка владельцу (/help). У остальных /help идёт как обычный текст: им отвечает welcome.other. */
 export const HELP_TEXT = [
@@ -880,6 +906,11 @@ export const HELP_TEXT = [
   "/paid <chat_id или @username>: отметить оплату",
   "/reload: перечитать tg-series.json",
   "/series_on, /series_off: включить или выключить серию",
+  "/wa: состояние WhatsApp (подключение, сообщества эфира, участники, ближайшее сообщение)",
+  "/wa_qr: QR для подключения номера WhatsApp, не чаще раза в минуту",
+  "/wa_pause, /wa_resume: пауза и возобновление WhatsApp-рассылки",
+  "/wa_new [дата]: создать сообщество ближайшего эфира сейчас",
+  "/wa_send <id>: отправить сообщение серии в сообщества сегодняшнего эфира",
   "",
   "Метка источника: добавь ?start=2gis к ссылке на бота (t.me/workshop_aiprod_bot?start=2gis), в отчётах она покажется как источник.",
 ].join("\n");
@@ -1203,7 +1234,14 @@ export function buildStatsText(st: TgStore, sr: Series, now: number): string {
 /** Итоговый отчёт по эфиру дня D для владельцев. */
 export function dayReportText(st: TgStore, day: string): string {
   const m = st.dayMetrics(day);
-  return `Эфир ${dateLabel(day)}: записались в бота ${m.registered}, перешли по кнопке ${m.clicked} (${pct(m.clicked, m.registered)}%), со «Спасибо» нажали Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+  const base = `Эфир ${dateLabel(day)}: записались в бота ${m.registered}, перешли по кнопке ${m.clicked} (${pct(m.clicked, m.registered)}%), со «Спасибо» нажали Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+  let wa = "";
+  try {
+    wa = waReport ? waReport(day) : "";
+  } catch {
+    wa = "";
+  }
+  return wa ? `${base}\n${wa}` : base;
 }
 
 /** Итоговое расписание на сегодня (sr уже с правками): время, id, аудитория, отправлено из скольких. */
@@ -1375,6 +1413,29 @@ async function ownerCommand(cmd: string, args: string, m: TgMessage, now: number
       const ctx: RenderCtx = { series: sr(), now, chatId, firstName: m.from?.first_name, day: p.day };
       await sendContent({ media: p.msg.media, text: p.msg.text, buttons: p.msg.buttons, silent: p.msg.silent }, ctx);
       await plain(chatId, `Получателей: ${p.count}. Отправить «${id}» сейчас?`, [[{ text: "Отправить", callback_data: `fire:${id}` }]]);
+      return;
+    }
+    case "wa":
+    case "wa_qr":
+    case "wa_pause":
+    case "wa_resume":
+    case "wa_new":
+    case "wa_send": {
+      if (!waHook) {
+        await plain(chatId, "Модуль WhatsApp выключен: на сервере нет WA_GROUPS=on или он не запустился (см. /api/health).");
+        return;
+      }
+      let reply: WaReply;
+      try {
+        reply = await waHook(cmd, args, now);
+      } catch (e) {
+        reply = { text: `Ошибка команды: ${scrub(String((e as Error)?.message || e))}` };
+      }
+      if (reply.photo) {
+        const r = await sendPhotoBytes(chatId, reply.photo.data, reply.photo.caption);
+        if (!r.ok) reply = { text: `${reply.text}\n\nКартинку отправить не вышло: ${r.error}` };
+      }
+      await plain(chatId, reply.text);
       return;
     }
     case "preview":

@@ -1,0 +1,931 @@
+diff --git a/src/api/controllers/community.controller.ts b/src/api/controllers/community.controller.ts
+new file mode 100644
+index 0000000..45d0895
+--- /dev/null
++++ b/src/api/controllers/community.controller.ts
+@@ -0,0 +1,75 @@
++import {
++  CommunityInfoDto,
++  CommunityJid,
++  CommunityJoinApprovalModeDto,
++  CommunityMemberAddModeDto,
++  CommunityRequestsUpdateDto,
++  CommunityUpdateSettingDto,
++  CreateCommunityDto,
++} from '@api/dto/community.dto';
++import { InstanceDto } from '@api/dto/instance.dto';
++import { WAMonitoringService } from '@api/services/monitor.service';
++import { BadRequestException } from '@exceptions';
++
++// Сообщества WhatsApp (патч onAI, этап A2). Методы живут только в канале Baileys (WHATSAPP-BAILEYS).
++export class CommunityController {
++  constructor(private readonly waMonitor: WAMonitoringService) {}
++
++  private baileysInstance(instance: InstanceDto) {
++    const wa = this.waMonitor.waInstances[instance.instanceName];
++
++    if (!wa) {
++      throw new BadRequestException('Инстанс не загружен', `instance = ${instance.instanceName}`);
++    }
++
++    if (typeof wa.createCommunity !== 'function') {
++      throw new BadRequestException('Сообщества доступны только для интеграции WHATSAPP-BAILEYS');
++    }
++
++    const state = wa.connectionStatus?.state;
++    if (state !== 'open') {
++      throw new BadRequestException(
++        'Инстанс не подключён к WhatsApp',
++        `connectionStatus.state = ${state ?? 'unknown'}`,
++      );
++    }
++
++    return wa;
++  }
++
++  public async createCommunity(instance: InstanceDto, create: CreateCommunityDto) {
++    return await this.baileysInstance(instance).createCommunity(create);
++  }
++
++  public async communityInfo(instance: InstanceDto, data: CommunityInfoDto) {
++    return await this.baileysInstance(instance).communityInfo(data);
++  }
++
++  public async inviteCode(instance: InstanceDto, data: CommunityJid) {
++    return await this.baileysInstance(instance).communityInviteCode(data);
++  }
++
++  public async revokeInvite(instance: InstanceDto, data: CommunityJid) {
++    return await this.baileysInstance(instance).communityRevokeInvite(data);
++  }
++
++  public async updateSetting(instance: InstanceDto, data: CommunityUpdateSettingDto) {
++    return await this.baileysInstance(instance).communityUpdateSetting(data);
++  }
++
++  public async memberAddMode(instance: InstanceDto, data: CommunityMemberAddModeDto) {
++    return await this.baileysInstance(instance).communityMemberAddMode(data);
++  }
++
++  public async joinApprovalMode(instance: InstanceDto, data: CommunityJoinApprovalModeDto) {
++    return await this.baileysInstance(instance).communityJoinApprovalMode(data);
++  }
++
++  public async requests(instance: InstanceDto, data: CommunityJid) {
++    return await this.baileysInstance(instance).communityRequests(data);
++  }
++
++  public async requestsUpdate(instance: InstanceDto, data: CommunityRequestsUpdateDto) {
++    return await this.baileysInstance(instance).communityRequestsUpdate(data);
++  }
++}
+diff --git a/src/api/dto/community.dto.ts b/src/api/dto/community.dto.ts
+new file mode 100644
+index 0000000..5963418
+--- /dev/null
++++ b/src/api/dto/community.dto.ts
+@@ -0,0 +1,33 @@
++// DTO сообществ WhatsApp (патч onAI, этап A2). Маршруты: src/api/routes/community.router.ts.
++export class CommunityJid {
++  communityJid: string;
++}
++
++export class CreateCommunityDto {
++  subject: string;
++  description?: string;
++  approvalRequired?: boolean;
++}
++
++export class CommunityInfoDto extends CommunityJid {
++  /** 'true' добавляет в ответ список участников сообщества (по умолчанию не отдаётся). */
++  participants?: string;
++}
++
++export class CommunityUpdateSettingDto extends CommunityJid {
++  action: 'announcement' | 'not_announcement' | 'locked' | 'unlocked';
++}
++
++export class CommunityMemberAddModeDto extends CommunityJid {
++  mode: 'admin_add' | 'all_member_add';
++}
++
++export class CommunityJoinApprovalModeDto extends CommunityJid {
++  mode: 'on' | 'off';
++}
++
++export class CommunityRequestsUpdateDto extends CommunityJid {
++  /** JID из списка заявок (как пришли) или голые номера. */
++  participants: string[];
++  action: 'approve' | 'reject';
++}
+diff --git a/src/api/integrations/channel/whatsapp/community.helpers.ts b/src/api/integrations/channel/whatsapp/community.helpers.ts
+new file mode 100644
+index 0000000..2aea45a
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/community.helpers.ts
+@@ -0,0 +1,259 @@
++// Вспомогательные функции сообществ WhatsApp (патч onAI, этап A2).
++// Чистые функции над сокетом Baileys 7.0.0-rc.9: без импортов Evolution, чтобы их можно было проверить на подставном сокете.
++// Исходники Baileys, по которым написано: node_modules/baileys/lib/Socket/communities.js и groups.js.
++import { generateMessageID, getBinaryNodeChild, getBinaryNodeChildren, jidEncode } from 'baileys';
++
++/** Минимум от сокета, который нужен хелперам (query и groupMetadata есть в WASocket rc.9). */
++export interface CommunitySocketLike {
++  query: (node: any, timeoutMs?: number) => Promise<any>;
++  groupMetadata: (jid: string) => Promise<any>;
++}
++
++export interface CreateCommunityParams {
++  subject: string;
++  description?: string;
++  approvalRequired?: boolean;
++}
++
++export interface LinkedGroupInfo {
++  id: string | undefined;
++  subject: string;
++  creation: number | undefined;
++  owner: string | undefined;
++  size: number | undefined;
++  /** В ответе WhatsApp у группы есть признак вкладки объявлений (default_sub_group). */
++  isAnnouncement: boolean;
++  /** Исходные атрибуты узла group из ответа sub_groups, чтобы на живом номере увидеть всё как есть. */
++  attrs: Record<string, string>;
++  /** Имена дочерних узлов group (для диагностики). */
++  tags: string[];
++}
++
++export type AnnouncementSource =
++  | 'sub_groups.default_sub_group'
++  | 'single_linked_group'
++  | 'group_metadata.isCommunityAnnounce';
++
++export interface AnnouncementLookup {
++  announcementJid: string | null;
++  source: AnnouncementSource | null;
++  linkedGroups: LinkedGroupInfo[];
++}
++
++/** Ошибка с готовым текстом для пользователя: describeWaError отдаёт её сообщение как есть. */
++export class CommunityUserError extends Error {}
++
++const G_US = 'g.us';
++
++/** Теги признака вкладки объявлений: в groups.js rc.9 это default_sub_group, в communities.js rc.9 default_sub_community. */
++const ANNOUNCE_TAGS = ['default_sub_group', 'default_sub_community'];
++
++/** Сколько подгрупп максимум проверять через groupMetadata, если признак в ответе не пришёл. */
++const METADATA_SCAN_LIMIT = 20;
++
++const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
++
++/** '1203630000000000@g.us' остаётся как есть, '1203630000000000' получает суффикс. */
++export function toGroupJid(value: string): string {
++  const v = String(value ?? '').trim();
++  return v.includes('@') ? v : jidEncode(v, G_US);
++}
++
++/**
++ * Создание сообщества своим IQ-запросом. За основу взят communityCreate из rc.9, но без двух тегов:
++ * allow_non_admin_sub_group_creation (подгруппы от участников) и create_general_chat (общий чат).
++ * Тег parent с default_membership_approval_mode добавляется только при approvalRequired.
++ * Описание отправляется, только если оно не пустое.
++ * Возвращает JID сообщества.
++ */
++export async function createCommunityRaw(client: CommunitySocketLike, params: CreateCommunityParams): Promise<string> {
++  const content: any[] = [];
++
++  const description = (params.description ?? '').trim();
++  if (description) {
++    content.push({
++      tag: 'description',
++      attrs: { id: generateMessageID().substring(0, 12) },
++      content: [{ tag: 'body', attrs: {}, content: Buffer.from(description, 'utf-8') }],
++    });
++  }
++
++  content.push({
++    tag: 'parent',
++    attrs: params.approvalRequired ? { default_membership_approval_mode: 'request_required' } : {},
++  });
++
++  const result = await client.query({
++    tag: 'iq',
++    attrs: { type: 'set', xmlns: 'w:g2', to: '@g.us' },
++    content: [{ tag: 'create', attrs: { subject: params.subject }, content }],
++  });
++
++  const groupNode = getBinaryNodeChild(result, 'group');
++  const id = groupNode?.attrs?.id;
++  if (!id) {
++    throw new CommunityUserError('WhatsApp не вернул JID созданного сообщества');
++  }
++
++  return toGroupJid(id);
++}
++
++/**
++ * Привязанные группы сообщества. Тот же запрос sub_groups, что в communityFetchLinkedGroups из rc.9,
++ * но с разбором дочерних узлов: так видно, какая группа помечена как вкладка объявлений.
++ */
++export async function fetchLinkedGroups(client: CommunitySocketLike, communityJid: string): Promise<LinkedGroupInfo[]> {
++  const result = await client.query({
++    tag: 'iq',
++    attrs: { type: 'get', xmlns: 'w:g2', to: communityJid },
++    content: [{ tag: 'sub_groups', attrs: {} }],
++  });
++
++  const subGroupsNode = getBinaryNodeChild(result, 'sub_groups');
++  const groups = getBinaryNodeChildren(subGroupsNode, 'group');
++
++  return groups.map((node) => {
++    const attrs = (node.attrs || {}) as Record<string, string>;
++    const tags = Array.isArray(node.content) ? node.content.map((child: any) => String(child?.tag)) : [];
++    const size = attrs.size !== undefined && attrs.size !== '' ? Number(attrs.size) : undefined;
++    const creation = attrs.creation ? Number(attrs.creation) : undefined;
++
++    return {
++      id: attrs.id ? toGroupJid(attrs.id) : undefined,
++      subject: attrs.subject || '',
++      creation: Number.isFinite(creation) ? creation : undefined,
++      owner: attrs.creator || undefined,
++      size: Number.isFinite(size) ? size : undefined,
++      isAnnouncement: tags.some((tag) => ANNOUNCE_TAGS.includes(tag)),
++      attrs,
++      tags,
++    };
++  });
++}
++
++/**
++ * Один проход поиска вкладки объявлений. Порядок проверок:
++ * 1. признак default_sub_group в ответе sub_groups;
++ * 2. единственная привязанная группа (у только что созданного сообщества без общего чата она одна, это и есть вкладка объявлений);
++ * 3. метаданные каждой подгруппы, признак isCommunityAnnounce (groupMetadata rc.9 читает default_sub_group).
++ */
++export async function detectAnnouncement(
++  client: CommunitySocketLike,
++  communityJid: string,
++): Promise<AnnouncementLookup> {
++  const linkedGroups = await fetchLinkedGroups(client, communityJid);
++
++  const flagged = linkedGroups.find((group) => group.isAnnouncement && group.id);
++  if (flagged) {
++    return { announcementJid: flagged.id!, source: 'sub_groups.default_sub_group', linkedGroups };
++  }
++
++  const candidates = linkedGroups.filter((group) => group.id);
++  if (candidates.length === 1) {
++    return { announcementJid: candidates[0].id!, source: 'single_linked_group', linkedGroups };
++  }
++
++  for (const group of candidates.slice(0, METADATA_SCAN_LIMIT)) {
++    try {
++      const meta = await client.groupMetadata(group.id!);
++      if (meta?.isCommunityAnnounce) {
++        return { announcementJid: group.id!, source: 'group_metadata.isCommunityAnnounce', linkedGroups };
++      }
++    } catch {
++      // Подгруппа могла не ответить, идём дальше по списку.
++    }
++  }
++
++  return { announcementJid: null, source: null, linkedGroups };
++}
++
++/** Поиск вкладки объявлений с повторами: сразу после создания WhatsApp может отдать пустой список. */
++export async function waitForAnnouncement(
++  client: CommunitySocketLike,
++  communityJid: string,
++  options: { attempts?: number; delayMs?: number } = {},
++): Promise<AnnouncementLookup> {
++  const attempts = Math.max(1, options.attempts ?? 4);
++  const delayMs = options.delayMs ?? 1500;
++
++  let last: AnnouncementLookup = { announcementJid: null, source: null, linkedGroups: [] };
++  let lastError: unknown;
++
++  for (let i = 0; i < attempts; i++) {
++    if (i > 0) await sleep(delayMs);
++    try {
++      last = await detectAnnouncement(client, communityJid);
++      lastError = undefined;
++      if (last.announcementJid) return last;
++    } catch (error) {
++      lastError = error;
++    }
++  }
++
++  // Все попытки закончились ошибкой: отдаём её наверх, пусть вызывающий решит, что с этим делать.
++  if (lastError) throw lastError;
++  return last;
++}
++
++/** Участники заявок: строки с @ идут как есть (jid из списка заявок), голые номера превращаются в JID через переданную функцию. */
++export function normalizeRequestParticipants(participants: string[], toJid: (value: string) => string): string[] {
++  return participants.map((participant) => {
++    const value = String(participant).trim();
++    return value.includes('@') ? value : toJid(value);
++  });
++}
++
++export interface WaErrorDescription {
++  /** Понятный текст причины по-русски. */
++  reason: string;
++  /** Исходная ошибка WhatsApp/Baileys: текст и код. */
++  raw: string;
++}
++
++/**
++ * Перевод ошибки WhatsApp в понятный текст. IQ-ошибка в Baileys это Boom(text, { data: code }),
++ * text берётся из атрибута text узла error (forbidden, not-authorized, item-not-found и так далее).
++ */
++export function describeWaError(error: any): WaErrorDescription {
++  if (error instanceof CommunityUserError) {
++    return { reason: error.message, raw: '' };
++  }
++
++  const message = String(error?.message ?? error ?? 'unknown error');
++  const lower = message.toLowerCase();
++  const codeFromData = Number(error?.data);
++  const code =
++    Number.isFinite(codeFromData) && codeFromData > 0 ? codeFromData : Number(error?.output?.statusCode) || 0;
++  const raw = code ? `${message} (код ${code})` : message;
++
++  let reason: string;
++
++  if (
++    lower.includes('connection closed') ||
++    lower.includes('connection terminated') ||
++    lower.includes('connection was lost') ||
++    lower.includes('cannot read properties of undefined') ||
++    lower.includes('cannot read properties of null')
++  ) {
++    reason = 'Нет активного подключения к WhatsApp: инстанс не подключён или соединение оборвалось';
++  } else if (lower.includes('timed out') || code === 408) {
++    reason =
++      'WhatsApp не ответил вовремя (таймаут). Если это было создание сообщества, проверьте список групп, прежде чем повторять';
++  } else if (lower.includes('not-authorized') || lower.includes('forbidden') || code === 401 || code === 403) {
++    reason = 'WhatsApp отказал: у подключённого номера нет прав на это действие (нужен админ сообщества)';
++  } else if (lower.includes('item-not-found') || lower === 'gone' || code === 404 || code === 410) {
++    reason = 'Сообщество или группа не найдены: неверный JID или номер уже не состоит в нём';
++  } else if (lower.includes('rate-overlimit') || code === 429) {
++    reason = 'WhatsApp ограничил частоту запросов, повторите позже';
++  } else if (lower.includes('resource-limit') || lower.includes('not-acceptable') || code === 406) {
++    reason = 'Достигнут лимит WhatsApp на это действие или значение недопустимо';
++  } else if (lower.includes('conflict') || code === 409) {
++    reason = 'Конфликт состояния: такое значение уже установлено или не подходит к текущим настройкам';
++  } else if (lower.includes('bad-request') || code === 400) {
++    reason = 'WhatsApp не принял запрос: проверьте параметры (JID, название, режим)';
++  } else {
++    reason = 'WhatsApp вернул ошибку';
++  }
++
++  return { reason, raw };
++}
+diff --git a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+index 60e857f..2c81407 100644
+--- a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
++++ b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+@@ -15,6 +15,15 @@ import {
+   UpdateMessageDto,
+   WhatsAppNumberDto,
+ } from '@api/dto/chat.dto';
++import {
++  CommunityInfoDto,
++  CommunityJid,
++  CommunityJoinApprovalModeDto,
++  CommunityMemberAddModeDto,
++  CommunityRequestsUpdateDto,
++  CommunityUpdateSettingDto,
++  CreateCommunityDto,
++} from '@api/dto/community.dto';
+ import {
+   AcceptGroupInvite,
+   CreateGroupDto,
+@@ -153,6 +162,14 @@ import { PassThrough, Readable } from 'stream';
+ import { v4 } from 'uuid';
+ 
+ import { BaileysMessageProcessor } from './baileysMessage.processor';
++import {
++  CommunityUserError,
++  createCommunityRaw,
++  describeWaError,
++  detectAnnouncement,
++  normalizeRequestParticipants,
++  waitForAnnouncement,
++} from './community.helpers';
+ import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
+ 
+ export interface ExtendedIMessageKey extends proto.IMessageKey {
+@@ -4606,6 +4623,157 @@ export class BaileysStartupService extends ChannelStartupService {
+     }
+   }
+ 
++  // Сообщества WhatsApp (патч onAI, этап A2, см. infra/evolution/README.md в репозитории воркшопа).
++  // Опираются на сокет Baileys rc.9: communities.js (invite, setting, member_add_mode, join approval, заявки) и свои IQ-запросы.
++  private communityFail(title: string, error: any, status: 'bad' | 'internal' = 'bad'): never {
++    this.logger.error(error);
++    const { reason, raw } = describeWaError(error);
++
++    const details = raw ? [reason, raw] : [reason];
++
++    if (status === 'internal') {
++      throw new InternalServerErrorException(title, ...details);
++    }
++    throw new BadRequestException(title, ...details);
++  }
++
++  public async createCommunity(data: CreateCommunityDto) {
++    let communityJid: string;
++
++    try {
++      communityJid = await createCommunityRaw(this.client, {
++        subject: data.subject.trim(),
++        description: data.description,
++        approvalRequired: data.approvalRequired === true,
++      });
++    } catch (error) {
++      this.communityFail('Не удалось создать сообщество', error, 'internal');
++    }
++
++    // Сообщество уже создано: если вкладку объявлений найти не удалось, отдаём JID сообщества и announcementJid = null,
++    // чтобы вызывающий не потерял сообщество и повторил поиск через GET /community/info.
++    try {
++      const found = await waitForAnnouncement(this.client, communityJid, { attempts: 4, delayMs: 1500 });
++
++      return {
++        communityJid,
++        announcementJid: found.announcementJid,
++        announcementSource: found.source,
++        warning: found.announcementJid
++          ? undefined
++          : 'Сообщество создано, но вкладка объявлений пока не найдена: повторите запрос GET /community/info',
++      };
++    } catch (error) {
++      this.logger.error(error);
++      const { reason, raw } = describeWaError(error);
++
++      return {
++        communityJid,
++        announcementJid: null,
++        announcementSource: null,
++        warning: `Сообщество создано, но вкладку объявлений найти не удалось: ${reason}${raw ? ` (${raw})` : ''}`,
++      };
++    }
++  }
++
++  public async communityInfo(data: CommunityInfoDto) {
++    try {
++      const meta = await this.client.groupMetadata(data.communityJid);
++
++      if (meta?.linkedParent) {
++        throw new CommunityUserError(`Это подгруппа сообщества ${meta.linkedParent}, укажите JID сообщества`);
++      }
++
++      const { participants, ...rest } = meta;
++      const lookup = await detectAnnouncement(this.client, data.communityJid);
++
++      return {
++        ...rest,
++        linkedGroups: lookup.linkedGroups,
++        announcementJid: lookup.announcementJid,
++        announcementSource: lookup.source,
++        ...(data.participants === 'true' ? { participants } : {}),
++      };
++    } catch (error) {
++      this.communityFail('Не удалось получить данные сообщества', error);
++    }
++  }
++
++  public async communityInviteCode(data: CommunityJid) {
++    try {
++      const code = await this.client.communityInviteCode(data.communityJid);
++      if (!code) {
++        throw new CommunityUserError('WhatsApp не вернул код приглашения');
++      }
++      return { inviteUrl: `https://chat.whatsapp.com/${code}`, inviteCode: code };
++    } catch (error) {
++      this.communityFail('Не удалось получить ссылку сообщества', error);
++    }
++  }
++
++  public async communityRevokeInvite(data: CommunityJid) {
++    try {
++      const code = await this.client.communityRevokeInvite(data.communityJid);
++      if (!code) {
++        throw new CommunityUserError('WhatsApp не вернул новый код приглашения');
++      }
++      return { revoked: true, inviteUrl: `https://chat.whatsapp.com/${code}`, inviteCode: code };
++    } catch (error) {
++      this.communityFail('Не удалось сбросить ссылку сообщества', error);
++    }
++  }
++
++  public async communityUpdateSetting(data: CommunityUpdateSettingDto) {
++    try {
++      await this.client.communitySettingUpdate(data.communityJid, data.action);
++      return { updated: true, communityJid: data.communityJid, action: data.action };
++    } catch (error) {
++      this.communityFail('Не удалось изменить настройку сообщества', error);
++    }
++  }
++
++  public async communityMemberAddMode(data: CommunityMemberAddModeDto) {
++    try {
++      await this.client.communityMemberAddMode(data.communityJid, data.mode);
++      return { updated: true, communityJid: data.communityJid, mode: data.mode };
++    } catch (error) {
++      this.communityFail('Не удалось изменить режим добавления участников', error);
++    }
++  }
++
++  public async communityJoinApprovalMode(data: CommunityJoinApprovalModeDto) {
++    try {
++      await this.client.communityJoinApprovalMode(data.communityJid, data.mode);
++      return { updated: true, communityJid: data.communityJid, mode: data.mode };
++    } catch (error) {
++      this.communityFail('Не удалось изменить режим одобрения вступления', error);
++    }
++  }
++
++  public async communityRequests(data: CommunityJid) {
++    try {
++      // Атрибуты заявок отдаются как пришли от WhatsApp (jid, phone_number, request_method, request_time и что ещё придёт).
++      const requests = await this.client.communityRequestParticipantsList(data.communityJid);
++      return { communityJid: data.communityJid, count: requests.length, requests };
++    } catch (error) {
++      this.communityFail('Не удалось получить заявки на вступление', error);
++    }
++  }
++
++  public async communityRequestsUpdate(data: CommunityRequestsUpdateDto) {
++    try {
++      const participants = normalizeRequestParticipants(data.participants, (value) => createJid(value));
++      const results = await this.client.communityRequestParticipantsUpdate(
++        data.communityJid,
++        participants,
++        data.action,
++      );
++      return { communityJid: data.communityJid, action: data.action, results };
++    } catch (error) {
++      this.communityFail('Не удалось обработать заявки на вступление', error);
++    }
++  }
++
+   public async templateMessage() {
+     throw new Error('Method not available in the Baileys service');
+   }
+diff --git a/src/api/routes/community.router.ts b/src/api/routes/community.router.ts
+new file mode 100644
+index 0000000..e99f9e4
+--- /dev/null
++++ b/src/api/routes/community.router.ts
+@@ -0,0 +1,184 @@
++import { RouterBroker } from '@api/abstract/abstract.router';
++import {
++  CommunityInfoDto,
++  CommunityJid,
++  CommunityJoinApprovalModeDto,
++  CommunityMemberAddModeDto,
++  CommunityRequestsUpdateDto,
++  CommunityUpdateSettingDto,
++  CreateCommunityDto,
++} from '@api/dto/community.dto';
++import { InstanceDto } from '@api/dto/instance.dto';
++import { communityController } from '@api/server.module';
++import { Logger } from '@config/logger.config';
++import { BadRequestException } from '@exceptions';
++import {
++  communityInfoSchema,
++  communityJidSchema,
++  communityJoinApprovalModeSchema,
++  communityMemberAddModeSchema,
++  communityRequestsUpdateSchema,
++  communityUpdateSettingSchema,
++  createCommunitySchema,
++} from '@validate/validate.schema';
++import { RequestHandler, Router } from 'express';
++import { JSONSchema7 } from 'json-schema';
++import { validate } from 'jsonschema';
++
++import { HttpStatus } from './index.router';
++
++const logger = new Logger('CommunityRouter');
++
++type CommunityValidateArgs<T> = {
++  request: any;
++  schema: JSONSchema7;
++  ClassRef: any;
++  execute: (instance: InstanceDto, data: T) => Promise<any>;
++};
++
++// Сообщества WhatsApp (патч onAI, этап A2): маршруты /community/*, ключ API и инстанс проверяют общие guards.
++export class CommunityRouter extends RouterBroker {
++  constructor(...guards: RequestHandler[]) {
++    super();
++    this.router
++      .post(this.routerPath('create'), ...guards, async (req, res) => {
++        const response = await this.dataValidate<CreateCommunityDto>({
++          request: req,
++          schema: createCommunitySchema,
++          ClassRef: CreateCommunityDto,
++          execute: (instance, data) => communityController.createCommunity(instance, data),
++        });
++
++        res.status(HttpStatus.CREATED).json(response);
++      })
++      .get(this.routerPath('info'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityInfoDto>({
++          request: req,
++          schema: communityInfoSchema,
++          ClassRef: CommunityInfoDto,
++          execute: (instance, data) => communityController.communityInfo(instance, data),
++        });
++
++        res.status(HttpStatus.OK).json(response);
++      })
++      .get(this.routerPath('inviteCode'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityJid>({
++          request: req,
++          schema: communityJidSchema,
++          ClassRef: CommunityJid,
++          execute: (instance, data) => communityController.inviteCode(instance, data),
++        });
++
++        res.status(HttpStatus.OK).json(response);
++      })
++      .post(this.routerPath('revokeInvite'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityJid>({
++          request: req,
++          schema: communityJidSchema,
++          ClassRef: CommunityJid,
++          execute: (instance, data) => communityController.revokeInvite(instance, data),
++        });
++
++        res.status(HttpStatus.CREATED).json(response);
++      })
++      .post(this.routerPath('updateSetting'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityUpdateSettingDto>({
++          request: req,
++          schema: communityUpdateSettingSchema,
++          ClassRef: CommunityUpdateSettingDto,
++          execute: (instance, data) => communityController.updateSetting(instance, data),
++        });
++
++        res.status(HttpStatus.CREATED).json(response);
++      })
++      .post(this.routerPath('memberAddMode'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityMemberAddModeDto>({
++          request: req,
++          schema: communityMemberAddModeSchema,
++          ClassRef: CommunityMemberAddModeDto,
++          execute: (instance, data) => communityController.memberAddMode(instance, data),
++        });
++
++        res.status(HttpStatus.CREATED).json(response);
++      })
++      .post(this.routerPath('joinApprovalMode'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityJoinApprovalModeDto>({
++          request: req,
++          schema: communityJoinApprovalModeSchema,
++          ClassRef: CommunityJoinApprovalModeDto,
++          execute: (instance, data) => communityController.joinApprovalMode(instance, data),
++        });
++
++        res.status(HttpStatus.CREATED).json(response);
++      })
++      .get(this.routerPath('requests'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityJid>({
++          request: req,
++          schema: communityJidSchema,
++          ClassRef: CommunityJid,
++          execute: (instance, data) => communityController.requests(instance, data),
++        });
++
++        res.status(HttpStatus.OK).json(response);
++      })
++      .post(this.routerPath('requests'), ...guards, async (req, res) => {
++        const response = await this.communityValidate<CommunityRequestsUpdateDto>({
++          request: req,
++          schema: communityRequestsUpdateSchema,
++          ClassRef: CommunityRequestsUpdateDto,
++          execute: (instance, data) => communityController.requestsUpdate(instance, data),
++        });
++
++        res.status(HttpStatus.CREATED).json(response);
++      });
++  }
++
++  public readonly router: Router = Router();
++
++  // По образцу groupValidate: communityJid берётся из тела или из query, суффикс @g.us добавляется сам.
++  // Остальные параметры query (например participants=true) попадают в данные запроса.
++  private async communityValidate<T>(args: CommunityValidateArgs<T>) {
++    const { request, ClassRef, schema, execute } = args;
++
++    const instance = request.params as unknown as InstanceDto;
++    const body = request.body && typeof request.body === 'object' ? request.body : {};
++    const query = request.query && typeof request.query === 'object' ? request.query : {};
++
++    let communityJid = body.communityJid ?? query.communityJid;
++
++    if (!communityJid || typeof communityJid !== 'string') {
++      throw new BadRequestException(
++        'The community id needs to be informed in the query',
++        'ex: "communityJid=120362@g.us"',
++      );
++    }
++
++    if (!communityJid.endsWith('@g.us')) {
++      communityJid = communityJid + '@g.us';
++    }
++
++    const ref = new ClassRef();
++    Object.assign(ref, query, body, { communityJid });
++
++    const v = validate(ref, schema);
++
++    if (!v.valid) {
++      const message: any[] = v.errors.map(({ property, stack, schema }) => {
++        let message: string;
++        if (schema['description']) {
++          message = schema['description'];
++        } else {
++          message = stack.replace('instance.', '');
++        }
++        return {
++          property: property.replace('instance.', ''),
++          message,
++        };
++      });
++      logger.error([...message]);
++      throw new BadRequestException(...message);
++    }
++
++    return await execute(instance, ref);
++  }
++}
+diff --git a/src/api/routes/index.router.ts b/src/api/routes/index.router.ts
+index 45c43fc..9bf128e 100644
+--- a/src/api/routes/index.router.ts
++++ b/src/api/routes/index.router.ts
+@@ -16,6 +16,7 @@ import path from 'path';
+ import { BusinessRouter } from './business.router';
+ import { CallRouter } from './call.router';
+ import { ChatRouter } from './chat.router';
++import { CommunityRouter } from './community.router';
+ import { GroupRouter } from './group.router';
+ import { InstanceRouter } from './instance.router';
+ import { LabelRouter } from './label.router';
+@@ -220,6 +221,7 @@ router
+   .use('/chat', new ChatRouter(...guards).router)
+   .use('/business', new BusinessRouter(...guards).router)
+   .use('/group', new GroupRouter(...guards).router)
++  .use('/community', new CommunityRouter(...guards).router)
+   .use('/template', new TemplateRouter(configService, ...guards).router)
+   .use('/settings', new SettingsRouter(...guards).router)
+   .use('/proxy', new ProxyRouter(...guards).router)
+diff --git a/src/api/server.module.ts b/src/api/server.module.ts
+index 668b9e2..b976d11 100644
+--- a/src/api/server.module.ts
++++ b/src/api/server.module.ts
+@@ -6,6 +6,7 @@ import { Logger } from '@config/logger.config';
+ import { BusinessController } from './controllers/business.controller';
+ import { CallController } from './controllers/call.controller';
+ import { ChatController } from './controllers/chat.controller';
++import { CommunityController } from './controllers/community.controller';
+ import { GroupController } from './controllers/group.controller';
+ import { InstanceController } from './controllers/instance.controller';
+ import { LabelController } from './controllers/label.controller';
+@@ -105,6 +106,7 @@ export const callController = new CallController(waMonitor);
+ export const chatController = new ChatController(waMonitor);
+ export const businessController = new BusinessController(waMonitor);
+ export const groupController = new GroupController(waMonitor);
++export const communityController = new CommunityController(waMonitor);
+ export const labelController = new LabelController(waMonitor);
+ 
+ export const eventManager = new EventManager(prismaRepository, waMonitor);
+diff --git a/src/validate/community.schema.ts b/src/validate/community.schema.ts
+new file mode 100644
+index 0000000..66a7d06
+--- /dev/null
++++ b/src/validate/community.schema.ts
+@@ -0,0 +1,105 @@
++// Схемы валидации сообществ WhatsApp (патч onAI, этап A2), по образцу group.schema.ts.
++import { JSONSchema7 } from 'json-schema';
++import { v4 } from 'uuid';
++
++const JID_HINT = 'The "communityJid" must be a WhatsApp group JID like 120363000000000000@g.us';
++
++// JID сообщества это обычный JID группы: цифры и дефис плюс @g.us (суффикс router добавляет сам).
++export const communityJidSchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    communityJid: { type: 'string', pattern: '^[\\d-]+@g.us$', description: JID_HINT },
++  },
++  required: ['communityJid'],
++};
++
++export const createCommunitySchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    subject: {
++      type: 'string',
++      minLength: 1,
++      maxLength: 100,
++      pattern: '\\S',
++      description: 'The "subject" must be 1-100 characters and not blank',
++    },
++    description: { type: 'string', maxLength: 2048, description: 'The "description" must be up to 2048 characters' },
++    approvalRequired: { type: 'boolean', description: 'The "approvalRequired" must be true or false' },
++  },
++  required: ['subject'],
++};
++
++export const communityInfoSchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    communityJid: { type: 'string', pattern: '^[\\d-]+@g.us$', description: JID_HINT },
++    participants: {
++      type: 'string',
++      enum: ['true', 'false'],
++      description: 'The "participants" must be "true" or "false"',
++    },
++  },
++  required: ['communityJid'],
++};
++
++export const communityUpdateSettingSchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    communityJid: { type: 'string', pattern: '^[\\d-]+@g.us$', description: JID_HINT },
++    action: {
++      type: 'string',
++      enum: ['announcement', 'not_announcement', 'locked', 'unlocked'],
++      description: 'The "action" must be announcement, not_announcement, locked or unlocked',
++    },
++  },
++  required: ['communityJid', 'action'],
++};
++
++export const communityMemberAddModeSchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    communityJid: { type: 'string', pattern: '^[\\d-]+@g.us$', description: JID_HINT },
++    mode: {
++      type: 'string',
++      enum: ['admin_add', 'all_member_add'],
++      description: 'The "mode" must be admin_add or all_member_add',
++    },
++  },
++  required: ['communityJid', 'mode'],
++};
++
++export const communityJoinApprovalModeSchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    communityJid: { type: 'string', pattern: '^[\\d-]+@g.us$', description: JID_HINT },
++    mode: { type: 'string', enum: ['on', 'off'], description: 'The "mode" must be on or off' },
++  },
++  required: ['communityJid', 'mode'],
++};
++
++export const communityRequestsUpdateSchema: JSONSchema7 = {
++  $id: v4(),
++  type: 'object',
++  properties: {
++    communityJid: { type: 'string', pattern: '^[\\d-]+@g.us$', description: JID_HINT },
++    action: { type: 'string', enum: ['approve', 'reject'], description: 'The "action" must be approve or reject' },
++    participants: {
++      type: 'array',
++      minItems: 1,
++      maxItems: 256,
++      uniqueItems: true,
++      items: {
++        type: 'string',
++        minLength: 5,
++        description: '"participants" must be an array of JIDs from the requests list or numeric strings',
++      },
++    },
++  },
++  required: ['communityJid', 'action', 'participants'],
++};
+diff --git a/src/validate/validate.schema.ts b/src/validate/validate.schema.ts
+index 69e0090..ea87519 100644
+--- a/src/validate/validate.schema.ts
++++ b/src/validate/validate.schema.ts
+@@ -1,6 +1,7 @@
+ // Integrations Schema
+ export * from './business.schema';
+ export * from './chat.schema';
++export * from './community.schema';
+ export * from './group.schema';
+ export * from './instance.schema';
+ export * from './label.schema';

@@ -1,0 +1,5 @@
+# Патч и скрипты едут на Linux-сервер: окончания строк только LF, иначе git apply и bash ломаются.
+*.patch text eol=lf
+*.sh text eol=lf
+*.cjs text eol=lf
+*.md text eol=lf

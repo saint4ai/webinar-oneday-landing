@@ -10,7 +10,7 @@
  * Роуты (те же, что были у Next-лендинга — контракт не менялся):
  *   POST /api/lead          — форма регистрации
  *   POST /api/reconcile     — дожим лидов, не доехавших в amoCRM (cron)
- *   GET  /api/whatsapp-link — текущая ссылка на сообщество
+ *   GET  /api/whatsapp-link — текущая ссылка на сообщество (с WA_GROUPS=on: сообщество текущего набора, иначе постоянная)
  *   POST /api/tg-link       — вебхук бота: смена ссылки
  *   POST /api/tg-workshop   — вебхук бота @workshop_aiprod_bot (приветствие, серия, команды)
  *   POST /api/ty-click      — клик по кнопке Telegram/WhatsApp на странице «Спасибо» (204)
@@ -38,6 +38,7 @@ import { readWhatsAppLink, writeWhatsAppLink, readWhatsAppRecord, isValidWhatsAp
 import { calendarDay, handleGo, handleTgWorkshop, handleTyClick, initTgWorkshop, tgHealth } from "./tg-workshop";
 import { startScheduler } from "./tg-scheduler";
 import { handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk } from "./tg-miniapp";
+import { startWaGroups, waGroupLink, waHealth } from "./wa-groups";
 
 /**
  * Секреты из .env рядом с бандлом (PM2 сам env-файлы не читает).
@@ -275,7 +276,8 @@ async function handleReconcile(req: IncomingMessage, res: ServerResponse) {
 // ───────────────────────── GET /api/whatsapp-link ─────────────────────────
 
 function handleWhatsAppLink(res: ServerResponse) {
-  return json(res, 200, { link: readWhatsAppLink() }, { "Cache-Control": "no-store, max-age=0" });
+  // Модуль WhatsApp включён и сообщество текущего набора готово: его ссылка. Иначе прежняя постоянная ссылка.
+  return json(res, 200, { link: waGroupLink() ?? readWhatsAppLink() }, { "Cache-Control": "no-store, max-age=0" });
 }
 
 // ───────────────────────── POST /api/tg-link ─────────────────────────
@@ -405,6 +407,7 @@ function handleHealth(res: ServerResponse) {
       thankYou: THANKYOU_URL,
       whatsapp: readWhatsAppLink(),
       tgBot: tgHealth(),
+      waGroups: waHealth(),
       version: readVersion(),
     },
     { "Cache-Control": "no-store" },
@@ -450,6 +453,13 @@ try {
   startScheduler();
 } catch (err) {
   console.error("[form-api] tg-бот не запущен:", err);
+}
+
+// WhatsApp-сообщества эфира: только с WA_GROUPS=on, иначе ничего не стартует. Сбой не мешает приёму лидов и боту.
+try {
+  startWaGroups();
+} catch (err) {
+  console.error("[form-api] модуль WhatsApp не запущен:", err);
 }
 
 server.listen(PORT, HOST, () => {

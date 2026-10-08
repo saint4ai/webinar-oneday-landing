@@ -25,8 +25,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // form-api/server.ts
 var import_node_http = require("node:http");
 var import_node_crypto5 = require("node:crypto");
-var import_node_fs8 = require("node:fs");
-var import_node_path8 = require("node:path");
+var import_node_fs9 = require("node:fs");
+var import_node_path9 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -173,8 +173,8 @@ async function updateLead(id, patch) {
 async function selectRetryable(maxRetry, limit = 50) {
   if (!supabaseConfigured()) return [];
   try {
-    const q = `status=in.(pending,failed)&retry_count=lt.${maxRetry}&order=created_at.asc&limit=${limit}`;
-    const res = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?${q}`, {
+    const q2 = `status=in.(pending,failed)&retry_count=lt.${maxRetry}&order=created_at.asc&limit=${limit}`;
+    const res = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?${q2}`, {
       headers: headers()
     });
     if (!res.ok) return [];
@@ -904,9 +904,9 @@ var TgStore = class _TgStore {
   }
   /** Найти подписчика по chat_id или @username (без учёта регистра). */
   find(query) {
-    const q = query.trim();
-    if (/^-?\d+$/.test(q)) return this.subs.get(Number(q));
-    const name = q.replace(/^@/, "").toLowerCase();
+    const q2 = query.trim();
+    if (/^-?\d+$/.test(q2)) return this.subs.get(Number(q2));
+    const name = q2.replace(/^@/, "").toLowerCase();
     if (!name) return void 0;
     for (const s of this.subs.values()) if (s.username.toLowerCase() === name) return s;
     return void 0;
@@ -1593,9 +1593,9 @@ function renderErrors(ctx, periodKey) {
     );
   }
   parts.push(`<b>\u0417\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0431\u043E\u0442\u0430</b>: ${g.blockedEvents}`);
-  const rt = runtime.events;
-  const cntRt = (t) => rt.filter((e) => e.type === t).length;
-  const skipped = rt.filter((e) => e.type === "skipLate");
+  const rt2 = runtime.events;
+  const cntRt = (t) => rt2.filter((e) => e.type === t).length;
+  const skipped = rt2.filter((e) => e.type === "skipLate");
   parts.push(
     [
       `<b>\u0421 \u0437\u0430\u043F\u0443\u0441\u043A\u0430 \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430</b> (${uptimeText(Math.floor(process.uptime()))} \u043D\u0430\u0437\u0430\u0434, \u0441\u0447\u0451\u0442\u0447\u0438\u043A\u0438 \u0432 \u043F\u0430\u043C\u044F\u0442\u0438):`,
@@ -2141,6 +2141,14 @@ async function plain(chatId, text, markup) {
     })
   );
 }
+async function sendPhotoBytes(chatId, data, caption) {
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  if (caption) form.append("caption", caption);
+  form.append("photo", new Blob([new Uint8Array(data)], { type: "image/png" }), "qr.png");
+  await acquireSlot("hi");
+  return toSend(await botCall("sendPhoto", form, 3e4));
+}
 async function notifyOwners(text) {
   let delivered = 0;
   for (const id of ownerIds()) {
@@ -2210,7 +2218,15 @@ async function sendGreeting(sub, now) {
     noteSendResult(sub.chatId, r2, now);
   }
 }
-var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon"]);
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send"]);
+var waHook = null;
+var waReport = null;
+function registerWa(h) {
+  waHook = h;
+}
+function registerWaReport(h) {
+  waReport = h;
+}
 var HELP_TEXT = [
   "\u041A\u043E\u043C\u0430\u043D\u0434\u044B \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:",
   "/admin: \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 (\u0437\u0430\u044F\u0432\u043A\u0438, \u0431\u043E\u0442, UTM \u043F\u043E \u0434\u043D\u044F\u043C, \u043E\u0448\u0438\u0431\u043A\u0438), \u0432\u044B\u0431\u043E\u0440 \u043F\u0435\u0440\u0438\u043E\u0434\u0430 \u0438 \u0434\u0430\u0442\u044B. /stats \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0442\u043E \u0436\u0435",
@@ -2224,6 +2240,11 @@ var HELP_TEXT = [
   "/paid <chat_id \u0438\u043B\u0438 @username>: \u043E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u043E\u043F\u043B\u0430\u0442\u0443",
   "/reload: \u043F\u0435\u0440\u0435\u0447\u0438\u0442\u0430\u0442\u044C tg-series.json",
   "/series_on, /series_off: \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0435\u0440\u0438\u044E",
+  "/wa: \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 WhatsApp (\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u044D\u0444\u0438\u0440\u0430, \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438, \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435)",
+  "/wa_qr: QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430 WhatsApp, \u043D\u0435 \u0447\u0430\u0449\u0435 \u0440\u0430\u0437\u0430 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443",
+  "/wa_pause, /wa_resume: \u043F\u0430\u0443\u0437\u0430 \u0438 \u0432\u043E\u0437\u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 WhatsApp-\u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0438",
+  "/wa_new [\u0434\u0430\u0442\u0430]: \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u0435\u0439\u0447\u0430\u0441",
+  "/wa_send <id>: \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430",
   "",
   "\u041C\u0435\u0442\u043A\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430: \u0434\u043E\u0431\u0430\u0432\u044C ?start=2gis \u043A \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u0431\u043E\u0442\u0430 (t.me/workshop_aiprod_bot?start=2gis), \u0432 \u043E\u0442\u0447\u0451\u0442\u0430\u0445 \u043E\u043D\u0430 \u043F\u043E\u043A\u0430\u0436\u0435\u0442\u0441\u044F \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A."
 ].join("\n");
@@ -2494,7 +2515,15 @@ function buildStatsText(st, sr, now) {
 }
 function dayReportText(st, day) {
   const m = st.dayMetrics(day);
-  return `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+  const base = `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+  let wa = "";
+  try {
+    wa = waReport ? waReport(day) : "";
+  } catch {
+    wa = "";
+  }
+  return wa ? `${base}
+${wa}` : base;
 }
 function buildSeriesText(st, sr, now) {
   const today = dayKeyOf(now);
@@ -2659,6 +2688,31 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
       const ctx = { series: sr(), now, chatId, firstName: m.from?.first_name, day: p.day };
       await sendContent({ media: p.msg.media, text: p.msg.text, buttons: p.msg.buttons, silent: p.msg.silent }, ctx);
       await plain(chatId, `\u041F\u043E\u043B\u0443\u0447\u0430\u0442\u0435\u043B\u0435\u0439: ${p.count}. \u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \xAB${id}\xBB \u0441\u0435\u0439\u0447\u0430\u0441?`, [[{ text: "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C", callback_data: `fire:${id}` }]]);
+      return;
+    }
+    case "wa":
+    case "wa_qr":
+    case "wa_pause":
+    case "wa_resume":
+    case "wa_new":
+    case "wa_send": {
+      if (!waHook) {
+        await plain(chatId, "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u043B\u0441\u044F (\u0441\u043C. /api/health).");
+        return;
+      }
+      let reply2;
+      try {
+        reply2 = await waHook(cmd, args, now);
+      } catch (e) {
+        reply2 = { text: `\u041E\u0448\u0438\u0431\u043A\u0430 \u043A\u043E\u043C\u0430\u043D\u0434\u044B: ${scrub(String(e?.message || e))}` };
+      }
+      if (reply2.photo) {
+        const r = await sendPhotoBytes(chatId, reply2.photo.data, reply2.photo.caption);
+        if (!r.ok) reply2 = { text: `${reply2.text}
+
+\u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0443 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043D\u0435 \u0432\u044B\u0448\u043B\u043E: ${r.error}` };
+      }
+      await plain(chatId, reply2.text);
       return;
     }
     case "preview":
@@ -6842,19 +6896,19 @@ function buildSummary(ctx, p, basis) {
     totals: { subscribers: ctx.store.subs.size, active, paid }
   };
 }
-function page(rows, q) {
-  const items = rows.slice(q.offset, q.offset + q.limit);
-  return { items, total: rows.length, offset: q.offset, hasMore: q.offset + items.length < rows.length };
+function page(rows, q2) {
+  const items = rows.slice(q2.offset, q2.offset + q2.limit);
+  return { items, total: rows.length, offset: q2.offset, hasMore: q2.offset + items.length < rows.length };
 }
-function buildLeads(ctx, p, q) {
+function buildLeads(ctx, p, q2) {
   const g = gather(ctx, p);
-  const needle = q.q.trim().toLowerCase();
+  const needle = q2.q.trim().toLowerCase();
   const digits = needle.replace(/\D/g, "");
-  const utm = q.utm.trim().toLowerCase();
+  const utm = q2.utm.trim().toLowerCase();
   const rows = g.leads.filter((l) => {
     const inBot = linked(g, l);
-    if (q.inbot === "1" && !inBot) return false;
-    if (q.inbot === "0" && inBot) return false;
+    if (q2.inbot === "1" && !inBot) return false;
+    if (q2.inbot === "0" && inBot) return false;
     if (utm) {
       const key = leadKey(l).toLowerCase();
       if (utm === "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438" ? hasUtm(l) : key !== utm) return false;
@@ -6876,7 +6930,7 @@ function buildLeads(ctx, p, q) {
     utm: leadKey(l),
     inBot: linked(g, l)
   }));
-  return { ok: true, meta: meta(ctx), leadsOk: g.leadsOk, leadsError: g.leadsOk ? "" : g.leadsError.slice(0, 120), ...page(rows, q) };
+  return { ok: true, meta: meta(ctx), leadsOk: g.leadsOk, leadsError: g.leadsOk ? "" : g.leadsError.slice(0, 120), ...page(rows, q2) };
 }
 function originLabel(kind, tag) {
   if (kind === "pp") return "\u043E\u043A\u043D\u043E \u043D\u0430 \u0441\u0430\u0439\u0442\u0435";
@@ -6884,7 +6938,7 @@ function originLabel(kind, tag) {
   if (kind === "tag") return `\u043C\u0435\u0442\u043A\u0430: ${tag}`;
   return "\u043F\u0440\u044F\u043C\u043E\u0439 /start";
 }
-function buildSubscribers(ctx, p, basis, q) {
+function buildSubscribers(ctx, p, basis, q2) {
   const g = gather(ctx, p);
   const a = aux(ctx);
   let cohort;
@@ -6901,8 +6955,8 @@ function buildSubscribers(ctx, p, basis, q) {
       }
     }
   } else cohort = g.newSubs;
-  const needle = q.q.trim().toLowerCase().replace(/^@/, "");
-  const utm = q.utm.trim().toLowerCase();
+  const needle = q2.q.trim().toLowerCase().replace(/^@/, "");
+  const utm = q2.utm.trim().toLowerCase();
   const rows = cohort.map((s) => {
     const o = classifyPayload(s.payload);
     const lead = o.eid ? g.leadByEid.get(o.eid) : void 0;
@@ -6910,10 +6964,10 @@ function buildSubscribers(ctx, p, basis, q) {
   }).filter(({ s, o, src }) => {
     if (utm && !(o.tag && o.tag === utm) && src.toLowerCase() !== utm && !(utm === "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438" && !!src && src.startsWith("\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438"))) return false;
     if (needle && !s.firstName.toLowerCase().includes(needle) && !s.username.toLowerCase().includes(needle)) return false;
-    if (q.flag === "blocked" && !s.blocked) return false;
-    if (q.flag === "paid" && !s.paid) return false;
-    if (q.flag === "clicked" && !a.clickChats.has(s.chatId)) return false;
-    if (q.flag === "noclick" && a.clickChats.has(s.chatId)) return false;
+    if (q2.flag === "blocked" && !s.blocked) return false;
+    if (q2.flag === "paid" && !s.paid) return false;
+    if (q2.flag === "clicked" && !a.clickChats.has(s.chatId)) return false;
+    if (q2.flag === "noclick" && a.clickChats.has(s.chatId)) return false;
     return true;
   }).sort((x, y) => y.s.firstStartAt - x.s.firstStartAt).map(({ s, o, src }) => ({
     ts: s.firstStartAt,
@@ -6931,7 +6985,7 @@ function buildSubscribers(ctx, p, basis, q) {
     blocked: s.blocked,
     stopped: s.stopped
   }));
-  return { ok: true, meta: meta(ctx), basis, ...page(rows, q) };
+  return { ok: true, meta: meta(ctx), basis, ...page(rows, q2) };
 }
 var uptimeText2 = (sec) => {
   const h = Math.floor(sec / 3600);
@@ -6944,8 +6998,8 @@ function buildErrors(ctx, p) {
   const groups = /* @__PURE__ */ new Map();
   for (const e of bad) inc2(groups, String(e.err ?? "\u0431\u0435\u0437 \u0442\u0435\u043A\u0441\u0442\u0430").replace(/\d{5,}/g, "#").slice(0, 70));
   const last = [...bad].sort((x, y) => Date.parse(y.ts) - Date.parse(x.ts)).slice(0, 10).map((e) => ({ t: stamp(Date.parse(e.ts)), msg: String(e.msg).slice(0, 40), err: String(e.err ?? "").replace(/\d{5,}/g, "#").slice(0, 100) }));
-  const rt = runtime.events;
-  const skipped = rt.filter((e) => e.type === "skipLate");
+  const rt2 = runtime.events;
+  const skipped = rt2.filter((e) => e.type === "skipLate");
   const uptimeSec = Math.floor(process.uptime());
   return {
     ok: true,
@@ -6959,8 +7013,8 @@ function buildErrors(ctx, p) {
     runtime: {
       skipLate: skipped.length,
       skipLateIds: [...new Set(skipped.map((e) => e.msg || "?"))].slice(0, 8),
-      mediaFallback: rt.filter((e) => e.type === "mediaFallback").length,
-      tickError: rt.filter((e) => e.type === "tickError").length,
+      mediaFallback: rt2.filter((e) => e.type === "mediaFallback").length,
+      tickError: rt2.filter((e) => e.type === "tickError").length,
       webhookRejected: runtime.webhookRejected
     },
     uptimeSec,
@@ -7133,10 +7187,1225 @@ function handleAdminApp(req, res) {
   res.end(req.method === "HEAD" ? void 0 : body);
 }
 
+// form-api/wa-groups.ts
+var import_node_fs8 = require("node:fs");
+var import_node_path8 = require("node:path");
+
+// form-api/wa-evolution.ts
+var env3 = (k) => (process.env[k] || "").trim();
+var evoUrl = () => (env3("EVOLUTION_URL") || "http://127.0.0.1:8080").replace(/\/+$/, "");
+var evoKey = () => env3("EVOLUTION_API_KEY");
+var evoInstance = () => env3("EVOLUTION_INSTANCE") || "workshop";
+var TIMEOUT_MS = 2e4;
+var MEDIA_TIMEOUT_MS = 9e4;
+var CREATE_TIMEOUT_MS = 9e4;
+var CONNECT_FAIL_CODES2 = /* @__PURE__ */ new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH", "UND_ERR_CONNECT_TIMEOUT"]);
+var scrub2 = (s) => {
+  const k = evoKey();
+  return k ? s.split(k).join("***") : s;
+};
+function errorText(data, fallback) {
+  const m = data?.response?.message ?? data?.message ?? data?.error;
+  const text = Array.isArray(m) ? m.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join("; ") : typeof m === "string" ? m : m ? JSON.stringify(m) : "";
+  return scrub2((text || fallback).slice(0, 300));
+}
+async function evoCall(method, path, body, timeoutMs = TIMEOUT_MS) {
+  const key = evoKey();
+  if (!key) return { ok: false, status: 0, error: "no_api_key" };
+  try {
+    const res = await fetch(`${evoUrl()}${path}`, {
+      method,
+      headers: { apikey: key, ...body !== void 0 ? { "Content-Type": "application/json" } : {} },
+      ...body !== void 0 ? { body: JSON.stringify(body) } : {},
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (res.ok) return { ok: true, status: res.status, data };
+    return { ok: false, status: res.status, error: `${res.status} ${errorText(data, res.statusText || text.slice(0, 100))}`, data };
+  } catch (e) {
+    const err = e;
+    const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
+    return {
+      ok: false,
+      status: 0,
+      error: timeout ? "timeout" : scrub2(String(err?.cause?.code || err?.message || err)),
+      ...timeout ? { timeout: true } : {},
+      ...!timeout && err?.cause?.code && CONNECT_FAIL_CODES2.has(err.cause.code) ? { connectFail: true } : {}
+    };
+  }
+}
+var I = () => encodeURIComponent(evoInstance());
+var q = (jid) => `?communityJid=${encodeURIComponent(jid)}`;
+async function connectionState() {
+  const r = await evoCall("GET", `/instance/connectionState/${I()}`);
+  if (r.ok) return { ok: true, status: r.status, data: { state: String(r.data?.instance?.state ?? "unknown") } };
+  if (r.status === 404) return { ok: true, status: 404, data: { state: "absent" } };
+  return r;
+}
+async function fetchInstance() {
+  const r = await evoCall("GET", `/instance/fetchInstances?instanceName=${I()}`);
+  if (!r.ok) return r;
+  const row = Array.isArray(r.data) ? r.data[0] : r.data;
+  return { ok: true, status: r.status, data: { ownerJid: String(row?.ownerJid || ""), profileName: String(row?.profileName || "") } };
+}
+function createInstance() {
+  return evoCall("POST", "/instance/create", {
+    instanceName: evoInstance(),
+    integration: "WHATSAPP-BAILEYS",
+    qrcode: true,
+    rejectCall: false,
+    groupsIgnore: false,
+    alwaysOnline: false,
+    readMessages: false,
+    readStatus: false,
+    syncFullHistory: false
+  }, 3e4);
+}
+function connectInstance() {
+  return evoCall("GET", `/instance/connect/${I()}`, void 0, 3e4);
+}
+async function communityCreate(p) {
+  const r = await evoCall("POST", `/community/create/${I()}`, p, CREATE_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const communityJid = String(r.data?.communityJid || "");
+  const announcementJid = String(r.data?.announcementJid || "");
+  if (!communityJid.endsWith("@g.us") || !announcementJid.endsWith("@g.us")) {
+    return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 create \u043D\u0435\u0442 communityJid \u0438\u043B\u0438 announcementJid", data: r.data };
+  }
+  return { ok: true, status: r.status, data: { communityJid, announcementJid } };
+}
+var communityInfo = (jid) => evoCall("GET", `/community/info/${I()}${q(jid)}`);
+async function communityInvite(jid) {
+  const r = await evoCall("GET", `/community/inviteCode/${I()}${q(jid)}`);
+  if (!r.ok) return r;
+  return inviteOf(r);
+}
+var communitySetting = (jid, action) => evoCall("POST", `/community/updateSetting/${I()}${q(jid)}`, { action });
+var communityMemberAddMode = (jid, mode) => evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode });
+var communityJoinApproval = (jid, mode) => evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode });
+var communityRequests = (jid) => evoCall("GET", `/community/requests/${I()}${q(jid)}`);
+var communityDecide = (jid, participants, action) => evoCall("POST", `/community/requests/${I()}${q(jid)}`, { participants, action });
+async function groupCreate(p) {
+  const r = await evoCall("POST", `/group/create/${I()}`, { ...p, promoteParticipants: true }, CREATE_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const groupJid = String(r.data?.id || "");
+  if (!groupJid.endsWith("@g.us")) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 group/create \u043D\u0435\u0442 id \u0433\u0440\u0443\u043F\u043F\u044B", data: r.data };
+  return { ok: true, status: r.status, data: { groupJid } };
+}
+var groupSetting = (jid, action) => evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action });
+async function groupInvite(jid) {
+  const r = await evoCall("GET", `/group/inviteCode/${I()}?groupJid=${encodeURIComponent(jid)}`);
+  if (!r.ok) return r;
+  return inviteOf(r);
+}
+var groupInfo = (jid) => evoCall("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`);
+var updatePicture = (jid, imageUrl) => evoCall("POST", `/group/updateGroupPicture/${I()}`, { groupJid: jid, image: imageUrl }, MEDIA_TIMEOUT_MS);
+function inviteOf(r) {
+  const inviteCode = String(r.data?.inviteCode || "");
+  const inviteUrl = String(r.data?.inviteUrl || (inviteCode ? `https://chat.whatsapp.com/${inviteCode}` : ""));
+  if (!inviteUrl) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0438-\u043F\u0440\u0438\u0433\u043B\u0430\u0448\u0435\u043D\u0438\u044F", data: r.data };
+  return { ok: true, status: r.status, data: { inviteCode, inviteUrl } };
+}
+function sentOf(r) {
+  if (!r.ok) return r;
+  return { ok: true, status: r.status, data: { messageId: String(r.data?.key?.id || "") } };
+}
+async function sendText2(jid, text) {
+  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text, linkPreview: false }));
+}
+async function sendMedia2(jid, p) {
+  const mimetype = p.mediatype === "video" ? "video/mp4" : /\.png$/i.test(p.url) ? "image/png" : "image/jpeg";
+  return sentOf(
+    await evoCall("POST", `/message/sendMedia/${I()}`, { number: jid, mediatype: p.mediatype, mimetype, media: p.url, ...p.caption ? { caption: p.caption } : {} }, MEDIA_TIMEOUT_MS)
+  );
+}
+async function sendPoll(jid, p) {
+  return sentOf(await evoCall("POST", `/message/sendPoll/${I()}`, { number: jid, name: p.name, selectableCount: p.selectableCount, values: p.values }));
+}
+
+// form-api/wa-groups.ts
+var env4 = (k) => (process.env[k] || "").trim();
+var waEnabled = () => env4("WA_GROUPS").toLowerCase() === "on";
+var adminNumbers = () => env4("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
+var MIN = 6e4;
+var HOUR = 36e5;
+var TICK_MS2 = 3e4;
+var JOINS_TICK_MS = 5e3;
+var LOCK_STALE_MS2 = 3 * TICK_MS2;
+var isObj2 = (x) => !!x && typeof x === "object" && !Array.isArray(x);
+function allStrings2(x, out = []) {
+  if (typeof x === "string") out.push(x);
+  else if (Array.isArray(x)) x.forEach((v) => allStrings2(v, out));
+  else if (isObj2(x)) Object.values(x).forEach((v) => allStrings2(v, out));
+  return out;
+}
+function range(x, where) {
+  if (!Array.isArray(x) || x.length !== 2 || x.some((n) => typeof n !== "number" || n < 0) || x[0] > x[1]) throw new Error(`wa-series: ${where} \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043F\u0430\u0440\u043E\u0439 [\u043E\u0442, \u0434\u043E] \u043F\u043E \u0432\u043E\u0437\u0440\u0430\u0441\u0442\u0430\u043D\u0438\u044E`);
+  return [x[0], x[1]];
+}
+function validateWaSeries(raw) {
+  if (!isObj2(raw)) throw new Error("wa-series: \u043A\u043E\u0440\u0435\u043D\u044C \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C");
+  for (const s of allStrings2(raw)) if (s.includes(String.fromCharCode(8212))) throw new Error(`wa-series: \u0434\u043B\u0438\u043D\u043D\u043E\u0435 \u0442\u0438\u0440\u0435 \u0432 \xAB${s.slice(0, 50)}\xBB`);
+  if (raw.timezone !== "Asia/Almaty") throw new Error("wa-series: timezone \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C Asia/Almaty");
+  if (typeof raw.version !== "string") throw new Error("wa-series: \u043D\u0435\u0442 version");
+  for (const k of ["streamStart", "closeAt"]) {
+    try {
+      parseHHMM(String(raw[k]));
+    } catch {
+      throw new Error(`wa-series: ${k} \u0432\u0438\u0434\u0430 HH:MM`);
+    }
+  }
+  for (const k of ["streamMinutes", "graceMinutes", "createCatchupHours", "maxNewPerDay", "memberCheckMinutes", "captionLimit"]) {
+    if (typeof raw[k] !== "number" || raw[k] <= 0) throw new Error(`wa-series: ${k} \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0447\u0438\u0441\u043B\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u0435 0`);
+  }
+  if (raw.firstDay !== void 0 && !isDayKey(raw.firstDay)) throw new Error("wa-series: firstDay \u0432\u0438\u0434\u0430 YYYY-MM-DD");
+  if (raw.skipDays !== void 0 && (!Array.isArray(raw.skipDays) || !raw.skipDays.every(isDayKey))) throw new Error("wa-series: skipDays \u043C\u0430\u0441\u0441\u0438\u0432 \u0434\u043D\u0435\u0439 YYYY-MM-DD");
+  if (raw.target !== "community" && raw.target !== "group") throw new Error("wa-series: target \u044D\u0442\u043E community \u0438\u043B\u0438 group");
+  const of = raw.overflowAt;
+  if (!isObj2(of) || typeof of.community !== "number" || typeof of.group !== "number" || of.community < 10 || of.group < 10) throw new Error("wa-series: overflowAt { community, group } \u0447\u0438\u0441\u043B\u0430");
+  const pc = raw.pacing;
+  if (!isObj2(pc)) throw new Error("wa-series: \u043D\u0435\u0442 pacing");
+  range(pc.betweenSendsMs, "pacing.betweenSendsMs");
+  range(pc.betweenStepsMs, "pacing.betweenStepsMs");
+  const rt2 = raw.retry;
+  if (!isObj2(rt2) || !Array.isArray(rt2.backoffSec) || !rt2.backoffSec.length || typeof rt2.pauseAfter !== "number" || rt2.pauseAfter < 1) throw new Error("wa-series: retry { backoffSec: [..], pauseAfter }");
+  const jp = raw.joinPolling;
+  if (!isObj2(jp)) throw new Error("wa-series: \u043D\u0435\u0442 joinPolling");
+  range(jp.servingSec, "joinPolling.servingSec");
+  range(jp.otherSec, "joinPolling.otherSec");
+  if (jp.idleSec !== void 0) range(jp.idleSec, "joinPolling.idleSec");
+  if (jp.hotMinutes !== void 0 && (typeof jp.hotMinutes !== "number" || jp.hotMinutes <= 0)) throw new Error("wa-series: joinPolling.hotMinutes \u0447\u0438\u0441\u043B\u043E \u0431\u043E\u043B\u044C\u0448\u0435 0");
+  if (typeof jp.batch !== "number" || jp.batch < 1 || typeof jp.keepAfterCloseMin !== "number") throw new Error("wa-series: joinPolling.batch \u0438 keepAfterCloseMin \u0447\u0438\u0441\u043B\u0430");
+  if (!isObj2(raw.alarms) || typeof raw.alarms.connectionEveryMinutes !== "number") throw new Error("wa-series: alarms.connectionEveryMinutes \u0447\u0438\u0441\u043B\u043E");
+  for (const k of ["name", "description", "welcome"]) if (typeof raw[k] !== "string" || !raw[k]) throw new Error(`wa-series: ${k} \u043D\u0443\u0436\u0435\u043D \u043D\u0435\u043F\u0443\u0441\u0442\u043E\u0439 \u0442\u0435\u043A\u0441\u0442`);
+  if (!Array.isArray(raw.avatar) || !raw.avatar.every((u) => typeof u === "string" && /^https:\/\//.test(u))) throw new Error("wa-series: avatar \u043C\u0430\u0441\u0441\u0438\u0432 https-\u0441\u0441\u044B\u043B\u043E\u043A");
+  if (!Array.isArray(raw.messages) || !raw.messages.length) throw new Error("wa-series: messages \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043D\u0435\u043F\u0443\u0441\u0442\u044B\u043C \u043C\u0430\u0441\u0441\u0438\u0432\u043E\u043C");
+  const ids = /* @__PURE__ */ new Set();
+  for (const m of raw.messages) {
+    if (!isObj2(m) || typeof m.id !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(m.id)) throw new Error("wa-series: \u0443 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0443\u0436\u0435\u043D id \u0438\u0437 \u0431\u0443\u043A\u0432, \u0446\u0438\u0444\u0440, _ \u0438 -");
+    if (ids.has(m.id)) throw new Error(`wa-series: id \xAB${m.id}\xBB \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u0442\u0441\u044F`);
+    ids.add(m.id);
+    try {
+      parseHHMM(String(m.at));
+    } catch {
+      throw new Error(`wa-series: \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 ${m.id}: at \u0432\u0438\u0434\u0430 HH:MM`);
+    }
+    if (typeof m.text !== "string" || !m.text.trim()) throw new Error(`wa-series: \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 ${m.id}: \u043D\u0443\u0436\u0435\u043D \u0442\u0435\u043A\u0441\u0442`);
+    if (m.media !== void 0) {
+      if (!isObj2(m.media) || m.media.type !== "image" && m.media.type !== "video" || typeof m.media.url !== "string" || !/^https:\/\//.test(m.media.url)) {
+        throw new Error(`wa-series: \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 ${m.id}: media { type: image|video, url: https://... }`);
+      }
+    }
+    if (m.poll !== void 0) {
+      const p = m.poll;
+      if (!isObj2(p) || typeof p.name !== "string" || !p.name || !Array.isArray(p.options) || p.options.length < 2 || p.options.length > 10 || new Set(p.options).size !== p.options.length) {
+        throw new Error(`wa-series: \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 ${m.id}: poll { name, options: 2..10 \u0440\u0430\u0437\u043D\u044B\u0445 }`);
+      }
+    }
+  }
+  return raw;
+}
+var freshState = () => ({
+  v: 1,
+  targets: [],
+  paused: false,
+  pausedAt: 0,
+  pausedReason: "",
+  failStreak: 0,
+  retryAt: 0,
+  creations: [],
+  pendingCreate: null,
+  lastConnAlertAt: 0,
+  lastQrAt: 0,
+  capAlertDay: "",
+  ownerJid: "",
+  ownerAt: 0
+});
+var defaultDeps2 = {
+  now: () => Date.now(),
+  sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+  rand: () => Math.random(),
+  notify: (text) => notifyOwners(text)
+};
+var rt = null;
+var initError = "";
+var fJournal = (r) => (0, import_node_path8.join)(r.dir, "wa-journal.jsonl");
+var fJoins = (r) => (0, import_node_path8.join)(r.dir, "wa-joins.jsonl");
+var fState = (r) => (0, import_node_path8.join)(r.dir, "wa-state.json");
+var fLock = (r) => (0, import_node_path8.join)(r.dir, "wa.lock");
+var iso = (ms) => new Date(ms).toISOString();
+var need = () => {
+  if (!rt) throw new Error("wa-groups \u043D\u0435 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D");
+  return rt;
+};
+function append(file, row) {
+  try {
+    (0, import_node_fs8.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
+  } catch (e) {
+    console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C %s:", file, e.message);
+  }
+}
+function readJsonl2(file) {
+  if (!(0, import_node_fs8.existsSync)(file)) return [];
+  const out = [];
+  for (const line of (0, import_node_fs8.readFileSync)(file, "utf8").split("\n")) {
+    const s = line.trim();
+    if (!s) continue;
+    try {
+      out.push(JSON.parse(s));
+    } catch {
+    }
+  }
+  return out;
+}
+function save(r) {
+  try {
+    const tmp = `${fState(r)}.tmp.${process.pid}`;
+    (0, import_node_fs8.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
+    (0, import_node_fs8.renameSync)(tmp, fState(r));
+  } catch (e) {
+    console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C wa-state.json:", e.message);
+  }
+}
+function loadState(r) {
+  const st = freshState();
+  try {
+    if (!(0, import_node_fs8.existsSync)(fState(r))) return st;
+    const raw = JSON.parse((0, import_node_fs8.readFileSync)(fState(r), "utf8"));
+    const num = (x) => typeof x === "number" && Number.isFinite(x) ? x : 0;
+    const str = (x) => typeof x === "string" ? x : "";
+    st.targets = Array.isArray(raw.targets) ? raw.targets.filter((t) => t && typeof t.id === "string" && typeof t.jid === "string").map((t) => ({ ...t, done: t.done || {}, tries: t.tries || {} })) : [];
+    st.paused = raw.paused === true;
+    st.pausedAt = num(raw.pausedAt);
+    st.pausedReason = str(raw.pausedReason);
+    st.failStreak = num(raw.failStreak);
+    st.retryAt = num(raw.retryAt);
+    st.creations = Array.isArray(raw.creations) ? raw.creations.filter((x) => typeof x === "number") : [];
+    st.pendingCreate = raw.pendingCreate && typeof raw.pendingCreate.day === "string" ? raw.pendingCreate : null;
+    st.lastConnAlertAt = num(raw.lastConnAlertAt);
+    st.lastQrAt = num(raw.lastQrAt);
+    st.capAlertDay = str(raw.capAlertDay);
+    st.ownerJid = str(raw.ownerJid);
+    st.ownerAt = num(raw.ownerAt);
+  } catch {
+    console.warn("[wa] wa-state.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0441 \u043F\u0443\u0441\u0442\u043E\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F");
+  }
+  return st;
+}
+function seriesPath2(explicit) {
+  return explicit || env4("WA_SERIES_FILE") || (0, import_node_path8.join)(__dirname, "wa-series.json");
+}
+function initWaGroups(opts = {}) {
+  const cfg = validateWaSeries(JSON.parse((0, import_node_fs8.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
+  const kindEnv = env4("WA_TARGET").toLowerCase();
+  if (kindEnv === "group" || kindEnv === "community") cfg.target = kindEnv;
+  if (opts.kind) cfg.target = opts.kind;
+  const dir = opts.dir || env4("DATA_DIR") || (0, import_node_path8.join)(__dirname, "data");
+  (0, import_node_fs8.mkdirSync)(dir, { recursive: true });
+  const r = {
+    cfg,
+    state: freshState(),
+    dir,
+    deps: { ...defaultDeps2, ...opts.deps || {} },
+    timeOverride: opts.timeCfg,
+    sent: /* @__PURE__ */ new Set(),
+    seenReq: /* @__PURE__ */ new Set(),
+    approved: /* @__PURE__ */ new Set(),
+    approveFails: /* @__PURE__ */ new Map(),
+    joinedCount: /* @__PURE__ */ new Map(),
+    joinNextAt: /* @__PURE__ */ new Map(),
+    lastServedAt: 0,
+    lastRequestsAt: 0,
+    joinFailStreak: 0,
+    joinAlertAt: 0,
+    conn: { state: "unknown", at: 0 },
+    chain: Promise.resolve(),
+    ticking: false,
+    joining: false,
+    mediaWarned: /* @__PURE__ */ new Set(),
+    lockedOutLogged: false
+  };
+  r.state = loadState(r);
+  for (const row of readJsonl2(fJournal(r))) {
+    if (row?.ev === "send" && row.ok && row.msg && row.day && row.target) r.sent.add(sentKey(row.msg, row.part || "main", row.day, row.target));
+  }
+  for (const row of readJsonl2(fJoins(r))) {
+    if (!row?.community || !row.jid) continue;
+    const k = `${row.community}|${row.jid}`;
+    if (row.ev === "request") r.seenReq.add(k);
+    if (row.ev === "approve" && row.ok) {
+      r.approved.add(k);
+      if (row.target) r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
+    }
+  }
+  rt = r;
+  initError = "";
+}
+function startWaGroups(opts = {}) {
+  if (!waEnabled()) return () => {
+  };
+  if (!evoKey()) {
+    initError = "\u043D\u0435\u0442 EVOLUTION_API_KEY";
+    console.error("[wa] WA_GROUPS=on, \u043D\u043E \u043D\u0435\u0442 EVOLUTION_API_KEY: \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D");
+    return () => {
+    };
+  }
+  try {
+    initWaGroups(opts);
+  } catch (e) {
+    initError = e.message;
+    console.error("[wa] \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: %s", initError);
+    return () => {
+    };
+  }
+  const r = need();
+  registerWa((cmd, args, now) => waCommand(cmd, args, now));
+  registerWaReport((day) => waReportLine(day));
+  const main = setInterval(() => void waTick(), TICK_MS2);
+  const joins = setInterval(() => void joinsTick(), JOINS_TICK_MS);
+  const first = setTimeout(() => void waTick(), 5e3);
+  const onExit = () => releaseLock2(r);
+  process.on("exit", onExit);
+  console.log("[wa] \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u0442\u0438\u043F %s, \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 %s, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 %d, \u0442\u0438\u043A %d \u0441", r.cfg.target, r.cfg.version, r.cfg.messages.length, TICK_MS2 / 1e3);
+  return () => {
+    clearInterval(main);
+    clearInterval(joins);
+    clearTimeout(first);
+    process.off("exit", onExit);
+    registerWa(null);
+    registerWaReport(null);
+    releaseLock2(r);
+  };
+}
+function waHealth() {
+  if (!waEnabled()) return { enabled: false };
+  if (!rt) return { enabled: true, running: false, ...initError ? { error: initError } : {} };
+  return {
+    enabled: true,
+    running: true,
+    paused: rt.state.paused,
+    connection: rt.conn.state,
+    targets: rt.state.targets.length,
+    failStreak: rt.state.failStreak
+  };
+}
+function tcfg(r) {
+  if (r.timeOverride) return r.timeOverride;
+  try {
+    return timeCfg(getSeries());
+  } catch {
+    return {
+      streamStart: r.cfg.streamStart,
+      streamMinutes: r.cfg.streamMinutes,
+      joinLiveMinutes: r.cfg.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES,
+      firstDay: r.cfg.firstDay,
+      skipDays: r.cfg.skipDays
+    };
+  }
+}
+var closeAtOf = (r, day) => atTime(addDays(day, 1), r.cfg.closeAt);
+function createAtOf(r, day) {
+  const c = tcfg(r);
+  let p = addDays(day, -1);
+  for (let i = 0; i < 30; i++) {
+    if (isStreamDay(p, c)) return atTime(p, c.streamStart);
+    p = addDays(p, -1);
+  }
+  return atTime(addDays(day, -1), c.streamStart);
+}
+var ddmm2 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm2(day)) + (seq > 1 ? ` (${seq})` : "");
+var isReady = (t) => t.kind === "community" ? !!(t.done.announce && t.done.addMode && t.done.approval && t.done.link) : !!(t.done.announce && t.done.link);
+var targetsOf = (r, day) => r.state.targets.filter((t) => t.day === day).sort((a, b) => b.seq - a.seq);
+function servingTarget(r, now) {
+  const day = assignStreamDay(now, tcfg(r));
+  return targetsOf(r, day).find((t) => isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
+}
+function waGroupLink(now = Date.now(), served = true) {
+  try {
+    if (!rt) return null;
+    const t = servingTarget(rt, now);
+    if (!t || !isValidWhatsAppLink(t.link)) return null;
+    if (served) {
+      rt.lastServedAt = now;
+      const soon = now + 15e3;
+      const cur = rt.joinNextAt.get(t.id);
+      if (cur !== void 0 && cur > soon) rt.joinNextAt.set(t.id, soon);
+    }
+    return t.link;
+  } catch {
+    return null;
+  }
+}
+var between = (r, rg) => Math.round(rg[0] + r.deps.rand() * (rg[1] - rg[0]));
+var pause = (r, rg) => r.deps.sleep(between(r, rg));
+var sentKey = (msg, part, day, target) => `${msg}:${part}|${day}|${target}`;
+function exclusive(r, fn) {
+  const next = r.chain.then(fn, fn);
+  r.chain = next.then(() => void 0, () => void 0);
+  return next;
+}
+function journal(r, row) {
+  append(fJournal(r), { ts: iso(r.deps.now()), ...row });
+}
+async function alarm(r, text) {
+  journal(r, { ev: "alarm", text });
+  console.warn("[wa] \u0442\u0440\u0435\u0432\u043E\u0433\u0430: %s", text);
+  try {
+    await r.deps.notify(text);
+  } catch {
+  }
+}
+function pauseModule(r, now, reason, text) {
+  r.state.paused = true;
+  r.state.pausedAt = now;
+  r.state.pausedReason = reason.slice(0, 200);
+  save(r);
+  journal(r, { ev: "pause", reason: r.state.pausedReason });
+  return alarm(r, text);
+}
+function noteOk(r) {
+  if (r.state.failStreak || r.state.retryAt) {
+    r.state.failStreak = 0;
+    r.state.retryAt = 0;
+    save(r);
+  }
+}
+async function noteFail(r, what, err) {
+  const now = r.deps.now();
+  r.state.failStreak++;
+  console.warn("[wa] \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s: %s", r.state.failStreak, what, err);
+  journal(r, { ev: "fail", n: r.state.failStreak, what, err });
+  if (r.state.failStreak >= r.cfg.retry.pauseAfter) {
+    await pauseModule(r, now, `${what}: ${err}`, `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435: ${r.state.failStreak} \u043E\u0448\u0438\u0431\u043A\u0438 \u043F\u043E\u0434\u0440\u044F\u0434. \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${what}: ${err}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C /wa, \u043F\u043E\u0442\u043E\u043C /wa_resume.`);
+    return;
+  }
+  const b = r.cfg.retry.backoffSec;
+  r.state.retryAt = now + b[Math.min(r.state.failStreak - 1, b.length - 1)] * 1e3;
+  save(r);
+}
+var ambiguous = (f) => !f.connectFail && (f.status === 0 || f.status >= 500);
+function pidAlive2(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM";
+  }
+}
+function holdLock2(r) {
+  const f = fLock(r);
+  try {
+    if ((0, import_node_fs8.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs8.readFileSync)(f, "utf8"));
+      if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS2 && pidAlive2(cur.pid)) {
+        if (!r.lockedOutLogged) console.warn("[wa] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442", cur.pid);
+        r.lockedOutLogged = true;
+        return false;
+      }
+    }
+    r.lockedOutLogged = false;
+    (0, import_node_fs8.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    return true;
+  } catch (e) {
+    console.error("[wa] \u0437\u0430\u043C\u043E\u043A \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
+    return true;
+  }
+}
+function releaseLock2(r) {
+  try {
+    const f = fLock(r);
+    if ((0, import_node_fs8.existsSync)(f) && JSON.parse((0, import_node_fs8.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs8.unlinkSync)(f);
+  } catch {
+  }
+}
+async function checkConnection(r, now) {
+  const c = await connectionState();
+  const st = c.ok ? c.data.state : "unreachable";
+  r.conn = { state: st, at: now };
+  if (st === "open") {
+    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR) {
+      const i = await fetchInstance();
+      if (i.ok && i.data.ownerJid) {
+        r.state.ownerJid = i.data.ownerJid;
+        r.state.ownerAt = now;
+        save(r);
+      }
+    }
+    return true;
+  }
+  if (now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN) {
+    r.state.lastConnAlertAt = now;
+    save(r);
+    await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st}). \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
+  }
+  return false;
+}
+var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR).length;
+var capReached = (r, now) => dayCreations(r, now) >= r.cfg.maxNewPerDay;
+function noteCreation(r, now) {
+  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR), now];
+}
+function dueCreateDays(r, now) {
+  const out = [];
+  const c = tcfg(r);
+  const today = dayKeyOf(now);
+  for (let i = 0; i < 14; i++) {
+    const day = addDays(today, i);
+    if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
+    const at = createAtOf(r, day);
+    if (now >= at && now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) out.push(day);
+  }
+  return out;
+}
+async function createTarget(r, day, seq, now) {
+  const kind = r.cfg.target;
+  const name = nameOf(r, day, seq);
+  let created;
+  if (kind === "group" && !adminNumbers().length) {
+    await noteFail(r, `\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${name}`, "\u0434\u043B\u044F \u043E\u0431\u044B\u0447\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u044B \u043D\u0443\u0436\u0435\u043D \u0445\u043E\u0442\u044F \u0431\u044B \u043E\u0434\u0438\u043D \u043D\u043E\u043C\u0435\u0440 \u0432 WA_ADMIN_NUMBERS");
+    return { ok: false, error: "\u043D\u0435\u0442 WA_ADMIN_NUMBERS" };
+  }
+  r.state.pendingCreate = { day, seq, kind, at: now };
+  save(r);
+  const res = kind === "community" ? await communityCreate({ subject: name, description: r.cfg.description, approvalRequired: true }) : await groupCreate({ subject: name, description: r.cfg.description, participants: adminNumbers() });
+  if (!res.ok) {
+    if (ambiguous(res)) {
+      noteCreation(r, now);
+      await pauseModule(
+        r,
+        now,
+        `\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${name}: ${res.error}`,
+        `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435: \u043F\u0440\u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0438 \xAB${name}\xBB \u043D\u0435 \u043F\u0440\u0438\u0448\u0451\u043B \u0447\u0451\u0442\u043A\u0438\u0439 \u043E\u0442\u0432\u0435\u0442 (${res.error}). \u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E, \u043E\u043D\u043E \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u043F\u0438\u0441\u043E\u043A \u0447\u0430\u0442\u043E\u0432 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435. \u0415\u0441\u043B\u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0443\u0434\u0430\u043B\u0438 \u043B\u0438\u0448\u043D\u0435\u0435; \u043F\u043E\u0442\u043E\u043C /wa_resume, \u0430 /wa_new \u0441\u043E\u0437\u0434\u0430\u0441\u0442 \u0437\u0430\u043D\u043E\u0432\u043E.`
+      );
+      return { ok: false, error: res.error };
+    }
+    r.state.pendingCreate = null;
+    save(r);
+    await noteFail(r, `\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${name}`, res.error);
+    return { ok: false, error: res.error };
+  }
+  created = kind === "community" ? { jid: res.data.communityJid, sendJid: res.data.announcementJid } : { jid: res.data.groupJid, sendJid: res.data.groupJid };
+  const t = {
+    id: `${day}#${seq}`,
+    day,
+    seq,
+    kind,
+    jid: created.jid,
+    sendJid: created.sendJid,
+    name,
+    createdAt: now,
+    link: "",
+    // У обычной группы нет режима «по заявке» и «админы добавляют»: эти шаги считаются сделанными.
+    done: kind === "group" ? { addMode: true, approval: true } : {},
+    tries: {},
+    avatarAt: 0
+  };
+  r.state.targets.push(t);
+  r.state.pendingCreate = null;
+  noteCreation(r, now);
+  save(r);
+  journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name });
+  console.log("[wa] \u0441\u043E\u0437\u0434\u0430\u043D\u043E %s %s (%s)", kind === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430", t.id, name);
+  noteOk(r);
+  return { ok: true, target: t };
+}
+var welcomeText = (r, t, now) => r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm2(t.day));
+async function setupSteps(r, t) {
+  const order = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "link", "avatar", "welcome"];
+  let first = true;
+  for (const s of order) {
+    if (t.done[s]) continue;
+    const now = r.deps.now();
+    if (r.state.paused || now < r.state.retryAt) return false;
+    if (now >= closeAtOf(r, t.day)) return true;
+    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
+    if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t))) continue;
+    if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
+    first = false;
+    t.tries[s] = (t.tries[s] || 0) + 1;
+    let err = "";
+    if (s === "announce") {
+      const x = t.kind === "community" ? await communitySetting(t.jid, "announcement") : await groupSetting(t.jid, "announcement");
+      err = x.ok ? "" : x.error;
+    } else if (s === "addMode") {
+      const x = await communityMemberAddMode(t.jid, "admin_add");
+      err = x.ok ? "" : x.error;
+    } else if (s === "approval") {
+      const x = await communityJoinApproval(t.jid, "on");
+      err = x.ok ? "" : x.error;
+    } else if (s === "link") {
+      const x = t.kind === "community" ? await communityInvite(t.jid) : await groupInvite(t.jid);
+      if (!x.ok) err = x.error;
+      else if (!isValidWhatsAppLink(x.data.inviteUrl)) err = "\u0441\u0441\u044B\u043B\u043A\u0430-\u043F\u0440\u0438\u0433\u043B\u0430\u0448\u0435\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0445\u043E\u0436\u0430 \u043D\u0430 chat.whatsapp.com";
+      else t.link = x.data.inviteUrl;
+    } else if (s === "avatar") {
+      t.avatarAt = now;
+      for (const url of r.cfg.avatar) {
+        const x = await updatePicture(t.jid, url);
+        if (x.ok) {
+          err = "";
+          break;
+        }
+        err = x.error;
+      }
+    } else if (s === "welcome") {
+      const x = await sendPart(r, t, "welcome", "main", () => sendText2(t.sendJid, welcomeText(r, t, now)), false);
+      err = x.ok ? "" : x.error;
+    }
+    if (!err) {
+      t.done[s] = true;
+      save(r);
+      journal(r, { ev: "step", target: t.id, step: s });
+      if (s !== "avatar") noteOk(r);
+      continue;
+    }
+    save(r);
+    if (s === "avatar") {
+      console.warn("[wa] \u0430\u0432\u0430\u0442\u0430\u0440\u043A\u0430 %s \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B\u0430\u0441\u044C (%d \u0438\u0437 3): %s", t.id, t.tries.avatar, err);
+      if ((t.tries.avatar || 0) >= 3) await alarm(r, `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0430\u0432\u0430\u0442\u0430\u0440\u043A\u0443 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0443 \xAB${t.name}\xBB: ${err}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E wa-avatar.jpg \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
+      continue;
+    }
+    await noteFail(r, `${t.id}: \u0448\u0430\u0433 ${s}`, err);
+    return false;
+  }
+  return true;
+}
+function partsOf(r, m) {
+  const parts = ["main"];
+  if (m.media && m.text.length > r.cfg.captionLimit) parts.push("text");
+  if (m.poll) parts.push("poll");
+  return parts;
+}
+var isDone = (r, m, t) => partsOf(r, m).every((p) => r.sent.has(sentKey(m.id, p, t.day, t.id)));
+async function sendPart(r, t, msgId, part, run, manual, extra = {}) {
+  const key = sentKey(msgId, part, t.day, t.id);
+  if (r.sent.has(key)) return { ok: true };
+  const x = await run();
+  journal(r, {
+    ev: "send",
+    msg: msgId,
+    part,
+    day: t.day,
+    target: t.id,
+    jid: t.sendJid,
+    ok: x.ok,
+    ...x.ok ? { mid: x.data.messageId } : { err: x.error },
+    ...manual ? { manual: true } : {},
+    ...extra
+  });
+  if (x.ok) {
+    r.sent.add(key);
+    return { ok: true };
+  }
+  return { ok: false, error: x.error, ...x.timeout ? { timeout: true } : {} };
+}
+async function sendMessageTo(r, t, m, manual) {
+  let first = true;
+  for (const part of partsOf(r, m)) {
+    if (r.sent.has(sentKey(m.id, part, t.day, t.id))) continue;
+    if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
+    first = false;
+    let res;
+    if (part === "poll") {
+      const p = m.poll;
+      res = await sendPart(r, t, m.id, part, () => sendPoll(t.sendJid, { name: p.name, values: p.options, selectableCount: p.selectableCount ?? 1 }), manual);
+    } else if (part === "text") {
+      res = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual);
+    } else if (m.media) {
+      const media = m.media;
+      const caption = m.text.length <= r.cfg.captionLimit ? m.text : void 0;
+      res = await sendPart(r, t, m.id, part, () => sendMedia2(t.sendJid, { mediatype: media.type, url: media.url, caption }), manual);
+      if (!res.ok && !res.timeout) {
+        console.warn("[wa] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", media.url, res.error);
+        if (!r.mediaWarned.has(media.url)) {
+          r.mediaWarned.add(media.url);
+          void alarm(r, `\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0430\u0441\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0438\u043B\u0438 \u0432\u0438\u0434\u0435\u043E ${media.url}: ${res.error}. \u0428\u043B\u044E \u0442\u043E\u0442 \u0436\u0435 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
+        }
+        const fb = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual, { fallback: "text" });
+        if (fb.ok) res = fb;
+      }
+    } else {
+      res = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual);
+    }
+    if (!res.ok) {
+      await noteFail(r, `\u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \xAB${m.id}\xBB \u0432 ${t.id}`, res.error);
+      return false;
+    }
+    noteOk(r);
+  }
+  return true;
+}
+function dueSends(r, now) {
+  const out = [];
+  for (const t of r.state.targets) {
+    if (!isReady(t) || now >= closeAtOf(r, t.day)) continue;
+    for (const msg of r.cfg.messages) {
+      if (msg.enabled === false) continue;
+      const plan = atTime(t.day, msg.at);
+      if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
+      if (plan < t.createdAt) continue;
+      if (isDone(r, msg, t)) continue;
+      out.push({ t, msg, plan });
+    }
+  }
+  return out.sort((a, b) => a.plan - b.plan || a.t.day.localeCompare(b.t.day) || a.t.seq - b.t.seq);
+}
+async function runSends(r, now) {
+  let sent = 0;
+  let first = true;
+  for (const d of dueSends(r, now)) {
+    if (r.state.paused || r.deps.now() < r.state.retryAt) break;
+    if (!first) await pause(r, r.cfg.pacing.betweenSendsMs);
+    first = false;
+    if (!await sendMessageTo(r, d.t, d.msg, false)) break;
+    sent++;
+  }
+  return sent;
+}
+function extractMembers(info, announcementJid) {
+  const num = (x) => typeof x === "number" && Number.isFinite(x) ? x : typeof x === "string" && /^\d+$/.test(x) ? Number(x) : void 0;
+  const found = [];
+  const add = (x) => {
+    const n = num(x);
+    if (n !== void 0) found.push(n);
+  };
+  add(info?.size);
+  add(info?.membersCount);
+  add(info?.participantsCount);
+  if (Array.isArray(info?.participants)) add(info.participants.length);
+  for (const key of ["linkedGroups", "groups", "subGroups"]) {
+    const list = info?.[key];
+    if (!Array.isArray(list)) continue;
+    for (const g of list) {
+      if (g && (g.id === announcementJid || g.jid === announcementJid || g.isCommunityAnnounce === true)) {
+        add(g.size);
+        if (Array.isArray(g.participants)) add(g.participants.length);
+      }
+    }
+  }
+  return found.length ? Math.max(...found) : void 0;
+}
+async function refreshMembers(r, t, now) {
+  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN) return false;
+  const x = t.kind === "community" ? await communityInfo(t.jid) : await groupInfo(t.jid);
+  t.membersAt = now;
+  if (x.ok) {
+    const n = extractMembers(x.data, t.sendJid);
+    if (n !== void 0) t.members = n;
+  } else {
+    console.warn("[wa] \u0447\u0438\u0441\u043B\u043E \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %s \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u043E: %s", t.id, x.error);
+  }
+  save(r);
+  return x.ok;
+}
+async function runMemberChecks(r, now) {
+  const t = servingTarget(r, now);
+  if (!t || r.state.paused) return;
+  await refreshMembers(r, t, now);
+  const limit = r.cfg.overflowAt[t.kind];
+  if (t.members === void 0 || t.members < limit || targetsOf(r, t.day)[0].id !== t.id) return;
+  if (capReached(r, now)) {
+    if (r.state.capAlertDay !== dayKeyOf(now)) {
+      r.state.capAlertDay = dayKeyOf(now);
+      save(r);
+      await alarm(r, `\u0412 \xAB${t.name}\xBB \u0443\u0436\u0435 ${t.members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432, \u0430 \u043B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u043E, \u0441\u0441\u044B\u043B\u043A\u0430 \u043F\u0440\u0435\u0436\u043D\u044F\u044F. \u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E: /wa_new.`);
+    }
+    return;
+  }
+  await pause(r, r.cfg.pacing.betweenStepsMs);
+  const c = await createTarget(r, t.day, t.seq + 1, r.deps.now());
+  if (!c.ok) return;
+  await alarm(r, `\u0412 \xAB${t.name}\xBB ${t.members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0438\u0437 ${limit}. \u041E\u0442\u043A\u0440\u044B\u0442\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435: \xAB${c.target.name}\xBB, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043D\u0430 \u043D\u0435\u0433\u043E, \u043A\u0430\u043A \u0442\u043E\u043B\u044C\u043A\u043E \u043E\u043D\u043E \u0431\u0443\u0434\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E.`);
+  await pause(r, r.cfg.pacing.betweenStepsMs);
+  await setupSteps(r, c.target);
+}
+async function waTick() {
+  const r = rt;
+  if (!r) return { sent: 0, created: 0 };
+  if (r.ticking) return { skipped: "busy", sent: 0, created: 0 };
+  r.ticking = true;
+  try {
+    return await exclusive(r, async () => {
+      const now = r.deps.now();
+      if (!holdLock2(r)) return { skipped: "lock", sent: 0, created: 0 };
+      if (r.state.paused) return { skipped: "paused", sent: 0, created: 0 };
+      if (!await checkConnection(r, now)) return { skipped: "no_connection", sent: 0, created: 0 };
+      if (now < r.state.retryAt) return { skipped: "backoff", sent: 0, created: 0 };
+      const sent = await runSends(r, now);
+      let created = 0;
+      for (const t of r.state.targets) {
+        if (r.state.paused || r.deps.now() < r.state.retryAt) break;
+        if (r.deps.now() >= closeAtOf(r, t.day)) continue;
+        const incomplete = !isReady(t) || !t.done.welcome && (t.tries.welcome || 0) < 3 || !t.done.avatar && (t.tries.avatar || 0) < 3;
+        if (incomplete) await setupSteps(r, t);
+      }
+      if (r.state.pendingCreate) return { sent, created, skipped: "paused" };
+      for (const day of dueCreateDays(r, now)) {
+        if (r.state.paused || r.deps.now() < r.state.retryAt) break;
+        if (capReached(r, now)) {
+          if (r.state.capAlertDay !== dayKeyOf(now)) {
+            r.state.capAlertDay = dayKeyOf(now);
+            save(r);
+            await alarm(r, `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm2(day)} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u043F\u043E\u0437\u0436\u0435: /wa_new.`);
+          }
+          break;
+        }
+        const c = await createTarget(r, day, 1, r.deps.now());
+        if (!c.ok) break;
+        created++;
+        await pause(r, r.cfg.pacing.betweenStepsMs);
+        await setupSteps(r, c.target);
+      }
+      await runMemberChecks(r, now);
+      return { sent, created };
+    });
+  } catch (e) {
+    console.error("[wa] \u0442\u0438\u043A \u0443\u043F\u0430\u043B:", e?.stack || e);
+    return { sent: 0, created: 0 };
+  } finally {
+    r.ticking = false;
+  }
+}
+function normalizeRequests(data) {
+  const list = Array.isArray(data) ? data : isObj2(data) ? data.requests ?? data.participants ?? data.list ?? [] : [];
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const x of list) {
+    const raw = typeof x === "string" ? { jid: x } : isObj2(x) ? isObj2(x.attrs) ? x.attrs : x : null;
+    if (!raw) continue;
+    const jid = String(raw.jid ?? raw.id ?? raw.participant ?? "");
+    if (jid) out.push({ jid, raw });
+  }
+  return out;
+}
+var phoneOf = (raw) => {
+  for (const k of ["phone_number", "phoneNumber", "phone", "pn", "pn_jid"]) {
+    const v = raw[k];
+    if (typeof v === "string" && /\d{7,}/.test(v)) return v.replace(/@.*/, "").replace(/\D/g, "");
+  }
+  return "";
+};
+function normalizeDecisions(data, asked) {
+  const list = Array.isArray(data) ? data : isObj2(data) ? data.results ?? data.participants ?? data.updated ?? null : null;
+  if (Array.isArray(list) && list.length) {
+    const byJid = /* @__PURE__ */ new Map();
+    for (const x of list) {
+      if (!isObj2(x)) continue;
+      const jid = String(x.jid ?? "");
+      const status = String(x.status ?? "200");
+      if (jid) byJid.set(jid, { jid, ok: status === "200" || status === "ok", status });
+    }
+    return asked.map((jid) => byJid.get(jid) ?? { jid, ok: false, status: "\u043D\u0435\u0442 \u0432 \u043E\u0442\u0432\u0435\u0442\u0435" });
+  }
+  return asked.map((jid) => ({ jid, ok: true, status: "200" }));
+}
+function nextJoinDelay(r, serving, now) {
+  const jp = r.cfg.joinPolling;
+  if (!serving) return between(r, jp.otherSec) * 1e3;
+  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN;
+  return between(r, hot ? jp.servingSec : jp.idleSec) * 1e3;
+}
+async function pollJoins(r, t, now) {
+  const list = await communityRequests(t.jid);
+  if (!list.ok) {
+    await softJoinFail(r, now, `\u0441\u043F\u0438\u0441\u043E\u043A \u0437\u0430\u044F\u0432\u043E\u043A ${t.id}: ${list.error}`);
+    return 0;
+  }
+  const reqs = normalizeRequests(list.data);
+  if (reqs.length) r.lastRequestsAt = now;
+  for (const q2 of reqs) {
+    const k = `${t.jid}|${q2.jid}`;
+    if (r.seenReq.has(k)) continue;
+    r.seenReq.add(k);
+    append(fJoins(r), { ts: iso(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q2.jid, phone: phoneOf(q2.raw), raw: q2.raw });
+  }
+  const todo = reqs.map((q2) => q2.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3).slice(0, r.cfg.joinPolling.batch);
+  if (!todo.length) {
+    r.joinFailStreak = 0;
+    return 0;
+  }
+  const d = await communityDecide(t.jid, todo, "approve");
+  if (!d.ok) {
+    for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
+    append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
+    await softJoinFail(r, now, `\u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A ${t.id}: ${d.error}`);
+    return 0;
+  }
+  r.joinFailStreak = 0;
+  let n = 0;
+  for (const x of normalizeDecisions(d.data, todo)) {
+    const k = `${t.jid}|${x.jid}`;
+    append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
+    if (x.ok) {
+      r.approved.add(k);
+      r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
+      n++;
+    } else {
+      r.approveFails.set(k, (r.approveFails.get(k) || 0) + 1);
+    }
+  }
+  return n;
+}
+async function softJoinFail(r, now, what) {
+  r.joinFailStreak++;
+  console.warn("[wa] \u0437\u0430\u044F\u0432\u043A\u0438, \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s", r.joinFailStreak, what);
+  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR) {
+    r.joinAlertAt = now;
+    await alarm(r, `WhatsApp: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u0432\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u043D\u0435 \u043E\u0434\u043E\u0431\u0440\u044F\u044E\u0442\u0441\u044F (${r.joinFailStreak} \u043E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434). \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${what}. \u041B\u044E\u0434\u0438 \u0436\u0434\u0443\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F.`);
+  }
+}
+async function joinsTick() {
+  const r = rt;
+  if (!r || r.joining || r.state.paused || r.conn.state !== "open") return 0;
+  r.joining = true;
+  try {
+    return await exclusive(r, async () => {
+      const now = r.deps.now();
+      if (r.state.paused || r.conn.state !== "open" || !holdLock2(r)) return 0;
+      const serving = servingTarget(r, now);
+      let n = 0;
+      for (const t of r.state.targets) {
+        if (t.kind !== "community" || !isReady(t)) continue;
+        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN) continue;
+        if (now < (r.joinNextAt.get(t.id) || 0)) continue;
+        n += await pollJoins(r, t, now);
+        r.joinNextAt.set(t.id, r.deps.now() + nextJoinDelay(r, serving?.id === t.id, r.deps.now()));
+      }
+      return n;
+    });
+  } catch (e) {
+    console.error("[wa] \u0437\u0430\u044F\u0432\u043A\u0438, \u0442\u0438\u043A \u0443\u043F\u0430\u043B:", e?.message || e);
+    return 0;
+  } finally {
+    r.joining = false;
+  }
+}
+var agoText = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1e3));
+  return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
+};
+var inText = (ms) => {
+  const m = Math.max(0, Math.round(ms / MIN));
+  return m < 90 ? `\u0447\u0435\u0440\u0435\u0437 ${m} \u043C\u0438\u043D` : `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
+};
+function nextMessageText(r, now) {
+  const c = tcfg(r);
+  const today = dayKeyOf(now);
+  let best = null;
+  for (let i = 0; i < 4; i++) {
+    const day = addDays(today, i);
+    if (!isStreamDay(day, c)) continue;
+    for (const m of r.cfg.messages) {
+      if (m.enabled === false) continue;
+      const plan = atTime(day, m.at);
+      if (plan >= now && (!best || plan < best.plan)) best = { plan, id: m.id, day };
+    }
+  }
+  return best ? `${hhmmOf(best.plan)} ${best.id} (\u044D\u0444\u0438\u0440 ${ddmm2(best.day)}), ${inText(best.plan - now)}` : "\u043D\u0435\u0442";
+}
+function targetLine(r, label, day, now) {
+  const ts = [...targetsOf(r, day)].reverse();
+  const at = createAtOf(r, day);
+  if (!ts.length) return `${label} ${ddmm2(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm2(dayKeyOf(at))}`;
+  return ts.map((t) => {
+    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText(now - (t.membersAt || now))})`;
+    const joined = t.kind === "community" ? `, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${r.joinedCount.get(t.id) || 0}` : "";
+    return `${label} ${ddmm2(day)}: \xAB${t.name}\xBB, ${isReady(t) ? "\u0433\u043E\u0442\u043E\u0432\u043E" : "\u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F"}, ${mem}${joined}`;
+  }).join("\n");
+}
+async function cmdStatus(r, now) {
+  const conn = await exclusive(r, async () => {
+    const c2 = await connectionState();
+    r.conn = { state: c2.ok ? c2.data.state : "unreachable", at: now };
+    if (r.conn.state === "open" && !r.state.ownerJid) {
+      const i = await fetchInstance();
+      if (i.ok && i.data.ownerJid) {
+        r.state.ownerJid = i.data.ownerJid;
+        r.state.ownerAt = now;
+        save(r);
+      }
+    }
+    if (r.conn.state === "open" && !r.state.paused) {
+      const s = servingTarget(r, now);
+      if (s) await refreshMembers(r, s, now);
+    }
+    return r.conn.state;
+  });
+  const today = dayKeyOf(now);
+  const c = tcfg(r);
+  const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
+  const next = nextStreamAfter(r, cur);
+  const number = r.state.ownerJid ? `+${r.state.ownerJid.replace(/@.*/, "")}` : "\u043D\u043E\u043C\u0435\u0440 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D";
+  const link = waGroupLink(now, false);
+  const lines = [
+    `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C: ${r.state.paused ? `\u043D\u0430 \u043F\u0430\u0443\u0437\u0435 (${r.state.pausedReason || "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u0430"})` : "\u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442"}, \u0442\u0438\u043F ${r.cfg.target === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430"}`,
+    `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${conn}${conn === "open" ? `, ${number}` : ""}`,
+    targetLine(r, "\u042D\u0444\u0438\u0440", cur, now),
+    targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now),
+    `\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u0435\u0439\u0447\u0430\u0441: ${link ?? "\u0441\u0442\u0430\u0440\u0430\u044F \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F (\u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442)"}`,
+    `\u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${nextMessageText(r, now)}`,
+    `\u041D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438: ${dayCreations(r, now)} \u0438\u0437 ${r.cfg.maxNewPerDay}`,
+    `\u041E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434: ${r.state.failStreak} \u0438\u0437 ${r.cfg.retry.pauseAfter}`
+  ];
+  return { text: lines.join("\n") };
+}
+function nextStreamAfter(r, day) {
+  const c = tcfg(r);
+  let d = addDays(day, 1);
+  for (let i = 0; i < 400 && !isStreamDay(d, c); i++) d = addDays(d, 1);
+  return d;
+}
+async function cmdQr(r, now) {
+  const wait = r.state.lastQrAt + MIN - now;
+  if (wait > 0) return { text: `QR \u043C\u043E\u0436\u043D\u043E \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C \u0440\u0430\u0437 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u0435\u0449\u0451 ${Math.ceil(wait / 1e3)} \u0441.` };
+  r.state.lastQrAt = now;
+  save(r);
+  return exclusive(r, async () => {
+    const cs = await connectionState();
+    if (!cs.ok) return { text: `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}` };
+    if (cs.data.state === "open") {
+      const i = await fetchInstance();
+      return { text: `WhatsApp \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D${i.ok && i.data.ownerJid ? `, \u043D\u043E\u043C\u0435\u0440 +${i.data.ownerJid.replace(/@.*/, "")}` : ""}. QR \u043D\u0435 \u043D\u0443\u0436\u0435\u043D.` };
+    }
+    let qr;
+    if (cs.data.state === "absent") {
+      const c = await createInstance();
+      if (!c.ok) return { text: `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}` };
+      qr = c.data?.qrcode;
+    } else {
+      const c = await connectInstance();
+      if (!c.ok) return { text: `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C QR: ${c.error}` };
+      qr = c.data;
+    }
+    if (!qr?.base64) {
+      await r.deps.sleep(3e3);
+      const again = await connectInstance();
+      if (again.ok) qr = again.data;
+    }
+    const b64 = typeof qr?.base64 === "string" ? qr.base64.replace(/^data:image\/\w+;base64,/, "") : "";
+    if (!b64) return { text: "QR \u043F\u043E\u043A\u0430 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438 /wa_qr." };
+    journal(r, { ev: "qr" });
+    return {
+      text: "QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F. \u041D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 \u0441 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E\u0439 SIM: WhatsApp, \u0421\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0430, \u041F\u0440\u0438\u0432\u044F\u0437\u0430\u0442\u044C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E, \u043D\u0430\u0432\u0435\u0441\u0442\u0438 \u043A\u0430\u043C\u0435\u0440\u0443. \u0414\u0435\u0440\u0436\u0438\u0442\u0441\u044F \u043E\u043A\u043E\u043B\u043E \u043C\u0438\u043D\u0443\u0442\u044B, \u043D\u0435 \u043F\u0435\u0440\u0435\u0441\u044B\u043B\u0430\u0439 \u0435\u0433\u043E \u043D\u0438\u043A\u043E\u043C\u0443.",
+      photo: { data: Buffer.from(b64, "base64"), caption: "QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F WhatsApp" }
+    };
+  });
+}
+function cmdPause(r, now) {
+  if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u0443\u0436\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435." };
+  r.state.paused = true;
+  r.state.pausedAt = now;
+  r.state.pausedReason = "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, /wa_pause";
+  save(r);
+  journal(r, { ev: "pause", reason: r.state.pausedReason });
+  return { text: "\u041F\u0430\u0443\u0437\u0430 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. \u0412\u0435\u0440\u043D\u0443\u0442\u044C: /wa_resume." };
+}
+function cmdResume(r) {
+  const was = r.state.paused;
+  r.state.paused = false;
+  r.state.pausedReason = "";
+  r.state.failStreak = 0;
+  r.state.retryAt = 0;
+  r.state.pendingCreate = null;
+  save(r);
+  journal(r, { ev: "resume" });
+  return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
+}
+async function cmdNew(r, args, now) {
+  if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
+  if (r.state.pendingCreate) return { text: "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u0434\u0435\u043B\u0430\u0439 /wa_resume." };
+  const c = tcfg(r);
+  const arg = args.trim();
+  let day;
+  if (arg) {
+    if (!isDayKey(arg) || !isStreamDay(arg, c)) return { text: "\u041D\u0443\u0436\u043D\u0430 \u0434\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u0432\u0438\u0434\u0430 2026-10-12, \u0438 \u0432 \u044D\u0442\u043E\u0442 \u0434\u0435\u043D\u044C \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u044D\u0444\u0438\u0440." };
+    day = arg;
+  } else {
+    day = dayKeyOf(now);
+    for (let i = 0; i < 400 && (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)); i++) day = addDays(day, 1);
+  }
+  if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `\u042D\u0444\u0438\u0440 ${ddmm2(day)} \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u0430\u043B\u0435\u043A\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0437\u0430 \u0442\u0440\u0438 \u0434\u043D\u044F \u0434\u043E \u043D\u0435\u0433\u043E.` };
+  if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u044D\u0444\u0438\u0440\u044B \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0431\u0435\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430: ${ddmm2(day)}. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u043D\u044C\u0448\u0435 \u0441\u0440\u043E\u043A\u0430, \u0443\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443: /wa_new ${day}` };
+  const existing = targetsOf(r, day)[0];
+  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+  if (capReached(r, now)) return { text: `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.` };
+  return exclusive(r, async () => {
+    if (!await checkConnection(r, now)) return { text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR.` };
+    const res = await createTarget(r, day, 1, r.deps.now());
+    if (!res.ok) return { text: r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432\u044B\u0448\u0435." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}` };
+    await pause(r, r.cfg.pacing.betweenStepsMs);
+    const done = await setupSteps(r, res.target);
+    const t = res.target;
+    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
+  });
+}
+async function cmdSend(r, args, now) {
+  const id = args.split(/\s+/)[0];
+  if (!id) return { text: `\u0423\u043A\u0430\u0436\u0438 id \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: /wa_send morning. \u0421\u043F\u0438\u0441\u043E\u043A: ${r.cfg.messages.map((m) => m.id).join(", ")}` };
+  const msg = r.cfg.messages.find((m) => m.id === id);
+  if (!msg) return { text: `\u041D\u0435\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \xAB${id}\xBB. \u0421\u043F\u0438\u0441\u043E\u043A: ${r.cfg.messages.map((m) => m.id).join(", ")}` };
+  if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
+  const today = dayKeyOf(now);
+  const targets = [...targetsOf(r, today)].reverse().filter((t) => isReady(t) && now < closeAtOf(r, t.day));
+  if (!targets.length) return { text: `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm2(today)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` };
+  return exclusive(r, async () => {
+    if (!await checkConnection(r, now)) return { text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E.` };
+    let ok = 0;
+    let skipped = 0;
+    let failed = 0;
+    let first = true;
+    for (const t of targets) {
+      if (isDone(r, msg, t)) {
+        skipped++;
+        continue;
+      }
+      if (r.state.paused) break;
+      if (!first) await pause(r, r.cfg.pacing.betweenSendsMs);
+      first = false;
+      if (await sendMessageTo(r, t, msg, true)) ok++;
+      else failed++;
+    }
+    return { text: `\xAB${id}\xBB: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${ok}, \u0443\u0436\u0435 \u0431\u044B\u043B\u043E ${skipped}, \u043D\u0435 \u0443\u0448\u043B\u043E ${failed} (\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0441\u0435\u0433\u043E\u0434\u043D\u044F: ${targets.length}).` };
+  });
+}
+async function waCommand(cmd, args, now) {
+  const r = rt;
+  if (!r) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D (\u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430, \u0441\u043C. /api/health)." };
+  try {
+    if (cmd === "wa") return await cmdStatus(r, now);
+    if (cmd === "wa_qr") return await cmdQr(r, now);
+    if (cmd === "wa_pause") return cmdPause(r, now);
+    if (cmd === "wa_resume") return cmdResume(r);
+    if (cmd === "wa_new") return await cmdNew(r, args, now);
+    if (cmd === "wa_send") return await cmdSend(r, args, now);
+    return { text: "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043A\u043E\u043C\u0430\u043D\u0434\u0430 WhatsApp." };
+  } catch (e) {
+    console.error("[wa] \u043A\u043E\u043C\u0430\u043D\u0434\u0430 %s \u0443\u043F\u0430\u043B\u0430:", cmd, e?.stack || e);
+    return { text: `\u041E\u0448\u0438\u0431\u043A\u0430 \u043A\u043E\u043C\u0430\u043D\u0434\u044B: ${e?.message || e}` };
+  }
+}
+function waReportLine(day) {
+  const r = rt;
+  if (!r) return "";
+  const ts = targetsOf(r, day);
+  if (!ts.length) return "";
+  const joined = ts.reduce((s, t) => s + (r.joinedCount.get(t.id) || 0), 0);
+  const total = r.cfg.messages.filter((m) => m.enabled !== false).length * ts.length;
+  const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t)).length, 0);
+  return `WhatsApp: \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${joined}, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0441\u0435\u0440\u0438\u0438 \u0443\u0448\u043B\u043E ${done} \u0438\u0437 ${total}.`;
+}
+
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs8.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path8.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs9.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path9.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -7284,7 +8553,7 @@ async function handleReconcile(req, res) {
   return json(res, 200, { ok: true, swept, processed: rows.length, done, alerted, retrying });
 }
 function handleWhatsAppLink(res) {
-  return json(res, 200, { link: readWhatsAppLink() }, { "Cache-Control": "no-store, max-age=0" });
+  return json(res, 200, { link: waGroupLink() ?? readWhatsAppLink() }, { "Cache-Control": "no-store, max-age=0" });
 }
 var TG_SECRET = process.env.TG_LINK_WEBHOOK_SECRET || "";
 var TG_OWNER_IDS = (process.env.TG_LINK_OWNER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -7362,7 +8631,7 @@ function handleCalendar(res) {
 }
 function readVersion() {
   try {
-    return (0, import_node_fs8.readFileSync)((0, import_node_path8.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+    return (0, import_node_fs9.readFileSync)((0, import_node_path9.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
   } catch {
     return "dev";
   }
@@ -7377,6 +8646,7 @@ function handleHealth(res) {
       thankYou: THANKYOU_URL,
       whatsapp: readWhatsAppLink(),
       tgBot: tgHealth(),
+      waGroups: waHealth(),
       version: readVersion()
     },
     { "Cache-Control": "no-store" }
@@ -7412,6 +8682,11 @@ try {
   startScheduler();
 } catch (err) {
   console.error("[form-api] tg-\u0431\u043E\u0442 \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D:", err);
+}
+try {
+  startWaGroups();
+} catch (err) {
+  console.error("[form-api] \u043C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D:", err);
 }
 server.listen(PORT, HOST, () => {
   console.log(`[form-api] listening on http://${HOST}:${PORT}`);

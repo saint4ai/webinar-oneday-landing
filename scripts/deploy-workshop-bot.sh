@@ -29,7 +29,7 @@ fi
 
 echo "== распаковка"
 tar -xzf "$PKG" -C "$TMP"
-for f in form/server.js form/tg-setup.js form/tg-series.json form/admin-app.html form/VERSION landing/thank-you.html landing/efir.js landing/index.html static/thank-you.html secrets.env; do
+for f in form/server.js form/tg-setup.js form/tg-series.json form/wa-series.json form/admin-app.html form/VERSION landing/thank-you.html landing/efir.js landing/index.html static/thank-you.html secrets.env; do
   test -s "$TMP/$f" || { echo "нет $f в архиве"; exit 1; }
 done
 
@@ -54,6 +54,8 @@ echo "переменных TG_WORKSHOP_ и TG_GO_: $(grep -c -E '^(TG_WORKSHOP_|
 
 echo "== пробный запуск нового server.js на 4011 без бота"
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/tg-series.json" "$F/tg-series.json"
+# Расписание WhatsApp-сообществ лежит рядом с server.js; модуль включается отдельно флагом WA_GROUPS=on в .env.
+install -o onaiapp -g onaiapp -m 644 "$TMP/form/wa-series.json" "$F/wa-series.json"
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/VERSION" "$F/VERSION"
 # Страница мини-приложения админки лежит рядом с server.js; пароль и ключ сессий (ADMIN_APP_PIN, ADMIN_APP_SECRET) в .env дописываются отдельно.
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/admin-app.html" "$F/admin-app.html"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Выкладка только кода form-api (бот, админка, приём заявок) без лендинга.
-# Запуск на сервере от root: bash deploy-form-api.sh /tmp/server.js [/tmp/tg-series.json] [/tmp/admin-app.html]
+# Запуск на сервере от root: bash deploy-form-api.sh /tmp/server.js [/tmp/tg-series.json] [/tmp/admin-app.html] [/tmp/wa-series.json]
 # Порядок как в deploy-workshop-bot.sh: бэкап → пробный запуск на 4011 без бота → замена → рестарт → проверка.
 # data/ и .env не трогаем. Во время эфира (19:30–21:30 по Алматы) не запускать без FORCE=1.
 set -euo pipefail
@@ -8,6 +8,7 @@ set -euo pipefail
 NEW="${1:?нужен путь к новому server.js}"
 SERIES="${2:-}"
 APP="${3:-}"
+WASERIES="${4:-}"
 F=/opt/workshop-form
 TS="$(date +%Y%m%d-%H%M%S)"
 PM2="runuser -u onaiapp -- env PM2_HOME=/home/onaiapp/.pm2 pm2"
@@ -20,6 +21,7 @@ fi
 test -s "$NEW"
 cp -a "$F/server.js" "$F/server.js.bak.$TS"
 [[ -n "$SERIES" ]] && { test -s "$SERIES"; cp -a "$F/tg-series.json" "$F/tg-series.json.bak.$TS"; }
+[[ -n "$WASERIES" ]] && { test -s "$WASERIES"; [[ -f "$F/wa-series.json" ]] && cp -a "$F/wa-series.json" "$F/wa-series.json.bak.$TS"; install -o onaiapp -g onaiapp -m 644 "$WASERIES" "$F/wa-series.json"; }
 [[ -n "$APP" ]] && { test -s "$APP"; [[ -f "$F/admin-app.html" ]] && cp -a "$F/admin-app.html" "$F/admin-app.html.bak.$TS"; install -o onaiapp -g onaiapp -m 644 "$APP" "$F/admin-app.html"; }
 
 echo "== пробный запуск на 4011 без бота"

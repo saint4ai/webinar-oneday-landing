@@ -15,6 +15,7 @@ Copy-Item "$root\workshop-montazh\assets\tg\*" "$stage\landing\assets\tg\" -Recu
 Copy-Item "$root\form-api\dist\server.js" "$stage\form\server.js"
 Copy-Item "$root\form-api\dist\tg-setup.js" "$stage\form\tg-setup.js"
 Copy-Item "$root\form-api\tg-series.json" "$stage\form\tg-series.json"
+Copy-Item "$root\form-api\wa-series.json" "$stage\form\wa-series.json"
 Copy-Item "$root\form-api\admin-app.html" "$stage\form\admin-app.html"
 Copy-Item "$root\workshop-static-redirect\thank-you.html" "$stage\static\thank-you.html"
 $ver = (git -C $root rev-parse --short HEAD) + " " + (Get-Date -Format "yyyy-MM-dd HH:mm")
