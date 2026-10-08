@@ -126,6 +126,8 @@ export type Links = {
 export type Welcome = {
   media: Media;
   before: string;
+  /** Кнопки под обычным приветствием (бонусы за запись). Необязательные. */
+  beforeButtons?: Button[][];
   live: string;
   liveButtons: Button[][];
   /** Отдельное сообщение для записавшихся после окна live, пока сегодняшний эфир ещё идёт. */
@@ -273,6 +275,7 @@ export function validateSeries(raw: unknown): Series {
   for (const k of ["before", "live", "stop", "other", "paidAck"]) checkText(w[k], `welcome.${k}`);
   for (const k of ["lateToday", "rejoinAck"]) if (w[k] !== undefined) checkText(w[k], `welcome.${k}`);
   checkButtons(w.liveButtons, "welcome.liveButtons");
+  checkButtons(w.beforeButtons, "welcome.beforeButtons");
   if (!Array.isArray(raw.messages)) throw new Error("серия: messages должен быть массивом");
   const ids = new Set<string>();
   for (const m of raw.messages) {
@@ -846,7 +849,7 @@ async function sendGreeting(sub: Subscriber, now: number): Promise<void> {
     noteSendResult(sub.chatId, await sendContent(liveContent(sr), ctx), now);
     return;
   }
-  const r = await sendContent({ media: sr.welcome.media, text: sr.welcome.before }, ctx);
+  const r = await sendContent({ media: sr.welcome.media, text: sr.welcome.before, buttons: sr.welcome.beforeButtons }, ctx);
   noteSendResult(sub.chatId, r, now);
   const live = liveDayNow(now, cfg);
   if (r.ok && live && live !== sub.streamDay && sr.welcome.lateToday) {
