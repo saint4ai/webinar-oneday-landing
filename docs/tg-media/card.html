@@ -82,6 +82,16 @@ html,body{width:1080px;height:1350px}
   box-shadow:0 0 0 13px rgba(229,71,44,.22),0 0 0 28px rgba(229,71,44,.09),0 0 60px rgba(255,98,64,.6)}
 .light .live .onair,.light.live .onair{background:linear-gradient(145deg,#2d231d,#17110e);border-color:rgba(227,192,123,.7);box-shadow:0 26px 54px rgba(60,35,15,.4)}
 
+/* live-now: фото со сцены на всю карточку */
+.stage .photo{position:absolute;left:-440px;top:0;width:2025px;height:1350px;background:url("obj/alex-stage-mic.webp") 0 0/100% 100% no-repeat;filter:sepia(.28) saturate(.92) contrast(1.06)}
+.stage .shade{position:absolute;inset:0;background:
+  linear-gradient(90deg,rgba(20,16,14,.97) 0%,rgba(20,16,14,.88) 44%,rgba(20,16,14,.3) 62%,transparent 82%),
+  linear-gradient(0deg,#14100E 0%,rgba(20,16,14,.9) 13%,rgba(20,16,14,0) 44%),
+  linear-gradient(180deg,rgba(20,16,14,.6) 0%,transparent 24%),
+  radial-gradient(720px 620px at 76% 24%,rgba(227,192,123,.14),transparent 70%)}
+.live .onair.sm{height:128px;gap:24px;padding:0 44px 0 36px;font-size:76px}
+.live .onair.sm .dot{width:52px;height:52px;box-shadow:0 0 0 10px rgba(229,71,44,.22),0 0 0 22px rgba(229,71,44,.09),0 0 48px rgba(255,98,64,.6)}
+
 /* offer */
 .offer .badge{position:absolute;left:80px;top:150px;width:360px;height:156px;border-radius:40px;transform:rotate(-4deg);display:flex;align-items:center;justify-content:center;
   background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 55%,#C9A05A 100%);box-shadow:0 26px 50px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.55);
@@ -94,7 +104,7 @@ html,body{width:1080px;height:1350px}
 .offer .until{position:absolute;left:80px;top:648px;display:inline-flex;align-items:center;gap:18px;height:92px;padding:0 42px;border-radius:999px;
   border:2px solid var(--gold);background:linear-gradient(135deg,rgba(227,192,123,.22),rgba(227,192,123,.06));font-weight:800;font-size:40px;color:var(--cream);box-shadow:0 14px 40px rgba(0,0,0,.35)}
 .offer .until b{display:block;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 7px rgba(227,192,123,.2)}
-.offer .gift{left:80px;top:776px;width:420px;padding:26px 28px 26px;border-radius:30px}
+.offer .gift{left:80px;top:776px;width:392px;padding:26px 28px 26px;border-radius:30px}
 .offer .gift .k{font-weight:800;font-size:28px;letter-spacing:.14em;color:var(--gold)}
 .offer .gift .t{margin-top:10px;font-weight:700;font-size:32px;line-height:1.22;color:var(--cream);white-space:nowrap}
 .offer .gift .k+.t{margin-top:14px}
@@ -154,6 +164,19 @@ html,body{width:1080px;height:1350px}
   box-shadow:0 24px 46px rgba(0,0,0,.5),0 0 0 10px rgba(227,192,123,.16),inset 0 2px 0 rgba(255,255,255,.55)}
 .btn .play{display:block;width:0;height:0;border-left:34px solid #2A211C;border-top:21px solid transparent;border-bottom:21px solid transparent}
 
+/* малый билет (WhatsApp 10:30) */
+.ticket.sm{width:620px;height:250px;transform:rotate(4deg)}
+.ticket.sm .tk-time{left:38px;top:40px;font-size:88px}
+.ticket.sm .tk-sub{left:42px;bottom:24px;font-size:30px}
+.ticket.sm .tk-cut{left:430px;top:26px;bottom:26px}
+.ticket.sm .tk-stamp{left:446px;top:34px;padding:6px 14px;border-width:5px;font-size:27px}
+
+/* next-2145-wa: развилка двух дорог под часами 23:59 */
+.fork{position:absolute;left:0;top:0;pointer-events:none}
+.choice{position:absolute;width:324px;height:96px;display:flex;align-items:center;justify-content:center;border-radius:999px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:48px;white-space:nowrap}
+.choice.yes{background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 60%,#D3A85F 100%);color:#2A211C;box-shadow:0 20px 40px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.55)}
+.choice.no{background:rgba(251,243,228,.08);color:var(--cream);border:2px solid rgba(227,192,123,.6);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+
 /* doubts: вопрос -> ответ */
 .doubts .qa{position:absolute;left:80px;width:920px;height:148px;display:flex;align-items:center}
 .doubts .q{position:relative;flex:none;width:400px;height:100%;display:flex;align-items:center;padding:0 30px;border-radius:34px;font-weight:700;font-size:44px;color:#2A211C}
@@ -212,12 +235,11 @@ const cards = {
       <div class="glass row" style="top:944px"><div class="ic wide"><img src="${L}lg-s23-noface.webp" style="height:150px;width:auto" alt=""></div><div class="t">4 формата<small>два из них без лица в кадре</small></div></div>${LOGO}`
   },
   "live-now": {
-    cls: "live", gx: "72%", gy: "38%",
-    html: `${lab("МЫ В ЭФИРЕ")}${head("Начали", 128)}
-      ${glow(430, 420, 700, 800, .55)}
-      <div class="light-floor" style="left:520px;top:400px;width:560px;height:560px;background:radial-gradient(closest-side,rgba(229,71,44,.16),transparent);opacity:1"></div>
-      ${stand("P:alex-cacao.webp", { cx: 800, foot: 1372, vw: 620, noShadow: true })}
-      <div class="glass onair" data-fit style="top:340px"><span class="dot"></span>LIVE</div>${LOGO}`
+    // 20:00: фото со сцены с микрофоном (страница услуг /saint), затемнено к низу и слева
+    cls: "live stage", gx: "72%", gy: "38%",
+    html: `<div class="photo"></div><div class="shade"></div>
+      ${lab("МЫ В ЭФИРЕ")}${head("Начали", 96)}
+      <div class="glass onair sm" data-fit style="top:312px"><span class="dot"></span>LIVE</div>${LOGO}`
   },
   // с 08.10.2026 карточки практик 2 и 3 не нужны: на эфире видеоурок про весь путь рилса из семи шагов
   "topic-p1": {
@@ -244,7 +266,7 @@ const cards = {
       <div class="inst">или от 6&nbsp;250&nbsp;₸ в месяц,<br>рассрочка до 24&nbsp;месяцев</div>
       <div class="until"><b></b>до 23:59 по Алматы</div>
       ${glow(430, 560, 700, 800, .5)}
-      ${stand("P:alex-cacao.webp", { cx: 810, foot: 1372, vw: 520, noShadow: true })}
+      ${stand("X:alex-2-gold.webp", { cx: 835, foot: 1680, vw: 731, noShadow: true })}
       <div class="glass gift"><div class="k">В ПОДАРОК</div><div class="t">Модуль 3<br>«AI-креатор»</div><div class="t">6&nbsp;месяцев доступа<br>вместо&nbsp;3</div><div class="t">Модуль по рекламе<br>через Claude</div></div>${LOGO}`
   },
 
@@ -294,10 +316,10 @@ const cards = {
   },
   "vaib": {
     cls: "train light", gx: "84%", gy: "10%", light: 1,
-    html: `${lab("БОНУСЫ ЭФИРА")}${head("Напиши Аяне", 92)}
-      <div class="word big" style="left:62px;top:292px;font-size:272px">ВАЙБ</div>
+    html: `${lab("БОНУСЫ ЭФИРА")}${head("Напиши<br>менеджеру", 80)}
+      <div class="word big" style="left:62px;top:376px;font-size:252px">ВАЙБ</div>
       ${glow(220, 620, 860, 640, .6)}
-      ${stand("L:lg-s44-codeword.webp", { cx: 570, foot: 1210, vw: 680 })}${LOGO}`
+      ${stand("L:lg-s44-codeword.webp", { cx: 570, foot: 1210, vw: 590 })}${LOGO}`
   },
   "installment": {
     cls: "train inst-card light", gx: "84%", gy: "10%", light: 1,
@@ -338,15 +360,47 @@ const cards = {
     html: `${lab("ДО 23:59")}${head("Решаешь ты", 104)}
       <div class="big" style="left:50px;top:318px;font-size:268px">−40%</div>
       ${glow(300, 540, 800, 820, .55)}
-      ${stand("P:alex-cacao.webp", { cx: 800, foot: 1420, vw: 560, noShadow: true })}${LOGO}`
+      ${stand("X:alex-2-gold.webp", { cx: 560, foot: 1665, vw: 748, noShadow: true })}${LOGO}`
   },
   "next-1950": {
     cls: "topic", gx: "78%", gy: "30%",
     html: `${lab("ПОВТОР ЭФИРА")}${head("Через<br>10 минут", 100)}
-      <div class="big" style="left:56px;top:398px;font-size:238px">10:00</div>
-      <div class="btn"><span class="play"></span>Открыть повтор</div>
+      <div class="big" style="left:56px;top:384px;font-size:250px">20:00</div>
+      <div class="clock" style="left:84px;top:640px;font-size:38px;letter-spacing:0;font-family:Manrope,sans-serif;font-weight:700;color:var(--cream)">повтор по Алматы · 18:00 по Москве</div>
+      <div class="btn" style="top:724px"><span class="play"></span>Открыть повтор</div>
       ${glow(420, 780, 700, 560, .5)}
-      ${stand("X:lg-i-clapper-x3.png", { cx: 780, foot: 1242, vw: 470 })}${LOGO}`
+      ${stand("X:lg-i-clapper-x3.png", { cx: 850, foot: 1242, vw: 400 })}${LOGO}`
+  },
+  "next-1030-wa": {
+    cls: "topic", gx: "70%", gy: "36%",
+    html: `${lab("ПРЕЗЕНТАЦИЯ И ПОВТОР")}${head("Ещё один<br>шанс сегодня", 90)}
+      ${glow(60, 460, 960, 800, .55)}
+      <div class="deck" style="left:60px;top:450px;width:720px"><img src="${X3}deck-vibe-production-cover.jpg" alt=""></div>
+      <div class="ticket sm" style="left:390px;top:900px">
+        <div class="tk-time">20:00</div>
+        <div class="tk-sub">по Алматы</div>
+        <div class="tk-cut"></div>
+        <div class="tk-stamp">ПОВТОР</div>
+      </div>${LOGO}`
+  },
+  "next-2145-wa": {
+    cls: "topic", gx: "50%", gy: "40%",
+    html: `${lab("ДО 23:59")}${head("Последний<br>шанс", 104)}
+      <div class="big" style="left:60px;top:398px;font-size:226px">23:59</div>
+      ${glow(100, 640, 880, 640, .45)}
+      <svg class="fork" viewBox="0 0 1080 1350" width="1080" height="1350">
+        <defs><filter id="rs"><feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity=".55"/></filter></defs>
+        <g fill="none" stroke-linecap="round" filter="url(#rs)">
+          <path d="M540 1190 V1010 C540 880 300 900 288 770" stroke="#E3C07B" stroke-width="112"/>
+          <path d="M540 1190 V1010 C540 880 780 900 792 770" stroke="#E3C07B" stroke-width="112"/>
+          <path d="M540 1190 V1010 C540 880 300 900 288 770" stroke="#2B2119" stroke-width="100"/>
+          <path d="M540 1190 V1010 C540 880 780 900 792 770" stroke="#2B2119" stroke-width="100"/>
+          <path d="M540 1190 V1010 C540 880 300 900 288 770" stroke="#F0D49A" stroke-width="6" stroke-dasharray="20 18"/>
+          <path d="M540 1190 V1010 C540 880 780 900 792 770" stroke="#F0D49A" stroke-width="6" stroke-dasharray="20 18"/>
+        </g>
+      </svg>
+      <div class="choice no" style="left:128px;top:640px">Нет</div>
+      <div class="choice yes" style="left:628px;top:640px">Да</div>${LOGO}`
   },
 };
 

@@ -23,8 +23,8 @@ const CARD_IDS = [
   // день эфира, по времени сообщений (лента v3.3, imgHook у каждого сообщения)
   "reg-bonus", "warm-edits", "warm-cases", "live-bonus", "t-minus-30", "t-minus-10", "live-now", "live-10", "topic-p1",
   "training", "bonus-got", "vaib", "offer", "installment", "last-call",
-  // следующий день (повтор эфира в 20:00): 10:30, 11:00, 15:00, 19:50, 21:45
-  "next-1030", "again-today", "next-1500", "next-1950", "next-2145",
+  // следующий день (повтор эфира в 20:00): 10:30, 11:00, 15:00, 19:50, 21:45; *-wa: отдельные карточки для WhatsApp-группы
+  "next-1030", "next-1030-wa", "again-today", "next-1500", "next-1950", "next-2145", "next-2145-wa",
 ];
 // размеры, отличные от карточки 1080x1350 (сейчас таких нет: у видео свои обложки)
 const CARD_SIZE = {};
