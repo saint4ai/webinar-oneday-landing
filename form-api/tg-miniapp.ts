@@ -8,6 +8,7 @@
  *   GET  /api/admin/leads          регистрации (заявки с сайта), поиск и фильтры, подгрузка по 50
  *   GET  /api/admin/subscribers    подписчики бота
  *   GET  /api/admin/errors         ошибки и состояние процесса
+ *   *    /api/admin/wa/*           пульт WhatsApp-сообществ (wa-admin.ts), те же три слоя доступа
  *
  * Доступ в три слоя, каждый обязателен:
  *   1. initData Telegram WebApp на каждый запрос: подпись по официальной схеме
@@ -568,7 +569,7 @@ function readLimited(req: IncomingMessage, max: number): Promise<string | null> 
   });
 }
 
-type Gate = { ok: true; userId: number } | { ok: false; status: number; body: { ok: false; error: string } };
+export type Gate = { ok: true; userId: number } | { ok: false; status: number; body: { ok: false; error: string } };
 
 /** Слои 1 и 2: приложение настроено, initData верна, user.id допущен. Причины отказа наружу не выдаём. */
 function gateInit(initData: string): Gate {
@@ -637,12 +638,26 @@ function listQuery(qs: URLSearchParams): ListQuery {
   };
 }
 
+/**
+ * Все три слоя доступа для маршрутов с данными и действиями: initData, допуск user.id, токен сессии.
+ * Через него идут и экраны статистики, и пульт WhatsApp (wa-admin.ts).
+ */
+export function gateAdminSession(req: IncomingMessage): Gate {
+  const gate = gateInit(header(req, "x-tg-init-data"));
+  if (!gate.ok) return gate;
+  const m = /^Bearer\s+(\S+)$/i.exec(header(req, "authorization"));
+  if (!m || !verifySession(m[1], gate.userId, Date.now(), appSecret())) return { ok: false, status: 401, body: { ok: false, error: "session" } };
+  return gate;
+}
+
+/** Ответ JSON с теми же заголовками, что у экранов админки (no-store, nosniff), и чтение тела с жёстким лимитом: для wa-admin.ts. */
+export const adminJson = send;
+export const adminReadBody = readLimited;
+
 /** GET /api/admin/<summary|leads|subscribers|errors>: слои 1 и 2, затем токен сессии (слой 3). */
 export function handleAdminData(req: IncomingMessage, res: ServerResponse, path: string): void {
-  const gate = gateInit(header(req, "x-tg-init-data"));
+  const gate = gateAdminSession(req);
   if (!gate.ok) return send(res, gate.status, gate.body);
-  const m = /^Bearer\s+(\S+)$/i.exec(header(req, "authorization"));
-  if (!m || !verifySession(m[1], gate.userId, Date.now(), appSecret())) return send(res, 401, { ok: false, error: "session" });
   const what = path.replace(/^\/api\/admin\//, "");
   if (!["summary", "leads", "subscribers", "errors"].includes(what)) return send(res, 404, { ok: false, error: "not_found" });
   if (!botEnabled()) return send(res, 503, { ok: false, error: "bot_off" });

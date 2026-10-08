@@ -1560,8 +1560,8 @@ export function handleGo(req: IncomingMessage, res: ServerResponse, rawToken: st
 let tyWindowStart = 0;
 let tyWindowCount = 0;
 
-/** Тело клика: ch=tg|wa, необязательные eid (uuid посетителя) и src=pp|ty (окно или страница). text/plain, форма или json. */
-export function parseTyBody(raw: string): { ch: "tg" | "wa"; eid: string; src?: "pp" | "ty" } | null {
+/** Тело клика: ch=tg|wa|wa-template, необязательные eid (uuid посетителя) и src=pp|ty (окно или страница). text/plain, форма или json. */
+export function parseTyBody(raw: string): { ch: "tg" | "wa" | "wa-template"; eid: string; src?: "pp" | "ty" } | null {
   let ch = "";
   let eid = "";
   let src = "";
@@ -1581,7 +1581,7 @@ export function parseTyBody(raw: string): { ch: "tg" | "wa"; eid: string; src?: 
   } catch {
     return null;
   }
-  if (ch !== "tg" && ch !== "wa") return null;
+  if (ch !== "tg" && ch !== "wa" && ch !== "wa-template") return null;
   return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "", ...(src === "pp" || src === "ty" ? { src } : {}) };
 }
 

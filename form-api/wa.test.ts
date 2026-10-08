@@ -11,19 +11,19 @@ import { createServer, type Server } from "node:http";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assignStreamDay, setUtcOffsetMinutes } from "./tg-time";
-import { dayReportText, getStore, HELP_TEXT, initTgWorkshop, notifyOwners, processUpdate, registerWa, registerWaReport } from "./tg-workshop";
+import { assignStreamDay, dayKeyOf, setUtcOffsetMinutes } from "./tg-time";
+import { EVO_KEY, evo, INSTANCE_TOKEN, OWNER_JID, PNG_B64, runWaPage, tg } from "./wa-testkit";
+import { dayReportText, getStore, HELP_TEXT, initTgWorkshop, notifyOwners, parseTyBody, processUpdate, registerWa, registerWaReport } from "./tg-workshop";
 import {
   _internals, _waRt, adminNumbers, extractMembers, initWaGroups, joinsTick, normalizeRequests, resetWaGroups, startWaGroups,
-  validateWaSeries, waCommand, waGroupLink, waHealth, waReportLine, waTick, type Kind,
+  validateWaSeries, waCommand, waConnection, waEventCreateNow, waEventReset, waGroupLink, waGroups, waHealth, waLogout, waPanel, waPause,
+  waQr, waReportLine, waResume, waSendSeries, waSetDaily, waSetEvent, waSetMode, waTick, type Kind,
 } from "./wa-groups";
 
 process.env.TG_WORKSHOP_BOT_TOKEN = "WATEST:tgtoken123";
 process.env.TG_WORKSHOP_WEBHOOK_SECRET = "wa-test-webhook-secret-0123";
 process.env.TG_GO_SECRET = "wa-test-go-secret-987654";
 process.env.TG_LINK_OWNER_IDS = "900,901";
-const EVO_KEY = "wa-test-evo-key-4f9c2";
-const INSTANCE_TOKEN = "SECRET-INSTANCE-TOKEN-77";
 process.env.EVOLUTION_API_KEY = EVO_KEY;
 delete process.env.EVOLUTION_INSTANCE;
 delete process.env.WA_GROUPS;
@@ -39,170 +39,6 @@ const tmp = () => mkdtempSync(join(tmpdir(), "wa-test-"));
 const alm = (y: number, m: number, d: number, h: number, mi = 0, s = 0) => Date.UTC(y, m - 1, d, h - 5, mi, s);
 const readJsonl = (file: string): any[] => (existsSync(file) ? readFileSync(file, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
 
-// ───────────────────────── подставной Telegram ─────────────────────────
-
-type TgCall = { method: string; body: Record<string, any>; raw: string };
-const tg = {
-  server: null as Server | null,
-  calls: [] as TgCall[],
-  async start() {
-    this.server = createServer((req, res) => {
-      const chunks: Buffer[] = [];
-      req.on("data", (c) => chunks.push(c));
-      req.on("end", () => {
-        const buf = Buffer.concat(chunks);
-        const raw = buf.toString("latin1");
-        let body: Record<string, any> = {};
-        try {
-          body = JSON.parse(buf.toString("utf8"));
-        } catch {
-          /* multipart: смотрим сырой текст */
-        }
-        this.calls.push({ method: (req.url || "").split("/").pop() || "", body, raw });
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true, result: { message_id: 1 } }));
-      });
-    });
-    await new Promise<void>((r) => this.server!.listen(0, "127.0.0.1", r));
-    process.env.TG_API_BASE = `http://127.0.0.1:${(this.server!.address() as { port: number }).port}`;
-  },
-  async stop() {
-    await new Promise<void>((r) => this.server!.close(() => r()));
-  },
-  reset() {
-    this.calls = [];
-  },
-  texts(chat: number) {
-    return this.calls.filter((c) => c.method === "sendMessage" && c.body.chat_id === chat).map((c) => String(c.body.text));
-  },
-};
-
-// ───────────────────────── подставной Evolution ─────────────────────────
-
-type ECall = { method: string; path: string; query: URLSearchParams; body: any; key: string | undefined };
-type Override = { status?: number; json?: unknown; hang?: boolean } | null;
-const PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-
-const evo = {
-  server: null as Server | null,
-  calls: [] as ECall[],
-  state: "open",
-  creates: 0,
-  groups: 0,
-  msgSeq: 0,
-  members: new Map<string, number>(),
-  announce: new Map<string, string>(),
-  requests: new Map<string, any[]>(),
-  rejectJids: new Set<string>(),
-  fail: null as ((c: ECall) => Override) | null,
-  /** Нарушения защиты номера: сообщение не в группу или добавление участников. */
-  violations: [] as string[],
-  async start() {
-    this.server = createServer((req, res) => {
-      const chunks: Buffer[] = [];
-      req.on("data", (c) => chunks.push(c));
-      req.on("end", () => {
-        const url = new URL(req.url || "/", "http://x");
-        let body: any = null;
-        try {
-          body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-        } catch {
-          body = null;
-        }
-        const call: ECall = { method: req.method || "GET", path: url.pathname, query: url.searchParams, body, key: req.headers["apikey"] as string | undefined };
-        this.calls.push(call);
-        const send = (status: number, json: unknown) => {
-          res.writeHead(status, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(json));
-        };
-        if (call.key !== EVO_KEY) return send(401, { status: 401, error: "Unauthorized", response: { message: "Unauthorized" } });
-        const o = this.fail?.(call) ?? null;
-        if (o?.hang) return void req.socket.destroy();
-        if (o) return send(o.status ?? 500, o.json ?? { status: o.status ?? 500, error: "Internal Server Error", response: { message: "boom" } });
-        const [, a, b] = call.path.split("/");
-        const jid = call.query.get("communityJid") || call.query.get("groupJid") || "";
-        const route = `${call.method} /${a}/${b}`;
-        switch (route) {
-          case "GET /instance/connectionState":
-            if (this.state === "absent") return send(404, { status: 404, error: "Not Found", response: { message: ['The "workshop" instance does not exist'] } });
-            return send(200, { instance: { instanceName: "workshop", state: this.state } });
-          case "GET /instance/fetchInstances":
-            return send(200, [{ name: "workshop", ownerJid: "77001112233@s.whatsapp.net", profileName: "Тест", token: INSTANCE_TOKEN, connectionStatus: this.state }]);
-          case "POST /instance/create":
-            this.state = "connecting";
-            return send(201, { instance: { instanceName: "workshop" }, hash: INSTANCE_TOKEN, qrcode: { base64: `data:image/png;base64,${PNG_B64}`, code: "2@abc", count: 1 } });
-          case "GET /instance/connect":
-            return send(200, { base64: `data:image/png;base64,${PNG_B64}`, code: "2@abc", count: 2 });
-          case "POST /community/create": {
-            const n = ++this.creates;
-            const c = `1203630000000${n}@g.us`;
-            const an = `1203631000000${n}@g.us`;
-            this.announce.set(c, an);
-            return send(201, { communityJid: c, announcementJid: an });
-          }
-          case "GET /community/info":
-            return send(200, { communityJid: jid, size: this.members.get(jid) ?? 1, linkedGroups: [{ id: this.announce.get(jid), size: this.members.get(jid) ?? 1 }] });
-          case "GET /community/inviteCode": {
-            const code = `INV${jid.replace(/\D/g, "").slice(-6)}`;
-            return send(200, { inviteCode: code, inviteUrl: `https://chat.whatsapp.com/${code}` });
-          }
-          case "POST /community/updateSetting":
-          case "POST /community/memberAddMode":
-          case "POST /community/joinApprovalMode":
-            return send(200, { update: "success" });
-          case "GET /community/requests":
-            return send(200, this.requests.get(jid) ?? []);
-          case "POST /community/requests": {
-            const asked: string[] = body?.participants || [];
-            const pending = this.requests.get(jid) || [];
-            const results = asked.map((p) => ({ status: this.rejectJids.has(p) ? "404" : "200", jid: p }));
-            this.requests.set(jid, pending.filter((r) => !asked.includes(r.jid) || this.rejectJids.has(r.jid)));
-            return send(200, results);
-          }
-          case "POST /group/updateGroupPicture":
-            return send(201, { update: "success" });
-          case "POST /group/create":
-            return send(201, { id: `1203632000000${++this.groups}@g.us`, subject: body?.subject });
-          case "POST /group/updateSetting":
-            return send(201, { updateSetting: "announcement" });
-          case "GET /group/inviteCode": {
-            const code = `GRP${jid.replace(/\D/g, "").slice(-6)}`;
-            return send(200, { inviteCode: code, inviteUrl: `https://chat.whatsapp.com/${code}` });
-          }
-          case "GET /group/findGroupInfos":
-            return send(200, { id: jid, size: this.members.get(jid) ?? 2 });
-          case "POST /message/sendText":
-          case "POST /message/sendMedia":
-          case "POST /message/sendPoll":
-            if (!String(body?.number || "").endsWith("@g.us")) this.violations.push(`сообщение не в группу: ${body?.number}`);
-            return send(201, { key: { remoteJid: body?.number, fromMe: true, id: `MSG${++this.msgSeq}` } });
-        }
-        if (/updateParticipant|sendInvite/.test(call.path)) this.violations.push(`добавление людей: ${call.path}`);
-        return send(404, { status: 404, error: "Not Found", response: { message: [`Cannot ${call.method} ${call.path}`] } });
-      });
-    });
-    await new Promise<void>((r) => this.server!.listen(0, "127.0.0.1", r));
-    process.env.EVOLUTION_URL = `http://127.0.0.1:${(this.server!.address() as { port: number }).port}`;
-  },
-  async stop() {
-    await new Promise<void>((r) => this.server!.close(() => r()));
-  },
-  reset() {
-    this.calls = [];
-    this.state = "open";
-    this.fail = null;
-    this.members.clear();
-    this.requests.clear();
-    this.rejectJids.clear();
-  },
-  /** Вызовы по префиксу пути. */
-  of(prefix: string) {
-    return this.calls.filter((c) => c.path.startsWith(prefix));
-  },
-  seq() {
-    return this.calls.map((c) => `${c.method} ${c.path.split("/").slice(0, 3).join("/")}`);
-  },
-};
 
 test.before(async () => {
   await tg.start();
@@ -244,10 +80,15 @@ test.beforeEach(() => {
   delete process.env.WA_GROUPS;
 });
 
-type BootOpts = { kind?: Kind; edit?: (s: any) => void; tgEdit?: (s: any) => void };
-/** Свежие данные, серия бота (время эфира и вызов команд) и модуль. Команды подключены как в startWaGroups. */
+type BootOpts = { kind?: Kind; edit?: (s: any) => void; tgEdit?: (s: any) => void; state?: Record<string, unknown>; daily?: boolean };
+/**
+ * Свежие данные, серия бота (время эфира и вызов команд) и модуль. Команды подключены как в startWaGroups.
+ * После первого включения модуль стоит в ежедневном режиме с выключенным созданием; прежние тесты проверяют ежедневное
+ * создание, поэтому по умолчанию его включаем (daily: false оставляет как есть, state добавляет поля в wa-state.json).
+ */
 function boot(o: BootOpts = {}) {
   const dir = tmp();
+  writeFileSync(join(dir, "wa-state.json"), JSON.stringify({ v: 1, mode: "daily", daily: { enabled: o.daily !== false }, ...(o.state || {}) }));
   const series = JSON.parse(readFileSync(WA_SERIES, "utf8"));
   o.edit?.(series);
   const seriesPath = join(dir, "wa-series.json");
@@ -1182,6 +1023,609 @@ test("Telegram: тревога доходит владельцам через с
   assert.ok((await notifyOwners("проверка тревоги")) >= 1);
   assert.deepEqual(tg.texts(900), ["проверка тревоги"]);
   assert.deepEqual(tg.texts(901), ["проверка тревоги"]);
+});
+
+// ───────────────────────── пульт: режимы, живой эфир, подключение, группы ─────────────────────────
+
+const EVENT_DAY = "2026-10-12";
+
+/** Живой эфир на 12 октября: режим event, набор с 9 октября. Часы на 8 октября 12:00. */
+function bootEvent(o: BootOpts & { start?: string; recruitFrom?: string } = {}) {
+  const w = boot({ daily: false, ...o });
+  at(8, 12, 0, 0);
+  assert.equal(waSetMode("event").ok, true);
+  const set = waSetEvent({ date: EVENT_DAY, start: o.start ?? "20:00", recruitFrom: o.recruitFrom ?? "2026-10-09" });
+  assert.equal(set.ok, true, set.message);
+  return w;
+}
+
+const eventTarget = (w: ReturnType<typeof boot>) => w.state().targets.find((t: any) => t.day === EVENT_DAY);
+
+test("режимы: после первого включения daily с выключенным созданием, ночью в 20:00 ничего не создаётся; включили, и создаётся", async () => {
+  const w = boot({ daily: false });
+  assert.equal(w.rt().state.mode, "daily");
+  assert.equal(w.rt().state.daily.enabled, false);
+  assert.equal(JSON.parse(readFileSync(join(w.dir, "wa-state.json"), "utf8")).daily.enabled, false);
+  at(8, 20, 0, 0);
+  const r = await waTick();
+  assert.equal(r.created, 0);
+  assert.equal(evo.of("/community/create").length, 0, "пока не включили, ничего не создаётся");
+  // свежий файл состояния без поля mode тоже начинает с выключенного создания
+  const dir = tmp();
+  writeFileSync(join(dir, "wa-state.json"), JSON.stringify({ v: 1, targets: [] }));
+  initWaGroups({ dir, seriesFile: WA_SERIES, deps: deps() });
+  assert.deepEqual([_waRt()!.state.mode, _waRt()!.state.daily.enabled], ["daily", false]);
+  boot({ daily: false });
+  // включили: сообщество на завтра создаётся в окне догонки
+  assert.equal(waSetDaily(true).ok, true);
+  assert.equal(JSON.parse(readFileSync(join(_waRt()!.dir, "wa-state.json"), "utf8")).daily.enabled, true, "состояние записано на диск");
+  at(8, 20, 5, 0);
+  assert.equal((await waTick()).created, 1);
+  assert.equal(evo.of("/community/create").length, 1);
+  // выключили: новые не создаются, созданное продолжает работать (ссылка, прогрев)
+  assert.equal(waSetDaily(false).ok, true);
+  at(9, 20, 0, 0);
+  assert.equal((await waTick()).created, 0, "выключено: на 10 октября не создаём");
+  assert.equal(evo.of("/community/create").length, 1);
+  assert.ok(waGroupLink(alm(2026, 10, 9, 12, 0)), "созданное сообщество продолжает отдавать ссылку");
+  at(9, 11, 30, 5);
+  assert.equal((await waTick()).sent, 1, "и прогрев идёт");
+});
+
+test("режимы взаимоисключающие: уход в живой эфир выключает ежедневное создание, созданное не трогается, ссылка идёт по режиму", async () => {
+  const w = boot();
+  const first = await createFor(w, 9); // daily, создано 8 октября в 20:00
+  at(9, 12, 0, 0);
+  assert.equal(waGroupLink(clock.t, false), first.link);
+  evo.calls = [];
+  const m = waSetMode("event");
+  assert.equal(m.ok, true);
+  assert.match(m.message, /Ежедневное создание выключено/);
+  assert.equal(evo.calls.length, 0, "переключение не ходит в Evolution");
+  assert.equal(w.state().mode, "event");
+  assert.equal(w.state().daily.enabled, false, "созданием на ежедневном режиме больше не занимаемся");
+  assert.equal(w.state().targets.length, 1, "созданное сообщество на месте");
+  assert.equal(waGroupLink(clock.t, false), null, "в живом эфире без своего сообщества ссылка постоянная");
+  assert.equal(waSetDaily(true).code, "wrong_mode");
+  assert.equal(waSetMode("nonsense").code, "bad_request");
+  assert.equal(waSetMode("event").code, "same");
+  // а ежедневное сообщество по-прежнему получает прогрев
+  at(9, 11, 30, 5);
+  assert.equal((await waTick()).sent, 1);
+  // назад: ежедневный режим, создание остаётся выключенным, пока не включишь сам; ссылка опять по ежедневному правилу
+  at(9, 12, 0, 0);
+  assert.equal(waSetMode("daily").ok, true);
+  assert.equal(w.state().daily.enabled, false);
+  assert.equal(waGroupLink(clock.t, false), first.link);
+  at(9, 20, 0, 0);
+  assert.equal((await waTick()).created, 0, "создание выключено");
+  // режим и настройки переживают перезапуск
+  waSetMode("event");
+  waSetEvent({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-10" });
+  const dir = w.dir;
+  resetWaGroups();
+  initWaGroups({ dir, seriesFile: join(dir, "wa-series.json"), deps: deps() });
+  const st = _waRt()!.state;
+  assert.deepEqual([st.mode, st.daily.enabled, st.event.date, st.event.start, st.event.recruitFrom], ["event", false, EVENT_DAY, "20:00", "2026-10-10"]);
+});
+
+test("живой эфир: настройки проверяются; задать можно только в режиме event, до создания сообщества", () => {
+  boot({ daily: false });
+  at(8, 12, 0, 0);
+  assert.equal(waSetEvent({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-09" }).code, "wrong_mode");
+  waSetMode("event");
+  const bad = (p: any, code: string) => assert.equal(waSetEvent(p).code, code, JSON.stringify(p));
+  bad({ date: "2026-10-07", start: "20:00", recruitFrom: "2026-10-07" }, "bad_date");
+  bad({ date: "нет", start: "20:00", recruitFrom: "2026-10-09" }, "bad_date");
+  bad({ date: "2027-03-01", start: "20:00", recruitFrom: "2027-02-27" }, "bad_date");
+  bad({ date: EVENT_DAY, start: "09:00", recruitFrom: "2026-10-09" }, "bad_start");
+  bad({ date: EVENT_DAY, start: "двадцать", recruitFrom: "2026-10-09" }, "bad_start");
+  bad({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-13" }, "bad_recruit");
+  bad({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-09-01" }, "bad_recruit");
+  bad({ date: EVENT_DAY, start: "20:00" }, "bad_recruit");
+  const ok = waSetEvent({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-09" });
+  assert.equal(ok.ok, true);
+  assert.match(ok.message, /Сообщество создам 09\.10 в 10:00/);
+  assert.deepEqual(_waRt()!.state.event, { date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-09" });
+  // набор уже идёт: создам в ближайшие 30 секунд
+  const now = waSetEvent({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-08" });
+  assert.match(now.message, /Набор уже идёт/);
+});
+
+test("живой эфир: создание само в день начала набора, ссылка весь период, прогрев только в день эфира, после 00:00 режим завершён", async () => {
+  const w = bootEvent();
+  assert.equal(w.rt().state.daily.enabled, false);
+  // до начала набора ничего не создаётся, а ближайшее сообщение серии видно за несколько дней, считается днями
+  at(8, 20, 0, 0);
+  assert.equal((await waTick()).created, 0);
+  assert.deepEqual([(waPanel(clock.t) as any).nextMessage.id, (waPanel(clock.t) as any).nextMessage.dayLabel, (waPanel(clock.t) as any).nextMessage.inText], ["morning", "12.10", "через 3 дн. 15 ч"]);
+  at(9, 9, 59, 50);
+  assert.equal((await waTick()).created, 0);
+  assert.equal(waGroupLink(clock.t, false), null, "ссылка пока постоянная");
+  // в день начала набора в 10:00 создаётся одно сообщество эфира
+  at(9, 10, 0, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  const t = eventTarget(w);
+  assert.equal(t.id, "2026-10-12#1");
+  assert.equal(t.source, "event");
+  assert.equal(t.name, "Вайб-продакшен · эфир 12.10");
+  assert.equal(t.start, undefined, "старт 20:00 это время серии, отдельно не хранится");
+  assert.equal(w.state().event.communityId, t.id);
+  assert.deepEqual(evo.seq().filter((x) => x.includes("community/create") || x.includes("message")), ["POST /community/create", "POST /message/sendText"]);
+  assert.match(evo.of("/message/sendText")[0].body.text, /Эфир 12 октября в 20:00 по Алматы/, "приветствие с датой эфира");
+  // повторные тики второго сообщества не создают
+  at(9, 10, 5, 0);
+  assert.equal((await waTick()).created, 0);
+  assert.equal(evo.of("/community/create").length, 1);
+  // весь период набора ссылка ведёт в сообщество эфира, в том числе после 20:40 накануне и в сам день эфира
+  for (const [d, h, mi] of [[9, 10, 6], [10, 12, 0], [10, 20, 45], [11, 20, 40], [11, 23, 59], [12, 8, 0], [12, 20, 30], [12, 23, 59]] as number[][]) {
+    assert.equal(waGroupLink(alm(2026, 10, d, h, mi), false), t.link, `ссылка ${d}.10 ${h}:${mi}`);
+  }
+  assert.equal(waGroupLink(alm(2026, 10, 13, 0, 0), false), null, "после 00:00 дня после эфира ссылка постоянная");
+  // прогрев только в день эфира: ни 10-го, ни 11-го ничего из серии не уходит
+  for (const [d, h, mi] of [[10, 11, 30], [10, 20, 0], [11, 11, 30], [11, 12, 30]] as number[][]) {
+    evo.calls = [];
+    at(d, h, mi, 5);
+    assert.equal((await waTick()).sent, 0, `${d}.10 ${h}:${mi}: серия не идёт`);
+    assert.equal(evo.of("/message/").length, 0);
+  }
+  // день эфира: 11:30 картинка и опрос
+  at(12, 11, 30, 5);
+  assert.equal((await waTick()).sent, 1);
+  assert.equal(evo.of("/message/sendMedia").pop()!.body.number, t.sendJid);
+  assert.equal(evo.of("/message/sendPoll").length, 1);
+  // офферы серии действуют после эфира до 00:00
+  at(12, 21, 20, 5);
+  evo.calls = [];
+  await waTick();
+  assert.match(evo.of("/message/sendMedia")[0].body.caption, /Для участников эфира: обучение Vibe Production/);
+  at(12, 23, 30, 5);
+  await waTick();
+  assert.match(evo.of("/message/sendMedia").pop()!.body.caption, /Через 30 минут цена/);
+  // 00:00: режим завершён, возвращаемся на ежедневный с выключенным созданием, прогрев больше не идёт
+  evo.calls = [];
+  at(13, 0, 0, 5);
+  await waTick();
+  assert.equal(evo.of("/message/").length, 0);
+  assert.deepEqual([w.state().mode, w.state().daily.enabled, w.state().event.done], ["daily", false, true]);
+  assert.ok(w.journal().some((r) => r.ev === "event_done" && r.date === EVENT_DAY));
+  assert.equal(waGroupLink(clock.t, false), null);
+  assert.equal(waPanel(clock.t).mode, "daily");
+  assert.equal((waPanel(clock.t) as any).event.status, "done");
+  // а при новом входе в живой эфир форма пустая
+  waSetMode("event");
+  assert.equal(w.state().event.date, "");
+  assert.equal(w.state().event.done, undefined);
+});
+
+test("живой эфир: «Создать сейчас» создаёт один раз, повтор ничего не создаёт, защита номера (пауза, лимит, подключение) действует", async () => {
+  const w = bootEvent({ recruitFrom: "2026-10-11" });
+  at(8, 12, 0, 0);
+  evo.calls = [];
+  const a = await waEventCreateNow();
+  assert.equal(a.ok, true, a.message);
+  assert.equal(a.code, "created");
+  const t = eventTarget(w);
+  assert.equal(t.source, "event");
+  assert.match(a.message, new RegExp(t.link.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.equal(evo.of("/community/create").length, 1);
+  assert.deepEqual(evo.seq(), [
+    "GET /instance/connectionState", "GET /instance/fetchInstances", "POST /community/create",
+    "POST /community/updateSetting", "POST /community/memberAddMode", "POST /community/joinApprovalMode",
+    "GET /community/inviteCode", "POST /group/updateGroupPicture", "POST /message/sendText",
+  ]);
+  for (const ms of sleeps) assert.ok(ms >= 2000 && ms <= 4000, `пауза шага ${ms}`);
+  // сразу же ссылка на сайте ведёт в него, хотя день начала набора ещё не наступил
+  assert.equal(waGroupLink(clock.t, false), t.link);
+  // повтор: сообщества не плодим
+  evo.calls = [];
+  const b = await waEventCreateNow();
+  assert.equal(b.code, "exists");
+  assert.equal(evo.of("/community/create").length, 0);
+  assert.equal(w.state().targets.length, 1);
+  // созданное окно закрывает правку дат
+  assert.equal(waSetEvent({ date: "2026-10-13", start: "20:00", recruitFrom: "2026-10-11" }).code, "locked");
+  // сброс: сообщество остаётся, ссылка постоянная, новый эфир задаётся заново
+  assert.equal(waEventReset().ok, true);
+  assert.equal(w.state().targets.length, 1);
+  assert.equal(waGroupLink(clock.t, false), null);
+  assert.equal(waSetEvent({ date: "2026-10-14", start: "20:00", recruitFrom: "2026-10-13" }).ok, true);
+
+  // защита номера: пауза, нет подключения, лимит 3 в сутки, чужой режим
+  waPause();
+  const paused = await waEventCreateNow();
+  assert.deepEqual([paused.ok, paused.code], [false, "paused"]);
+  waResume();
+  evo.state = "close";
+  evo.calls = [];
+  const down = await waEventCreateNow();
+  assert.deepEqual([down.ok, down.code], [false, "no_connection"]);
+  assert.equal(evo.of("/community/create").length, 0);
+  evo.state = "open";
+  w.rt().state.creations = [clock.t - 1000, clock.t - 2000, clock.t - 3000];
+  assert.equal((await waEventCreateNow()).code, "cap");
+  w.rt().state.creations = [];
+  waSetMode("daily");
+  assert.equal((await waEventCreateNow()).code, "wrong_mode");
+});
+
+test("живой эфир: старт не в 20:00 сдвигает серию до оффера и подменяет часы в текстах, дожим остаётся на месте", async () => {
+  const w = bootEvent({ start: "19:00" });
+  const r = w.rt();
+  const rawMsgs = Object.fromEntries(r.cfg.messages.map((m) => [m.id, m]));
+  const planOf = (id: string) => hhm(_internals.planOf(r, { day: EVENT_DAY, start: "19:00" }, rawMsgs[id]));
+  const hhm = (ms: number) => new Date(ms + 5 * 3600_000).toISOString().slice(11, 16);
+  assert.equal(planOf("morning"), "10:30");
+  assert.equal(planOf("live-now"), "19:00");
+  assert.equal(planOf("t-minus-10"), "18:50");
+  assert.equal(planOf("offer"), "20:20");
+  assert.equal(planOf("push"), "22:30", "дожим привязан к 23:59, а не к старту");
+  assert.equal(planOf("last-call"), "23:30");
+  const txt = _internals.retime(r, "19:00", rawMsgs["morning"].text);
+  assert.match(txt, /Сегодня в 19:00 по Алматы \(17:00 по Москве\)/);
+  assert.equal(txt.includes("20:00"), false);
+  assert.equal(_internals.retime(r, "20:00", rawMsgs["morning"].text), rawMsgs["morning"].text, "обычный старт ничего не меняет");
+  assert.equal(_internals.retime(r, "19:00", rawMsgs["offer"].text).includes("до 23:59 по Алматы (21:59 по Москве)"), true, "дедлайн оффера не трогаем");
+
+  // создание, описание и приветствие с нужным стартом
+  at(12, 9, 0, 0);
+  evo.calls = [];
+  assert.equal((await waEventCreateNow()).ok, true);
+  const t = eventTarget(w);
+  assert.equal(t.start, "19:00");
+  assert.match(evo.of("/community/create")[0].body.description, /Эфир в 19:00 по Алматы/);
+  assert.match(evo.of("/message/sendText")[0].body.text, /в 19:00 по Алматы \(17:00 по Москве\)/);
+  // в день эфира утреннее уходит в 10:30 с исправленным временем, а не в 11:30
+  evo.calls = [];
+  at(12, 10, 30, 5);
+  assert.equal((await waTick()).sent, 1);
+  assert.match(evo.of("/message/sendMedia")[0].body.caption, /в 19:00 по Алматы \(17:00 по Москве\)/);
+  assert.equal(evo.of("/message/sendPoll").length, 1);
+  // панель показывает серию такой, какой она уйдёт
+  const p = waPanel(clock.t) as any;
+  assert.equal(p.series.find((s: any) => s.id === "morning").at, "10:30");
+  assert.match(p.series.find((s: any) => s.id === "morning").text, /19:00 по Алматы/);
+  assert.equal(p.event.start, "19:00");
+});
+
+test("пульт: QR-поток create → connect → open, кеш QR 10 секунд, номер и имя профиля, ключи в ответ не попадают", async () => {
+  boot();
+  evo.state = "absent";
+  at(9, 10, 0, 0);
+  evo.calls = [];
+  const q1: any = await waQr();
+  assert.equal(q1.ok, true);
+  assert.equal(q1.state, "connecting");
+  assert.equal(q1.qr, `data:image/png;base64,${PNG_B64}`);
+  assert.equal(evo.of("/instance/create").length, 1, "инстанса нет: создаётся");
+  assert.equal(evo.of("/instance/create")[0].body.integration, "WHATSAPP-BAILEYS");
+  // через 5 секунд тот же QR из кеша, Evolution спрашиваем только про состояние
+  clock.t += 5000;
+  evo.calls = [];
+  const q2: any = await waQr();
+  assert.equal(q2.qr, q1.qr);
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState"]);
+  // через 16 секунд (обновление в пульте) QR запрашивается у существующего инстанса
+  clock.t += 11_000;
+  evo.calls = [];
+  const q3: any = await waQr();
+  assert.equal(q3.state, "connecting");
+  assert.equal(q3.qr, `data:image/png;base64,${PNG_B64}`);
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState", "GET /instance/connect"]);
+  assert.equal(evo.of("/instance/create").length, 0, "второй раз инстанс не создаём");
+  // до сканирования подключение не open
+  clock.t += 5000;
+  const c1: any = await waConnection();
+  assert.equal(c1.ok, true);
+  assert.equal(c1.state, "connecting");
+  assert.equal(c1.number, "");
+  // человек отсканировал QR
+  evo.scan();
+  clock.t += 5000;
+  const c2: any = await waConnection();
+  assert.deepEqual([c2.state, c2.number, c2.profile], ["open", "+77001112233", "Тест"]);
+  const q4: any = await waQr();
+  assert.deepEqual([q4.state, q4.qr, q4.number, q4.profile], ["open", null, "+77001112233", "Тест"]);
+  const p = waPanel(clock.t) as any;
+  assert.deepEqual([p.conn.state, p.conn.number, p.conn.profile], ["open", "+77001112233", "Тест"]);
+  // в журнале запрос QR отмечен один раз, сам QR, ключ и токен нигде не лежат
+  const w = _waRt()!;
+  assert.equal(readJsonl(join(w.dir, "wa-journal.jsonl")).filter((r) => r.ev === "qr").length, 1);
+  const all = JSON.stringify([q1, q3, c2, q4, p]) + readdirSync(w.dir).map((f) => readFileSync(join(w.dir, f), "utf8")).join("\n");
+  assert.equal(all.includes(EVO_KEY) || all.includes(INSTANCE_TOKEN), false);
+  assert.equal(readdirSync(w.dir).map((f) => readFileSync(join(w.dir, f), "utf8")).join("").includes(PNG_B64), false, "QR на диск не пишем");
+  // Evolution не отвечает: понятная ошибка, а не исключение
+  const saved = process.env.EVOLUTION_URL;
+  process.env.EVOLUTION_URL = "http://127.0.0.1:1";
+  clock.t += 20_000;
+  const bad: any = await waQr();
+  assert.deepEqual([bad.ok, bad.code], [false, "evolution"]);
+  process.env.EVOLUTION_URL = saved;
+});
+
+test("пульт: отключение номера (logout): запрос к Evolution, состояние close, рассылка встаёт, тревога о потере не сыплется сразу", async () => {
+  const w = boot();
+  const t = await createFor(w, 9);
+  at(9, 10, 0, 0);
+  await waTick();
+  assert.equal((waPanel(clock.t) as any).conn.state, "open");
+  evo.calls = [];
+  const out = await waLogout();
+  assert.equal(out.ok, true, out.message);
+  assert.equal(evo.logouts, 1);
+  assert.deepEqual(evo.seq(), ["DELETE /instance/logout"]);
+  assert.equal(evo.state, "close");
+  const p = waPanel(clock.t) as any;
+  assert.deepEqual([p.conn.state, p.conn.number], ["close", ""]);
+  assert.equal(w.state().ownerJid, "");
+  // дальше без подключения ничего не уходит
+  alarms.length = 0;
+  at(9, 10, 30, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).skipped, "no_connection");
+  assert.equal(alarms.length, 0, "отключили сами: тревога не сразу");
+  at(9, 11, 30, 5);
+  evo.calls = [];
+  assert.equal((await waTick()).skipped, "no_connection");
+  assert.equal(evo.of("/message/").length, 0, "утреннее сообщение без подключения не ушло");
+  assert.equal(alarms.length, 1, "через час напоминание");
+  assert.ok(w.journal().some((r) => r.ev === "logout"));
+  // Evolution отказал: состояние не меняем
+  evo.state = "open";
+  at(9, 13, 0, 0);
+  await waTick();
+  evo.fail = (c) => (c.path.startsWith("/instance/logout") ? { status: 500 } : null);
+  const no = await waLogout();
+  assert.deepEqual([no.ok, no.code], [false, "evolution"]);
+  assert.equal(w.rt().conn.state, "open");
+  void t;
+});
+
+test("пульт: группы и сообщества номера, роль номера, размер, наши, кеш и ограничение частоты; без списка участников роль неясна", async () => {
+  const w = boot();
+  const t = await createFor(w, 9);
+  evo.allGroups.push(
+    { id: t.jid, subject: t.name, size: 3, owner: OWNER_JID, isCommunity: true, announce: true, participants: [{ id: OWNER_JID, admin: "superadmin" }] },
+    { id: t.sendJid, subject: "Вкладка объявлений", size: 3, isCommunityAnnounce: true, linkedParent: t.jid, announce: true, participants: [{ id: "1234@lid", admin: "admin" }] },
+  );
+  at(9, 10, 0, 0);
+  await waTick();
+  evo.calls = [];
+  const g = await waGroups();
+  assert.equal(g.ok, true);
+  assert.deepEqual(evo.seq(), ["GET /instance/connectionState", "GET /group/fetchAllGroups"]);
+  assert.equal(evo.of("/group/fetchAllGroups")[0].query.get("getParticipants"), "true");
+  assert.equal(JSON.stringify(g).includes("77015556677"), false, "участников наружу не отдаём");
+  const by = Object.fromEntries(g.items.map((x) => [x.name, x]));
+  assert.deepEqual(g.items.map((x) => x.type), ["community", "announce", "group", "group"], "сначала сообщества, потом группы по размеру");
+  assert.deepEqual([by[t.name].typeLabel, by[t.name].role, by[t.name].roleLabel, by[t.name].ours, by[t.name].size], ["сообщество", "owner", "создатель", true, 3]);
+  assert.deepEqual([by["Воркшоп Вайб-продакшен (общий чат)"].role, by["Воркшоп Вайб-продакшен (общий чат)"].roleLabel, by["Воркшоп Вайб-продакшен (общий чат)"].size, by["Воркшоп Вайб-продакшен (общий чат)"].ours], ["admin", "админ", 487, false]);
+  assert.equal(by["Архив эфиров"].role, "owner");
+  assert.equal(by["Вкладка объявлений"].role, "unknown", "себя в списке участников нет");
+  assert.equal(by["Вкладка объявлений"].typeLabel, "вкладка объявлений");
+  assert.equal(by["Воркшоп Вайб-продакшен (общий чат)"].announceOnly, false);
+  assert.equal(by["Архив эфиров"].announceOnly, true);
+  // кеш на минуту и ограничение ручного обновления раз в 20 секунд
+  evo.calls = [];
+  clock.t += 10_000;
+  const c = await waGroups();
+  assert.equal(c.cached, true);
+  assert.equal(evo.calls.length, 0);
+  const f1 = await waGroups(true);
+  assert.equal(f1.cached, true, "обновление раньше чем через 20 секунд не идёт к WhatsApp");
+  clock.t += 25_000;
+  const f2 = await waGroups(true);
+  assert.equal(f2.cached, false);
+  assert.equal(evo.of("/group/fetchAllGroups").length, 1);
+  // тяжёлый запрос не прошёл: список без участников, роль определяется только по создателю
+  evo.fail = (x) => (x.path.startsWith("/group/fetchAllGroups") && x.query.get("getParticipants") === "true" ? { status: 500 } : null);
+  clock.t += 25_000;
+  evo.calls = [];
+  const f3 = await waGroups(true);
+  assert.equal(f3.ok, true);
+  assert.deepEqual(evo.of("/group/fetchAllGroups").map((x) => x.query.get("getParticipants")), ["true", "false"]);
+  const by3 = Object.fromEntries(f3.items.map((x) => [x.name, x]));
+  assert.deepEqual([by3["Воркшоп Вайб-продакшен (общий чат)"].role, by3["Архив эфиров"].role], ["unknown", "owner"]);
+  // нет подключения: честный отказ
+  evo.fail = null;
+  evo.state = "close";
+  clock.t += 25_000;
+  const no = await waGroups(true);
+  assert.deepEqual([no.ok, no.code], [false, "no_connection"]);
+  assert.ok(no.items.length > 0, "прежний список остаётся на экране");
+});
+
+test("пульт: отправка сообщения серии вручную в текущее сообщество, повтор не дублирует, плановая отправка потом тоже", async () => {
+  const w = boot();
+  const t = await createFor(w, 9);
+  at(9, 9, 0, 0);
+  assert.equal((await waSendSeries("")).ok, false);
+  assert.equal((await waSendSeries("nope")).code, "bad_id");
+  evo.calls = [];
+  const a = await waSendSeries("offer");
+  assert.deepEqual([a.ok, a.sent, a.skipped, a.failed, a.targets], [true, 1, 0, 0, 1]);
+  assert.equal(evo.of("/message/sendMedia")[0].body.number, t.sendJid);
+  assert.ok(w.journal().find((r) => r.msg === "offer" && r.manual === true));
+  const b = await waSendSeries("offer");
+  assert.deepEqual([b.sent, b.skipped], [0, 1]);
+  at(9, 21, 20, 5);
+  evo.calls = [];
+  await waTick();
+  assert.equal(evo.of("/message/sendMedia").length, 0, "плановая отправка уже отправленного не повторяется");
+  // на паузе, без подключения: не шлём
+  waPause();
+  assert.equal((await waSendSeries("morning")).code, "paused");
+  waResume();
+  evo.state = "close";
+  evo.calls = [];
+  assert.equal((await waSendSeries("morning")).code, "no_connection");
+  assert.equal(evo.of("/message/").length, 0);
+  evo.state = "open";
+  // в панели видно, куда уйдёт «отправить сейчас»
+  assert.deepEqual((waPanel(clock.t) as any).sendTo, [t.name]);
+
+  // живой эфир: в текущее сообщество эфира, даже в период набора за дни до эфира
+  const w2 = bootEvent({ recruitFrom: "2026-10-08" });
+  at(9, 12, 0, 0);
+  await waEventCreateNow();
+  const ev = eventTarget(w2);
+  evo.calls = [];
+  const c = await waSendSeries("reg-bonus");
+  assert.deepEqual([c.ok, c.sent], [true, 1]);
+  assert.equal(evo.of("/message/sendMedia")[0].body.number, ev.sendJid);
+  assert.deepEqual((waPanel(clock.t) as any).sendTo, [ev.name]);
+  // ежедневному «сегодня» чужое живое сообщество не достаётся
+  waSetMode("daily");
+  assert.equal((await waSendSeries("morning")).code, "no_target");
+});
+
+test("пульт: экран собирается из состояния: сообщества, участники, вступившие за сегодня, ближайшее сообщение, серия, журнал", async () => {
+  resetWaGroups();
+  assert.deepEqual(waPanel(), { ok: true, enabled: false }, "без WA_GROUPS=on экран пустой");
+  process.env.WA_GROUPS = "on";
+  assert.equal((waPanel() as any).running, false);
+  delete process.env.WA_GROUPS;
+  const w = boot();
+  const t = await createFor(w, 9);
+  evo.members.set(t.jid, 321);
+  at(9, 10, 0, 0);
+  await waTick(); // участники 321
+  evo.requests.set(t.jid, [{ jid: "5@lid" }, { jid: "6@lid" }]);
+  await joinsTick();
+  const p = waPanel(clock.t) as any;
+  assert.deepEqual([p.enabled, p.running, p.mode, p.daily.enabled, p.module.paused, p.module.creationsToday, p.module.creationsMax, p.module.failMax], [true, true, "daily", true, false, 1, 3, 3]);
+  const card = p.current.cards[0];
+  assert.deepEqual([card.name, card.members, card.joinedToday, card.joinedTotal, card.ready, card.onSite, card.link], [t.name, 321, 2, 2, true, true, t.link]);
+  assert.equal(p.current.title, "Эфир");
+  assert.equal(p.current.dayLabel, "09.10");
+  assert.match(p.next.pending, /Будет создано 09\.10 в 20:00/);
+  assert.deepEqual([p.link.kind, p.link.url], ["daily", t.link]);
+  assert.deepEqual([p.nextMessage.id, p.nextMessage.at, p.nextMessage.dayLabel, p.nextMessage.inText], ["morning", "11:30", "09.10", "через 1 ч 30 мин"]);
+  assert.equal(p.series.length, 14);
+  assert.deepEqual([p.series[0].id, p.series[0].at, p.series[0].media, p.series[0].poll], ["morning", "11:30", "image", "Придёшь сегодня на эфир?"]);
+  // вступившие «сегодня» считаются по дню Алматы, а не за всё время
+  assert.deepEqual([...w.rt().joinedByDay.get(t.id)!], [["2026-10-09", 2]]);
+  // после перезапуска счётчик восстанавливается из журнала заявок
+  const dir = w.dir;
+  at(9, 10, 5, 0);
+  resetWaGroups();
+  initWaGroups({ dir, seriesFile: join(dir, "wa-series.json"), deps: deps() });
+  assert.equal(((waPanel(clock.t) as any).current.cards[0]).joinedToday, 2);
+  // журнал: не больше 20, свежие сверху, простыми словами, без ключей
+  const j = (waPanel(clock.t) as any).journal as any[];
+  assert.ok(j.length >= 1 && j.length <= 20);
+  assert.ok(j.some((x) => x.kind === "ok" && /^Создано «Вайб-продакшен · эфир 09\.10»$/.test(x.text)));
+  assert.deepEqual(j.map((x) => x.ts), [...j.map((x) => x.ts)].sort((a, b) => b - a));
+  assert.equal(JSON.stringify(j).includes(EVO_KEY), false);
+});
+
+test("пульт: журнал показывает отправки, ошибки и паузы по-русски, берёт последние 20, пауза и снятие паузы из пульта", async () => {
+  const w = boot();
+  await createFor(w, 9);
+  for (let i = 0; i < 12; i++) {
+    at(9, 11 + (i % 2), 30, 5);
+    await waTick();
+  }
+  evo.fail = (c) => (c.path.startsWith("/message/") ? { status: 500 } : null);
+  at(9, 14, 0, 5);
+  await waTick();
+  const pz = waPause(clock.t);
+  assert.equal(pz.ok, true);
+  assert.equal(w.state().pausedReason, "вручную, из пульта");
+  assert.equal(waPause(clock.t).code, "same");
+  const p = waPanel(clock.t) as any;
+  assert.equal(p.module.paused, true);
+  assert.equal(p.module.pausedReason, "вручную, из пульта");
+  assert.ok(p.journal.length <= 20);
+  assert.ok(p.journal.some((x: any) => x.kind === "error" && /^Пауза: вручную, из пульта$/.test(x.text)));
+  assert.ok(p.journal.some((x: any) => x.kind === "error" && /^Ошибка 1 подряд/.test(x.text)));
+  assert.equal(p.journal[0].text, "Пауза: вручную, из пульта", "самое свежее сверху");
+  evo.fail = null;
+  assert.equal(waResume().ok, true);
+  const p2 = waPanel(clock.t) as any;
+  assert.deepEqual([p2.module.paused, p2.module.failStreak], [false, 0]);
+  assert.equal(p2.journal[0].text, "Пауза снята");
+  // отправки в журнале называются темой сообщения
+  at(9, 12, 30, 5);
+  await waTick();
+  const j3 = (waPanel(clock.t) as any).journal as any[];
+  assert.ok(j3.some((x) => x.kind === "ok" && /^Отправлено «Бонусы за регистрацию»/.test(x.text)));
+});
+
+test("пульт: команды бота в живом эфире: /wa показывает режим и сообщество эфира, /wa_new создаёт сообщество эфира", async () => {
+  const w = bootEvent({ recruitFrom: "2026-10-11" });
+  at(8, 12, 0, 0);
+  const [s1] = await ownerSay("/wa");
+  assert.match(s1, /Режим: живой эфир 12\.10 в 20:00, набор с 11\.10/);
+  assert.match(s1, /Сообщество эфира 12\.10: пока нет, создам 11\.10 в 10:00/);
+  const [n] = await ownerSay("/wa_new");
+  assert.match(n, /Создано: «Вайб-продакшен · эфир 12\.10»/);
+  assert.equal(eventTarget(w).source, "event");
+  const [s2] = await ownerSay("/wa");
+  assert.match(s2, /Сообщество эфира 12\.10: «Вайб-продакшен · эфир 12\.10», готово/);
+  assert.match(s2, /Ближайшее сообщение: 11:30 morning \(эфир 12\.10\)/);
+  waSetMode("daily");
+  assert.match((await ownerSay("/wa"))[0], /Режим: ежедневный, создание выключено/);
+});
+
+// ───────────────────────── постоянная ссылка для шаблона WABA ─────────────────────────
+
+const WA_PAGE = join(REPO, "workshop-montazh", "wa.html");
+const WA_FALLBACK = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz";
+
+test("workshop-montazh/wa.html: лёгкая страница без счётчиков, запасная ссылка зашита, noscript ведёт на неё же", () => {
+  const html = readFileSync(WA_PAGE, "utf8");
+  assert.ok(Buffer.byteLength(html) < 2500, "страница быстрая: меньше 2,5 КБ");
+  assert.ok(html.includes("/workshop/api/whatsapp-link"), "спрашивает текущую ссылку у form-api");
+  assert.ok(html.includes("location.replace"));
+  assert.ok(html.includes(`content="0;url=${WA_FALLBACK}"`), "без скриптов сразу на запасную ссылку");
+  assert.equal(html.split(WA_FALLBACK).length - 1 >= 3, true, "запасная ссылка в noscript, в тексте и в скрипте");
+  assert.equal(/gtag|fbq|ym\(|metrika|analytics|googletagmanager|pixel/i.test(html), false, "без счётчиков");
+  assert.equal(/<link |<img |src=/i.test(html), false, "никаких внешних файлов");
+  assert.equal(html.includes(String.fromCharCode(0x2014)), false, "без длинного тире");
+  assert.match(html, /name="robots" content="noindex"/);
+  // та же запасная ссылка, что на странице «Спасибо» и в lib/whatsapp-link
+  assert.ok(readFileSync(join(REPO, "app", "thank-you", "page.tsx"), "utf8").includes(WA_FALLBACK));
+});
+
+test("wa.html в песочнице: переходит туда, что отдал /api/whatsapp-link; при сбое, чужой ссылке, таймауте и пустом ответе на запасную", async () => {
+  const html = readFileSync(WA_PAGE, "utf8");
+  const NEW = "https://chat.whatsapp.com/NEWCOMMUNITY0000000001";
+  const answer = (body: unknown) => async (u: string) => {
+    assert.equal(u, "/workshop/api/whatsapp-link");
+    return { json: async () => body };
+  };
+  const ok = await runWaPage(html, answer({ link: NEW }));
+  assert.deepEqual([ok.url, ok.href, ok.replaces], [NEW, NEW, 1]);
+  assert.deepEqual(ok.beacons, [["/workshop/api/ty-click", "ch=wa-template"]], "переход попадает в журнал переходов");
+  assert.equal((await runWaPage(html, answer({ link: "https://wa.me/77085834575" }))).url, "https://wa.me/77085834575");
+  // всё, что не ссылка WhatsApp, и любой сбой: запасная постоянная
+  assert.equal((await runWaPage(html, answer({ link: "https://evil.example/x" }))).url, WA_FALLBACK, "чужой адрес не принимаем");
+  assert.equal((await runWaPage(html, answer({ link: "http://chat.whatsapp.com/ABC" }))).url, WA_FALLBACK, "только https");
+  assert.equal((await runWaPage(html, answer({}))).url, WA_FALLBACK);
+  assert.equal((await runWaPage(html, answer(null))).url, WA_FALLBACK);
+  assert.equal((await runWaPage(html, async () => { throw new Error("сеть"); })).url, WA_FALLBACK);
+  assert.equal((await runWaPage(html, () => { throw new Error("fetch упал сразу"); })).url, WA_FALLBACK);
+  assert.equal((await runWaPage(html, async () => ({ json: async () => { throw new Error("не json"); } }))).url, WA_FALLBACK);
+  const slow = await runWaPage(html, () => new Promise(() => {}), { timeoutMs: 40 });
+  assert.deepEqual([slow.url, slow.replaces], [WA_FALLBACK, 1], "сервис молчит: через 3,5 секунды запасная, ровно один переход");
+});
+
+test("журнал переходов: канал wa-template принимается и записывается отдельно, в отчёты о «Спасибо» не попадает", () => {
+  assert.deepEqual(parseTyBody("ch=wa-template"), { ch: "wa-template", eid: "" });
+  assert.deepEqual(parseTyBody(JSON.stringify({ ch: "wa-template", eid: "abc-1" })), { ch: "wa-template", eid: "abc-1" });
+  assert.equal(parseTyBody("ch=wa-templat"), null);
+  const w = boot();
+  const st = getStore();
+  const d = dayKeyOf(clock.t);
+  st.recordTyClick("wa-template", "", d, new Date(clock.t).toISOString());
+  st.recordTyClick("wa-template", "", d, new Date(clock.t).toISOString());
+  st.recordTyClick("wa", "", d, new Date(clock.t).toISOString());
+  assert.deepEqual([st.tyCount(d, "wa-template"), st.tyCount(d, "wa")], [2, 1]);
+  assert.equal((waPanel(clock.t) as any).link.templateClicksToday, 2, "в пульте видно число переходов за сегодня");
+  assert.equal((waPanel(clock.t) as any).link.templateUrl, "https://onai.academy/workshop-montazh/wa");
+  void w;
 });
 
 // ───────────────────────── сервер целиком ─────────────────────────

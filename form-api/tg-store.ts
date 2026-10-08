@@ -95,7 +95,8 @@ export function resetRuntime() {
   runtime.events.length = 0;
 }
 
-export type TyChannel = "tg" | "wa";
+/** tg и wa: кнопки на «Спасибо». wa-template: переход по постоянной ссылке из кнопки шаблона WABA (страница workshop-montazh/wa.html); в отчёты о «Спасибо» не входит. */
+export type TyChannel = "tg" | "wa" | "wa-template";
 
 /** Потолок записей кликов «Спасибо» в сутки: защита диска от накрутки. */
 export const TY_DAILY_CAP = 5000;
@@ -234,7 +235,7 @@ export class TgStore {
     const clicks = readJsonl<{ chat_id: number; day: string }>(this.fClicks);
     for (const c of clicks.rows) if (c && c.day) this.clicks.add(TgStore.clickKey(c.chat_id, c.day));
     const ty = readJsonl<{ ch: TyChannel; eid?: string; day: string }>(this.fTy);
-    for (const c of ty.rows) if (c && c.day && (c.ch === "tg" || c.ch === "wa")) this.countTy(c.ch, c.eid || "", c.day);
+    for (const c of ty.rows) if (c && c.day && (c.ch === "tg" || c.ch === "wa" || c.ch === "wa-template")) this.countTy(c.ch, c.eid || "", c.day);
     try {
       if (existsSync(this.fState)) {
         const st = JSON.parse(readFileSync(this.fState, "utf8")) as Partial<StoreState>;
@@ -391,7 +392,7 @@ export class TgStore {
   }
 
   /**
-   * Клик по кнопке Telegram или WhatsApp на странице «Спасибо». Повтор того же eid за день не
+   * Клик по кнопке Telegram или WhatsApp на странице «Спасибо» (или переход по ссылке из шаблона WABA). Повтор того же eid за день не
    * считается. Потолок TY_DAILY_CAP записей в сутки: дальше ничего не пишем и возвращаем false.
    */
   recordTyClick(ch: TyChannel, eid: string, day: string, ts: string, src = ""): boolean {

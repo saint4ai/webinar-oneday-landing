@@ -5,8 +5,8 @@
  * ошибка приходит как { ok: false, status, error }, ключ API из текста ошибки вычищается.
  *
  * Пути и поля сверены с исходниками тега 2.3.7 (EvolutionAPI/evolution-api):
- *   штатные:  /instance/{create,connect,connectionState,fetchInstances}, /group/{create,updateGroupPicture,
- *             updateSetting,inviteCode,findGroupInfos}, /message/{sendText,sendMedia,sendPoll}
+ *   штатные:  /instance/{create,connect,connectionState,fetchInstances,logout}, /group/{create,updateGroupPicture,
+ *             updateSetting,inviteCode,findGroupInfos,fetchAllGroups}, /message/{sendText,sendMedia,sendPoll}
  *   патч:     /community/* (в 2.3.7 их нет, добавляет infra/evolution/communities.patch, контракт в
  *             docs/plans/wa-communities-plan.md)
  * Ключ уходит в заголовке apikey. Настройки читаются лениво: loadEnv() в server.ts идёт после импортов.
@@ -124,6 +124,23 @@ export function createInstance(): Promise<EvoResult<any>> {
 /** Запросить QR у существующего инстанса. Ответ: { base64, code, pairingCode, count } или состояние open. */
 export function connectInstance(): Promise<EvoResult<any>> {
   return evoCall("GET", `/instance/connect/${I()}`, undefined, 30_000);
+}
+
+/** Отвязать номер (DELETE /instance/logout/{instance}). Инстанс остаётся в Evolution, для нового подключения нужен QR. */
+export const logoutInstance = () => evoCall("DELETE", `/instance/logout/${I()}`, undefined, 30_000);
+
+const GROUPS_TIMEOUT_MS = 60_000;
+
+/**
+ * Все группы и сообщества номера (GET /group/fetchAllGroups/{instance}?getParticipants=true|false, строка обязательна).
+ * Поля группы: id, subject, size, owner, announce, restrict, isCommunity, isCommunityAnnounce, linkedParent, pictureUrl и др.
+ * Список людей (participants) просим только ради роли самого номера: дальше него в пульт и на диск он не уходит.
+ */
+export async function fetchAllGroups(withParticipants: boolean): Promise<EvoResult<any[]>> {
+  const r = await evoCall<any>("GET", `/group/fetchAllGroups/${I()}?getParticipants=${withParticipants ? "true" : "false"}`, undefined, GROUPS_TIMEOUT_MS);
+  if (!r.ok) return r;
+  if (!Array.isArray(r.data)) return { ok: false, status: r.status, error: "в ответе fetchAllGroups нет списка", data: r.data };
+  return { ok: true, status: r.status, data: r.data };
 }
 
 // ───────────────────────── сообщества (патч) ─────────────────────────

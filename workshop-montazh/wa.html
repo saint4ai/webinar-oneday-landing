@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Вступить в сообщество · onAI Academy</title><noscript><meta http-equiv="refresh" content="0;url=https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz"></noscript></head>
+<body style="margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:#15110D;color:#F6F0E4;font:16px/1.5 system-ui,sans-serif;text-align:center"><p>Открываю сообщество в WhatsApp...<br><a id="a" href="https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz" style="color:#E3C07B">Нажми, если не открылось</a></p><script>
+// Постоянная ссылка для кнопки шаблона WABA: ведёт в сообщество текущего набора. Что отдаёт /workshop/api/whatsapp-link, туда и переходим;
+// сервис не ответил за 3,5 секунды, ответил не ссылкой WhatsApp или ошибкой, идём на запасную постоянную ссылку, зашитую здесь.
+(function () {
+  var FB = "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz", done = false, a = document.getElementById("a");
+  function go(u) {
+    if (done) return;
+    done = true;
+    if (typeof u !== "string" || !/^https:\/\/(chat\.whatsapp\.com|wa\.me)\//.test(u)) u = FB;
+    a.href = u;
+    location.replace(u);
+  }
+  try { navigator.sendBeacon("/workshop/api/ty-click", "ch=wa-template"); } catch (e) {}
+  var t = setTimeout(function () { go(FB); }, 3500);
+  try {
+    fetch("/workshop/api/whatsapp-link", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { clearTimeout(t); go(d && d.link); })
+      .catch(function () { clearTimeout(t); go(FB); });
+  } catch (e) { clearTimeout(t); go(FB); }
+})();
+</script></body></html>

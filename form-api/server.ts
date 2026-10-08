@@ -19,6 +19,7 @@
  *   GET  /api/tg-web-app.js — скрипт Telegram Web App со своего адреса (общий CSP nginx не пускает telegram.org)
  *   POST /api/admin/login   — вход в админку: initData Telegram + пароль, в ответ токен сессии
  *   GET  /api/admin/{summary,leads,subscribers,errors} — данные админки (initData + токен на каждый запрос)
+ *   GET|POST /api/admin/wa/*: пульт WhatsApp-сообществ (вкладка «WhatsApp» админки, те же initData и токен), см. wa-admin.ts
  *   GET  /api/health        — состояние (наружу через nginx), /health — то же для проверки на сервере
  *   GET  /calendar          — ссылка «добавить эфир в календарь»
  *
@@ -38,6 +39,7 @@ import { readWhatsAppLink, writeWhatsAppLink, readWhatsAppRecord, isValidWhatsAp
 import { calendarDay, handleGo, handleTgWorkshop, handleTyClick, initTgWorkshop, tgHealth } from "./tg-workshop";
 import { startScheduler } from "./tg-scheduler";
 import { handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk } from "./tg-miniapp";
+import { handleWaAdmin } from "./wa-admin";
 import { startWaGroups, waGroupLink, waHealth } from "./wa-groups";
 
 /**
@@ -416,7 +418,7 @@ function handleHealth(res: ServerResponse) {
 
 // ───────────────────────── router ─────────────────────────
 
-const server = createServer(async (req, res) => {
+export const server = createServer(async (req, res) => {
   const url = (req.url || "").split("?")[0].replace(/\/+$/, "") || "/";
   const method = req.method || "GET";
 
@@ -432,6 +434,7 @@ const server = createServer(async (req, res) => {
     if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
     if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
+    if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     // /api/health виден снаружи через nginx (/workshop/api/health), /health только с самого сервера.
     if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);

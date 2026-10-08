@@ -14,16 +14,24 @@
  *    паузы между отправками, не больше 3 новых сообществ в сутки, все запросы к Evolution строго по одному,
  *    пауза модуля и тревога владельцам в Telegram после 3 ошибок подряд, тревога раз в час при потере подключения.
  *
+ * Два режима работы (переключаются в пульте админки, docs/tasks/wa_control_panel.md), состояние в wa-state.json:
+ *  - daily: «Ежедневное создание» вкл/выкл (по умолчанию выкл: пока Александр не включил, ничего не создаётся);
+ *    при вкл всё как описано выше;
+ *  - event (живой эфир, однодневник): ежедневное создание выключено, задаются дата эфира, время старта и дата начала набора.
+ *    Сообщество создаётся один раз: по кнопке «Создать сейчас» или само в дату начала набора. Всё время набора ссылка на сайте
+ *    ведёт в него, прогрев идёт только в день эфира, после 00:00 режим завершён и ссылка снова постоянная.
+ *  Режимы взаимоисключающие, уже созданные сообщества при переключении не трогаются.
+ *
  * Состояние: DATA_DIR/wa-state.json (перезапись через temp и rename), журналы wa-journal.jsonl (отправки и события)
  * и wa-joins.jsonl (заявки и вступления). Токены и ключи в журналы не пишутся.
  * Настройки читаются лениво: loadEnv() в server.ts выполняется после импортов.
  */
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import * as evo from "./wa-evolution";
 import { isValidWhatsAppLink } from "../lib/whatsapp-link";
 import { DEFAULT_JOIN_MINUTES, addDays, assignStreamDay, atTime, dayKeyOf, dayWordLower, hhmmOf, isDayKey, isStreamDay, parseHHMM, type TimeCfg } from "./tg-time";
-import { getSeries, notifyOwners, registerWa, registerWaReport, timeCfg, type WaReply } from "./tg-workshop";
+import { getSeries, getStore, notifyOwners, registerWa, registerWaReport, timeCfg, type WaReply } from "./tg-workshop";
 
 const env = (k: string) => (process.env[k] || "").trim();
 
@@ -183,7 +191,31 @@ export type Target = {
   avatarAt: number;
   members?: number;
   membersAt?: number;
+  /** Откуда сообщество: ежедневный режим (по умолчанию) или живой эфир. Живой эфир ссылкой в ежедневном режиме не раздаётся. */
+  source?: "daily" | "event";
+  /** Время старта эфира HH:MM, если оно не равно streamStart серии: по нему сдвигается расписание и подменяются часы в текстах. */
+  start?: string;
 };
+
+export type Mode = "daily" | "event";
+
+/** Живой эфир: дата эфира, время старта, день начала набора. Пустая дата значит «не задан». */
+export type EventCfg = {
+  date: string;
+  start: string;
+  recruitFrom: string;
+  /** id созданного сообщества эфира (Target.id). */
+  communityId?: string;
+  /** Эфир прошёл (00:00 после дня эфира) или режим закрыт. */
+  done?: boolean;
+  doneAt?: number;
+};
+
+/** Постоянная ссылка для кнопки шаблона WABA (workshop-montazh/wa.html): переадресует в сообщество текущего набора. */
+export const TEMPLATE_URL = "https://onai.academy/workshop-montazh/wa";
+
+/** Во сколько по Алматы в день начала набора сообщество создаётся само (днём, а не среди ночи). */
+export const EVENT_CREATE_AT = "10:00";
 
 export type State = {
   v: 1;
@@ -202,7 +234,13 @@ export type State = {
   capAlertDay: string;
   ownerJid: string;
   ownerAt: number;
+  /** Режим работы и его настройки. После первого включения: daily с выключенным созданием. */
+  mode: Mode;
+  daily: { enabled: boolean };
+  event: EventCfg;
 };
+
+const freshEvent = (): EventCfg => ({ date: "", start: "", recruitFrom: "" });
 
 const freshState = (): State => ({
   v: 1,
@@ -219,6 +257,9 @@ const freshState = (): State => ({
   capAlertDay: "",
   ownerJid: "",
   ownerAt: 0,
+  mode: "daily",
+  daily: { enabled: false },
+  event: freshEvent(),
 });
 
 export type Deps = {
@@ -263,6 +304,16 @@ type Rt = {
   joining: boolean;
   mediaWarned: Set<string>;
   lockedOutLogged: boolean;
+  /** Вступившие по заявкам: цель, день (по Алматы), число. Для строки «вступили сегодня» в пульте. */
+  joinedByDay: Map<string, Map<string, number>>;
+  /** Имя профиля WhatsApp номера (из fetchInstances), для пульта. */
+  profileName: string;
+  /** Последний QR пульта: не дёргаем Evolution чаще раза в 10 секунд. */
+  qrCache: { at: number; state: string; data: string } | null;
+  qrJournalAt: number;
+  /** Список групп номера: кеш на минуту, обновление не чаще раза в 20 секунд. */
+  groupsCache: { at: number; items: PanelGroup[] } | null;
+  groupsCallAt: number;
 };
 
 let rt: Rt | null = null;
@@ -332,6 +383,21 @@ function loadState(r: Rt): State {
     st.capAlertDay = str(raw.capAlertDay);
     st.ownerJid = str(raw.ownerJid);
     st.ownerAt = num(raw.ownerAt);
+    st.mode = raw.mode === "event" ? "event" : "daily";
+    st.daily = { enabled: raw.daily?.enabled === true };
+    const ev = raw.event;
+    if (ev && typeof ev === "object") {
+      const day = (x: unknown) => (isDayKey(x) ? x : "");
+      st.event = {
+        date: day(ev.date),
+        start: typeof ev.start === "string" && /^\d{1,2}:\d{2}$/.test(ev.start) ? ev.start : "",
+        recruitFrom: day(ev.recruitFrom),
+        ...(typeof ev.communityId === "string" && ev.communityId ? { communityId: ev.communityId } : {}),
+        ...(ev.done === true ? { done: true, doneAt: num(ev.doneAt) } : {}),
+      };
+    }
+    // Режимы взаимоисключающие: в живом эфире ежедневное создание всегда выключено.
+    if (st.mode === "event") st.daily.enabled = false;
   } catch {
     console.warn("[wa] wa-state.json нечитаем, начинаю с пустого состояния");
   }
@@ -376,8 +442,15 @@ export function initWaGroups(opts: InitOpts = {}): void {
     joining: false,
     mediaWarned: new Set(),
     lockedOutLogged: false,
+    joinedByDay: new Map(),
+    profileName: "",
+    qrCache: null,
+    qrJournalAt: 0,
+    groupsCache: null,
+    groupsCallAt: 0,
   };
   r.state = loadState(r);
+  if (!r.state.event.start) r.state.event.start = cfg.streamStart;
   for (const row of readJsonl<any>(fJournal(r))) {
     if (row?.ev === "send" && row.ok && row.msg && row.day && row.target) r.sent.add(sentKey(row.msg, row.part || "main", row.day, row.target));
   }
@@ -387,7 +460,11 @@ export function initWaGroups(opts: InitOpts = {}): void {
     if (row.ev === "request") r.seenReq.add(k);
     if (row.ev === "approve" && row.ok) {
       r.approved.add(k);
-      if (row.target) r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
+      if (row.target) {
+        r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
+        const ms = Date.parse(String(row.ts || ""));
+        if (Number.isFinite(ms)) noteJoinedDay(r, row.target, dayKeyOf(ms));
+      }
     }
   }
   rt = r;
@@ -430,7 +507,15 @@ export function startWaGroups(opts: InitOpts = {}): () => void {
   const first = setTimeout(() => void waTick(), 5000);
   const onExit = () => releaseLock(r);
   process.on("exit", onExit);
-  console.log("[wa] запущен: тип %s, расписание %s, сообщений %d, тик %d с", r.cfg.target, r.cfg.version, r.cfg.messages.length, TICK_MS / 1000);
+  console.log(
+    "[wa] запущен: тип %s, режим %s%s, расписание %s, сообщений %d, тик %d с",
+    r.cfg.target,
+    r.state.mode === "event" ? "живой эфир" : "ежедневный",
+    r.state.mode === "daily" ? (r.state.daily.enabled ? " (создание вкл)" : " (создание выкл)") : "",
+    r.cfg.version,
+    r.cfg.messages.length,
+    TICK_MS / 1000,
+  );
   return () => {
     clearInterval(main);
     clearInterval(joins);
@@ -494,6 +579,54 @@ export function createAtOf(r: Rt, day: string): number {
 const ddmm = (day: string) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
 const nameOf = (r: Rt, day: string, seq: number) => r.cfg.name.replace("{date}", ddmm(day)) + (seq > 1 ? ` (${seq})` : "");
 
+// ───────────────────────── время старта живого эфира ─────────────────────────
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const minsOf = (hhmm: string) => {
+  const p = parseHHMM(hhmm);
+  return p.h * 60 + p.m;
+};
+const hhmmFrom = (mins: number) => {
+  const m = ((mins % 1440) + 1440) % 1440;
+  return `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+};
+/** Время старта, нормализованное до HH:MM (9:00 -> 09:00). */
+export const normHHMM = (s: string) => hhmmFrom(minsOf(s));
+
+/** Сдвиг старта эфира относительно времени, под которое написана серия (streamStart), в минутах. */
+const startShift = (r: Rt, start?: string) => (start ? minsOf(start) - minsOf(r.cfg.streamStart) : 0);
+
+/**
+ * Сообщение привязано к старту эфира, если его время не позже конца эфира серии (до оффера включительно):
+ * такие сдвигаются вместе со стартом. Дожим и «последние 30 минут» привязаны к 23:59, а не к старту, они остаются на месте.
+ */
+const followsStart = (r: Rt, m: WaMsg) => minsOf(m.at) <= minsOf(r.cfg.streamStart) + r.cfg.streamMinutes;
+
+/** Плановое время сообщения для цели: время дня эфира плюс сдвиг старта, если старт не 20:00. */
+function planOf(r: Rt, t: { day: string; start?: string }, m: WaMsg): number {
+  const base = atTime(t.day, m.at);
+  const d = startShift(r, t.start);
+  return d && followsStart(r, m) ? base + d * MIN : base;
+}
+
+/**
+ * Часы в текстах серии написаны под старт в 20:00 по Алматы (18:00 по Москве). Если старт другой, подставляем его:
+ * «20:00» на новое время, «18:00 по Москве» на московское (Алматы минус 2 часа). Остальные числа (23:59 и т.д.) не трогаем.
+ */
+function retime(r: Rt, start: string | undefined, text: string): string {
+  if (!start || start === r.cfg.streamStart) return text;
+  const base = r.cfg.streamStart;
+  const baseMsk = hhmmFrom(minsOf(base) - 120);
+  const msk = hhmmFrom(minsOf(start) - 120);
+  return text.split(`${baseMsk} по Москве`).join(`${msk} по Москве`).split(base).join(start);
+}
+
+/** Сообщение серии таким, как оно уйдёт в цель: часы в тексте и в вопросе опроса подогнаны под её старт. */
+function effMsg(r: Rt, t: { start?: string }, m: WaMsg): WaMsg {
+  if (!t.start || t.start === r.cfg.streamStart) return m;
+  return { ...m, text: retime(r, t.start, m.text), ...(m.poll ? { poll: { ...m.poll, name: retime(r, t.start, m.poll.name) } } : {}) };
+}
+
 // ───────────────────────── цели рассылки ─────────────────────────
 
 const isReady = (t: Target) => (t.kind === "community" ? !!(t.done.announce && t.done.addMode && t.done.approval && t.done.link) : !!(t.done.announce && t.done.link));
@@ -501,19 +634,29 @@ const isReady = (t: Target) => (t.kind === "community" ? !!(t.done.announce && t
 /** Цели дня, от нового к старому (последнее переполнение первым). */
 const targetsOf = (r: Rt, day: string) => r.state.targets.filter((t) => t.day === day).sort((a, b) => b.seq - a.seq);
 
-/** Цель, на которую сейчас ведёт ссылка: готовое сообщество дня, на который записывает бот (assignStreamDay). */
+/**
+ * Цель, на которую сейчас ведёт ссылка.
+ *  - daily: готовое сообщество дня, на который записывает бот (assignStreamDay); сообщества живого эфира тут не раздаются;
+ *  - event: готовое сообщество эфира весь период набора, до 00:00 после дня эфира; пока его нет, ссылка постоянная.
+ */
 function servingTarget(r: Rt, now: number): Target | null {
+  if (r.state.mode === "event") {
+    const ev = r.state.event;
+    if (!ev.date || ev.done) return null;
+    return targetsOf(r, ev.date).find((t) => isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
+  }
   const day = assignStreamDay(now, tcfg(r));
-  return targetsOf(r, day).find((t) => isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
+  return targetsOf(r, day).find((t) => t.source !== "event" && isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
 }
 
 /**
  * Ссылка для сайта. null: модуль выключен или подходящего сообщества нет, тогда server.ts отдаёт старую ссылку.
  * Никогда не бросает.
  */
-export function waGroupLink(now: number = Date.now(), served = true): string | null {
+export function waGroupLink(now?: number, served = true): string | null {
   try {
     if (!rt) return null;
+    if (now === undefined) now = rt.deps.now();
     const t = servingTarget(rt, now);
     if (!t || !isValidWhatsAppLink(t.link)) return null;
     if (served) {
@@ -644,13 +787,17 @@ export function releaseLock(r: Rt) {
 async function checkConnection(r: Rt, now: number): Promise<boolean> {
   const c = await evo.connectionState();
   const st = c.ok ? c.data.state : "unreachable";
+  const prev = r.conn.state;
   r.conn = { state: st, at: now };
+  // Смену состояния подключения пишем в журнал (в пульте видно, когда номер отвалился и вернулся). Первый тик после старта: только если не open.
+  if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
   if (st === "open") {
     if (!r.state.ownerJid || now - r.state.ownerAt > HOUR) {
       const i = await evo.fetchInstance();
       if (i.ok && i.data.ownerJid) {
         r.state.ownerJid = i.data.ownerJid;
         r.state.ownerAt = now;
+        r.profileName = i.data.profileName;
         save(r);
       }
     }
@@ -687,12 +834,58 @@ function dueCreateDays(r: Rt, now: number): string[] {
   return out;
 }
 
+/** Когда само создаётся сообщество живого эфира: день начала набора в EVENT_CREATE_AT по Алматы. */
+export const eventCreateAt = (r: Rt) => atTime(r.state.event.recruitFrom, EVENT_CREATE_AT);
+
+/** Сообщество живого эфира, созданное или принятое под дату эфира (самое новое из переполнений). */
+const eventTarget = (r: Rt): Target | null => (r.state.event.date ? targetsOf(r, r.state.event.date)[0] ?? null : null);
+
+/** Живой эфир ждёт создания: режим event, дата и начало набора заданы, сообщества ещё нет, эфир не закончился. */
+function eventDue(r: Rt, now: number): boolean {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || ev.done || !ev.date || !ev.recruitFrom) return false;
+  if (eventTarget(r)) return false;
+  return now >= eventCreateAt(r) && now < closeAtOf(r, ev.date);
+}
+
+/** Дни, для которых пора создавать сообщество: в ежедневном режиме при включённом создании по расписанию, в живом эфире день эфира. */
+function dueCreates(r: Rt, now: number): string[] {
+  if (r.state.mode === "event") return eventDue(r, now) ? [r.state.event.date] : [];
+  return r.state.daily.enabled ? dueCreateDays(r, now) : [];
+}
+
+/** Эфир прошёл (00:00 после дня эфира): режим завершён, возвращаемся к ежедневному с выключенным созданием, ссылка снова постоянная. */
+function finishEventIfOver(r: Rt, now: number): boolean {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || ev.done || !ev.date || now < closeAtOf(r, ev.date)) return false;
+  ev.done = true;
+  ev.doneAt = now;
+  r.state.mode = "daily";
+  r.state.daily.enabled = false;
+  save(r);
+  journal(r, { ev: "event_done", date: ev.date, target: ev.communityId || "" });
+  console.log("[wa] живой эфир %s завершён, режим вернулся на ежедневный (создание выключено)", ev.date);
+  return true;
+}
+
+/** Если под дату эфира уже есть сообщество (создали или принятое), запомнить его id в настройках эфира. */
+function syncEventCommunity(r: Rt) {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || !ev.date || ev.done) return;
+  const t = eventTarget(r);
+  if (t && ev.communityId !== t.id) {
+    ev.communityId = t.id;
+    save(r);
+  }
+}
+
 type CreateResult = { ok: true; target: Target } | { ok: false; error: string };
 
 /** Создать сообщество (или группу) эфира day с номером seq и сохранить. Настройки и ссылка ставятся следом (setupSteps). */
-async function createTarget(r: Rt, day: string, seq: number, now: number): Promise<CreateResult> {
+async function createTarget(r: Rt, day: string, seq: number, now: number, opts: { source?: "daily" | "event"; start?: string } = {}): Promise<CreateResult> {
   const kind = r.cfg.target;
   const name = nameOf(r, day, seq);
+  const description = retime(r, opts.start, r.cfg.description);
   let created: { jid: string; sendJid: string };
   if (kind === "group" && !adminNumbers().length) {
     await noteFail(r, `создание ${name}`, "для обычной группы нужен хотя бы один номер в WA_ADMIN_NUMBERS");
@@ -702,8 +895,8 @@ async function createTarget(r: Rt, day: string, seq: number, now: number): Promi
   save(r);
   const res =
     kind === "community"
-      ? await evo.communityCreate({ subject: name, description: r.cfg.description, approvalRequired: true })
-      : await evo.groupCreate({ subject: name, description: r.cfg.description, participants: adminNumbers() });
+      ? await evo.communityCreate({ subject: name, description, approvalRequired: true })
+      : await evo.groupCreate({ subject: name, description, participants: adminNumbers() });
   if (!res.ok) {
     if (ambiguous(res)) {
       // Запрос мог выполниться: вслепую не повторяем, чтобы не наплодить сообществ.
@@ -739,18 +932,20 @@ async function createTarget(r: Rt, day: string, seq: number, now: number): Promi
     done: kind === "group" ? { addMode: true, approval: true } : {},
     tries: {},
     avatarAt: 0,
+    ...(opts.source === "event" ? { source: "event" as const } : {}),
+    ...(opts.start && opts.start !== r.cfg.streamStart ? { start: opts.start } : {}),
   };
   r.state.targets.push(t);
   r.state.pendingCreate = null;
   noteCreation(r, now);
   save(r);
-  journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name });
+  journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name, ...(t.source ? { source: t.source } : {}) });
   console.log("[wa] создано %s %s (%s)", kind === "community" ? "сообщество" : "группа", t.id, name);
   noteOk(r);
   return { ok: true, target: t };
 }
 
-const welcomeText = (r: Rt, t: Target, now: number) => r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm(t.day));
+const welcomeText = (r: Rt, t: Target, now: number) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm(t.day)));
 
 /**
  * Довести цель до готовности: настройки, ссылка, аватарка, приветствие. Шаги по порядку с паузой между ними,
@@ -855,7 +1050,8 @@ async function sendPart(r: Rt, t: Target, msgId: string, part: string, run: () =
 }
 
 /** Отправить сообщение серии в цель: картинка или видео с подписью (или текст), отдельный текст, опрос. Возвращает false при первой неудаче. */
-async function sendMessageTo(r: Rt, t: Target, m: WaMsg, manual: boolean): Promise<boolean> {
+async function sendMessageTo(r: Rt, t: Target, base: WaMsg, manual: boolean): Promise<boolean> {
+  const m = effMsg(r, t, base);
   let first = true;
   for (const part of partsOf(r, m)) {
     if (r.sent.has(sentKey(m.id, part, t.day, t.id))) continue;
@@ -902,7 +1098,7 @@ export function dueSends(r: Rt, now: number): Due[] {
     if (!isReady(t) || now >= closeAtOf(r, t.day)) continue;
     for (const msg of r.cfg.messages) {
       if (msg.enabled === false) continue;
-      const plan = atTime(t.day, msg.at);
+      const plan = planOf(r, t, msg);
       if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
       // Прошлые сообщения новому сообществу не досылаем.
       if (plan < t.createdAt) continue;
@@ -985,7 +1181,7 @@ async function runMemberChecks(r: Rt, now: number) {
     return;
   }
   await pause(r, r.cfg.pacing.betweenStepsMs);
-  const c = await createTarget(r, t.day, t.seq + 1, r.deps.now());
+  const c = await createTarget(r, t.day, t.seq + 1, r.deps.now(), { source: t.source ?? "daily", start: t.start });
   if (!c.ok) return;
   await alarm(r, `В «${t.name}» ${t.members} участников из ${limit}. Открыто следующее: «${c.target.name}», ссылка на сайте переключится на него, как только оно будет готово.`);
   await pause(r, r.cfg.pacing.betweenStepsMs);
@@ -1006,6 +1202,9 @@ export async function waTick(): Promise<TickInfo> {
     return await exclusive(r, async () => {
       const now = r.deps.now();
       if (!holdLock(r)) return { skipped: "lock" as const, sent: 0, created: 0 };
+      // Конец живого эфира и привязка найденного сообщества не требуют WhatsApp: делаем их, даже если модуль на паузе.
+      finishEventIfOver(r, now);
+      syncEventCommunity(r);
       if (r.state.paused) return { skipped: "paused" as const, sent: 0, created: 0 };
       if (!(await checkConnection(r, now))) return { skipped: "no_connection" as const, sent: 0, created: 0 };
       if (now < r.state.retryAt) return { skipped: "backoff" as const, sent: 0, created: 0 };
@@ -1019,7 +1218,7 @@ export async function waTick(): Promise<TickInfo> {
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" as const };
-      for (const day of dueCreateDays(r, now)) {
+      for (const day of dueCreates(r, now)) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (capReached(r, now)) {
           if (r.state.capAlertDay !== dayKeyOf(now)) {
@@ -1029,9 +1228,11 @@ export async function waTick(): Promise<TickInfo> {
           }
           break;
         }
-        const c = await createTarget(r, day, 1, r.deps.now());
+        const ev = r.state.mode === "event" ? r.state.event : null;
+        const c = await createTarget(r, day, 1, r.deps.now(), ev ? { source: "event", start: ev.start } : {});
         if (!c.ok) break;
         created++;
+        syncEventCommunity(r);
         await pause(r, r.cfg.pacing.betweenStepsMs);
         await setupSteps(r, c.target);
       }
@@ -1089,6 +1290,13 @@ function normalizeDecisions(data: unknown, asked: string[]): Array<{ jid: string
   return asked.map((jid) => ({ jid, ok: true, status: "200" }));
 }
 
+/** Запомнить вступление по заявке за день (по Алматы): из этого считается «вступили сегодня» в пульте. */
+function noteJoinedDay(r: Rt, target: string, day: string) {
+  let m = r.joinedByDay.get(target);
+  if (!m) r.joinedByDay.set(target, (m = new Map()));
+  m.set(day, (m.get(day) || 0) + 1);
+}
+
 function nextJoinDelay(r: Rt, serving: boolean, now: number) {
   const jp = r.cfg.joinPolling;
   if (!serving) return between(r, jp.otherSec) * 1000;
@@ -1131,6 +1339,7 @@ async function pollJoins(r: Rt, t: Target, now: number): Promise<number> {
     if (x.ok) {
       r.approved.add(k);
       r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
+      noteJoinedDay(r, t.id, dayKeyOf(r.deps.now()));
       n++;
     } else {
       r.approveFails.set(k, (r.approveFails.get(k) || 0) + 1);
@@ -1184,30 +1393,53 @@ const agoText = (ms: number) => {
 };
 const inText = (ms: number) => {
   const m = Math.max(0, Math.round(ms / MIN));
-  return m < 90 ? `через ${m} мин` : `через ${Math.floor(m / 60)} ч ${m % 60} мин`;
+  if (m < 90) return `через ${m} мин`;
+  // Дальше двух суток считаем днями: «через 117 ч 20 мин» читается плохо.
+  if (m >= 2880) return `через ${Math.floor(m / 1440)} дн. ${Math.floor((m % 1440) / 60)} ч`;
+  return `через ${Math.floor(m / 60)} ч ${m % 60} мин`;
 };
 
-/** Ближайшее сообщение расписания по сообществам, которые есть или будут: время, id, день эфира. */
-function nextMessageText(r: Rt, now: number): string {
+export type NextMsg = { plan: number; id: string; topic: string; day: string };
+
+/**
+ * Ближайшее сообщение расписания по сообществам, которые есть или будут. Ежедневный режим: ближайшие дни эфира, где уже есть
+ * сообщество или создание включено. Живой эфир: только день эфира, со сдвигом по времени старта.
+ */
+function nextMessage(r: Rt, now: number): NextMsg | null {
+  let best: NextMsg | null = null;
+  const consider = (day: string, start?: string) => {
+    for (const m of r.cfg.messages) {
+      if (m.enabled === false) continue;
+      const plan = planOf(r, { day, start }, m);
+      if (plan >= now && plan < closeAtOf(r, day) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
+    }
+  };
+  if (r.state.mode === "event") {
+    const ev = r.state.event;
+    if (ev.date && !ev.done) consider(ev.date, eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : undefined));
+    return best;
+  }
   const c = tcfg(r);
   const today = dayKeyOf(now);
-  let best: { plan: number; id: string; day: string } | null = null;
   for (let i = 0; i < 4; i++) {
     const day = addDays(today, i);
     if (!isStreamDay(day, c)) continue;
-    for (const m of r.cfg.messages) {
-      if (m.enabled === false) continue;
-      const plan = atTime(day, m.at);
-      if (plan >= now && (!best || plan < best.plan)) best = { plan, id: m.id, day };
-    }
+    const ts = targetsOf(r, day).filter((t) => t.source !== "event");
+    if (!ts.length && !r.state.daily.enabled) continue;
+    consider(day, ts[0]?.start);
   }
-  return best ? `${hhmmOf(best.plan)} ${best.id} (эфир ${ddmm(best.day)}), ${inText(best.plan - now)}` : "нет";
+  return best;
+}
+
+function nextMessageText(r: Rt, now: number): string {
+  const b = nextMessage(r, now);
+  return b ? `${hhmmOf(b.plan)} ${b.id} (эфир ${ddmm(b.day)}), ${inText(b.plan - now)}` : "нет";
 }
 
 function targetLine(r: Rt, label: string, day: string, now: number): string {
-  const ts = [...targetsOf(r, day)].reverse();
+  const ts = [...targetsOf(r, day)].reverse().filter((t) => r.state.mode === "event" || t.source !== "event");
   const at = createAtOf(r, day);
-  if (!ts.length) return `${label} ${ddmm(day)}: пока нет, создам в ${hhmmOf(at)} ${ddmm(dayKeyOf(at))}`;
+  if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm(day)}: пока нет, создам в ${hhmmOf(at)} ${ddmm(dayKeyOf(at))}` : `${label} ${ddmm(day)}: пока нет, ежедневное создание выключено`;
   return ts
     .map((t) => {
       const mem = t.members === undefined ? "участников не проверяли" : `участников ${t.members} (${agoText(now - (t.membersAt || now))})`;
@@ -1246,11 +1478,16 @@ async function cmdStatus(r: Rt, now: number): Promise<WaReply> {
   const next = nextStreamAfter(r, cur);
   const number = r.state.ownerJid ? `+${r.state.ownerJid.replace(/@.*/, "")}` : "номер неизвестен";
   const link = waGroupLink(now, false);
+  const ev = r.state.event;
   const lines = [
     `WhatsApp-модуль: ${r.state.paused ? `на паузе (${r.state.pausedReason || "причина не записана"})` : "работает"}, тип ${r.cfg.target === "community" ? "сообщество" : "группа"}`,
+    r.state.mode === "event"
+      ? `Режим: живой эфир${ev.date ? ` ${ddmm(ev.date)} в ${ev.start}, набор с ${ddmm(ev.recruitFrom)}` : ", дата эфира не задана"}`
+      : `Режим: ежедневный, создание ${r.state.daily.enabled ? "включено" : "выключено"}`,
     `Подключение: ${conn}${conn === "open" ? `, ${number}` : ""}`,
-    targetLine(r, "Эфир", cur, now),
-    targetLine(r, "Следующий эфир", next, now),
+    ...(r.state.mode === "event"
+      ? [ev.date ? (eventTarget(r) ? targetLine(r, "Сообщество эфира", ev.date, now) : `Сообщество эфира ${ddmm(ev.date)}: пока нет, создам ${ddmm(ev.recruitFrom)} в ${EVENT_CREATE_AT}`) : "Сообщество эфира: пока нет"]
+      : [targetLine(r, "Эфир", cur, now), targetLine(r, "Следующий эфир", next, now)]),
     `Ссылка на сайте сейчас: ${link ?? "старая постоянная (подходящего сообщества нет)"}`,
     `Ближайшее сообщение: ${nextMessageText(r, now)}`,
     `Новых сообществ за сутки: ${dayCreations(r, now)} из ${r.cfg.maxNewPerDay}`,
@@ -1304,14 +1541,14 @@ async function cmdQr(r: Rt, now: number): Promise<WaReply> {
   });
 }
 
-function cmdPause(r: Rt, now: number): WaReply {
+function cmdPause(r: Rt, now: number, by: "bot" | "panel" = "bot"): WaReply {
   if (r.state.paused) return { text: "Модуль уже на паузе." };
   r.state.paused = true;
   r.state.pausedAt = now;
-  r.state.pausedReason = "вручную, /wa_pause";
+  r.state.pausedReason = by === "panel" ? "вручную, из пульта" : "вручную, /wa_pause";
   save(r);
   journal(r, { ev: "pause", reason: r.state.pausedReason });
-  return { text: "Пауза включена: рассылка, создание и одобрение заявок остановлены. Вернуть: /wa_resume." };
+  return { text: by === "panel" ? "Пауза включена: рассылка, создание и одобрение заявок остановлены." : "Пауза включена: рассылка, создание и одобрение заявок остановлены. Вернуть: /wa_resume." };
 }
 
 function cmdResume(r: Rt): WaReply {
@@ -1326,8 +1563,42 @@ function cmdResume(r: Rt): WaReply {
   return { text: was ? "Пауза снята, счётчик ошибок обнулён. Модуль работает на ближайшем тике (до 30 секунд)." : "Модуль и так не на паузе. Счётчик ошибок обнулён." };
 }
 
-/** /wa_new [YYYY-MM-DD]: создать сообщество ближайшего эфира, для которого его ещё нет, вручную сейчас. */
+/** Результат действия из пульта или команды: ok, короткий код причины для интерфейса и текст по-русски. */
+export type Act = { ok: boolean; code?: string; message: string };
+const fail = (code: string, message: string): Act => ({ ok: false, code, message });
+
+/**
+ * Создать сообщество живого эфира сейчас (кнопка «Создать сейчас», в режиме event команда /wa_new делает то же).
+ * Защита номера та же: пауза, неподтверждённое создание, лимит в сутки, подключение, пауза между шагами.
+ */
+async function eventCreateNow(r: Rt, now: number): Promise<Act> {
+  const ev = r.state.event;
+  if (r.state.mode !== "event") return fail("wrong_mode", "Сейчас включён ежедневный режим. Переключись на живой эфир.");
+  if (!ev.date) return fail("no_event", "Сначала задай дату эфира и сохрани.");
+  if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `Эфир ${ddmm(ev.date)} уже закончился. Задай новую дату.`);
+  if (r.state.paused) return fail("paused", "Модуль на паузе. Сначала сними паузу.");
+  if (r.state.pendingCreate) return fail("pending", "Прошлое создание не подтверждено. Проверь телефон и сними паузу (она обнулит ожидание).");
+  const existing = eventTarget(r);
+  if (existing) {
+    syncEventCommunity(r);
+    return { ok: true, code: "exists", message: `Для эфира ${ddmm(ev.date)} сообщество уже есть: «${existing.name}»${existing.link ? `, ссылка ${existing.link}` : ", ссылка ещё не готова"}.` };
+  }
+  if (capReached(r, now)) return fail("cap", `Лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Подожди.`);
+  return exclusive(r, async () => {
+    if (!(await checkConnection(r, now))) return fail("no_connection", `WhatsApp не подключён (${r.conn.state}). Подключи номер по QR.`);
+    const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
+    if (!res.ok) return fail("create_failed", r.state.paused ? "Создание не подтверждено, модуль на паузе. Подробности в тревоге в Telegram." : `Не создалось: ${res.error}`);
+    syncEventCommunity(r);
+    await pause(r, r.cfg.pacing.betweenStepsMs);
+    const done = await setupSteps(r, res.target);
+    const t = res.target;
+    return { ok: true, code: isReady(t) ? "created" : "building", message: `Создано: «${t.name}». ${isReady(t) ? `Ссылка: ${t.link}. На сайте она действует до 00:00 после эфира.` : done ? "Достраивается." : "Настройки не закончены, модуль повторит на ближайших тиках."}` };
+  });
+}
+
+/** /wa_new [YYYY-MM-DD]: создать сообщество ближайшего эфира, для которого его ещё нет, вручную сейчас. В режиме живого эфира то же, что «Создать сейчас». */
 async function cmdNew(r: Rt, args: string, now: number): Promise<WaReply> {
+  if (r.state.mode === "event") return { text: (await eventCreateNow(r, now)).message };
   if (r.state.paused) return { text: "Модуль на паузе. Сначала /wa_resume." };
   if (r.state.pendingCreate) return { text: "Прошлое создание не подтверждено. Проверь телефон и сделай /wa_resume." };
   const c = tcfg(r);
@@ -1357,18 +1628,35 @@ async function cmdNew(r: Rt, args: string, now: number): Promise<WaReply> {
   });
 }
 
-/** /wa_send <id>: отправить сообщение серии вручную во все готовые сообщества сегодняшнего эфира. Уже ушедшее не повторяется. */
-async function cmdSend(r: Rt, args: string, now: number): Promise<WaReply> {
-  const id = args.split(/\s+/)[0];
-  if (!id) return { text: `Укажи id сообщения: /wa_send morning. Список: ${r.cfg.messages.map((m) => m.id).join(", ")}` };
+/**
+ * Готовые сообщества, куда идёт ручная отправка «сейчас». Ежедневный режим: сообщества сегодняшнего эфира (кроме живого эфира).
+ * Живой эфир: сообщества его даты, в любой день до 00:00 после эфира.
+ */
+function currentTargets(r: Rt, now: number): { day: string; list: Target[] } {
+  const day = r.state.mode === "event" ? r.state.event.date : dayKeyOf(now);
+  const list = day
+    ? [...targetsOf(r, day)].reverse().filter((t) => (r.state.mode === "event" ? true : t.source !== "event") && isReady(t) && now < closeAtOf(r, t.day))
+    : [];
+  return { day, list };
+}
+
+type SendRes = { ok: boolean; code?: string; text: string; sent: number; skipped: number; failed: number; targets: number };
+
+/** Отправить сообщение серии вручную во все готовые сообщества текущего эфира. Уже ушедшее не повторяется. */
+async function sendSeries(r: Rt, id: string, now: number): Promise<SendRes> {
+  const ids = r.cfg.messages.map((m) => m.id).join(", ");
+  const zero = { sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (!id) return { ok: false, code: "no_id", text: `Укажи id сообщения: /wa_send morning. Список: ${ids}`, ...zero };
   const msg = r.cfg.messages.find((m) => m.id === id);
-  if (!msg) return { text: `Нет сообщения «${id}». Список: ${r.cfg.messages.map((m) => m.id).join(", ")}` };
-  if (r.state.paused) return { text: "Модуль на паузе. Сначала /wa_resume." };
-  const today = dayKeyOf(now);
-  const targets = [...targetsOf(r, today)].reverse().filter((t) => isReady(t) && now < closeAtOf(r, t.day));
-  if (!targets.length) return { text: `Для сегодняшнего эфира (${ddmm(today)}) нет готового сообщества.` };
+  if (!msg) return { ok: false, code: "bad_id", text: `Нет сообщения «${id}». Список: ${ids}`, ...zero };
+  if (r.state.paused) return { ok: false, code: "paused", text: "Модуль на паузе. Сначала /wa_resume.", ...zero };
+  const { day, list: targets } = currentTargets(r, now);
+  if (!targets.length) {
+    const text = r.state.mode === "event" ? (day ? `Для эфира (${ddmm(day)}) нет готового сообщества.` : "Живой эфир не задан, сообщества нет.") : `Для сегодняшнего эфира (${ddmm(dayKeyOf(now))}) нет готового сообщества.`;
+    return { ok: false, code: "no_target", text, ...zero };
+  }
   return exclusive(r, async () => {
-    if (!(await checkConnection(r, now))) return { text: `WhatsApp не подключён (${r.conn.state}). Ничего не отправлено.` };
+    if (!(await checkConnection(r, now))) return { ok: false, code: "no_connection", text: `WhatsApp не подключён (${r.conn.state}). Ничего не отправлено.`, ...zero, targets: targets.length };
     let ok = 0;
     let skipped = 0;
     let failed = 0;
@@ -1384,8 +1672,13 @@ async function cmdSend(r: Rt, args: string, now: number): Promise<WaReply> {
       if (await sendMessageTo(r, t, msg, true)) ok++;
       else failed++;
     }
-    return { text: `«${id}»: отправлено ${ok}, уже было ${skipped}, не ушло ${failed} (сообществ сегодня: ${targets.length}).` };
+    return { ok: failed === 0, code: failed ? "partial" : "sent", text: `«${id}»: отправлено ${ok}, уже было ${skipped}, не ушло ${failed} (сообществ ${r.state.mode === "event" ? "эфира" : "сегодня"}: ${targets.length}).`, sent: ok, skipped, failed, targets: targets.length };
   });
+}
+
+/** /wa_send <id>: отправить сообщение серии вручную во все готовые сообщества текущего эфира. */
+async function cmdSend(r: Rt, args: string, now: number): Promise<WaReply> {
+  return { text: (await sendSeries(r, args.split(/\s+/)[0], now)).text };
 }
 
 /** Обработчик команд /wa*, который tg-workshop вызывает для владельцев. Не бросает. */
@@ -1418,5 +1711,622 @@ export function waReportLine(day: string): string {
   return `WhatsApp: вступили по заявкам ${joined}, сообщений серии ушло ${done} из ${total}.`;
 }
 
+// ───────────────────────── пульт: действия ─────────────────────────
+// Всё, что делает пульт админки (form-api/wa-admin.ts), живёт здесь: те же правила защиты номера, что у команд бота.
+// Каждая функция возвращает Act или данные, не бросает. now необязателен: по умолчанию часы модуля (в тестах подменены).
+
+const MODULE_OFF = fail("module_off", "Модуль WhatsApp не запущен: на сервере нет WA_GROUPS=on или он не стартовал (см. /api/health).");
+const clock = (r: Rt, now?: number) => now ?? r.deps.now();
+const when = (ms: number) => `${ddmm(dayKeyOf(ms))} в ${hhmmOf(ms)}`;
+
+/** Переключить режим. Режимы взаимоисключающие: уходя в живой эфир, ежедневное создание выключается. Созданное не трогается. */
+export function waSetMode(mode: unknown, nowArg?: number): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (mode !== "daily" && mode !== "event") return fail("bad_request", "Режим: daily или event.");
+  if (r.state.mode === mode) return { ok: true, code: "same", message: "Этот режим уже включён." };
+  r.state.mode = mode;
+  if (mode === "event") {
+    r.state.daily.enabled = false;
+    // Прошлый, уже завершённый эфир на экране не нужен: форма начинается с чистого листа.
+    if (r.state.event.done) r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
+  }
+  save(r);
+  journal(r, { ev: "mode", mode, by: "panel" });
+  return {
+    ok: true,
+    message:
+      mode === "event"
+        ? "Включён живой эфир. Ежедневное создание выключено. Созданные сообщества продолжают работать, но ссылка на сайте теперь ведёт в сообщество живого эфира."
+        : "Включён ежедневный режим. Создание сообществ выключено, пока не включишь его переключателем. Сообщество живого эфира продолжает работать.",
+  };
+}
+
+/** Ежедневное создание: вкл или выкл. Только в ежедневном режиме. */
+export function waSetDaily(enabled: unknown, nowArg?: number): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (typeof enabled !== "boolean") return fail("bad_request", "Нужно true или false.");
+  // Выключить можно всегда: в живом эфире оно и так выключено.
+  if (!enabled && r.state.mode !== "daily") return { ok: true, code: "same", message: "Ежедневное создание уже выключено." };
+  if (r.state.mode !== "daily") return fail("wrong_mode", "Ежедневное создание включается только в ежедневном режиме. Сначала переключи режим.");
+  if (r.state.daily.enabled === enabled) return { ok: true, code: "same", message: enabled ? "Ежедневное создание уже включено." : "Ежедневное создание уже выключено." };
+  r.state.daily.enabled = enabled;
+  save(r);
+  journal(r, { ev: "daily", enabled, by: "panel" });
+  const now = clock(r, nowArg);
+  if (!enabled) return { ok: true, message: "Ежедневное создание выключено: новые сообщества не создаются. Созданные работают до конца." };
+  const nx = nextDailyCreate(r, now);
+  return { ok: true, message: nx ? `Ежедневное создание включено. Ближайшее сообщество, эфир ${ddmm(nx.day)}, создам ${when(nx.at)}.` : "Ежедневное создание включено." };
+}
+
+const START_MIN = 12 * 60;
+const START_MAX = 22 * 60;
+
+/** Сохранить настройки живого эфира: дата эфира, время старта, день начала набора. Только в режиме event, пока сообщество не создано. */
+export function waSetEvent(p: { date?: unknown; start?: unknown; recruitFrom?: unknown }, nowArg?: number): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (r.state.mode !== "event") return fail("wrong_mode", "Настройки живого эфира доступны в режиме «Живой эфир». Сначала переключи режим.");
+  const now = clock(r, nowArg);
+  const today = dayKeyOf(now);
+  const cur = r.state.event;
+  if (!cur.done && cur.communityId && eventTarget(r)) return fail("locked", "Сообщество этого эфира уже создано, даты и время не меняются. Нажми «Сбросить эфир» и задай новый.");
+  if (!isDayKey(p.date)) return fail("bad_date", "Укажи дату эфира.");
+  if (p.date < today) return fail("bad_date", "Дата эфира уже прошла.");
+  if (p.date > addDays(today, 90)) return fail("bad_date", "Эфир дальше чем через 90 дней: проверь дату.");
+  let start: string;
+  try {
+    start = normHHMM(String(p.start || r.cfg.streamStart));
+  } catch {
+    return fail("bad_start", "Время старта вида 20:00.");
+  }
+  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "Старт эфира от 12:00 до 22:00 по Алматы: серия написана под вечерний эфир.");
+  if (!isDayKey(p.recruitFrom)) return fail("bad_recruit", "Укажи день начала набора.");
+  if (p.recruitFrom > p.date) return fail("bad_recruit", "Набор не может начаться позже дня эфира.");
+  if (p.recruitFrom < addDays(p.date, -30)) return fail("bad_recruit", "Набор длиннее 30 дней: проверь дату.");
+  r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
+  syncEventCommunity(r);
+  save(r);
+  journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
+  const at = eventCreateAt(r);
+  const text = eventTarget(r)
+    ? `Сохранено. Для эфира ${ddmm(p.date)} сообщество уже есть, ссылка на сайте ведёт в него.`
+    : now >= at
+      ? `Сохранено: эфир ${ddmm(p.date)} в ${start}. Набор уже идёт, сообщество создам в ближайшие 30 секунд.`
+      : `Сохранено: эфир ${ddmm(p.date)} в ${start}. Сообщество создам ${when(at)}, ссылка на сайте поведёт в него сразу после этого.`;
+  return { ok: true, message: text };
+}
+
+/** Забыть настройки живого эфира. Созданные сообщества остаются и работают, но ссылка на сайте возвращается на постоянную. */
+export function waEventReset(): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
+  save(r);
+  journal(r, { ev: "event_reset", by: "panel" });
+  return { ok: true, message: "Настройки эфира сброшены. Созданное сообщество продолжает работать, ссылка на сайте снова постоянная." };
+}
+
+/** Кнопка «Создать сейчас» (живой эфир). */
+export async function waEventCreateNow(nowArg?: number): Promise<Act> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  try {
+    return await eventCreateNow(r, clock(r, nowArg));
+  } catch (e) {
+    return fail("internal", `Ошибка: ${(e as Error)?.message || e}`);
+  }
+}
+
+/** Кнопка «Создать сообщество следующего эфира сейчас» (ежедневный режим): то же, что /wa_new без даты. */
+export async function waDailyCreateNow(nowArg?: number): Promise<Act> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (r.state.mode !== "daily") return fail("wrong_mode", "Сейчас включён живой эфир: используй «Создать сейчас» в его настройках.");
+  const text = (await cmdNew(r, "", clock(r, nowArg))).text;
+  return { ok: /^Создано:/.test(text) || /сообщество уже есть/.test(text), message: text };
+}
+
+export function waPause(nowArg?: number): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  const was = r.state.paused;
+  const reply = cmdPause(r, clock(r, nowArg), "panel");
+  return { ok: true, code: was ? "same" : "paused", message: reply.text };
+}
+
+export function waResume(): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return { ok: true, message: cmdResume(r).text };
+}
+
+/** Отправить сообщение серии в текущее сообщество прямо сейчас (с подтверждением в пульте). */
+export async function waSendSeries(id: unknown, nowArg?: number): Promise<Act & { sent: number; skipped: number; failed: number; targets: number }> {
+  const r = rt;
+  if (!r) return { ...MODULE_OFF, sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (typeof id !== "string" || !id) return { ...fail("bad_request", "Выбери сообщение серии."), sent: 0, skipped: 0, failed: 0, targets: 0 };
+  const x = await sendSeries(r, id, clock(r, nowArg));
+  return { ok: x.ok, code: x.code, message: x.text, sent: x.sent, skipped: x.skipped, failed: x.failed, targets: x.targets };
+}
+
+// ───────────────────────── пульт: подключение номера ─────────────────────────
+
+export type ConnInfo = { state: string; number: string; profile: string };
+const numberOf = (r: Rt) => (r.state.ownerJid ? `+${r.state.ownerJid.replace(/[:@].*$/, "")}` : "");
+
+/** Состояние подключения у Evolution прямо сейчас (не чаще раза в 3 секунды). Номер и имя профиля, когда open. */
+export async function waConnection(nowArg?: number): Promise<(Act & Partial<ConnInfo>) | ({ ok: true } & ConnInfo)> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    if (r.conn.at && now - r.conn.at < 3000 && r.conn.state !== "open") return { ok: true as const, state: r.conn.state, number: "", profile: "" };
+    const cs = await evo.connectionState();
+    if (!cs.ok) {
+      r.conn = { state: "unreachable", at: now };
+      return fail("evolution", `Evolution не отвечает: ${cs.error}`);
+    }
+    r.conn = { state: cs.data.state, at: now };
+    if (cs.data.state === "open") await refreshOwner(r, now);
+    return { ok: true as const, state: cs.data.state, number: cs.data.state === "open" ? numberOf(r) : "", profile: cs.data.state === "open" ? r.profileName : "" };
+  });
+}
+
+async function refreshOwner(r: Rt, now: number) {
+  const i = await evo.fetchInstance();
+  if (i.ok && i.data.ownerJid) {
+    r.state.ownerJid = i.data.ownerJid;
+    r.state.ownerAt = now;
+    r.profileName = i.data.profileName;
+    save(r);
+  }
+}
+
+const cleanQr = (x: unknown) => (typeof x === "string" ? x.replace(/^data:image\/\w+;base64,/, "") : "");
+
+/**
+ * QR для подключения номера. Нет инстанса: создаём и берём QR из ответа, есть: connect. Картинка 10 секунд берётся из кеша,
+ * чтобы пульт, обновляющий её каждые 15 до 20 секунд, не дёргал Evolution лишний раз. Ключ Evolution в ответ не попадает.
+ */
+export async function waQr(nowArg?: number): Promise<(Act & { state?: string }) | { ok: true; state: string; qr: string | null; number?: string; profile?: string; message?: string }> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const cs = await evo.connectionState();
+    if (!cs.ok) return fail("evolution", `Evolution не отвечает: ${cs.error}`);
+    const st = cs.data.state;
+    r.conn = { state: st, at: now };
+    if (st === "open") {
+      r.qrCache = null;
+      await refreshOwner(r, now);
+      return { ok: true as const, state: "open", qr: null, number: numberOf(r), profile: r.profileName };
+    }
+    const shown = st === "absent" ? "connecting" : st;
+    if (r.qrCache && now - r.qrCache.at < 10_000 && r.qrCache.state === shown) return { ok: true as const, state: shown, qr: r.qrCache.data };
+    let qr: unknown;
+    if (st === "absent") {
+      const c = await evo.createInstance();
+      if (!c.ok) return fail("evolution", `Не удалось создать подключение: ${c.error}`);
+      qr = c.data?.qrcode?.base64;
+    } else {
+      const c = await evo.connectInstance();
+      if (!c.ok) return fail("evolution", `Не удалось запросить QR: ${c.error}`);
+      qr = c.data?.base64;
+    }
+    const b64 = cleanQr(qr);
+    if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64) || b64.length > 400_000) return { ok: true as const, state: shown, qr: null, message: "QR готовится, он появится через несколько секунд." };
+    const data = `data:image/png;base64,${b64}`;
+    r.qrCache = { at: now, state: shown, data };
+    if (now - r.qrJournalAt > 5 * MIN) {
+      r.qrJournalAt = now;
+      journal(r, { ev: "qr", by: "panel" });
+    }
+    return { ok: true as const, state: shown, qr: data };
+  });
+}
+
+/** Отвязать номер (DELETE /instance/logout). Рассылка и создание встанут сами: без подключения модуль ничего не шлёт. */
+export async function waLogout(nowArg?: number): Promise<Act> {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const x = await evo.logoutInstance();
+    if (!x.ok) return fail("evolution", `Не получилось отключить номер: ${x.error}`);
+    r.conn = { state: "close", at: now };
+    r.state.ownerJid = "";
+    r.state.ownerAt = 0;
+    r.profileName = "";
+    r.qrCache = null;
+    // Отключили сами: тревога о потере подключения придёт не раньше чем через положенный срок.
+    r.state.lastConnAlertAt = now;
+    save(r);
+    journal(r, { ev: "logout", by: "panel" });
+    return { ok: true, message: "Номер отключён. Рассылка и создание сообществ остановлены, пока не подключишь номер заново по QR." };
+  });
+}
+
+// ───────────────────────── пульт: группы и сообщества номера ─────────────────────────
+
+export type PanelGroup = {
+  id: string;
+  name: string;
+  size: number | null;
+  /** community: сообщество; announce: вкладка объявлений сообщества; subgroup: группа внутри сообщества; group: обычная группа. */
+  type: "community" | "announce" | "subgroup" | "group";
+  typeLabel: string;
+  /** owner: создатель; admin; member; unknown: роль не определена. */
+  role: "owner" | "admin" | "member" | "unknown";
+  roleLabel: string;
+  /** Писать могут только админы. */
+  announceOnly: boolean;
+  /** Создано этим модулем. */
+  ours: boolean;
+};
+
+const digitsOf = (x: unknown) => (typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "");
+
+/** Роль номера в группе: создатель по полю owner или superadmin, админ, участник; без списка участников не определить. */
+function roleOfGroup(g: any, me: string): PanelGroup["role"] {
+  if (!me) return "unknown";
+  if (digitsOf(g?.owner) === me) return "owner";
+  if (!Array.isArray(g?.participants)) return "unknown";
+  const mine = g.participants.find((p: any) => [p?.id, p?.jid, p?.phoneNumber, p?.lid].some((x) => digitsOf(x) === me));
+  if (!mine) return "unknown";
+  return mine.admin === "superadmin" ? "owner" : mine.admin ? "admin" : "member";
+}
+
+const ROLE_LABEL: Record<PanelGroup["role"], string> = { owner: "создатель", admin: "админ", member: "участник", unknown: "роль не определена" };
+const TYPE_LABEL: Record<PanelGroup["type"], string> = { community: "сообщество", announce: "вкладка объявлений", subgroup: "группа в сообществе", group: "группа" };
+
+function groupView(r: Rt, g: any): PanelGroup {
+  const type: PanelGroup["type"] = g?.isCommunity === true ? "community" : g?.isCommunityAnnounce === true ? "announce" : g?.linkedParent ? "subgroup" : "group";
+  const role = roleOfGroup(g, digitsOf(r.state.ownerJid));
+  const id = String(g?.id || "");
+  const size = typeof g?.size === "number" && Number.isFinite(g.size) ? g.size : Array.isArray(g?.participants) ? g.participants.length : null;
+  return {
+    id,
+    name: String(g?.subject || "без названия").slice(0, 120),
+    size,
+    type,
+    typeLabel: TYPE_LABEL[type],
+    role,
+    roleLabel: ROLE_LABEL[role],
+    announceOnly: g?.announce === true,
+    ours: r.state.targets.some((t) => t.jid === id || t.sendJid === id),
+  };
+}
+
+const GROUPS_CACHE_MS = 60_000;
+const GROUPS_MIN_GAP_MS = 20_000;
+
+/**
+ * Группы и сообщества, в которых состоит номер. Список из Evolution (fetchAllGroups), кеш на минуту, ручное обновление не чаще
+ * раза в 20 секунд. Людей из списка участников не сохраняем и не отдаём: он нужен только для роли номера.
+ */
+export async function waGroups(force = false, nowArg?: number): Promise<Act & { items: PanelGroup[]; at: number; cached: boolean }> {
+  const r = rt;
+  if (!r) return { ...MODULE_OFF, items: [], at: 0, cached: false };
+  const now = clock(r, nowArg);
+  const c = r.groupsCache;
+  if (c && (!force ? now - c.at < GROUPS_CACHE_MS : now - r.groupsCallAt < GROUPS_MIN_GAP_MS)) return { ok: true, message: "", items: c.items, at: c.at, cached: true };
+  return exclusive(r, async () => {
+    r.groupsCallAt = now;
+    const cs = await evo.connectionState();
+    if (!cs.ok) return { ...fail("evolution", `Evolution не отвечает: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    r.conn = { state: cs.data.state, at: now };
+    if (cs.data.state !== "open") return { ...fail("no_connection", `WhatsApp не подключён (${cs.data.state}). Подключи номер по QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (!r.state.ownerJid) await refreshOwner(r, now);
+    let res = await evo.fetchAllGroups(true);
+    // Тяжёлый ответ не прошёл (таймаут на больших группах): список без участников, роль тогда не определится.
+    if (!res.ok) res = await evo.fetchAllGroups(false);
+    if (!res.ok) return { ...fail("evolution", `Список групп не получен: ${res.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    const rank = (g: PanelGroup) => (g.type === "community" ? 0 : g.type === "announce" ? 1 : g.type === "subgroup" ? 2 : 3);
+    const items = res.data
+      .slice(0, 300)
+      .map((g) => groupView(r, g))
+      .filter((g) => g.id)
+      .sort((a, b) => rank(a) - rank(b) || (b.size ?? -1) - (a.size ?? -1) || a.name.localeCompare(b.name));
+    r.groupsCache = { at: now, items };
+    return { ok: true, message: "", items, at: now, cached: false };
+  });
+}
+
+// ───────────────────────── пульт: данные для экрана ─────────────────────────
+
+/** Последние строки jsonl-файла без чтения всего файла. */
+function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
+  try {
+    const size = statSync(file).size;
+    const start = Math.max(0, size - maxBytes);
+    const buf = Buffer.alloc(size - start);
+    const fd = openSync(file, "r");
+    try {
+      readSync(fd, buf, 0, buf.length, start);
+    } finally {
+      closeSync(fd);
+    }
+    let text = buf.toString("utf8");
+    if (start > 0) text = text.slice(text.indexOf("\n") + 1);
+    const out: T[] = [];
+    for (const line of text.split("\n")) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        out.push(JSON.parse(s) as T);
+      } catch {
+        /* битую строку пропускаем */
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
+
+const JOURNAL_EVENTS = new Set(["create", "send", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
+const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
+const clip = (s: unknown, n = 160) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+};
+
+/** Последние события модуля простыми словами: создание, отправки, ошибки, паузы, смена режима. Без ключей и токенов (их в журнал не пишут). */
+function journalView(r: Rt, limit = 20): JournalRow[] {
+  const nameOfTarget = (id: unknown) => r.state.targets.find((t) => t.id === id)?.name || String(id || "");
+  const topicOf = (id: unknown) => (id === "welcome" ? "приветствие" : r.cfg.messages.find((m) => m.id === id)?.topic || String(id || ""));
+  const rows = readJsonlTail<any>(fJournal(r)).filter((x) => x && JOURNAL_EVENTS.has(x.ev));
+  return rows
+    .slice(-limit)
+    .reverse()
+    .map((x): JournalRow => {
+      const ts = Date.parse(String(x.ts || "")) || 0;
+      let kind: JournalRow["kind"] = "info";
+      let text = "";
+      switch (x.ev) {
+        case "create":
+          kind = "ok";
+          text = `Создано «${nameOfTarget(x.target) || x.name}»`;
+          break;
+        case "send": {
+          const part = x.part === "poll" ? ", опрос" : x.part === "text" ? ", текст" : "";
+          kind = x.ok ? "ok" : "error";
+          text = x.ok ? `Отправлено «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}${x.manual ? " (вручную)" : ""}` : `Не ушло «${topicOf(x.msg)}»${part} в ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
+          break;
+        }
+        case "fail":
+          kind = "error";
+          text = `Ошибка ${x.n} подряд: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
+          break;
+        case "pause":
+          kind = "error";
+          text = `Пауза: ${clip(x.reason, 120)}`;
+          break;
+        case "resume":
+          text = "Пауза снята";
+          break;
+        case "alarm":
+          kind = "error";
+          text = `Тревога: ${clip(x.text, 140)}`;
+          break;
+        case "mode":
+          text = x.mode === "event" ? "Режим: живой эфир" : "Режим: ежедневный";
+          break;
+        case "daily":
+          text = `Ежедневное создание: ${x.enabled ? "включено" : "выключено"}`;
+          break;
+        case "event_set":
+          text = `Живой эфир: ${ddmm(String(x.date))} в ${x.start}, набор с ${ddmm(String(x.recruitFrom))}`;
+          break;
+        case "event_reset":
+          text = "Настройки живого эфира сброшены";
+          break;
+        case "event_done":
+          text = `Живой эфир ${ddmm(String(x.date))} завершён, ссылка снова постоянная`;
+          break;
+        case "logout":
+          kind = "error";
+          text = "Номер отключён";
+          break;
+        case "qr":
+          text = "Запрошен QR для подключения номера";
+          break;
+        case "conn":
+          kind = x.state === "open" ? "ok" : "error";
+          text = x.state === "open" ? "WhatsApp подключён" : `Подключение: ${x.state}`;
+          break;
+      }
+      return { ts, t: ts ? stampOf(ts) : "", kind, text };
+    });
+}
+
+/** Ближайшее создание в ежедневном режиме при включённом создании. */
+function nextDailyCreate(r: Rt, now: number): { day: string; at: number } | null {
+  if (r.state.mode !== "daily" || !r.state.daily.enabled) return null;
+  const c = tcfg(r);
+  const today = dayKeyOf(now);
+  for (let i = 0; i < 14; i++) {
+    const day = addDays(today, i);
+    if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
+    const at = createAtOf(r, day);
+    if (now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) return { day, at };
+  }
+  return null;
+}
+
+type Card = {
+  id: string;
+  name: string;
+  day: string;
+  dayLabel: string;
+  kind: Kind;
+  source: "daily" | "event";
+  ready: boolean;
+  link: string;
+  onSite: boolean;
+  members: number | null;
+  membersAgo: string;
+  joinedToday: number;
+  joinedTotal: number;
+};
+
+function cardOf(r: Rt, t: Target, now: number, serving: Target | null): Card {
+  return {
+    id: t.id,
+    name: t.name,
+    day: t.day,
+    dayLabel: ddmm(t.day),
+    kind: t.kind,
+    source: t.source ?? "daily",
+    ready: isReady(t),
+    link: isReady(t) ? t.link : "",
+    onSite: serving?.id === t.id,
+    members: t.members ?? null,
+    membersAgo: t.membersAt ? agoText(now - t.membersAt) : "",
+    joinedToday: r.joinedByDay.get(t.id)?.get(dayKeyOf(now)) ?? 0,
+    joinedTotal: r.joinedCount.get(t.id) ?? 0,
+  };
+}
+
+/** Всё для экрана «WhatsApp»: из памяти и файлов, без запросов к Evolution (подключение, QR и группы запрашиваются отдельно). */
+export function waPanel(nowArg?: number): Record<string, unknown> {
+  const r = rt;
+  if (!r) return waEnabled() ? { ok: true, enabled: true, running: false, error: initError || "модуль не запущен" } : { ok: true, enabled: false };
+  const now = clock(r, nowArg);
+  const today = dayKeyOf(now);
+  const c = tcfg(r);
+  const st = r.state;
+  const ev = st.event;
+  const serving = servingTarget(r, now);
+  const link = waGroupLink(now, false);
+  const evTarget = eventTarget(r);
+  const startEff = ev.start || r.cfg.streamStart;
+  const eventStart = st.mode === "event" ? (evTarget?.start ?? (startEff !== r.cfg.streamStart ? startEff : undefined)) : undefined;
+
+  // Статус живого эфира словами.
+  let evStatus = "unset";
+  let evText = "Эфир не задан. Укажи дату, время старта и день начала набора, потом сохрани.";
+  if (ev.done) {
+    evStatus = "done";
+    evText = `Эфир ${ddmm(ev.date)} завершён${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. Ссылка на сайте снова постоянная.`;
+  } else if (ev.date) {
+    const startAt = atTime(ev.date, startEff);
+    if (st.mode !== "event") {
+      evStatus = "inactive";
+      evText = `Эфир ${ddmm(ev.date)} сохранён, но сейчас включён ежедневный режим.`;
+    } else if (!evTarget) {
+      if (now < eventCreateAt(r)) {
+        evStatus = "scheduled";
+        evText = `Сообщество будет создано ${when(eventCreateAt(r))}. Ссылка на сайте поведёт в него сразу после этого.`;
+      } else {
+        evStatus = "creating";
+        evText = st.paused ? "Время создания наступило, но модуль на паузе. Сними паузу." : "Время создания наступило: сообщество создаётся (до 30 секунд) или нажми «Создать сейчас».";
+      }
+    } else if (now < startAt) {
+      evStatus = "recruiting";
+      evText = "Идёт набор: ссылка на сайте ведёт в сообщество эфира.";
+    } else if (now < startAt + r.cfg.streamMinutes * MIN) {
+      evStatus = "live";
+      evText = "Эфир идёт. Ссылка на сайте всё ещё ведёт в сообщество.";
+    } else {
+      evStatus = "after";
+      evText = `Эфир закончился. Офферы серии действуют до 00:00, потом режим завершится и ссылка вернётся на постоянную.`;
+    }
+  }
+
+  // Текущее и следующее сообщество.
+  const cardsOf = (day: string) => [...targetsOf(r, day)].reverse().filter((t) => st.mode === "event" || t.source !== "event").map((t) => cardOf(r, t, now, serving));
+  let current: Record<string, unknown> | null = null;
+  let next: Record<string, unknown> | null = null;
+  if (st.mode === "event") {
+    if (ev.date) {
+      const cards = cardsOf(ev.date);
+      current = { title: "Сообщество живого эфира", day: ev.date, dayLabel: ddmm(ev.date), cards, pending: cards.length ? "" : evText };
+    }
+  } else {
+    const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
+    const nxt = nextStreamAfter(r, cur);
+    const pend = (day: string) => (r.state.daily.enabled ? `Будет создано ${when(createAtOf(r, day))}.` : "Ежедневное создание выключено, сообщество не создаётся.");
+    const mk = (title: string, day: string) => {
+      const cards = cardsOf(day);
+      return { title, day, dayLabel: ddmm(day), cards, pending: cards.length ? "" : pend(day) };
+    };
+    current = mk("Эфир", cur);
+    next = mk("Следующий эфир", nxt);
+  }
+
+  // Серия: время и текст такими, какими они уйдут в сообщество (со сдвигом старта живого эфира).
+  const series = r.cfg.messages.map((m) => {
+    const e = effMsg(r, { start: eventStart }, m);
+    return { id: m.id, at: hhmmOf(planOf(r, { day: "2000-01-01", start: eventStart }, m)), topic: m.topic || m.id, text: e.text, media: m.media?.type ?? null, poll: m.poll ? m.poll.name : null, enabled: m.enabled !== false };
+  });
+  const nm = nextMessage(r, now);
+  const targets = currentTargets(r, now).list;
+  // Переходы по постоянной ссылке из кнопки шаблона WABA (страница workshop-montazh/wa.html) за сегодня.
+  let templateClicks = 0;
+  try {
+    templateClicks = getStore().tyCount(today, "wa-template");
+  } catch {
+    /* хранилище бота не открыто */
+  }
+
+  return {
+    ok: true,
+    enabled: true,
+    running: true,
+    now,
+    today,
+    updated: hhmmOf(now),
+    tz: "Asia/Almaty",
+    module: {
+      paused: st.paused,
+      pausedReason: st.pausedReason,
+      failStreak: st.failStreak,
+      failMax: r.cfg.retry.pauseAfter,
+      creationsToday: dayCreations(r, now),
+      creationsMax: r.cfg.maxNewPerDay,
+      pendingCreate: !!st.pendingCreate,
+      kind: r.cfg.target,
+    },
+    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    mode: st.mode,
+    daily: { enabled: st.daily.enabled, next: (() => { const n = nextDailyCreate(r, now); return n ? { day: n.day, dayLabel: ddmm(n.day), at: n.at, text: when(n.at) } : null; })() },
+    event: {
+      date: ev.date,
+      dateLabel: ev.date ? ddmm(ev.date) : "",
+      start: startEff,
+      startDefault: r.cfg.streamStart,
+      recruitFrom: ev.recruitFrom,
+      recruitLabel: ev.recruitFrom ? ddmm(ev.recruitFrom) : "",
+      createTime: EVENT_CREATE_AT,
+      createAt: ev.recruitFrom ? eventCreateAt(r) : 0,
+      status: evStatus,
+      statusText: evText,
+      locked: !!(ev.communityId && evTarget),
+      hasCommunity: !!evTarget,
+      done: !!ev.done,
+    },
+    link: {
+      url: link ?? "",
+      kind: link ? (st.mode === "event" ? "event" : "daily") : "permanent",
+      text: link ? (st.mode === "event" ? "Ссылка на сайте ведёт в сообщество живого эфира." : "Ссылка на сайте ведёт в сообщество ближайшего набора.") : "Ссылка на сайте постоянная: подходящего сообщества нет.",
+      /** Постоянная ссылка для кнопки шаблона WABA: страница переадресует туда же, куда ведёт сайт, а при сбое на постоянную. */
+      templateUrl: TEMPLATE_URL,
+      templateClicksToday: templateClicks,
+    },
+    current,
+    next,
+    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm(nm.day), inText: inText(nm.plan - now) } : null,
+    sendTo: targets.map((t) => t.name),
+    series,
+    journal: journalView(r, 20),
+  };
+}
+
 /** Для тестов: чистые функции расписания. */
-export const _internals = { createAtOf, servingTarget, dueCreateDays, isReady, partsOf, closeAtOf, nameOf, targetsOf };
+export const _internals = { createAtOf, servingTarget, dueCreateDays, isReady, partsOf, closeAtOf, nameOf, targetsOf, planOf, retime, effMsg, eventCreateAt, eventTarget, nextMessage };

@@ -156,6 +156,44 @@ tr.click:active td{background:var(--gold-soft)}
 .kv b{text-align:right}
 .skel{height:84px;border-radius:14px;background:linear-gradient(90deg,var(--card),var(--gold-soft),var(--card));background-size:200% 100%;animation:sh 1.2s linear infinite}
 @keyframes sh{to{background-position:-200% 0}}
+/* WhatsApp: пульт сообществ */
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.small[disabled]{opacity:.55}
+.confirm{margin-top:12px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--warn-bg)}
+.confirm p{margin:0 0 10px}
+.confirm .actions{margin-top:0}
+.modebody{margin-top:12px;display:grid;gap:10px}
+.swrow{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.swrow .hint{margin-top:2px}
+.sw{flex:none;width:52px;height:30px;padding:0;border-radius:15px;border:1px solid var(--line);background:var(--card);position:relative}
+.sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--hint);transition:transform .15s,background-color .15s}
+.sw[aria-checked=true]{background:var(--gold-soft);border-color:var(--gold)}
+.sw[aria-checked=true] i{transform:translateX(22px);background:var(--gold)}
+.sw[disabled]{opacity:.55}
+.field{display:grid;gap:4px;min-width:0;font-size:13px;color:var(--hint)}
+.inp{height:44px;width:100%;min-width:0;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:0 10px}
+.inp[disabled]{opacity:.6}
+.chips2{display:flex;gap:6px;flex-wrap:wrap}
+.chips2 .chip{flex:0 1 auto;padding:0 12px}
+.qrbox{display:grid;place-items:center;min-height:200px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#fff}
+.qrbox img{display:block;width:min(100%,260px);height:auto;aspect-ratio:1;image-rendering:pixelated}
+.qrwait{color:#6E5F53;text-align:center}
+.steps{margin:12px 0 8px;padding-left:20px;display:grid;gap:4px}
+.linkrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.linkrow code{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;font-size:13px;color:var(--link)}
+.linkrow .btn{flex:none}
+.tpl{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.kv span.badge{margin-left:0}
+.kv b{overflow-wrap:anywhere}
+.msgs b.bad{color:var(--bad)}
+details.ser summary{display:flex;gap:10px;align-items:baseline;min-height:36px;cursor:pointer;list-style:none}
+details.ser summary::-webkit-details-marker{display:none}
+details.ser .tm{flex:none;font-weight:800;font-variant-numeric:tabular-nums}
+details.ser .tp{min-width:0;overflow-wrap:anywhere}
+.serbody{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+.card > .note{margin-top:10px}
+.row > .kv{margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 @media (max-height:700px){.login{padding:14px 20px;gap:8px}.login .logo{height:30px;margin-bottom:0}.login h1{font-size:22px}.pinform{gap:8px}.keypad{gap:8px}}
 @media (prefers-reduced-motion:reduce){.skel,.icon.spin svg,.dots.shake{animation:none}.key,.dots i{transition:none}.key:active{transform:none}}
@@ -215,7 +253,7 @@ tr.click:active td{background:var(--gold-soft)}
       </button>
     </div>
   </header>
-  <div class="bar">
+  <div class="bar" id="bar">
     <div class="chips" id="chips" role="group" aria-label="Период"></div>
     <div class="dates" id="dates" hidden>
       <input id="d-from" type="date" aria-label="С даты">
@@ -340,7 +378,7 @@ tr.click:active td{background:var(--gold-soft)}
 
   // ───────── состояние ─────────
   var PRESETS = [['t', 'Сегодня'], ['y', 'Вчера'], ['7', '7 дней'], ['30', '30 дней'], ['r', 'Даты']];
-  var TABS = [['summary', 'Сводка'], ['sources', 'Источники'], ['leads', 'Регистрации'], ['subs', 'Подписчики'], ['streams', 'Эфиры'], ['errors', 'Ошибки']];
+  var TABS = [['summary', 'Сводка'], ['sources', 'Источники'], ['leads', 'Регистрации'], ['subs', 'Подписчики'], ['streams', 'Эфиры'], ['wa', 'WhatsApp'], ['errors', 'Ошибки']];
   var ui = { period: 't', from: '', to: '', basis: 'reg', tab: 'summary' };
   try { var saved = JSON.parse(store('adm_ui') || 'null'); if (saved && typeof saved === 'object') Object.keys(ui).forEach(function (k) { if (typeof saved[k] === 'string') ui[k] = saved[k]; }); } catch (e) { /* по умолчанию */ }
   var token = store('adm_token') || '';
@@ -379,6 +417,7 @@ tr.click:active td{background:var(--gold-soft)}
   // ───────── вход ─────────
   function showLogin(msg, lock) {
     token = ''; store('adm_token', null);
+    waStop(); wa.s = null; wa.groups = null;
     $('app').hidden = true; $('login').hidden = false;
     $('login-err').textContent = msg || '';
     setPin('');
@@ -490,10 +529,12 @@ tr.click:active td{background:var(--gold-soft)}
     var nav = $('tabs'); nav.textContent = '';
     TABS.forEach(function (t) {
       nav.appendChild(h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(ui.tab === t[0]), text: t[1], onclick: function () {
+        if (t[0] !== 'wa') waStop();
         ui.tab = t[0]; saveUi(); renderTabs(); load();
         window.scrollTo(0, 0);
       } }));
     });
+    $('bar').hidden = ui.tab === 'wa';
     var sel = nav.querySelector('[aria-selected=true]');
     if (sel && sel.scrollIntoView) { try { sel.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { /* ничего */ } }
   }
@@ -518,6 +559,7 @@ tr.click:active td{background:var(--gold-soft)}
 
   function load(force) {
     var tab = ui.tab, my = ++seq;
+    if (tab === 'wa') { waOpen(); return; }
     if (tab === 'leads' || tab === 'subs') { listTab(tab); return; }
     var need = tab === 'errors' ? 'errors' : 'summary';
     if (data[need] && !force) { draw(); return; }
@@ -791,6 +833,371 @@ tr.click:active td{background:var(--gold-soft)}
         h('div', null, h('span', { text: 'Версия' }), h('b', { text: e.version })))));
     if (rt.skipLateIds.length) v.appendChild(h('div', { class: 'hint', text: 'Пропущены по опозданию: ' + rt.skipLateIds.join(', ') + '.' }));
     v.appendChild(h('div', { class: 'hint', text: 'Счётчики процесса считаются в памяти с момента запуска и от периода не зависят.' }));
+  }
+
+  // ───────── WhatsApp: пульт сообществ ─────────
+  // Вкладка не знает ключей Evolution: всё идёт через form-api (/admin/wa/*), с теми же initData и токеном сессии.
+  var wa = { s: null, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, form: null, dirty: false, timers: {} };
+  var waSeq = 0, noticeTimer = 0;
+
+  function waStop() {
+    Object.keys(wa.timers).forEach(function (k) { clearInterval(wa.timers[k]); });
+    wa.timers = {}; wa.qr = null; wa.conf = null;
+  }
+  function waNotice(text, bad) {
+    wa.notice = text ? { text: text, bad: !!bad } : null;
+    clearTimeout(noticeTimer);
+    if (text) noticeTimer = setTimeout(function () { wa.notice = null; if (ui.tab === 'wa') waDraw(); }, 20000);
+  }
+  function waFail(err, quiet) {
+    if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+    if (!wa.s) { fail(err); return; }
+    if (!quiet) waNotice(err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером. Попробуйте ещё раз.', true);
+  }
+  function waOpen() {
+    if (wa.s) waDraw(); else loading();
+    waRefresh();
+    // Подключение в состоянии берётся из последнего тика (на паузе он не идёт): при открытии вкладки проверяем его заново.
+    api('wa/connection').catch(function () { /* состояние покажет «Evolution не отвечает» */ }).then(function () { if (ui.tab === 'wa') waRefresh(true); });
+    if (!wa.timers.state) wa.timers.state = setInterval(function () {
+      if (ui.tab === 'wa' && document.visibilityState !== 'hidden' && !wa.busy) waRefresh(true);
+    }, 20000);
+  }
+  function waRefresh(quiet) {
+    var my = ++waSeq;
+    spin(true);
+    api('wa/state').then(function (r) {
+      if (my !== waSeq || ui.tab !== 'wa') return;
+      wa.s = r;
+      if (r.updated) $('updated').textContent = 'обновлено ' + r.updated;
+      waSyncForm();
+      waDraw();
+    }).catch(function (e) { if (my === waSeq && ui.tab === 'wa') waFail(e, quiet); }).then(function () { if (my === waSeq) spin(false); });
+  }
+  // Форма живого эфира берёт значения с сервера, пока человек её не трогал: его ввод обновление не затирает.
+  function waSyncForm() {
+    var ev = wa.s && wa.s.event;
+    if (!ev) return;
+    if (!wa.form || !wa.dirty) wa.form = { date: ev.date || '', start: ev.start || '20:00', recruit: ev.recruitFrom || '' };
+  }
+  // Пока человек вводит дату или время, экран не перерисовываем.
+  function waDraw() {
+    if (ui.tab !== 'wa' || !wa.s) return;
+    var ae = document.activeElement;
+    if (ae && ae.tagName === 'INPUT' && $('view').contains(ae)) return;
+    var v = view();
+    var y = window.scrollY;
+    v.textContent = '';
+    var s = wa.s;
+    if (wa.notice) v.appendChild(h('div', { class: 'note' + (wa.notice.bad ? ' warn' : ''), role: 'status', text: wa.notice.text }));
+    if (wa.busy) v.appendChild(h('div', { class: 'note', role: 'status', text: wa.busy }));
+    if (!s.enabled) { v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'WhatsApp' }), h('div', { class: 'note warn', text: 'Модуль WhatsApp выключен на сервере: нет WA_GROUPS=on. Пульт заработает после включения.' }))); return; }
+    if (!s.running) { v.appendChild(h('div', { class: 'card' }, h('h2', { text: 'WhatsApp' }), h('div', { class: 'note warn', text: 'Модуль не запущен: ' + (s.error || 'причина неизвестна') + '.' }))); return; }
+    v.appendChild(waHead(s));
+    if (wa.qr) v.appendChild(waQrCard());
+    v.appendChild(waModeCard(s));
+    v.appendChild(waLinkCard(s));
+    waCommunityCards(s).forEach(function (c) { v.appendChild(c); });
+    v.appendChild(waSendCard(s));
+    v.appendChild(waGroupsCard());
+    v.appendChild(waJournalCard(s));
+    v.appendChild(waSeriesCard(s));
+    window.scrollTo(0, y);
+  }
+
+  function copyText(text, msg) {
+    function fallback() {
+      var ta = h('textarea', { 'aria-hidden': 'true' });
+      ta.value = text; ta.className = 'sr';
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? msg : 'Не удалось скопировать');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(msg); }, fallback);
+    else fallback();
+  }
+
+  function confirmBox(text, okText, onOk, danger) {
+    return h('div', { class: 'confirm', role: 'alertdialog', 'aria-label': 'Подтверждение' },
+      h('p', { text: text }),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn small' + (danger ? ' bad' : ''), type: 'button', text: okText, onclick: onOk }),
+        h('button', { class: 'btn small ghost', type: 'button', text: 'Отмена', onclick: function () { wa.conf = null; waDraw(); } })));
+  }
+  function ask(key) { return function () { wa.conf = wa.conf === key ? null : key; waDraw(); }; }
+  function btn(text, onclick, cls, disabled) {
+    return h('button', { class: 'btn small' + (cls ? ' ' + cls : ''), type: 'button', text: text, onclick: onclick, disabled: disabled || !!wa.busy });
+  }
+  function kv(label, value) { return h('div', null, h('span', { text: label }), h('b', { text: value })); }
+
+  // Действие на сервере. busy показывает, что идёт (создание сообщества занимает до минуты). Ответ сервера выводится словами.
+  function waAct(path, body, busyText, after) {
+    if (wa.busy) return;
+    wa.busy = busyText || 'Выполняю…'; wa.conf = null; waDraw();
+    api('wa/' + path, null, { method: 'POST', body: JSON.stringify(body || {}) }).then(function (r) {
+      waNotice(r.message || 'Готово.', false);
+      if (after) after(r);
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); wa.busy = ''; fail(err); return; }
+      waNotice(err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Не получилось: нет связи с сервером. Проверьте состояние позже.', true);
+    }).then(function () { wa.busy = ''; if (ui.tab === 'wa') { waDraw(); waRefresh(true); } });
+  }
+
+  // ── шапка: подключение, пауза ──
+  function waHead(s) {
+    var m = s.module, c = s.conn, open = c.state === 'open';
+    var stateText = open ? 'подключён' : c.state === 'connecting' ? 'ждёт сканирования QR' : c.state === 'absent' ? 'не настроен' : c.state === 'unknown' ? 'ещё не проверяли' : c.state === 'unreachable' ? 'Evolution не отвечает' : 'отключён';
+    var card = h('div', { class: 'card' }, h('h2', { text: 'WhatsApp' }),
+      h('div', { class: 'kv' },
+        h('div', null, h('span', { text: 'Модуль' }), h('span', { class: 'badge ' + (m.paused ? 'no' : 'ok'), text: m.paused ? 'на паузе' : 'работает' })),
+        h('div', null, h('span', { text: 'Подключение' }), h('span', { class: 'badge ' + (open ? 'ok' : 'no'), text: stateText })),
+        open && c.number ? kv('Номер', c.number + (c.profile ? ' · ' + c.profile : '')) : null,
+        c.ago ? kv('Статус проверен', c.ago) : null,
+        kv('Новых сообществ за сутки', m.creationsToday + ' из ' + m.creationsMax),
+        kv('Ошибок подряд', m.failStreak + ' из ' + m.failMax)));
+    if (m.paused) card.appendChild(h('div', { class: 'note warn', text: 'Пауза: ' + (m.pausedReason || 'причина не записана') + '. Рассылка, создание и одобрение заявок остановлены.' }));
+    if (m.pendingCreate) card.appendChild(h('div', { class: 'note warn', text: 'Прошлое создание сообщества не подтверждено. Проверь список чатов на телефоне, потом нажми «Продолжить».' }));
+    var acts = h('div', { class: 'actions' },
+      m.paused ? btn('Продолжить', function () { waAct('resume', {}, 'Снимаю паузу…'); }) : btn('Пауза', function () { waAct('pause', {}, 'Ставлю на паузу…'); }, 'ghost'),
+      open ? btn('Отключить номер', ask('logout'), 'ghost') : btn(wa.qr ? 'Скрыть QR' : 'Подключить номер', function () { wa.qr ? waQrStop() : waQrStart(); waDraw(); }));
+    card.appendChild(acts);
+    if (wa.conf === 'logout') card.appendChild(confirmBox('Отключить номер? Рассылка и создание сообществ остановятся. Чтобы подключить снова, понадобится QR с телефона.', 'Да, отключить', function () { waAct('logout', { confirm: true }, 'Отключаю номер…'); }, true));
+    return card;
+  }
+
+  // ── QR ──
+  function waQrStart() {
+    wa.qr = { img: '', note: 'Готовлю QR…', state: '' };
+    waQrFetch();
+    wa.timers.qr = setInterval(waQrFetch, 17000);
+    wa.timers.conn = setInterval(waQrWatch, 3500);
+  }
+  function waQrStop() {
+    clearInterval(wa.timers.qr); clearInterval(wa.timers.conn);
+    delete wa.timers.qr; delete wa.timers.conn;
+    wa.qr = null;
+  }
+  function waQrDone(r) {
+    waQrStop();
+    waNotice('Номер подключён: ' + (r.number || '') + (r.profile ? ' · ' + r.profile : '') + '.', false);
+    toast('Номер подключён');
+    waRefresh(true);
+  }
+  function waQrFetch() {
+    if (!wa.qr || wa.qrBusy) return;
+    wa.qrBusy = true;
+    api('wa/qr', null, { method: 'POST', body: '{}' }).then(function (r) {
+      if (!wa.qr) return;
+      if (r.state === 'open') { waQrDone(r); return; }
+      wa.qr.state = r.state;
+      if (r.qr && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(r.qr)) { wa.qr.img = r.qr; wa.qr.note = ''; wa.qr.at = Date.now(); }
+      else wa.qr.note = r.message || 'QR пока не готов, он появится через несколько секунд.';
+      waDraw();
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      if (wa.qr) { wa.qr.note = err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером.'; waDraw(); }
+    }).then(function () { wa.qrBusy = false; });
+  }
+  // Быстрая проверка, не отсканировали ли QR: раз в 3,5 секунды, пока окно открыто.
+  function waQrWatch() {
+    if (!wa.qr || wa.qrBusy || document.visibilityState === 'hidden') return;
+    api('wa/connection').then(function (r) { if (wa.qr && r.state === 'open') waQrDone(r); }).catch(function () { /* следующая проверка через несколько секунд */ });
+  }
+  function waQrCard() {
+    var q = wa.qr;
+    var box = h('div', { class: 'qrbox' });
+    if (q.img) box.appendChild(h('img', { src: q.img, alt: 'QR для подключения WhatsApp', width: '260', height: '260' }));
+    else box.appendChild(h('div', { class: 'qrwait', text: q.note || 'Готовлю QR…' }));
+    return h('div', { class: 'card' }, h('h2', { text: 'Подключение номера' }), box,
+      h('ol', { class: 'steps' },
+        h('li', { text: 'Открой WhatsApp на телефоне с отдельной SIM.' }),
+        h('li', { text: 'Настройки, Связанные устройства, Привязать устройство.' }),
+        h('li', { text: 'Наведи камеру на QR выше.' })),
+      h('div', { class: 'hint', text: 'QR обновляется сам каждые 15 секунд, пока номер не подключится. Не пересылай его никому.' + (q.img && q.note ? ' ' + q.note : '') }));
+  }
+
+  // ── режим ──
+  function waModeCard(s) {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Режим работы' }));
+    var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Режим' });
+    [['daily', 'Ежедневный'], ['event', 'Живой эфир']].forEach(function (m) {
+      seg.appendChild(h('button', { type: 'button', 'aria-pressed': String(s.mode === m[0]), text: m[1], disabled: !!wa.busy, onclick: function () { if (s.mode !== m[0]) ask('mode:' + m[0])(); } }));
+    });
+    card.appendChild(seg);
+    ['daily', 'event'].forEach(function (k) {
+      if (wa.conf === 'mode:' + k) {
+        card.appendChild(confirmBox(k === 'event'
+          ? 'Включить живой эфир? Ежедневное создание выключится. Созданные сообщества продолжат работать, но ссылка на сайте будет вести только в сообщество живого эфира.'
+          : 'Вернуться к ежедневному режиму? Создание остаётся выключенным, пока не включишь его переключателем. Сообщество живого эфира продолжит работать.',
+          'Переключить', function () { waAct('mode', { mode: k, confirm: true }, 'Переключаю режим…', function () { wa.dirty = false; wa.form = null; }); }));
+      }
+    });
+    if (s.mode === 'daily') card.appendChild(waDailyBody(s)); else card.appendChild(waEventBody(s));
+    return card;
+  }
+  function waDailyBody(s) {
+    var d = s.daily, box = h('div', { class: 'modebody' });
+    box.appendChild(h('div', { class: 'swrow' },
+      h('div', null, h('b', { text: 'Ежедневное создание сообществ' }), h('div', { class: 'hint', text: d.enabled ? 'Включено: каждый день в 20:00 создаётся сообщество под эфир следующего дня, ссылка на сайте переключается в 20:40.' : 'Выключено: новые сообщества не создаются. Созданные работают до конца.' })),
+      h('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': String(d.enabled), 'aria-label': 'Ежедневное создание сообществ', disabled: !!wa.busy, onclick: function () {
+        if (d.enabled) waAct('daily', { enabled: false }, 'Выключаю…'); else ask('daily-on')();
+      } }, h('i'))));
+    if (wa.conf === 'daily-on') box.appendChild(confirmBox('Включить ежедневное создание? Сообщество под ближайший эфир создастся ' + (d.next ? d.next.text : 'в 20:00') + ', дальше каждый день.', 'Включить', function () { waAct('daily', { enabled: true, confirm: true }, 'Включаю…'); }));
+    if (d.enabled && d.next) box.appendChild(h('div', { class: 'hint', text: 'Ближайшее создание: эфир ' + d.next.dayLabel + ', ' + d.next.text + '.' }));
+    box.appendChild(h('div', { class: 'actions' }, btn('Создать сообщество следующего эфира сейчас', ask('dailycreate'), 'ghost')));
+    if (wa.conf === 'dailycreate') box.appendChild(confirmBox('Создать сообщество ближайшего эфира прямо сейчас, не дожидаясь 20:00?', 'Создать', function () { waAct('daily/create', { confirm: true }, 'Создаю сообщество, это займёт около минуты…'); }));
+    return box;
+  }
+  function addDaysStr(day, n) {
+    var p = day.split('-').map(Number), t = new Date(Date.UTC(p[0], p[1] - 1, p[2] + n));
+    return t.getUTCFullYear() + '-' + ('0' + (t.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + t.getUTCDate()).slice(-2);
+  }
+  function waEventBody(s) {
+    var ev = s.event, f = wa.form || { date: '', start: '20:00', recruit: '' }, box = h('div', { class: 'modebody' });
+    var tone = ev.status === 'unset' || ev.status === 'done' ? '' : ev.status === 'creating' ? ' warn' : '';
+    box.appendChild(h('div', { class: 'note' + tone, text: ev.statusText }));
+    var locked = ev.locked || !!wa.busy;
+    function field(label, type, key, extra) {
+      var inp = h('input', Object.assign({ class: 'inp', type: type, value: f[key], 'aria-label': label, disabled: locked, oninput: function () { f[key] = inp.value; wa.dirty = true; } }, extra || {}));
+      return h('label', { class: 'field' }, h('span', { text: label }), inp);
+    }
+    box.appendChild(h('div', { class: 'grid2' }, field('Дата эфира', 'date', 'date', { min: s.today }), field('Старт, время Алматы', 'time', 'start')));
+    box.appendChild(field('Начало набора (создам сообщество в ' + ev.createTime + ')', 'date', 'recruit', { min: '2000-01-01' }));
+    if (!locked) {
+      var q = h('div', { class: 'chips2', role: 'group', 'aria-label': 'Быстро выбрать начало набора' });
+      [3, 2, 1].forEach(function (n) {
+        q.appendChild(h('button', { class: 'chip', type: 'button', text: 'За ' + n + (n === 1 ? ' день' : ' дня'), onclick: function () {
+          if (!f.date) { toast('Сначала выбери дату эфира'); return; }
+          f.recruit = addDaysStr(f.date, -n); wa.dirty = true; waDraw();
+        } }));
+      });
+      box.appendChild(q);
+    }
+    if (ev.locked) box.appendChild(h('div', { class: 'hint', text: 'Сообщество уже создано, даты и время закреплены. Чтобы задать другой эфир, нажми «Сбросить эфир»: созданное сообщество останется.' }));
+    box.appendChild(h('div', { class: 'actions' },
+      btn('Сохранить', function () {
+        if (!f.date || !f.recruit || !f.start) { waNotice('Заполни дату эфира, время старта и начало набора.', true); waDraw(); return; }
+        waAct('event', { date: f.date, start: f.start, recruitFrom: f.recruit }, 'Сохраняю…', function () { wa.dirty = false; });
+      }, '', ev.locked),
+      btn('Создать сейчас', ask('evcreate'), 'ghost', !ev.date),
+      btn('Сбросить эфир', ask('evreset'), 'ghost', !ev.date && !ev.done)));
+    if (wa.conf === 'evcreate') box.appendChild(confirmBox('Создать сообщество эфира ' + (ev.dateLabel || '') + ' прямо сейчас? Ссылка на сайте сразу станет вести в него.', 'Создать', function () { waAct('event/create', { confirm: true }, 'Создаю сообщество, это займёт около минуты…'); }));
+    if (wa.conf === 'evreset') box.appendChild(confirmBox('Сбросить настройки эфира? Созданное сообщество останется и продолжит работать, но ссылка на сайте станет постоянной.', 'Сбросить', function () { waAct('event/reset', { confirm: true }, 'Сбрасываю…', function () { wa.dirty = false; wa.form = null; }); }, true));
+    return box;
+  }
+
+  // ── ссылка на сайте, сообщества ──
+  function waLinkCard(s) {
+    var l = s.link;
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Ссылка на сайте' }), h('div', { class: 'kv' },
+      h('div', null, h('span', { text: 'Сейчас ведёт' }), h('span', { class: 'badge ' + (l.url ? 'ok' : 'mute'), text: l.kind === 'event' ? 'в живой эфир' : l.kind === 'daily' ? 'в сообщество набора' : 'на постоянную' }))));
+    card.appendChild(h('div', { class: 'hint', text: l.text }));
+    // Постоянная ссылка для кнопки шаблона WABA: сама ведёт туда же, куда сайт.
+    card.appendChild(h('div', { class: 'tpl' },
+      h('div', { class: 'hint', text: 'Для кнопки шаблона WABA. Постоянная, переадресует в сообщество текущего набора. Переходов сегодня: ' + l.templateClicksToday + '.' }),
+      h('div', { class: 'linkrow' }, h('code', { text: l.templateUrl }), h('button', { class: 'btn small ghost', type: 'button', text: 'Копировать', onclick: function () { copyText(l.templateUrl, 'Ссылка скопирована'); } }))));
+    return card;
+  }
+  function communityRow(c) {
+    var top = h('div', { class: 'top' }, h('span', { text: 'эфир ' + c.dayLabel }), h('span', null, c.onSite ? h('span', { class: 'badge ok', text: 'ссылка на сайте' }) : null, h('span', { class: 'badge ' + (c.ready ? 'ok' : 'no'), text: c.ready ? 'готово' : 'достраивается' })));
+    var row = h('div', { class: 'row' }, top, h('div', { class: 'nm', text: c.name }),
+      h('div', { class: 'kv' },
+        kv('Участников', c.members === null ? 'не проверяли' : c.members + (c.membersAgo ? ' (' + c.membersAgo + ')' : '')),
+        kv('Вступили сегодня', String(c.joinedToday)),
+        kv('Вступили всего', String(c.joinedTotal))));
+    if (c.link) row.appendChild(h('div', { class: 'linkrow' }, h('code', { text: c.link }), h('button', { class: 'btn small ghost', type: 'button', text: 'Копировать', onclick: function () { copyText(c.link, 'Ссылка скопирована'); } })));
+    return row;
+  }
+  function waCommunityCards(s) {
+    var out = [];
+    [s.current, s.next].forEach(function (g) {
+      if (!g) return;
+      var card = h('div', { class: 'card' }, h('h2', { text: g.title + ' ' + g.dayLabel }));
+      if (g.cards.length) g.cards.forEach(function (c) { card.appendChild(communityRow(c)); });
+      else card.appendChild(h('div', { class: 'hint', text: g.pending || 'Сообщества пока нет.' }));
+      out.push(card);
+    });
+    return out;
+  }
+
+  // ── сообщение серии ──
+  function waSendCard(s) {
+    var nm = s.nextMessage;
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Сообщения серии' }));
+    card.appendChild(h('div', { class: 'kv' }, kv('Ближайшее', nm ? nm.at + ' · ' + nm.topic : 'нет'), nm ? kv('Когда', 'эфир ' + nm.dayLabel + ', ' + nm.inText) : null));
+    var sel = h('select', { class: 'sel full', 'aria-label': 'Сообщение серии', disabled: !!wa.busy });
+    s.series.forEach(function (m) { if (m.enabled) sel.appendChild(h('option', { value: m.id, text: m.at + ' · ' + m.topic })); });
+    if (wa.sendId) sel.value = wa.sendId;
+    sel.addEventListener('change', function () { wa.sendId = sel.value; });
+    var target = s.sendTo.length ? s.sendTo.join(', ') : '';
+    card.appendChild(h('div', { class: 'tools' }, sel,
+      btn('Отправить сейчас', function () { wa.sendId = sel.value; ask('send')(); }, '', !s.sendTo.length)));
+    if (!s.sendTo.length) card.appendChild(h('div', { class: 'hint', text: 'Сейчас нет готового сообщества, куда можно отправить.' }));
+    if (wa.conf === 'send') {
+      var m = s.series.filter(function (x) { return x.id === (wa.sendId || (s.series[0] && s.series[0].id)); })[0];
+      card.appendChild(confirmBox('Отправить «' + (m ? m.topic : '') + '» в ' + target + ' прямо сейчас? Это увидят все участники.', 'Отправить', function () { waAct('send', { id: m ? m.id : '', confirm: true }, 'Отправляю…'); }));
+    }
+    return card;
+  }
+
+  // ── группы и сообщества номера ──
+  function waGroupsLoad(force) {
+    if (wa.busy) return;
+    wa.groupsMsg = 'Загружаю список…'; waDraw();
+    api('wa/groups', force ? new URLSearchParams({ refresh: '1' }) : null).then(function (r) {
+      wa.groups = r.items; wa.groupsMsg = r.cached && force ? 'Список обновляли меньше 20 секунд назад, показываю его.' : '';
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      if (err instanceof HttpError && err.body && err.body.items && err.body.items.length) wa.groups = err.body.items;
+      wa.groupsMsg = err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером.';
+    }).then(function () { waDraw(); });
+  }
+  function waGroupsCard() {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Группы и сообщества номера' }),
+      h('div', { class: 'hint', text: 'Что уже есть у подключённого номера. Показываем для справки, рассылки по ним не идут.' }),
+      h('div', { class: 'actions' }, btn(wa.groups ? 'Обновить список' : 'Показать список', function () { waGroupsLoad(!!wa.groups); }, 'ghost')));
+    if (wa.groupsMsg) card.appendChild(h('div', { class: 'note', text: wa.groupsMsg }));
+    if (wa.groups) {
+      if (!wa.groups.length) card.appendChild(h('div', { class: 'empty', text: 'У номера пока нет групп и сообществ.' }));
+      else {
+        var list = h('div', { class: 'list' });
+        wa.groups.forEach(function (g) {
+          list.appendChild(h('div', { class: 'row' },
+            h('div', { class: 'top' }, h('span', { text: g.typeLabel }), h('span', null, g.ours ? h('span', { class: 'badge ok', text: 'создано здесь' }) : null)),
+            h('div', { class: 'nm', text: g.name }),
+            h('div', { class: 'flags' },
+              h('span', { class: 'badge mute', text: g.size === null ? 'размер неизвестен' : g.size + ' ' + plural(g.size, 'участник', 'участника', 'участников') }),
+              h('span', { class: 'badge ' + (g.role === 'owner' || g.role === 'admin' ? 'ok' : 'mute'), text: 'номер: ' + g.roleLabel }),
+              g.announceOnly ? h('span', { class: 'badge mute', text: 'пишут только админы' }) : null)));
+        });
+        card.appendChild(list);
+      }
+    }
+    return card;
+  }
+
+  // ── журнал и серия ──
+  function waJournalCard(s) {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Последние события' }));
+    if (!s.journal.length) { card.appendChild(h('div', { class: 'empty', text: 'Событий пока нет.' })); return card; }
+    card.appendChild(h('div', { class: 'msgs jr' }, s.journal.map(function (j) {
+      return h('div', { class: 'col' }, h('b', { class: j.kind === 'error' ? 'bad' : '', text: j.text }), h('span', { text: j.t }));
+    })));
+    return card;
+  }
+  function waSeriesCard(s) {
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Серия сообщений' }), h('div', { class: 'hint', text: 'Только просмотр. Время по Алматы, ' + (s.mode === 'event' && s.event.start !== s.event.startDefault ? 'сдвинуто под старт ' + s.event.start + '.' : 'под старт эфира в ' + s.event.startDefault + '.') }));
+    var list = h('div', { class: 'list' });
+    s.series.forEach(function (m) {
+      list.appendChild(h('details', { class: 'row ser' },
+        h('summary', null, h('span', { class: 'tm', text: m.at }), h('span', { class: 'tp', text: m.topic }), m.enabled ? null : h('span', { class: 'badge mute', text: 'выключено' })),
+        h('div', { class: 'flags' }, m.media ? h('span', { class: 'badge mute', text: m.media === 'video' ? 'видео' : 'картинка' }) : null, m.poll ? h('span', { class: 'badge mute', text: 'опрос: ' + m.poll }) : null, h('span', { class: 'badge mute', text: m.id })),
+        h('div', { class: 'serbody', text: m.text })));
+    });
+    card.appendChild(list);
+    return card;
   }
 
   // ───────── старт ─────────

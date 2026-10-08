@@ -5,6 +5,10 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -21,8 +25,14 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // form-api/server.ts
+var server_exports = {};
+__export(server_exports, {
+  server: () => server
+});
+module.exports = __toCommonJS(server_exports);
 var import_node_http = require("node:http");
 var import_node_crypto5 = require("node:crypto");
 var import_node_fs9 = require("node:fs");
@@ -721,7 +731,7 @@ var TgStore = class _TgStore {
     const clicks = readJsonl(this.fClicks);
     for (const c of clicks.rows) if (c && c.day) this.clicks.add(_TgStore.clickKey(c.chat_id, c.day));
     const ty = readJsonl(this.fTy);
-    for (const c of ty.rows) if (c && c.day && (c.ch === "tg" || c.ch === "wa")) this.countTy(c.ch, c.eid || "", c.day);
+    for (const c of ty.rows) if (c && c.day && (c.ch === "tg" || c.ch === "wa" || c.ch === "wa-template")) this.countTy(c.ch, c.eid || "", c.day);
     try {
       if ((0, import_node_fs3.existsSync)(this.fState)) {
         const st = JSON.parse((0, import_node_fs3.readFileSync)(this.fState, "utf8"));
@@ -860,7 +870,7 @@ var TgStore = class _TgStore {
     this.tyCounts.set(c, (this.tyCounts.get(c) || 0) + 1);
   }
   /**
-   * Клик по кнопке Telegram или WhatsApp на странице «Спасибо». Повтор того же eid за день не
+   * Клик по кнопке Telegram или WhatsApp на странице «Спасибо» (или переход по ссылке из шаблона WABA). Повтор того же eid за день не
    * считается. Потолок TY_DAILY_CAP записей в сутки: дальше ничего не пишем и возвращаем false.
    */
   recordTyClick(ch, eid, day, ts, src = "") {
@@ -2834,7 +2844,7 @@ function parseTyBody(raw) {
   } catch {
     return null;
   }
-  if (ch !== "tg" && ch !== "wa") return null;
+  if (ch !== "tg" && ch !== "wa" && ch !== "wa-template") return null;
   return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "", ...src === "pp" || src === "ty" ? { src } : {} };
 }
 async function handleTyClick(req, res) {
@@ -7118,11 +7128,18 @@ function listQuery(qs) {
     limit
   };
 }
-function handleAdminData(req, res, path) {
+function gateAdminSession(req) {
   const gate = gateInit(header(req, "x-tg-init-data"));
-  if (!gate.ok) return send(res, gate.status, gate.body);
+  if (!gate.ok) return gate;
   const m = /^Bearer\s+(\S+)$/i.exec(header(req, "authorization"));
-  if (!m || !verifySession(m[1], gate.userId, Date.now(), appSecret())) return send(res, 401, { ok: false, error: "session" });
+  if (!m || !verifySession(m[1], gate.userId, Date.now(), appSecret())) return { ok: false, status: 401, body: { ok: false, error: "session" } };
+  return gate;
+}
+var adminJson = send;
+var adminReadBody = readLimited2;
+function handleAdminData(req, res, path) {
+  const gate = gateAdminSession(req);
+  if (!gate.ok) return send(res, gate.status, gate.body);
   const what = path.replace(/^\/api\/admin\//, "");
   if (!["summary", "leads", "subscribers", "errors"].includes(what)) return send(res, 404, { ok: false, error: "not_found" });
   if (!botEnabled()) return send(res, 503, { ok: false, error: "bot_off" });
@@ -7270,6 +7287,14 @@ function createInstance() {
 function connectInstance() {
   return evoCall("GET", `/instance/connect/${I()}`, void 0, 3e4);
 }
+var logoutInstance = () => evoCall("DELETE", `/instance/logout/${I()}`, void 0, 3e4);
+var GROUPS_TIMEOUT_MS = 6e4;
+async function fetchAllGroups(withParticipants) {
+  const r = await evoCall("GET", `/group/fetchAllGroups/${I()}?getParticipants=${withParticipants ? "true" : "false"}`, void 0, GROUPS_TIMEOUT_MS);
+  if (!r.ok) return r;
+  if (!Array.isArray(r.data)) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 fetchAllGroups \u043D\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430", data: r.data };
+  return { ok: true, status: r.status, data: r.data };
+}
 async function communityCreate(p) {
   const r = await evoCall("POST", `/community/create/${I()}`, p, CREATE_TIMEOUT_MS);
   if (!r.ok) return r;
@@ -7411,6 +7436,9 @@ function validateWaSeries(raw) {
   }
   return raw;
 }
+var TEMPLATE_URL = "https://onai.academy/workshop-montazh/wa";
+var EVENT_CREATE_AT = "10:00";
+var freshEvent = () => ({ date: "", start: "", recruitFrom: "" });
 var freshState = () => ({
   v: 1,
   targets: [],
@@ -7425,7 +7453,10 @@ var freshState = () => ({
   lastQrAt: 0,
   capAlertDay: "",
   ownerJid: "",
-  ownerAt: 0
+  ownerAt: 0,
+  mode: "daily",
+  daily: { enabled: false },
+  event: freshEvent()
 });
 var defaultDeps2 = {
   now: () => Date.now(),
@@ -7493,6 +7524,20 @@ function loadState(r) {
     st.capAlertDay = str(raw.capAlertDay);
     st.ownerJid = str(raw.ownerJid);
     st.ownerAt = num(raw.ownerAt);
+    st.mode = raw.mode === "event" ? "event" : "daily";
+    st.daily = { enabled: raw.daily?.enabled === true };
+    const ev = raw.event;
+    if (ev && typeof ev === "object") {
+      const day = (x) => isDayKey(x) ? x : "";
+      st.event = {
+        date: day(ev.date),
+        start: typeof ev.start === "string" && /^\d{1,2}:\d{2}$/.test(ev.start) ? ev.start : "",
+        recruitFrom: day(ev.recruitFrom),
+        ...typeof ev.communityId === "string" && ev.communityId ? { communityId: ev.communityId } : {},
+        ...ev.done === true ? { done: true, doneAt: num(ev.doneAt) } : {}
+      };
+    }
+    if (st.mode === "event") st.daily.enabled = false;
   } catch {
     console.warn("[wa] wa-state.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0441 \u043F\u0443\u0441\u0442\u043E\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F");
   }
@@ -7529,9 +7574,16 @@ function initWaGroups(opts = {}) {
     ticking: false,
     joining: false,
     mediaWarned: /* @__PURE__ */ new Set(),
-    lockedOutLogged: false
+    lockedOutLogged: false,
+    joinedByDay: /* @__PURE__ */ new Map(),
+    profileName: "",
+    qrCache: null,
+    qrJournalAt: 0,
+    groupsCache: null,
+    groupsCallAt: 0
   };
   r.state = loadState(r);
+  if (!r.state.event.start) r.state.event.start = cfg.streamStart;
   for (const row of readJsonl2(fJournal(r))) {
     if (row?.ev === "send" && row.ok && row.msg && row.day && row.target) r.sent.add(sentKey(row.msg, row.part || "main", row.day, row.target));
   }
@@ -7541,7 +7593,11 @@ function initWaGroups(opts = {}) {
     if (row.ev === "request") r.seenReq.add(k);
     if (row.ev === "approve" && row.ok) {
       r.approved.add(k);
-      if (row.target) r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
+      if (row.target) {
+        r.joinedCount.set(row.target, (r.joinedCount.get(row.target) || 0) + 1);
+        const ms = Date.parse(String(row.ts || ""));
+        if (Number.isFinite(ms)) noteJoinedDay(r, row.target, dayKeyOf(ms));
+      }
     }
   }
   rt = r;
@@ -7572,7 +7628,15 @@ function startWaGroups(opts = {}) {
   const first = setTimeout(() => void waTick(), 5e3);
   const onExit = () => releaseLock2(r);
   process.on("exit", onExit);
-  console.log("[wa] \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u0442\u0438\u043F %s, \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 %s, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 %d, \u0442\u0438\u043A %d \u0441", r.cfg.target, r.cfg.version, r.cfg.messages.length, TICK_MS2 / 1e3);
+  console.log(
+    "[wa] \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u0442\u0438\u043F %s, \u0440\u0435\u0436\u0438\u043C %s%s, \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 %s, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 %d, \u0442\u0438\u043A %d \u0441",
+    r.cfg.target,
+    r.state.mode === "event" ? "\u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440" : "\u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439",
+    r.state.mode === "daily" ? r.state.daily.enabled ? " (\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B)" : " (\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B)" : "",
+    r.cfg.version,
+    r.cfg.messages.length,
+    TICK_MS2 / 1e3
+  );
   return () => {
     clearInterval(main);
     clearInterval(joins);
@@ -7621,15 +7685,49 @@ function createAtOf(r, day) {
 }
 var ddmm2 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
 var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm2(day)) + (seq > 1 ? ` (${seq})` : "");
+var pad2 = (n) => String(n).padStart(2, "0");
+var minsOf = (hhmm) => {
+  const p = parseHHMM(hhmm);
+  return p.h * 60 + p.m;
+};
+var hhmmFrom = (mins) => {
+  const m = (mins % 1440 + 1440) % 1440;
+  return `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+};
+var normHHMM = (s) => hhmmFrom(minsOf(s));
+var startShift = (r, start) => start ? minsOf(start) - minsOf(r.cfg.streamStart) : 0;
+var followsStart = (r, m) => minsOf(m.at) <= minsOf(r.cfg.streamStart) + r.cfg.streamMinutes;
+function planOf(r, t, m) {
+  const base = atTime(t.day, m.at);
+  const d = startShift(r, t.start);
+  return d && followsStart(r, m) ? base + d * MIN : base;
+}
+function retime(r, start, text) {
+  if (!start || start === r.cfg.streamStart) return text;
+  const base = r.cfg.streamStart;
+  const baseMsk = hhmmFrom(minsOf(base) - 120);
+  const msk = hhmmFrom(minsOf(start) - 120);
+  return text.split(`${baseMsk} \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435`).join(`${msk} \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435`).split(base).join(start);
+}
+function effMsg(r, t, m) {
+  if (!t.start || t.start === r.cfg.streamStart) return m;
+  return { ...m, text: retime(r, t.start, m.text), ...m.poll ? { poll: { ...m.poll, name: retime(r, t.start, m.poll.name) } } : {} };
+}
 var isReady = (t) => t.kind === "community" ? !!(t.done.announce && t.done.addMode && t.done.approval && t.done.link) : !!(t.done.announce && t.done.link);
 var targetsOf = (r, day) => r.state.targets.filter((t) => t.day === day).sort((a, b) => b.seq - a.seq);
 function servingTarget(r, now) {
+  if (r.state.mode === "event") {
+    const ev = r.state.event;
+    if (!ev.date || ev.done) return null;
+    return targetsOf(r, ev.date).find((t) => isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
+  }
   const day = assignStreamDay(now, tcfg(r));
-  return targetsOf(r, day).find((t) => isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
+  return targetsOf(r, day).find((t) => t.source !== "event" && isReady(t) && t.link && now < closeAtOf(r, t.day)) ?? null;
 }
-function waGroupLink(now = Date.now(), served = true) {
+function waGroupLink(now, served = true) {
   try {
     if (!rt) return null;
+    if (now === void 0) now = rt.deps.now();
     const t = servingTarget(rt, now);
     if (!t || !isValidWhatsAppLink(t.link)) return null;
     if (served) {
@@ -7728,13 +7826,16 @@ function releaseLock2(r) {
 async function checkConnection(r, now) {
   const c = await connectionState();
   const st = c.ok ? c.data.state : "unreachable";
+  const prev = r.conn.state;
   r.conn = { state: st, at: now };
+  if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
   if (st === "open") {
     if (!r.state.ownerJid || now - r.state.ownerAt > HOUR) {
       const i = await fetchInstance();
       if (i.ok && i.data.ownerJid) {
         r.state.ownerJid = i.data.ownerJid;
         r.state.ownerAt = now;
+        r.profileName = i.data.profileName;
         save(r);
       }
     }
@@ -7764,9 +7865,43 @@ function dueCreateDays(r, now) {
   }
   return out;
 }
-async function createTarget(r, day, seq, now) {
+var eventCreateAt = (r) => atTime(r.state.event.recruitFrom, EVENT_CREATE_AT);
+var eventTarget = (r) => r.state.event.date ? targetsOf(r, r.state.event.date)[0] ?? null : null;
+function eventDue(r, now) {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || ev.done || !ev.date || !ev.recruitFrom) return false;
+  if (eventTarget(r)) return false;
+  return now >= eventCreateAt(r) && now < closeAtOf(r, ev.date);
+}
+function dueCreates(r, now) {
+  if (r.state.mode === "event") return eventDue(r, now) ? [r.state.event.date] : [];
+  return r.state.daily.enabled ? dueCreateDays(r, now) : [];
+}
+function finishEventIfOver(r, now) {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || ev.done || !ev.date || now < closeAtOf(r, ev.date)) return false;
+  ev.done = true;
+  ev.doneAt = now;
+  r.state.mode = "daily";
+  r.state.daily.enabled = false;
+  save(r);
+  journal(r, { ev: "event_done", date: ev.date, target: ev.communityId || "" });
+  console.log("[wa] \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 %s \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0440\u0435\u0436\u0438\u043C \u0432\u0435\u0440\u043D\u0443\u043B\u0441\u044F \u043D\u0430 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 (\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E)", ev.date);
+  return true;
+}
+function syncEventCommunity(r) {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || !ev.date || ev.done) return;
+  const t = eventTarget(r);
+  if (t && ev.communityId !== t.id) {
+    ev.communityId = t.id;
+    save(r);
+  }
+}
+async function createTarget(r, day, seq, now, opts = {}) {
   const kind = r.cfg.target;
   const name = nameOf(r, day, seq);
+  const description = retime(r, opts.start, r.cfg.description);
   let created;
   if (kind === "group" && !adminNumbers().length) {
     await noteFail(r, `\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${name}`, "\u0434\u043B\u044F \u043E\u0431\u044B\u0447\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u044B \u043D\u0443\u0436\u0435\u043D \u0445\u043E\u0442\u044F \u0431\u044B \u043E\u0434\u0438\u043D \u043D\u043E\u043C\u0435\u0440 \u0432 WA_ADMIN_NUMBERS");
@@ -7774,7 +7909,7 @@ async function createTarget(r, day, seq, now) {
   }
   r.state.pendingCreate = { day, seq, kind, at: now };
   save(r);
-  const res = kind === "community" ? await communityCreate({ subject: name, description: r.cfg.description, approvalRequired: true }) : await groupCreate({ subject: name, description: r.cfg.description, participants: adminNumbers() });
+  const res = kind === "community" ? await communityCreate({ subject: name, description, approvalRequired: true }) : await groupCreate({ subject: name, description, participants: adminNumbers() });
   if (!res.ok) {
     if (ambiguous(res)) {
       noteCreation(r, now);
@@ -7805,18 +7940,20 @@ async function createTarget(r, day, seq, now) {
     // У обычной группы нет режима «по заявке» и «админы добавляют»: эти шаги считаются сделанными.
     done: kind === "group" ? { addMode: true, approval: true } : {},
     tries: {},
-    avatarAt: 0
+    avatarAt: 0,
+    ...opts.source === "event" ? { source: "event" } : {},
+    ...opts.start && opts.start !== r.cfg.streamStart ? { start: opts.start } : {}
   };
   r.state.targets.push(t);
   r.state.pendingCreate = null;
   noteCreation(r, now);
   save(r);
-  journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name });
+  journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name, ...t.source ? { source: t.source } : {} });
   console.log("[wa] \u0441\u043E\u0437\u0434\u0430\u043D\u043E %s %s (%s)", kind === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430", t.id, name);
   noteOk(r);
   return { ok: true, target: t };
 }
-var welcomeText = (r, t, now) => r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm2(t.day));
+var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm2(t.day)));
 async function setupSteps(r, t) {
   const order = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "link", "avatar", "welcome"];
   let first = true;
@@ -7906,7 +8043,8 @@ async function sendPart(r, t, msgId, part, run, manual, extra = {}) {
   }
   return { ok: false, error: x.error, ...x.timeout ? { timeout: true } : {} };
 }
-async function sendMessageTo(r, t, m, manual) {
+async function sendMessageTo(r, t, base, manual) {
+  const m = effMsg(r, t, base);
   let first = true;
   for (const part of partsOf(r, m)) {
     if (r.sent.has(sentKey(m.id, part, t.day, t.id))) continue;
@@ -7948,7 +8086,7 @@ function dueSends(r, now) {
     if (!isReady(t) || now >= closeAtOf(r, t.day)) continue;
     for (const msg of r.cfg.messages) {
       if (msg.enabled === false) continue;
-      const plan = atTime(t.day, msg.at);
+      const plan = planOf(r, t, msg);
       if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
@@ -8020,7 +8158,7 @@ async function runMemberChecks(r, now) {
     return;
   }
   await pause(r, r.cfg.pacing.betweenStepsMs);
-  const c = await createTarget(r, t.day, t.seq + 1, r.deps.now());
+  const c = await createTarget(r, t.day, t.seq + 1, r.deps.now(), { source: t.source ?? "daily", start: t.start });
   if (!c.ok) return;
   await alarm(r, `\u0412 \xAB${t.name}\xBB ${t.members} \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0438\u0437 ${limit}. \u041E\u0442\u043A\u0440\u044B\u0442\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435: \xAB${c.target.name}\xBB, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043D\u0430 \u043D\u0435\u0433\u043E, \u043A\u0430\u043A \u0442\u043E\u043B\u044C\u043A\u043E \u043E\u043D\u043E \u0431\u0443\u0434\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E.`);
   await pause(r, r.cfg.pacing.betweenStepsMs);
@@ -8035,6 +8173,8 @@ async function waTick() {
     return await exclusive(r, async () => {
       const now = r.deps.now();
       if (!holdLock2(r)) return { skipped: "lock", sent: 0, created: 0 };
+      finishEventIfOver(r, now);
+      syncEventCommunity(r);
       if (r.state.paused) return { skipped: "paused", sent: 0, created: 0 };
       if (!await checkConnection(r, now)) return { skipped: "no_connection", sent: 0, created: 0 };
       if (now < r.state.retryAt) return { skipped: "backoff", sent: 0, created: 0 };
@@ -8047,7 +8187,7 @@ async function waTick() {
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" };
-      for (const day of dueCreateDays(r, now)) {
+      for (const day of dueCreates(r, now)) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (capReached(r, now)) {
           if (r.state.capAlertDay !== dayKeyOf(now)) {
@@ -8057,9 +8197,11 @@ async function waTick() {
           }
           break;
         }
-        const c = await createTarget(r, day, 1, r.deps.now());
+        const ev = r.state.mode === "event" ? r.state.event : null;
+        const c = await createTarget(r, day, 1, r.deps.now(), ev ? { source: "event", start: ev.start } : {});
         if (!c.ok) break;
         created++;
+        syncEventCommunity(r);
         await pause(r, r.cfg.pacing.betweenStepsMs);
         await setupSteps(r, c.target);
       }
@@ -8106,6 +8248,11 @@ function normalizeDecisions(data, asked) {
   }
   return asked.map((jid) => ({ jid, ok: true, status: "200" }));
 }
+function noteJoinedDay(r, target, day) {
+  let m = r.joinedByDay.get(target);
+  if (!m) r.joinedByDay.set(target, m = /* @__PURE__ */ new Map());
+  m.set(day, (m.get(day) || 0) + 1);
+}
 function nextJoinDelay(r, serving, now) {
   const jp = r.cfg.joinPolling;
   if (!serving) return between(r, jp.otherSec) * 1e3;
@@ -8146,6 +8293,7 @@ async function pollJoins(r, t, now) {
     if (x.ok) {
       r.approved.add(k);
       r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
+      noteJoinedDay(r, t.id, dayKeyOf(r.deps.now()));
       n++;
     } else {
       r.approveFails.set(k, (r.approveFails.get(k) || 0) + 1);
@@ -8193,27 +8341,43 @@ var agoText = (ms) => {
 };
 var inText = (ms) => {
   const m = Math.max(0, Math.round(ms / MIN));
-  return m < 90 ? `\u0447\u0435\u0440\u0435\u0437 ${m} \u043C\u0438\u043D` : `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
+  if (m < 90) return `\u0447\u0435\u0440\u0435\u0437 ${m} \u043C\u0438\u043D`;
+  if (m >= 2880) return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 1440)} \u0434\u043D. ${Math.floor(m % 1440 / 60)} \u0447`;
+  return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
 };
-function nextMessageText(r, now) {
+function nextMessage(r, now) {
+  let best = null;
+  const consider = (day, start) => {
+    for (const m of r.cfg.messages) {
+      if (m.enabled === false) continue;
+      const plan = planOf(r, { day, start }, m);
+      if (plan >= now && plan < closeAtOf(r, day) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
+    }
+  };
+  if (r.state.mode === "event") {
+    const ev = r.state.event;
+    if (ev.date && !ev.done) consider(ev.date, eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : void 0));
+    return best;
+  }
   const c = tcfg(r);
   const today = dayKeyOf(now);
-  let best = null;
   for (let i = 0; i < 4; i++) {
     const day = addDays(today, i);
     if (!isStreamDay(day, c)) continue;
-    for (const m of r.cfg.messages) {
-      if (m.enabled === false) continue;
-      const plan = atTime(day, m.at);
-      if (plan >= now && (!best || plan < best.plan)) best = { plan, id: m.id, day };
-    }
+    const ts = targetsOf(r, day).filter((t) => t.source !== "event");
+    if (!ts.length && !r.state.daily.enabled) continue;
+    consider(day, ts[0]?.start);
   }
-  return best ? `${hhmmOf(best.plan)} ${best.id} (\u044D\u0444\u0438\u0440 ${ddmm2(best.day)}), ${inText(best.plan - now)}` : "\u043D\u0435\u0442";
+  return best;
+}
+function nextMessageText(r, now) {
+  const b = nextMessage(r, now);
+  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm2(b.day)}), ${inText(b.plan - now)}` : "\u043D\u0435\u0442";
 }
 function targetLine(r, label, day, now) {
-  const ts = [...targetsOf(r, day)].reverse();
+  const ts = [...targetsOf(r, day)].reverse().filter((t) => r.state.mode === "event" || t.source !== "event");
   const at = createAtOf(r, day);
-  if (!ts.length) return `${label} ${ddmm2(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm2(dayKeyOf(at))}`;
+  if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm2(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm2(dayKeyOf(at))}` : `${label} ${ddmm2(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E`;
   return ts.map((t) => {
     const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText(now - (t.membersAt || now))})`;
     const joined = t.kind === "community" ? `, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${r.joinedCount.get(t.id) || 0}` : "";
@@ -8244,11 +8408,12 @@ async function cmdStatus(r, now) {
   const next = nextStreamAfter(r, cur);
   const number = r.state.ownerJid ? `+${r.state.ownerJid.replace(/@.*/, "")}` : "\u043D\u043E\u043C\u0435\u0440 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D";
   const link = waGroupLink(now, false);
+  const ev = r.state.event;
   const lines = [
     `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C: ${r.state.paused ? `\u043D\u0430 \u043F\u0430\u0443\u0437\u0435 (${r.state.pausedReason || "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u0430"})` : "\u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442"}, \u0442\u0438\u043F ${r.cfg.target === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430"}`,
+    r.state.mode === "event" ? `\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440${ev.date ? ` ${ddmm2(ev.date)} \u0432 ${ev.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm2(ev.recruitFrom)}` : ", \u0434\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430"}` : `\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${r.state.daily.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`,
     `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${conn}${conn === "open" ? `, ${number}` : ""}`,
-    targetLine(r, "\u042D\u0444\u0438\u0440", cur, now),
-    targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now),
+    ...r.state.mode === "event" ? [ev.date ? eventTarget(r) ? targetLine(r, "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430", ev.date, now) : `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm2(ev.date)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C ${ddmm2(ev.recruitFrom)} \u0432 ${EVENT_CREATE_AT}` : "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442"] : [targetLine(r, "\u042D\u0444\u0438\u0440", cur, now), targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now)],
     `\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u0435\u0439\u0447\u0430\u0441: ${link ?? "\u0441\u0442\u0430\u0440\u0430\u044F \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F (\u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442)"}`,
     `\u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${nextMessageText(r, now)}`,
     `\u041D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438: ${dayCreations(r, now)} \u0438\u0437 ${r.cfg.maxNewPerDay}`,
@@ -8298,14 +8463,14 @@ async function cmdQr(r, now) {
     };
   });
 }
-function cmdPause(r, now) {
+function cmdPause(r, now, by = "bot") {
   if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u0443\u0436\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435." };
   r.state.paused = true;
   r.state.pausedAt = now;
-  r.state.pausedReason = "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, /wa_pause";
+  r.state.pausedReason = by === "panel" ? "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, \u0438\u0437 \u043F\u0443\u043B\u044C\u0442\u0430" : "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, /wa_pause";
   save(r);
   journal(r, { ev: "pause", reason: r.state.pausedReason });
-  return { text: "\u041F\u0430\u0443\u0437\u0430 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. \u0412\u0435\u0440\u043D\u0443\u0442\u044C: /wa_resume." };
+  return { text: by === "panel" ? "\u041F\u0430\u0443\u0437\u0430 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B." : "\u041F\u0430\u0443\u0437\u0430 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. \u0412\u0435\u0440\u043D\u0443\u0442\u044C: /wa_resume." };
 }
 function cmdResume(r) {
   const was = r.state.paused;
@@ -8318,7 +8483,33 @@ function cmdResume(r) {
   journal(r, { ev: "resume" });
   return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
 }
+var fail = (code, message) => ({ ok: false, code, message });
+async function eventCreateNow(r, now) {
+  const ev = r.state.event;
+  if (r.state.mode !== "event") return fail("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0441\u044C \u043D\u0430 \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440.");
+  if (!ev.date) return fail("no_event", "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438.");
+  if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0443\u0436\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u0417\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u0443\u044E \u0434\u0430\u0442\u0443.`);
+  if (r.state.paused) return fail("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
+  if (r.state.pendingCreate) return fail("pending", "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443 (\u043E\u043D\u0430 \u043E\u0431\u043D\u0443\u043B\u0438\u0442 \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435).");
+  const existing = eventTarget(r);
+  if (existing) {
+    syncEventCommunity(r);
+    return { ok: true, code: "exists", message: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(ev.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+  }
+  if (capReached(r, now)) return fail("cap", `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.`);
+  return exclusive(r, async () => {
+    if (!await checkConnection(r, now)) return fail("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
+    const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
+    if (!res.ok) return fail("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
+    syncEventCommunity(r);
+    await pause(r, r.cfg.pacing.betweenStepsMs);
+    const done = await setupSteps(r, res.target);
+    const t = res.target;
+    return { ok: true, code: isReady(t) ? "created" : "building", message: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043E\u043D\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043E 00:00 \u043F\u043E\u0441\u043B\u0435 \u044D\u0444\u0438\u0440\u0430.` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
+  });
+}
 async function cmdNew(r, args, now) {
+  if (r.state.mode === "event") return { text: (await eventCreateNow(r, now)).message };
   if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
   if (r.state.pendingCreate) return { text: "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u0434\u0435\u043B\u0430\u0439 /wa_resume." };
   const c = tcfg(r);
@@ -8346,17 +8537,25 @@ async function cmdNew(r, args, now) {
     return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
   });
 }
-async function cmdSend(r, args, now) {
-  const id = args.split(/\s+/)[0];
-  if (!id) return { text: `\u0423\u043A\u0430\u0436\u0438 id \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: /wa_send morning. \u0421\u043F\u0438\u0441\u043E\u043A: ${r.cfg.messages.map((m) => m.id).join(", ")}` };
+function currentTargets(r, now) {
+  const day = r.state.mode === "event" ? r.state.event.date : dayKeyOf(now);
+  const list = day ? [...targetsOf(r, day)].reverse().filter((t) => (r.state.mode === "event" ? true : t.source !== "event") && isReady(t) && now < closeAtOf(r, t.day)) : [];
+  return { day, list };
+}
+async function sendSeries(r, id, now) {
+  const ids = r.cfg.messages.map((m) => m.id).join(", ");
+  const zero = { sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (!id) return { ok: false, code: "no_id", text: `\u0423\u043A\u0430\u0436\u0438 id \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: /wa_send morning. \u0421\u043F\u0438\u0441\u043E\u043A: ${ids}`, ...zero };
   const msg = r.cfg.messages.find((m) => m.id === id);
-  if (!msg) return { text: `\u041D\u0435\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \xAB${id}\xBB. \u0421\u043F\u0438\u0441\u043E\u043A: ${r.cfg.messages.map((m) => m.id).join(", ")}` };
-  if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
-  const today = dayKeyOf(now);
-  const targets = [...targetsOf(r, today)].reverse().filter((t) => isReady(t) && now < closeAtOf(r, t.day));
-  if (!targets.length) return { text: `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm2(today)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` };
+  if (!msg) return { ok: false, code: "bad_id", text: `\u041D\u0435\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \xAB${id}\xBB. \u0421\u043F\u0438\u0441\u043E\u043A: ${ids}`, ...zero };
+  if (r.state.paused) return { ok: false, code: "paused", text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume.", ...zero };
+  const { day, list: targets } = currentTargets(r, now);
+  if (!targets.length) {
+    const text = r.state.mode === "event" ? day ? `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 (${ddmm2(day)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` : "\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442." : `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm2(dayKeyOf(now))}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.`;
+    return { ok: false, code: "no_target", text, ...zero };
+  }
   return exclusive(r, async () => {
-    if (!await checkConnection(r, now)) return { text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E.` };
+    if (!await checkConnection(r, now)) return { ok: false, code: "no_connection", text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E.`, ...zero, targets: targets.length };
     let ok = 0;
     let skipped = 0;
     let failed = 0;
@@ -8372,8 +8571,11 @@ async function cmdSend(r, args, now) {
       if (await sendMessageTo(r, t, msg, true)) ok++;
       else failed++;
     }
-    return { text: `\xAB${id}\xBB: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${ok}, \u0443\u0436\u0435 \u0431\u044B\u043B\u043E ${skipped}, \u043D\u0435 \u0443\u0448\u043B\u043E ${failed} (\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0441\u0435\u0433\u043E\u0434\u043D\u044F: ${targets.length}).` };
+    return { ok: failed === 0, code: failed ? "partial" : "sent", text: `\xAB${id}\xBB: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${ok}, \u0443\u0436\u0435 \u0431\u044B\u043B\u043E ${skipped}, \u043D\u0435 \u0443\u0448\u043B\u043E ${failed} (\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 ${r.state.mode === "event" ? "\u044D\u0444\u0438\u0440\u0430" : "\u0441\u0435\u0433\u043E\u0434\u043D\u044F"}: ${targets.length}).`, sent: ok, skipped, failed, targets: targets.length };
   });
+}
+async function cmdSend(r, args, now) {
+  return { text: (await sendSeries(r, args.split(/\s+/)[0], now)).text };
 }
 async function waCommand(cmd, args, now) {
   const r = rt;
@@ -8401,6 +8603,588 @@ function waReportLine(day) {
   const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t)).length, 0);
   return `WhatsApp: \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${joined}, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0441\u0435\u0440\u0438\u0438 \u0443\u0448\u043B\u043E ${done} \u0438\u0437 ${total}.`;
 }
+var MODULE_OFF = fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
+var clock = (r, now) => now ?? r.deps.now();
+var when = (ms) => `${ddmm2(dayKeyOf(ms))} \u0432 ${hhmmOf(ms)}`;
+function waSetMode(mode, nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (mode !== "daily" && mode !== "event") return fail("bad_request", "\u0420\u0435\u0436\u0438\u043C: daily \u0438\u043B\u0438 event.");
+  if (r.state.mode === mode) return { ok: true, code: "same", message: "\u042D\u0442\u043E\u0442 \u0440\u0435\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
+  r.state.mode = mode;
+  if (mode === "event") {
+    r.state.daily.enabled = false;
+    if (r.state.event.done) r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
+  }
+  save(r);
+  journal(r, { ev: "mode", mode, by: "panel" });
+  return {
+    ok: true,
+    message: mode === "event" ? "\u0412\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440. \u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u044E\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C, \u043D\u043E \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0442\u0435\u043F\u0435\u0440\u044C \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430." : "\u0412\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E, \u043F\u043E\u043A\u0430 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0438\u0448\u044C \u0435\u0433\u043E \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u0435\u043C. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C."
+  };
+}
+function waSetDaily(enabled, nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (typeof enabled !== "boolean") return fail("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (!enabled && r.state.mode !== "daily") return { ok: true, code: "same", message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
+  if (r.state.mode !== "daily") return fail("wrong_mode", "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
+  if (r.state.daily.enabled === enabled) return { ok: true, code: "same", message: enabled ? "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
+  r.state.daily.enabled = enabled;
+  save(r);
+  journal(r, { ev: "daily", enabled, by: "panel" });
+  const now = clock(r, nowArg);
+  if (!enabled) return { ok: true, message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E: \u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u044E\u0442\u0441\u044F. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0434\u043E \u043A\u043E\u043D\u0446\u0430." };
+  const nx = nextDailyCreate(r, now);
+  return { ok: true, message: nx ? `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E, \u044D\u0444\u0438\u0440 ${ddmm2(nx.day)}, \u0441\u043E\u0437\u0434\u0430\u043C ${when(nx.at)}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
+}
+var START_MIN = 12 * 60;
+var START_MAX = 22 * 60;
+function waSetEvent(p, nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (r.state.mode !== "event") return fail("wrong_mode", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440\xBB. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
+  const now = clock(r, nowArg);
+  const today = dayKeyOf(now);
+  const cur = r.state.event;
+  if (!cur.done && cur.communityId && eventTarget(r)) return fail("locked", "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0442\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0434\u0430\u0442\u044B \u0438 \u0432\u0440\u0435\u043C\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F. \u041D\u0430\u0436\u043C\u0438 \xAB\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u044D\u0444\u0438\u0440\xBB \u0438 \u0437\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u044B\u0439.");
+  if (!isDayKey(p.date)) return fail("bad_date", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430.");
+  if (p.date < today) return fail("bad_date", "\u0414\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430.");
+  if (p.date > addDays(today, 90)) return fail("bad_date", "\u042D\u0444\u0438\u0440 \u0434\u0430\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 90 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
+  let start;
+  try {
+    start = normHHMM(String(p.start || r.cfg.streamStart));
+  } catch {
+    return fail("bad_start", "\u0412\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0432\u0438\u0434\u0430 20:00.");
+  }
+  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 12:00 \u0434\u043E 22:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440.");
+  if (!isDayKey(p.recruitFrom)) return fail("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
+  if (p.recruitFrom > p.date) return fail("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
+  if (p.recruitFrom < addDays(p.date, -30)) return fail("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
+  r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
+  syncEventCommunity(r);
+  save(r);
+  journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
+  const at = eventCreateAt(r);
+  const text = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
+  return { ok: true, message: text };
+}
+function waEventReset() {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
+  save(r);
+  journal(r, { ev: "event_reset", by: "panel" });
+  return { ok: true, message: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u044D\u0444\u0438\u0440\u0430 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F." };
+}
+async function waEventCreateNow(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  try {
+    return await eventCreateNow(r, clock(r, nowArg));
+  } catch (e) {
+    return fail("internal", `\u041E\u0448\u0438\u0431\u043A\u0430: ${e?.message || e}`);
+  }
+}
+async function waDailyCreateNow(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  if (r.state.mode !== "daily") return fail("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB \u0432 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.");
+  const text = (await cmdNew(r, "", clock(r, nowArg))).text;
+  return { ok: /^Создано:/.test(text) || /сообщество уже есть/.test(text), message: text };
+}
+function waPause(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  const was = r.state.paused;
+  const reply2 = cmdPause(r, clock(r, nowArg), "panel");
+  return { ok: true, code: was ? "same" : "paused", message: reply2.text };
+}
+function waResume() {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return { ok: true, message: cmdResume(r).text };
+}
+async function waSendSeries(id, nowArg) {
+  const r = rt;
+  if (!r) return { ...MODULE_OFF, sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (typeof id !== "string" || !id) return { ...fail("bad_request", "\u0412\u044B\u0431\u0435\u0440\u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438."), sent: 0, skipped: 0, failed: 0, targets: 0 };
+  const x = await sendSeries(r, id, clock(r, nowArg));
+  return { ok: x.ok, code: x.code, message: x.text, sent: x.sent, skipped: x.skipped, failed: x.failed, targets: x.targets };
+}
+var numberOf = (r) => r.state.ownerJid ? `+${r.state.ownerJid.replace(/[:@].*$/, "")}` : "";
+async function waConnection(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    if (r.conn.at && now - r.conn.at < 3e3 && r.conn.state !== "open") return { ok: true, state: r.conn.state, number: "", profile: "" };
+    const cs = await connectionState();
+    if (!cs.ok) {
+      r.conn = { state: "unreachable", at: now };
+      return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+    }
+    r.conn = { state: cs.data.state, at: now };
+    if (cs.data.state === "open") await refreshOwner(r, now);
+    return { ok: true, state: cs.data.state, number: cs.data.state === "open" ? numberOf(r) : "", profile: cs.data.state === "open" ? r.profileName : "" };
+  });
+}
+async function refreshOwner(r, now) {
+  const i = await fetchInstance();
+  if (i.ok && i.data.ownerJid) {
+    r.state.ownerJid = i.data.ownerJid;
+    r.state.ownerAt = now;
+    r.profileName = i.data.profileName;
+    save(r);
+  }
+}
+var cleanQr = (x) => typeof x === "string" ? x.replace(/^data:image\/\w+;base64,/, "") : "";
+async function waQr(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const cs = await connectionState();
+    if (!cs.ok) return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+    const st = cs.data.state;
+    r.conn = { state: st, at: now };
+    if (st === "open") {
+      r.qrCache = null;
+      await refreshOwner(r, now);
+      return { ok: true, state: "open", qr: null, number: numberOf(r), profile: r.profileName };
+    }
+    const shown = st === "absent" ? "connecting" : st;
+    if (r.qrCache && now - r.qrCache.at < 1e4 && r.qrCache.state === shown) return { ok: true, state: shown, qr: r.qrCache.data };
+    let qr;
+    if (st === "absent") {
+      const c = await createInstance();
+      if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
+      qr = c.data?.qrcode?.base64;
+    } else {
+      const c = await connectInstance();
+      if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C QR: ${c.error}`);
+      qr = c.data?.base64;
+    }
+    const b64 = cleanQr(qr);
+    if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64) || b64.length > 4e5) return { ok: true, state: shown, qr: null, message: "QR \u0433\u043E\u0442\u043E\u0432\u0438\u0442\u0441\u044F, \u043E\u043D \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434." };
+    const data = `data:image/png;base64,${b64}`;
+    r.qrCache = { at: now, state: shown, data };
+    if (now - r.qrJournalAt > 5 * MIN) {
+      r.qrJournalAt = now;
+      journal(r, { ev: "qr", by: "panel" });
+    }
+    return { ok: true, state: shown, qr: data };
+  });
+}
+async function waLogout(nowArg) {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  return exclusive(r, async () => {
+    const now = clock(r, nowArg);
+    const x = await logoutInstance();
+    if (!x.ok) return fail("evolution", `\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043D\u043E\u043C\u0435\u0440: ${x.error}`);
+    r.conn = { state: "close", at: now };
+    r.state.ownerJid = "";
+    r.state.ownerAt = 0;
+    r.profileName = "";
+    r.qrCache = null;
+    r.state.lastConnAlertAt = now;
+    save(r);
+    journal(r, { ev: "logout", by: "panel" });
+    return { ok: true, message: "\u041D\u043E\u043C\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B, \u043F\u043E\u043A\u0430 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0448\u044C \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E \u043F\u043E QR." };
+  });
+}
+var digitsOf = (x) => typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "";
+function roleOfGroup(g, me) {
+  if (!me) return "unknown";
+  if (digitsOf(g?.owner) === me) return "owner";
+  if (!Array.isArray(g?.participants)) return "unknown";
+  const mine = g.participants.find((p) => [p?.id, p?.jid, p?.phoneNumber, p?.lid].some((x) => digitsOf(x) === me));
+  if (!mine) return "unknown";
+  return mine.admin === "superadmin" ? "owner" : mine.admin ? "admin" : "member";
+}
+var ROLE_LABEL = { owner: "\u0441\u043E\u0437\u0434\u0430\u0442\u0435\u043B\u044C", admin: "\u0430\u0434\u043C\u0438\u043D", member: "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A", unknown: "\u0440\u043E\u043B\u044C \u043D\u0435 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0430" };
+var TYPE_LABEL = { community: "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E", announce: "\u0432\u043A\u043B\u0430\u0434\u043A\u0430 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439", subgroup: "\u0433\u0440\u0443\u043F\u043F\u0430 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0435", group: "\u0433\u0440\u0443\u043F\u043F\u0430" };
+function groupView(r, g) {
+  const type = g?.isCommunity === true ? "community" : g?.isCommunityAnnounce === true ? "announce" : g?.linkedParent ? "subgroup" : "group";
+  const role = roleOfGroup(g, digitsOf(r.state.ownerJid));
+  const id = String(g?.id || "");
+  const size = typeof g?.size === "number" && Number.isFinite(g.size) ? g.size : Array.isArray(g?.participants) ? g.participants.length : null;
+  return {
+    id,
+    name: String(g?.subject || "\u0431\u0435\u0437 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F").slice(0, 120),
+    size,
+    type,
+    typeLabel: TYPE_LABEL[type],
+    role,
+    roleLabel: ROLE_LABEL[role],
+    announceOnly: g?.announce === true,
+    ours: r.state.targets.some((t) => t.jid === id || t.sendJid === id)
+  };
+}
+var GROUPS_CACHE_MS = 6e4;
+var GROUPS_MIN_GAP_MS = 2e4;
+async function waGroups(force = false, nowArg) {
+  const r = rt;
+  if (!r) return { ...MODULE_OFF, items: [], at: 0, cached: false };
+  const now = clock(r, nowArg);
+  const c = r.groupsCache;
+  if (c && (!force ? now - c.at < GROUPS_CACHE_MS : now - r.groupsCallAt < GROUPS_MIN_GAP_MS)) return { ok: true, message: "", items: c.items, at: c.at, cached: true };
+  return exclusive(r, async () => {
+    r.groupsCallAt = now;
+    const cs = await connectionState();
+    if (!cs.ok) return { ...fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    r.conn = { state: cs.data.state, at: now };
+    if (cs.data.state !== "open") return { ...fail("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${cs.data.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (!r.state.ownerJid) await refreshOwner(r, now);
+    let res = await fetchAllGroups(true);
+    if (!res.ok) res = await fetchAllGroups(false);
+    if (!res.ok) return { ...fail("evolution", `\u0421\u043F\u0438\u0441\u043E\u043A \u0433\u0440\u0443\u043F\u043F \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: ${res.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    const rank = (g) => g.type === "community" ? 0 : g.type === "announce" ? 1 : g.type === "subgroup" ? 2 : 3;
+    const items = res.data.slice(0, 300).map((g) => groupView(r, g)).filter((g) => g.id).sort((a, b) => rank(a) - rank(b) || (b.size ?? -1) - (a.size ?? -1) || a.name.localeCompare(b.name));
+    r.groupsCache = { at: now, items };
+    return { ok: true, message: "", items, at: now, cached: false };
+  });
+}
+function readJsonlTail(file, maxBytes = 256 * 1024) {
+  try {
+    const size = (0, import_node_fs8.statSync)(file).size;
+    const start = Math.max(0, size - maxBytes);
+    const buf = Buffer.alloc(size - start);
+    const fd = (0, import_node_fs8.openSync)(file, "r");
+    try {
+      (0, import_node_fs8.readSync)(fd, buf, 0, buf.length, start);
+    } finally {
+      (0, import_node_fs8.closeSync)(fd);
+    }
+    let text = buf.toString("utf8");
+    if (start > 0) text = text.slice(text.indexOf("\n") + 1);
+    const out = [];
+    for (const line of text.split("\n")) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        out.push(JSON.parse(s));
+      } catch {
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "conn"]);
+var stampOf = (ms) => `${ddmm2(dayKeyOf(ms))} ${hhmmOf(ms)}`;
+var clip = (s, n = 160) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
+};
+function journalView(r, limit = 20) {
+  const nameOfTarget = (id) => r.state.targets.find((t) => t.id === id)?.name || String(id || "");
+  const topicOf = (id) => id === "welcome" ? "\u043F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435" : r.cfg.messages.find((m) => m.id === id)?.topic || String(id || "");
+  const rows = readJsonlTail(fJournal(r)).filter((x) => x && JOURNAL_EVENTS.has(x.ev));
+  return rows.slice(-limit).reverse().map((x) => {
+    const ts = Date.parse(String(x.ts || "")) || 0;
+    let kind = "info";
+    let text = "";
+    switch (x.ev) {
+      case "create":
+        kind = "ok";
+        text = `\u0421\u043E\u0437\u0434\u0430\u043D\u043E \xAB${nameOfTarget(x.target) || x.name}\xBB`;
+        break;
+      case "send": {
+        const part = x.part === "poll" ? ", \u043E\u043F\u0440\u043E\u0441" : x.part === "text" ? ", \u0442\u0435\u043A\u0441\u0442" : "";
+        kind = x.ok ? "ok" : "error";
+        text = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
+        break;
+      }
+      case "fail":
+        kind = "error";
+        text = `\u041E\u0448\u0438\u0431\u043A\u0430 ${x.n} \u043F\u043E\u0434\u0440\u044F\u0434: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
+        break;
+      case "pause":
+        kind = "error";
+        text = `\u041F\u0430\u0443\u0437\u0430: ${clip(x.reason, 120)}`;
+        break;
+      case "resume":
+        text = "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430";
+        break;
+      case "alarm":
+        kind = "error";
+        text = `\u0422\u0440\u0435\u0432\u043E\u0433\u0430: ${clip(x.text, 140)}`;
+        break;
+      case "mode":
+        text = x.mode === "event" ? "\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440" : "\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439";
+        break;
+      case "daily":
+        text = `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435: ${x.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`;
+        break;
+      case "event_set":
+        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: ${ddmm2(String(x.date))} \u0432 ${x.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm2(String(x.recruitFrom))}`;
+        break;
+      case "event_reset":
+        text = "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B";
+        break;
+      case "event_done":
+        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 ${ddmm2(String(x.date))} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0441\u0441\u044B\u043B\u043A\u0430 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F`;
+        break;
+      case "logout":
+        kind = "error";
+        text = "\u041D\u043E\u043C\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D";
+        break;
+      case "qr":
+        text = "\u0417\u0430\u043F\u0440\u043E\u0448\u0435\u043D QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u043E\u043C\u0435\u0440\u0430";
+        break;
+      case "conn":
+        kind = x.state === "open" ? "ok" : "error";
+        text = x.state === "open" ? "WhatsApp \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D" : `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${x.state}`;
+        break;
+    }
+    return { ts, t: ts ? stampOf(ts) : "", kind, text };
+  });
+}
+function nextDailyCreate(r, now) {
+  if (r.state.mode !== "daily" || !r.state.daily.enabled) return null;
+  const c = tcfg(r);
+  const today = dayKeyOf(now);
+  for (let i = 0; i < 14; i++) {
+    const day = addDays(today, i);
+    if (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)) continue;
+    const at = createAtOf(r, day);
+    if (now < at + r.cfg.createCatchupHours * HOUR && now < closeAtOf(r, day)) return { day, at };
+  }
+  return null;
+}
+function cardOf(r, t, now, serving) {
+  return {
+    id: t.id,
+    name: t.name,
+    day: t.day,
+    dayLabel: ddmm2(t.day),
+    kind: t.kind,
+    source: t.source ?? "daily",
+    ready: isReady(t),
+    link: isReady(t) ? t.link : "",
+    onSite: serving?.id === t.id,
+    members: t.members ?? null,
+    membersAgo: t.membersAt ? agoText(now - t.membersAt) : "",
+    joinedToday: r.joinedByDay.get(t.id)?.get(dayKeyOf(now)) ?? 0,
+    joinedTotal: r.joinedCount.get(t.id) ?? 0
+  };
+}
+function waPanel(nowArg) {
+  const r = rt;
+  if (!r) return waEnabled() ? { ok: true, enabled: true, running: false, error: initError || "\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D" } : { ok: true, enabled: false };
+  const now = clock(r, nowArg);
+  const today = dayKeyOf(now);
+  const c = tcfg(r);
+  const st = r.state;
+  const ev = st.event;
+  const serving = servingTarget(r, now);
+  const link = waGroupLink(now, false);
+  const evTarget = eventTarget(r);
+  const startEff = ev.start || r.cfg.streamStart;
+  const eventStart = st.mode === "event" ? evTarget?.start ?? (startEff !== r.cfg.streamStart ? startEff : void 0) : void 0;
+  let evStatus = "unset";
+  let evText = "\u042D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D. \u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443, \u0432\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438.";
+  if (ev.done) {
+    evStatus = "done";
+    evText = `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F.`;
+  } else if (ev.date) {
+    const startAt = atTime(ev.date, startEff);
+    if (st.mode !== "event") {
+      evStatus = "inactive";
+      evText = `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C.`;
+    } else if (!evTarget) {
+      if (now < eventCreateAt(r)) {
+        evStatus = "scheduled";
+        evText = `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u0443\u0434\u0435\u0442 \u0441\u043E\u0437\u0434\u0430\u043D\u043E ${when(eventCreateAt(r))}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
+      } else {
+        evStatus = "creating";
+        evText = st.paused ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443." : "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434) \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.";
+      }
+    } else if (now < startAt) {
+      evStatus = "recruiting";
+      evText = "\u0418\u0434\u0451\u0442 \u043D\u0430\u0431\u043E\u0440: \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430.";
+    } else if (now < startAt + r.cfg.streamMinutes * MIN) {
+      evStatus = "live";
+      evText = "\u042D\u0444\u0438\u0440 \u0438\u0434\u0451\u0442. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E.";
+    } else {
+      evStatus = "after";
+      evText = `\u042D\u0444\u0438\u0440 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u041E\u0444\u0444\u0435\u0440\u044B \u0441\u0435\u0440\u0438\u0438 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0442 \u0434\u043E 00:00, \u043F\u043E\u0442\u043E\u043C \u0440\u0435\u0436\u0438\u043C \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0441\u044F \u0438 \u0441\u0441\u044B\u043B\u043A\u0430 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F \u043D\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0443\u044E.`;
+    }
+  }
+  const cardsOf2 = (day) => [...targetsOf(r, day)].reverse().filter((t) => st.mode === "event" || t.source !== "event").map((t) => cardOf(r, t, now, serving));
+  let current = null;
+  let next = null;
+  if (st.mode === "event") {
+    if (ev.date) {
+      const cards = cardsOf2(ev.date);
+      current = { title: "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430", day: ev.date, dayLabel: ddmm2(ev.date), cards, pending: cards.length ? "" : evText };
+    }
+  } else {
+    const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
+    const nxt = nextStreamAfter(r, cur);
+    const pend = (day) => r.state.daily.enabled ? `\u0411\u0443\u0434\u0435\u0442 \u0441\u043E\u0437\u0434\u0430\u043D\u043E ${when(createAtOf(r, day))}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F.";
+    const mk = (title, day) => {
+      const cards = cardsOf2(day);
+      return { title, day, dayLabel: ddmm2(day), cards, pending: cards.length ? "" : pend(day) };
+    };
+    current = mk("\u042D\u0444\u0438\u0440", cur);
+    next = mk("\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", nxt);
+  }
+  const series2 = r.cfg.messages.map((m) => {
+    const e = effMsg(r, { start: eventStart }, m);
+    return { id: m.id, at: hhmmOf(planOf(r, { day: "2000-01-01", start: eventStart }, m)), topic: m.topic || m.id, text: e.text, media: m.media?.type ?? null, poll: m.poll ? m.poll.name : null, enabled: m.enabled !== false };
+  });
+  const nm = nextMessage(r, now);
+  const targets = currentTargets(r, now).list;
+  let templateClicks = 0;
+  try {
+    templateClicks = getStore().tyCount(today, "wa-template");
+  } catch {
+  }
+  return {
+    ok: true,
+    enabled: true,
+    running: true,
+    now,
+    today,
+    updated: hhmmOf(now),
+    tz: "Asia/Almaty",
+    module: {
+      paused: st.paused,
+      pausedReason: st.pausedReason,
+      failStreak: st.failStreak,
+      failMax: r.cfg.retry.pauseAfter,
+      creationsToday: dayCreations(r, now),
+      creationsMax: r.cfg.maxNewPerDay,
+      pendingCreate: !!st.pendingCreate,
+      kind: r.cfg.target
+    },
+    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    mode: st.mode,
+    daily: { enabled: st.daily.enabled, next: (() => {
+      const n = nextDailyCreate(r, now);
+      return n ? { day: n.day, dayLabel: ddmm2(n.day), at: n.at, text: when(n.at) } : null;
+    })() },
+    event: {
+      date: ev.date,
+      dateLabel: ev.date ? ddmm2(ev.date) : "",
+      start: startEff,
+      startDefault: r.cfg.streamStart,
+      recruitFrom: ev.recruitFrom,
+      recruitLabel: ev.recruitFrom ? ddmm2(ev.recruitFrom) : "",
+      createTime: EVENT_CREATE_AT,
+      createAt: ev.recruitFrom ? eventCreateAt(r) : 0,
+      status: evStatus,
+      statusText: evText,
+      locked: !!(ev.communityId && evTarget),
+      hasCommunity: !!evTarget,
+      done: !!ev.done
+    },
+    link: {
+      url: link ?? "",
+      kind: link ? st.mode === "event" ? "event" : "daily" : "permanent",
+      text: link ? st.mode === "event" ? "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430." : "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0433\u043E \u043D\u0430\u0431\u043E\u0440\u0430." : "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F: \u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442.",
+      /** Постоянная ссылка для кнопки шаблона WABA: страница переадресует туда же, куда ведёт сайт, а при сбое на постоянную. */
+      templateUrl: TEMPLATE_URL,
+      templateClicksToday: templateClicks
+    },
+    current,
+    next,
+    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm2(nm.day), inText: inText(nm.plan - now) } : null,
+    sendTo: targets.map((t) => t.name),
+    series: series2,
+    journal: journalView(r, 20)
+  };
+}
+
+// form-api/wa-admin.ts
+var MAX_BODY = 4096;
+var STATUS = {
+  bad_request: 400,
+  bad_date: 400,
+  bad_start: 400,
+  bad_recruit: 400,
+  bad_id: 400,
+  no_id: 400,
+  confirm: 400,
+  evolution: 502,
+  internal: 500
+};
+var statusOf = (a) => a.ok ? 200 : STATUS[a.code || ""] ?? 409;
+async function readBody(req) {
+  const raw = await adminReadBody(req, MAX_BODY);
+  if (raw === null) return null;
+  if (!raw.trim()) return {};
+  try {
+    const x = JSON.parse(raw);
+    return x && typeof x === "object" && !Array.isArray(x) ? x : null;
+  } catch {
+    return null;
+  }
+}
+var NEED_CONFIRM = { ok: false, code: "confirm", message: "\u041D\u0443\u0436\u043D\u043E \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044F." };
+async function handleWaAdmin(req, res, path) {
+  const gate = gateAdminSession(req);
+  if (!gate.ok) return adminJson(res, gate.status, gate.body);
+  const what = path.replace(/^\/api\/admin\/wa\//, "").replace(/\/+$/, "");
+  const method = req.method || "GET";
+  try {
+    if (method === "GET") {
+      const qs = new URL(req.url || "/", "http://localhost").searchParams;
+      if (what === "state") return adminJson(res, 200, waPanel());
+      if (what === "connection") {
+        const x = await waConnection();
+        return adminJson(res, statusOf(x), x);
+      }
+      if (what === "groups") {
+        const x = await waGroups(qs.get("refresh") === "1");
+        return adminJson(res, statusOf(x), x);
+      }
+      return adminJson(res, 404, { ok: false, error: "not_found" });
+    }
+    if (method !== "POST") return adminJson(res, 405, { ok: false, error: "method" });
+    const body = await readBody(req);
+    if (body === null) return adminJson(res, 400, { ok: false, code: "bad_request", message: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441." });
+    const confirmed = body.confirm === true;
+    const done = (x) => adminJson(res, statusOf(x), x);
+    switch (what) {
+      case "qr": {
+        const x = await waQr();
+        return adminJson(res, statusOf(x), x);
+      }
+      case "logout":
+        return confirmed ? done(await waLogout()) : done(NEED_CONFIRM);
+      case "mode":
+        return confirmed ? done(waSetMode(body.mode)) : done(NEED_CONFIRM);
+      case "daily":
+        return body.enabled === false || confirmed ? done(waSetDaily(body.enabled)) : done(NEED_CONFIRM);
+      case "daily/create":
+        return confirmed ? done(await waDailyCreateNow()) : done(NEED_CONFIRM);
+      case "event":
+        return done(waSetEvent({ date: body.date, start: body.start, recruitFrom: body.recruitFrom }));
+      case "event/create":
+        return confirmed ? done(await waEventCreateNow()) : done(NEED_CONFIRM);
+      case "event/reset":
+        return confirmed ? done(waEventReset()) : done(NEED_CONFIRM);
+      case "pause":
+        return done(waPause());
+      case "resume":
+        return done(waResume());
+      case "send": {
+        if (!confirmed) return done(NEED_CONFIRM);
+        const x = await waSendSeries(body.id);
+        return adminJson(res, statusOf(x), x);
+      }
+    }
+    return adminJson(res, 404, { ok: false, error: "not_found" });
+  } catch (e) {
+    console.error("[wa-admin] \u043E\u0448\u0438\u0431\u043A\u0430:", String(e?.message || e).slice(0, 200));
+    if (!res.headersSent) adminJson(res, 500, { ok: false, code: "internal", message: "\u0412\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u044F\u044F \u043E\u0448\u0438\u0431\u043A\u0430. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439 \u0435\u0449\u0451 \u0440\u0430\u0437." });
+  }
+}
 
 // form-api/server.ts
 function loadEnv() {
@@ -8421,7 +9205,7 @@ function loadEnv() {
 loadEnv();
 var PORT = Number(process.env.PORT) || 4010;
 var HOST = "127.0.0.1";
-var MAX_BODY = 64 * 1024;
+var MAX_BODY2 = 64 * 1024;
 var THANKYOU_URL = "https://onai.academy/workshop-montazh/thank-you.html";
 function json(res, status, body, headers2 = {}) {
   const payload = JSON.stringify(body);
@@ -8432,13 +9216,13 @@ function json(res, status, body, headers2 = {}) {
   });
   res.end(payload);
 }
-function readBody(req) {
+function readBody2(req) {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
     req.on("data", (c) => {
       size += c.length;
-      if (size > MAX_BODY) {
+      if (size > MAX_BODY2) {
         reject(new Error("body_too_large"));
         req.destroy();
         return;
@@ -8451,7 +9235,7 @@ function readBody(req) {
 }
 async function readJson(req) {
   try {
-    return JSON.parse(await readBody(req));
+    return JSON.parse(await readBody2(req));
   } catch {
     return null;
   }
@@ -8591,12 +9375,12 @@ async function handleTgLink(req, res) {
   const url = extractUrl(text);
   if (!url) {
     const cur = readWhatsAppRecord();
-    const when = cur.updatedAt ? `
+    const when2 = cur.updatedAt ? `
 \u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0430: ${cur.updatedAt}` : "\n(\u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E, \u0444\u0430\u0439\u043B \u0435\u0449\u0451 \u043D\u0435 \u043C\u0435\u043D\u044F\u043B\u0441\u044F)";
     return webhookReply(res, chatId, `\u041F\u0440\u0438\u0448\u043B\u0438 \u043D\u043E\u0432\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 WhatsApp-\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u2014 \u043F\u043E\u0434\u0441\u0442\u0430\u0432\u043B\u044E \u0435\u0451 \u043D\u0430 thank-you \u0432\u043E\u0440\u043A\u0448\u043E\u043F\u0430.
 
 \u0422\u0435\u043A\u0443\u0449\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430:
-${cur.link}${when}`);
+${cur.link}${when2}`);
   }
   if (!isValidWhatsAppLink(url)) {
     return webhookReply(res, chatId, `\u042D\u0442\u043E \u043D\u0435 \u043F\u043E\u0445\u043E\u0436\u0435 \u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0443 WhatsApp.
@@ -8667,6 +9451,7 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
     if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
     if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
+    if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);
     return json(res, 404, { ok: false, error: "not_found" });
@@ -8690,4 +9475,8 @@ try {
 }
 server.listen(PORT, HOST, () => {
   console.log(`[form-api] listening on http://${HOST}:${PORT}`);
+});
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  server
 });
