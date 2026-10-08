@@ -23,7 +23,8 @@ fi
 test -s "$NEW"
 cp -a "$F/server.js" "$F/server.js.bak.$TS"
 [[ -n "$SERIES" ]] && { test -s "$SERIES"; cp -a "$F/tg-series.json" "$F/tg-series.json.bak.$TS"; }
-[[ -n "$WASERIES" ]] && { test -s "$WASERIES"; [[ -f "$F/wa-series.json" ]] && cp -a "$F/wa-series.json" "$F/wa-series.json.bak.$TS"; install -o onaiapp -g onaiapp -m 644 "$WASERIES" "$F/wa-series.json"; }
+# Серию WhatsApp ставим только после удачного пробного запуска (как tg-series): старый код не понимает новые поля серии.
+[[ -n "$WASERIES" ]] && { test -s "$WASERIES"; [[ -f "$F/wa-series.json" ]] && cp -a "$F/wa-series.json" "$F/wa-series.json.bak.$TS"; }
 [[ -n "$AIDIR" ]] && { test -s "$AIDIR/prompt.md"; test -s "$AIDIR/knowledge.md"; install -d -o onaiapp -g onaiapp -m 755 "$F/wa-assistant"; for f in prompt.md knowledge.md; do [[ -f "$F/wa-assistant/$f" ]] && cp -a "$F/wa-assistant/$f" "$F/wa-assistant/$f.bak.$TS"; install -o onaiapp -g onaiapp -m 644 "$AIDIR/$f" "$F/wa-assistant/$f"; done; }
 [[ -n "$APP" ]] && { test -s "$APP"; [[ -f "$F/admin-app.html" ]] && cp -a "$F/admin-app.html" "$F/admin-app.html.bak.$TS"; install -o onaiapp -g onaiapp -m 644 "$APP" "$F/admin-app.html"; }
 
@@ -39,9 +40,13 @@ echo "пробный запуск: ок"
 
 mv -f "$F/server.next.js" "$F/server.js"
 [[ -n "$SERIES" ]] && install -o onaiapp -g onaiapp -m 644 "$SERIES" "$F/tg-series.json"
+[[ -n "$WASERIES" ]] && install -o onaiapp -g onaiapp -m 644 "$WASERIES" "$F/wa-series.json"
 $PM2 restart workshop-form >/dev/null
 for i in $(seq 1 20); do curl -fsS -m 1 http://127.0.0.1:4010/health >/dev/null 2>&1 && break; sleep 0.5; done
 curl -s -m 3 http://127.0.0.1:4010/api/health; echo
 $PM2 logs workshop-form --lines 15 --nostream 2>/dev/null | grep -E '\[tg|\[form-api\]' | grep -v -i -E 'token|secret' | tail -5 || true
-echo "Откат: cp $F/server.js.bak.$TS $F/server.js && $PM2 restart workshop-form"
+RB="cp $F/server.js.bak.$TS $F/server.js"
+[[ -n "$SERIES" && -f "$F/tg-series.json.bak.$TS" ]] && RB="$RB && cp $F/tg-series.json.bak.$TS $F/tg-series.json"
+[[ -n "$WASERIES" && -f "$F/wa-series.json.bak.$TS" ]] && RB="$RB && cp $F/wa-series.json.bak.$TS $F/wa-series.json"
+echo "Откат: $RB && $PM2 restart workshop-form"
 echo "DEPLOY_OK $TS"
