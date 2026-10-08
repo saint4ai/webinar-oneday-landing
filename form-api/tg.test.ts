@@ -759,9 +759,11 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   }
   // перерисованные картинки отдаются с новой версией в адресе, иначе бот пришлёт старую из кеша file_id
   assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0810a$/);
-  for (const id of ["topic-p1", "warm-1700", "training-2058"]) {
+  for (const id of ["topic-p1", "training-2058"]) {
     assert.match(sr.messages.find((m) => m.id === id)!.media!.url, /\.jpg\?v=0810a$/, id);
   }
+  // карточка warm-cases перерисована под цифры без кейсов (Александр 08.10): версия 0810c
+  assert.match(sr.messages.find((m) => m.id === "warm-1700")!.media!.url, /warm-cases\.jpg\?v=0810c$/);
   // карточка оффера перерисована второй раз (третий бонус на плашке «В подарок»): версия 0810b
   assert.match(sr.messages.find((m) => m.id === "offer-2118")!.media!.url, /offer\.jpg\?v=0810b$/);
   // оффер и дожимы дня эфира идут только тем, кто был на эфире (нажал кнопку), остальным цену не называем
