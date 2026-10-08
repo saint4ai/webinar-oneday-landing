@@ -1171,7 +1171,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     card.appendChild(h('div', { class: 'kv wkv' },
       kv('Диалогов сегодня', String(c.dialogs)),
       kv('Ответов сегодня', String(c.replies)),
-      kv('Передано Аяне', String(c.handoffs)),
+      kv('Передано менеджеру', String(c.handoffs)),
       kv('Отклонено проверкой', String(c.rejected)),
       a.lastHook ? kv('Последнее сообщение от Evolution', a.lastHook) : null));
     var inp = h('input', { class: 'inp', type: 'text', maxlength: '500', autocomplete: 'off', placeholder: 'Например: сколько стоит обучение?', 'aria-label': 'Вопрос для проверки ассистента', value: wa.aiq || '', disabled: wa.aiBusy,
@@ -1186,7 +1186,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     if (r && r.text) card.appendChild(h('div', { class: 'note warn', role: 'status', text: r.text }));
     else if (r) {
       card.appendChild(h('div', { class: 'serbody howto', text: r.reply }));
-      card.appendChild(h('div', { class: 'hint', text: r.note + (r.reasons.length ? ' Проверка отклоняла: ' + r.reasons.join('; ') + '.' : '') + (r.handoff ? ' Передача Аяне: да.' : '') }));
+      card.appendChild(h('div', { class: 'hint', text: r.note + (r.reasons.length ? ' Проверка отклоняла: ' + r.reasons.join('; ') + '.' : '') + (r.handoff ? ' Передача менеджеру: да.' : '') }));
     }
     card.appendChild(h('div', { class: 'tpl' }, h('b', { text: 'Последние диалоги' })));
     if (!a.dialogs.length) { card.appendChild(h('div', { class: 'empty', text: 'Диалогов пока нет.' })); return card; }
@@ -1198,7 +1198,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
         h('div', { class: 'serbody', text: 'Человек: ' + d.last }),
         d.reply ? h('div', { class: 'serbody', text: 'Ассистент: ' + d.reply }) : h('div', { class: 'hint', text: 'Ответа пока нет.' }),
         h('div', { class: 'flags' },
-          d.handoff ? h('span', { class: 'badge no', text: 'передан Аяне' }) : null,
+          d.handoff ? h('span', { class: 'badge no', text: 'передан менеджеру' }) : null,
           num ? null : h('button', { class: 'btn small ghost', type: 'button', text: 'Показать номер', onclick: function () { waAiNumber(d.id); } }))));
     });
     card.appendChild(list);

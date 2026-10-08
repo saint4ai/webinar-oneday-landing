@@ -721,13 +721,13 @@ test("вебхук: «Нет» даёт вежливый отказ и боль�
   assert.equal((dzPanel(alm(2026, 10, 8, 23, 0)).counters as any).declined, 1);
 });
 
-test("вебхук: чужие переписки номера (менеджер Аяна), свои исходящие, другие каналы и не WhatsApp не вызывают ни одного запроса и не записываются", async () => {
+test("вебхук: чужие переписки номера (менеджер), свои исходящие, другие каналы и не WhatsApp не вызывают ни одного запроса и не записываются", async () => {
   const { w } = await sent1();
   wazzup.windows.add("77090000000");
   wazzup.windows.add("77022223344");
   const calls = wazzup.calls.length;
   const rows = w.rows().length;
-  // клиент Аяны, которому мы шаблон не слали
+  // клиент менеджера, которому мы шаблон не слали
   assert.equal(await hook(wzInbound({ chatId: "77090000000", text: "Здравствуйте, у меня вопрос по оплате" })), 200);
   assert.equal(await hook(wzInbound({ chatId: "77090000000", text: "Нет" })), 200);
   // наш получатель, но это исходящее (эхо), не WhatsApp, чужой канал
@@ -1058,7 +1058,7 @@ test("пульт: счётчики за сегодня, «вступили N и�
   assert.deepEqual([full.next.signups.day, full.next.signups.applied, full.next.signups.joined], ["2026-10-09", 0, 0]);
   const dump = JSON.stringify(full);
   const mine = JSON.stringify({ dozhim: full.dozhim, journal: full.journal });
-  assert.equal(/\b77\d{9}\b/.test(mine), false, "полных номеров нет в блоке дожима и журнале (контакт Аяны в тексте серии это публичная ссылка)");
+  assert.equal(/\b77\d{9}\b/.test(mine), false, "полных номеров нет в блоке дожима и журнале (контакт менеджера в тексте серии это публичная ссылка)");
   assert.equal(dump.includes(WZ_KEY) || dump.includes(WZ_SECRET) || dump.includes(EVO_KEY), false, "ключей нет");
   // 30 последних отправок
   addLeads(w, Array.from({ length: 40 }, (_, i) => lead({ phone: `7703000${String(1000 + i)}`, at: alm(2026, 10, 8, 9, 5 + (i % 40)) })));

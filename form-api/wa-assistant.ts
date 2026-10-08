@@ -10,7 +10,7 @@
  *
  * Защита номера: не больше 30 ответов человеку и 400 ответов номеру в сутки (по Алматы), сверх лимита молчим и шлём владельцам
  * одну тревогу. Ответ с ценой, чужой ссылкой, номером телефона или кейсом не уходит: второй запрос модели с замечанием,
- * потом безопасная заготовка. Передача Аяне (метка [[АЯНА: …]] в ответе модели или контакт Аяны в тексте): ассистент молчит
+ * потом безопасная заготовка. Передача менеджеру (метка [[МЕНЕДЖЕР: …]] в ответе модели или контакт менеджера в тексте): ассистент молчит
  * с этим человеком 12 часов, владельцам уходит тревога с кратким пересказом.
  *
  * Данные: DATA_DIR/wa-assistant.jsonl (только текст, последние 16 сообщений на человека). Выключатель, секрет вебхука и
@@ -40,7 +40,7 @@ export const HISTORY = 16;
 export const LIMIT_PERSON = 30;
 /** Ответов номеру в сутки. */
 export const LIMIT_TOTAL = 400;
-/** После передачи Аяне молчим с человеком столько. */
+/** После передачи менеджеру молчим с человеком столько. */
 export const SILENCE_MS = 12 * HOUR;
 /** Тишина после последнего сообщения пачки. */
 const quietMs = () => {
@@ -88,7 +88,7 @@ export type AiHost = {
   canSend: () => { ok: true } | { ok: false; why: string };
   state: () => AiState;
   patch: (p: Partial<AiState>) => void;
-  /** Номера (цифры), которым не отвечаем: менеджер Аяна и сам номер ассистента. */
+  /** Номера (цифры), которым не отвечаем: менеджер и сам номер ассистента. */
   ignoreDigits: () => string[];
 };
 
@@ -117,7 +117,7 @@ const PRICE_WORD = /(?<![\p{L}])(?:рассрочк\p{L}*|стоит|стоят|
 const CURRENCY_AFTER = /\d\s*(?:[.,]\d+\s*)?(?:₸|\$|€|₽|тенге|тг(?![\p{L}])|usd|kzt|rub|руб|доллар|евро|сом(?![\p{L}])|сум(?![\p{L}])|тыс\p{L}*|млн|миллион\p{L}*|[kк](?![\p{L}]))/iu;
 const CURRENCY_BEFORE = /(?:₸|\$|€|₽)\s*\d/u;
 const BIG_NUMBER = /\d{1,3}(?:[\u00a0\u202f ]\d{3})+|\d{5,}/u;
-const FORBIDDEN = /the\s*one\s*system|onesystem|erickson|эриксон|жумабае/iu;
+const FORBIDDEN = /the\s*one\s*system|onesystem|erickson|эриксон|жумабае|аян[аеуыо]/iu;
 
 export type Reason = "price" | "link" | "forbidden" | "phone" | "handle" | "long" | "empty";
 export const REASON_TEXT: Record<Reason, string> = {
@@ -166,21 +166,21 @@ const EMOJI = /\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*/gu
 export type Cleaned = { text: string; mark: boolean; summary: string };
 
 /**
- * Привести ответ модели к виду для WhatsApp: убрать служебную метку передачи [[АЯНА: суть]], разметку, длинные тире,
+ * Привести ответ модели к виду для WhatsApp: убрать служебную метку передачи [[МЕНЕДЖЕР: суть]], разметку, длинные тире,
  * лишние эмодзи (остаётся первый). Метка нужна коду, человек её не видит.
  */
 export function cleanReply(raw: string): Cleaned {
   let mark = false;
   let summary = "";
   const take = (_m: string, inner: string) => {
-    const x = /^\s*(?:АЯНА|ПЕРЕДАНО АЯНЕ)\s*:?\s*([\s\S]*)$/iu.exec(inner);
+    const x = /^\s*(?:МЕНЕДЖЕР|АЯНА|ПЕРЕДАНО МЕНЕДЖЕРУ|ПЕРЕДАНО АЯНЕ)\s*:?\s*([\s\S]*)$/iu.exec(inner);
     if (x) {
       mark = true;
       summary = x[1].trim();
     }
     return "";
   };
-  let t = raw.replace(/\[\[([^\]]*)\]\]/g, take).replace(/\[\s*(АЯНА|ПЕРЕДАНО АЯНЕ)\s*:([^\]]*)\]/giu, (_m, _a, s: string) => {
+  let t = raw.replace(/\[\[([^\]]*)\]\]/g, take).replace(/\[\s*(МЕНЕДЖЕР|АЯНА|ПЕРЕДАНО МЕНЕДЖЕРУ|ПЕРЕДАНО АЯНЕ)\s*:([^\]]*)\]/giu, (_m, _a, s: string) => {
     mark = true;
     summary = summary || s.trim();
     return "";
@@ -632,7 +632,7 @@ function ingest(a: Ai, inc: Incoming) {
   append(a, row);
   apply(a, row);
   const conv = convoOf(a, inc.jid);
-  // Молчим с человеком после передачи Аяне: сообщение остаётся в истории, ответа не будет.
+  // Молчим с человеком после передачи менеджеру: сообщение остаётся в истории, ответа не будет.
   if (conv.silencedUntil > now) return;
   let p = a.pending.get(inc.jid);
   if (!p) {
@@ -704,7 +704,7 @@ async function answer(a: Ai, jid: string, p: Pending): Promise<void> {
     }
   }
 
-  // Модель отвечала долго: за это время ассистента могли выключить, а человека передать Аяне.
+  // Модель отвечала долго: за это время ассистента могли выключить, а человека передать менеджеру.
   if (!h.state().enabled || convoOf(a, jid).silencedUntil > h.now()) return;
   const can2 = h.canSend();
   if (!can2.ok) return;
@@ -732,7 +732,7 @@ async function answer(a: Ai, jid: string, p: Pending): Promise<void> {
     h.journal({ ev: "ai_handoff", who: maskJid(jid), why: clipText(why, 120) });
     try {
       await h.notify(
-        `ИИ-ассистент WhatsApp передал человека Аяне: +${jid.replace(/[:@].*$/, "")}${jid.endsWith("@lid") ? " (внутренний ID WhatsApp, не телефон)" : ""}.\nСуть: ${why || "не указана"}.\nАссистент молчит с ним 12 часов.`,
+        `ИИ-ассистент WhatsApp передал человека менеджеру: +${jid.replace(/[:@].*$/, "")}${jid.endsWith("@lid") ? " (внутренний ID WhatsApp, не телефон)" : ""}.\nСуть: ${why || "не указана"}.\nАссистент молчит с ним 12 часов.`,
       );
     } catch {
       /* Telegram недоступен: запись осталась в журнале */
@@ -1033,7 +1033,7 @@ export async function aiCommand(cmd: string, args: string): Promise<string> {
   if (cmd === "wa_ai_test") {
     const r = await aiTest(args);
     if (!r.ok) return r.message;
-    return `Ответ ассистента (в WhatsApp не отправлялся):\n${r.reply}\n\n${r.message}${r.reasons?.length ? `\nОтклонялось проверкой: ${r.reasons.join("; ")}.` : ""}${r.handoff ? "\nПередача Аяне: да." : ""}`;
+    return `Ответ ассистента (в WhatsApp не отправлялся):\n${r.reply}\n\n${r.message}${r.reasons?.length ? `\nОтклонялось проверкой: ${r.reasons.join("; ")}.` : ""}${r.handoff ? "\nПередача менеджеру: да." : ""}`;
   }
   const arg = args.trim().toLowerCase();
   if (arg === "on" || arg === "off") return (await aiSetEnabled(arg === "on")).message;
@@ -1041,7 +1041,7 @@ export async function aiCommand(cmd: string, args: string): Promise<string> {
   const c = p.counters;
   return [
     `ИИ-ассистент WhatsApp: ${p.enabled ? "включён" : "выключен"}${p.reason ? `. ${p.reason}` : ""}`,
-    `Сегодня: диалогов ${c.dialogs}, ответов ${c.replies}, передано Аяне ${c.handoffs}, отклонено проверкой ${c.rejected}.`,
+    `Сегодня: диалогов ${c.dialogs}, ответов ${c.replies}, передано менеджеру ${c.handoffs}, отклонено проверкой ${c.rejected}.`,
     "Включить: /wa_ai on, выключить: /wa_ai off, проверить ответ без отправки: /wa_ai_test вопрос",
   ].join("\n");
 }
