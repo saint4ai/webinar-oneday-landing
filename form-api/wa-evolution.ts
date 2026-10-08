@@ -271,9 +271,36 @@ function sentOf(r: EvoResult<any>): EvoResult<SentMsg> {
   return { ok: true, status: r.status, data: { messageId: String(r.data?.key?.id || "") } };
 }
 
-export async function sendText(jid: string, text: string): Promise<EvoResult<SentMsg>> {
+/**
+ * delay (мс, целое): Evolution 2.3.7 сам показывает «печатает…» (presence composing) это время и только потом отправляет
+ * (sendMessageWithTyping в whatsapp.baileys.service.ts). Нужен ассистенту: пауза перед ответом человеку.
+ */
+export async function sendText(jid: string, text: string, opts: { delay?: number } = {}): Promise<EvoResult<SentMsg>> {
   // linkPreview: false, чтобы наш номер не ходил за превью ссылок (Kaspi, Bizon) на каждое сообщение.
-  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text, linkPreview: false }));
+  const delay = opts.delay && opts.delay > 0 ? Math.round(opts.delay) : 0;
+  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text, linkPreview: false, ...(delay ? { delay } : {}) }, delay ? TIMEOUT_MS + delay : TIMEOUT_MS));
+}
+
+// ───────────────────────── вебхук инстанса ─────────────────────────
+
+/**
+ * Вебхук инстанса: POST /webhook/set/{instance}. Тело сверено с исходником Evolution 2.3.7 (EventDto и webhookSchema):
+ * { webhook: { enabled, url, events[], headers{}, byEvents, base64 } }, обязательны webhook.enabled и webhook.url.
+ * Поля в camelCase (byEvents, base64): webhook_by_events из старых описаний 2.3.7 не знает. Заголовки из headers Evolution
+ * кладёт в каждый запрос как есть (особый только jwt_key). Выключение: enabled false, события при этом Evolution сам очищает.
+ * Пустой список events при enabled true Evolution заменяет на все события, поэтому события передаём всегда.
+ */
+export function setWebhook(p: { url: string; enabled: boolean; events?: string[]; headers?: Record<string, string> }): Promise<EvoResult<any>> {
+  return evoCall("POST", `/webhook/set/${I()}`, {
+    webhook: {
+      enabled: p.enabled,
+      url: p.url,
+      events: p.enabled ? p.events ?? ["MESSAGES_UPSERT"] : [],
+      byEvents: false,
+      base64: false,
+      ...(p.enabled && p.headers ? { headers: p.headers } : {}),
+    },
+  });
 }
 
 export async function sendMedia(jid: string, p: { mediatype: "image" | "video"; url: string; caption?: string }): Promise<EvoResult<SentMsg>> {

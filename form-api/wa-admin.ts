@@ -18,6 +18,9 @@
  *   POST /api/admin/wa/pause          пауза модуля
  *   POST /api/admin/wa/resume         снять паузу
  *   POST /api/admin/wa/send           отправить сообщение серии в текущее сообщество    {id, confirm:true}
+ *   POST /api/admin/wa/ai/toggle      ИИ-ассистент в личке вкл/выкл                     {enabled:bool, confirm:true при включении}
+ *   POST /api/admin/wa/ai/test        «Проверить ассистента»: ответ модели без отправки {question}
+ *   GET  /api/admin/wa/ai/number?id=  полный номер человека из списка диалогов (в списке номера закрыты)
  *
  * Доступ тот же, что у остальных данных админки (tg-miniapp.ts, gateAdminSession): подпись initData Telegram на каждый
  * запрос, user.id из ADMIN_APP_IDS, токен сессии после ввода пароля. Ключ Evolution в браузер не попадает: всё идёт
@@ -28,6 +31,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { adminJson, adminReadBody, gateAdminSession } from "./tg-miniapp";
 import * as wa from "./wa-groups";
+import * as ai from "./wa-assistant";
 
 const MAX_BODY = 4096;
 
@@ -42,6 +46,9 @@ const STATUS: Record<string, number> = {
   no_id: 400,
   confirm: 400,
   evolution: 502,
+  model: 502,
+  rate: 429,
+  not_found: 404,
   internal: 500,
 };
 const statusOf = (a: { ok: boolean; code?: string }) => (a.ok ? 200 : STATUS[a.code || ""] ?? 409);
@@ -85,6 +92,10 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
         const x = await wa.waGroups(qs.get("refresh") === "1");
         return adminJson(res, statusOf(x), x);
       }
+      if (what === "ai/number") {
+        const x = ai.aiNumber(qs.get("id"));
+        return adminJson(res, statusOf(x), x);
+      }
       return adminJson(res, 404, { ok: false, error: "not_found" });
     }
     if (method !== "POST") return adminJson(res, 405, { ok: false, error: "method" });
@@ -126,6 +137,13 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
       case "send": {
         if (!confirmed) return done(NEED_CONFIRM);
         const x = await wa.waSendSeries(body.id);
+        return adminJson(res, statusOf(x), x);
+      }
+      case "ai/toggle":
+        // Выключить можно сразу, включить только после подтверждения: включение ставит вебхук и начинает отвечать людям.
+        return body.enabled === false || confirmed ? done(await ai.aiSetEnabled(body.enabled)) : done(NEED_CONFIRM);
+      case "ai/test": {
+        const x = await ai.aiTest(body.question);
         return adminJson(res, statusOf(x), x);
       }
     }

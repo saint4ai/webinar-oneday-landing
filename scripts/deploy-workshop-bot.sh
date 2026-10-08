@@ -56,6 +56,12 @@ echo "== пробный запуск нового server.js на 4011 без б�
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/tg-series.json" "$F/tg-series.json"
 # Расписание WhatsApp-сообществ лежит рядом с server.js; модуль включается отдельно флагом WA_GROUPS=on в .env.
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/wa-series.json" "$F/wa-series.json"
+# ИИ-ассистент в личке WhatsApp (включается выключателем в пульте, пока выкл): промпт и база знаний рядом с server.js. В старых архивах папки нет.
+if [[ -d "$TMP/form/wa-assistant" ]]; then
+  install -d -o onaiapp -g onaiapp -m 755 "$F/wa-assistant"
+  install -o onaiapp -g onaiapp -m 644 "$TMP/form/wa-assistant/prompt.md" "$F/wa-assistant/prompt.md"
+  install -o onaiapp -g onaiapp -m 644 "$TMP/form/wa-assistant/knowledge.md" "$F/wa-assistant/knowledge.md"
+fi
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/VERSION" "$F/VERSION"
 # Страница мини-приложения админки лежит рядом с server.js; пароль и ключ сессий (ADMIN_APP_PIN, ADMIN_APP_SECRET) в .env дописываются отдельно.
 install -o onaiapp -g onaiapp -m 644 "$TMP/form/admin-app.html" "$F/admin-app.html"

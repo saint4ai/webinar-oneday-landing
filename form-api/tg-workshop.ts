@@ -874,7 +874,7 @@ type TgCallback = { id: string; from: TgUser; message?: { message_id?: number; c
 type TgMemberUpdate = { chat: TgChat; from?: TgUser; new_chat_member?: { status?: string } };
 export type TgUpdate = { update_id?: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate };
 
-const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send"]);
+const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test"]);
 
 // ───────────────────────── WhatsApp-модуль (wa-groups) ─────────────────────────
 
@@ -911,6 +911,8 @@ export const HELP_TEXT = [
   "/wa_pause, /wa_resume: пауза и возобновление WhatsApp-рассылки",
   "/wa_new [дата]: создать сообщество ближайшего эфира сейчас",
   "/wa_send <id>: отправить сообщение серии в сообщества сегодняшнего эфира",
+  "/wa_ai on|off: включить или выключить ИИ-ассистента в личке WhatsApp (без аргумента: состояние)",
+  "/wa_ai_test <вопрос>: ответ ассистента без отправки в WhatsApp",
   "",
   "Метка источника: добавь ?start=2gis к ссылке на бота (t.me/workshop_aiprod_bot?start=2gis), в отчётах она покажется как источник.",
 ].join("\n");
@@ -1420,7 +1422,9 @@ async function ownerCommand(cmd: string, args: string, m: TgMessage, now: number
     case "wa_pause":
     case "wa_resume":
     case "wa_new":
-    case "wa_send": {
+    case "wa_send":
+    case "wa_ai":
+    case "wa_ai_test": {
       if (!waHook) {
         await plain(chatId, "Модуль WhatsApp выключен: на сервере нет WA_GROUPS=on или он не запустился (см. /api/health).");
         return;

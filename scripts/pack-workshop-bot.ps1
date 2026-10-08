@@ -17,6 +17,10 @@ Copy-Item "$root\form-api\dist\server.js" "$stage\form\server.js"
 Copy-Item "$root\form-api\dist\tg-setup.js" "$stage\form\tg-setup.js"
 Copy-Item "$root\form-api\tg-series.json" "$stage\form\tg-series.json"
 Copy-Item "$root\form-api\wa-series.json" "$stage\form\wa-series.json"
+# ИИ-ассистент в личке WhatsApp: системный промпт и база знаний лежат рядом с server.js в папке wa-assistant.
+New-Item -ItemType Directory -Force "$stage\form\wa-assistant" | Out-Null
+Copy-Item "$root\form-api\wa-assistant\prompt.md" "$stage\form\wa-assistant\prompt.md"
+Copy-Item "$root\form-api\wa-assistant\knowledge.md" "$stage\form\wa-assistant\knowledge.md"
 Copy-Item "$root\form-api\admin-app.html" "$stage\form\admin-app.html"
 Copy-Item "$root\workshop-static-redirect\thank-you.html" "$stage\static\thank-you.html"
 $ver = (git -C $root rev-parse --short HEAD) + " " + (Get-Date -Format "yyyy-MM-dd HH:mm")

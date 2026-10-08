@@ -18,6 +18,8 @@
  *  - ночь по Алматы: по расписанию шлётся только то, что запланировано с 09:00 до 23:45; создание по догонялке и приветствие только с 09:00
  *    до 23:00 (ночное откладывается до 09:00); тревога о потере подключения с 23:00 до 09:00 не шлётся, утром одна сводная;
  *  - заявки: перед каждым пакетом считается заполнение (замер плюс одобренные после него), у лимита не одобряем и сразу открываем следующее;
+ *  - ИИ-ассистент в личке номера (wa-assistant.ts, docs/tasks/wa_assistant.md): по умолчанию выключен, включается в пульте или /wa_ai on;
+ *    вебхук Evolution и ответы идут через ту же очередь запросов, паузу модуля и проверку подключения;
  *  - пульт показывает статус подключения (waStatus: подключён, ждёт подключения, отключён с причиной, номер заблокирован, вышел из устройства,
  *    Evolution не отвечает; причина из fetchInstances) и подключает номер двумя способами: QR (waQr) и кодом по номеру телефона (waPairing).
  *
@@ -39,6 +41,7 @@ import * as evo from "./wa-evolution";
 import { isValidWhatsAppLink } from "../lib/whatsapp-link";
 import { DEFAULT_JOIN_MINUTES, addDays, assignStreamDay, atTime, dayKeyOf, dayWordLower, hhmmOf, isDayKey, isStreamDay, parseHHMM, type TimeCfg } from "./tg-time";
 import { getSeries, getStore, notifyOwners, registerWa, registerWaReport, timeCfg, type WaReply } from "./tg-workshop";
+import { aiCommand, aiInit, aiPanel, aiReset, aiTick, type AiHost, type AiState } from "./wa-assistant";
 
 const env = (k: string) => (process.env[k] || "").trim();
 
@@ -247,6 +250,8 @@ export type State = {
   mode: Mode;
   daily: { enabled: boolean };
   event: EventCfg;
+  /** ИИ-ассистент в личке (wa-assistant.ts): выключатель (по умолчанию выкл), секрет вебхука, стоит ли вебхук в Evolution. */
+  assistant: AiState;
 };
 
 const freshEvent = (): EventCfg => ({ date: "", start: "", recruitFrom: "" });
@@ -270,6 +275,7 @@ const freshState = (): State => ({
   mode: "daily",
   daily: { enabled: false },
   event: freshEvent(),
+  assistant: { enabled: false, hookOn: false, secret: "" },
 });
 
 export type Deps = {
@@ -421,6 +427,8 @@ function loadState(r: Rt): State {
     }
     // Режимы взаимоисключающие: в живом эфире ежедневное создание всегда выключено.
     if (st.mode === "event") st.daily.enabled = false;
+    const as = raw.assistant;
+    if (as && typeof as === "object") st.assistant = { enabled: as.enabled === true, hookOn: as.hookOn === true, secret: typeof as.secret === "string" ? as.secret : "" };
   } catch {
     console.warn("[wa] wa-state.json нечитаем, начинаю с пустого состояния");
   }
@@ -512,6 +520,34 @@ export function initWaGroups(opts: InitOpts = {}): void {
   }
   rt = r;
   initError = "";
+  aiInit(aiHostOf(r));
+}
+
+/** То, что модуль даёт ИИ-ассистенту: часы, очередь запросов к Evolution, состояние, тревоги, условия отправки. */
+function aiHostOf(r: Rt): AiHost {
+  return {
+    dir: r.dir,
+    now: () => r.deps.now(),
+    rand: () => r.deps.rand(),
+    alarm: (text) => alarm(r, text),
+    notify: (text) => r.deps.notify(text),
+    journal: (row) => journal(r, row),
+    exclusive: (fn) => exclusive(r, fn),
+    canSend: () =>
+      r.state.paused
+        ? { ok: false, why: "модуль на паузе" }
+        : r.conn.state !== "open"
+          ? { ok: false, why: `номер не подключён (${r.conn.state})` }
+          : r.lockedOutLogged
+            ? { ok: false, why: "данные держит другой процесс" }
+            : { ok: true },
+    state: () => r.state.assistant,
+    patch: (p) => {
+      Object.assign(r.state.assistant, p);
+      save(r);
+    },
+    ignoreDigits: () => [...adminNumbers(), digitsOf(r.state.ownerJid)].filter(Boolean),
+  };
 }
 
 /** Остановить и забыть модуль (для тестов и перезагрузки). */
@@ -519,6 +555,7 @@ export function resetWaGroups(): void {
   if (rt) releaseLock(rt);
   rt = null;
   initError = "";
+  aiReset();
 }
 
 /** Для тестов: текущее состояние и настройки. */
@@ -1387,6 +1424,12 @@ export async function waTick(): Promise<TickInfo> {
     return await exclusive(r, async () => {
       const now = r.deps.now();
       if (!holdLock(r)) return { skipped: "lock" as const, sent: 0, created: 0 };
+      // Вебхук ассистента приводим в порядок и на паузе, и без подключения: он нужен только Evolution, не WhatsApp.
+      try {
+        await aiTick(now);
+      } catch (e) {
+        console.error("[wa] вебхук ассистента:", (e as Error)?.message || e);
+      }
       // Конец живого эфира и привязка найденного сообщества не требуют WhatsApp: делаем их, даже если модуль на паузе.
       finishEventIfOver(r, now);
       syncEventCommunity(r);
@@ -1706,6 +1749,8 @@ async function cmdStatus(r: Rt, now: number): Promise<WaReply> {
     `Ближайшее сообщение: ${nextMessageText(r, now)}`,
     `Новых сообществ за сутки: ${dayCreations(r, now)} из ${r.cfg.maxNewPerDay}`,
     `Ошибок подряд: ${r.state.failStreak} из ${r.cfg.retry.pauseAfter}`,
+    // Строка про ассистента только когда он включён: при выключенном вывод /wa прежний.
+    ...(r.state.assistant.enabled ? ["ИИ-ассистент в личке: включён (/wa_ai покажет счётчики за сегодня)"] : []),
   ];
   return { text: lines.join("\n") };
 }
@@ -1933,6 +1978,7 @@ export async function waCommand(cmd: string, args: string, now: number): Promise
     if (cmd === "wa_resume") return cmdResume(r);
     if (cmd === "wa_new") return await cmdNew(r, args, now);
     if (cmd === "wa_send") return await cmdSend(r, args, now);
+    if (cmd === "wa_ai" || cmd === "wa_ai_test") return { text: await aiCommand(cmd, args) };
     return { text: "Неизвестная команда WhatsApp." };
   } catch (e) {
     console.error("[wa] команда %s упала:", cmd, (e as Error)?.stack || e);
@@ -2552,7 +2598,7 @@ function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
 
 export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
 
-const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn"]);
+const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip"]);
 const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 const clip = (s: unknown, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -2632,6 +2678,19 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
         case "conn":
           kind = x.state === "open" ? "ok" : "error";
           text = x.state === "open" ? "WhatsApp подключён" : `Подключение: ${x.state}`;
+          break;
+        case "ai_on":
+          kind = "ok";
+          text = "ИИ-ассистент включён";
+          break;
+        case "ai_off":
+          text = "ИИ-ассистент выключен";
+          break;
+        case "ai_handoff":
+          text = `ИИ-ассистент передал ${clip(x.who, 24)} Аяне: ${clip(x.why, 100)}. Молчит с ним 12 часов`;
+          break;
+        case "ai_skip":
+          text = `ИИ-ассистент не ответил ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
           break;
       }
       return { ts, t: ts ? stampOf(ts) : "", kind, text };
@@ -2823,6 +2882,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
     nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm(nm.day), inText: inText(nm.plan - now) } : null,
     sendTo: targets.map((t) => t.name),
     series,
+    assistant: aiPanel(now),
     journal: journalView(r, 20),
   };
 }

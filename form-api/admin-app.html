@@ -853,7 +853,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
 
   // ───────── WhatsApp: пульт сообществ ─────────
   // Вкладка не знает ключей Evolution: всё идёт через form-api (/admin/wa/*), с теми же initData и токеном сессии.
-  var wa = { s: null, st: null, stBusy: false, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, pairNum: '', pair: null, pairNote: '', pairBad: false, pairBusy: false, form: null, dirty: false, timers: {} };
+  var wa = { s: null, st: null, stBusy: false, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, pairNum: '', pair: null, pairNote: '', pairBad: false, pairBusy: false, form: null, dirty: false, timers: {}, aiq: '', aiBusy: false, aiRes: null, aiNums: {} };
   var waSeq = 0, noticeTimer = 0;
 
   function waStop() {
@@ -861,6 +861,8 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     wa.timers = {}; wa.qr = null; wa.conf = null;
     // Номер телефона для кода живёт только пока открыта вкладка: уходим со вкладки, поле снова пустое.
     wa.pair = null; wa.pairNum = ''; wa.pairNote = ''; wa.pairBad = false; wa.pairBusy = false; wa.st = null; wa.stBusy = false;
+    // Полные номера людей из списка диалогов ассистента тоже живут только пока открыта вкладка.
+    wa.aiNums = {}; wa.aiRes = null; wa.aiBusy = false;
   }
   function waNotice(text, bad) {
     wa.notice = text ? { text: text, bad: !!bad } : null;
@@ -919,6 +921,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     if (wa.qr) v.appendChild(waQrCard());
     if (st && st.state !== 'open' && st.kind !== 'unreachable') v.appendChild(waPairCard());
     v.appendChild(waModuleCard(s));
+    v.appendChild(waAiCard(s));
     v.appendChild(waModeCard(s));
     v.appendChild(waLinkCard(s));
     waCommunityCards(s).forEach(function (c) { v.appendChild(c); });
@@ -1137,6 +1140,80 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
       card.appendChild(h('div', { class: 'howto', text: 'WhatsApp на телефоне → Настройки → Связанные устройства → Привязать устройство → Привязать по номеру телефона → ввести код' }));
     }
     return card;
+  }
+
+  // ── ИИ-ассистент в личке ──
+  // Выключатель, причина (если не стартует), счётчики за сегодня, «Проверить ассистента» и последние 20 диалогов. Номера в списке
+  // закрыты (7708***4575), полный номер сервер отдаёт только по нажатию «Показать номер».
+  function waAiCard(s) {
+    var a = s.assistant, card = h('div', { class: 'card' }, h('h2', { text: 'ИИ-ассистент в личке' }));
+    if (!a || !a.available) { card.appendChild(h('div', { class: 'note warn', text: 'Ассистент недоступен: модуль не запущен.' })); return card; }
+    var c = a.counters;
+    card.appendChild(h('div', { class: 'swrow' },
+      h('div', null, h('b', { text: 'Отвечать людям, которые написали номеру' }),
+        h('div', { class: 'hint', text: a.enabled ? 'Включён. Отвечает только в личке, первым никому не пишет. Не больше ' + a.limits.person + ' ответов человеку и ' + a.limits.total + ' с номера в сутки.' : 'Выключен: вебхука нет, запросов к OpenAI нет.' })),
+      h('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': String(a.enabled), 'aria-label': 'ИИ-ассистент в личке', disabled: !!wa.busy || (!a.enabled && !a.canEnable), onclick: function () {
+        if (a.enabled) waAct('ai/toggle', { enabled: false }, 'Выключаю ассистента…'); else ask('ai-on')();
+      } }, h('i'))));
+    if (wa.conf === 'ai-on') card.appendChild(confirmBox('Включить ИИ-ассистента? Он начнёт отвечать всем, кто напишет номеру в личку. Ответы проверяются: цену, чужие ссылки и кейсы он не назовёт.', 'Включить', function () { waAct('ai/toggle', { enabled: true, confirm: true }, 'Включаю ассистента, ставлю вебхук…'); }));
+    if (a.reason) card.appendChild(h('div', { class: 'note warn', role: 'status', text: a.reason }));
+    card.appendChild(h('div', { class: 'kv wkv' },
+      kv('Диалогов сегодня', String(c.dialogs)),
+      kv('Ответов сегодня', String(c.replies)),
+      kv('Передано Аяне', String(c.handoffs)),
+      kv('Отклонено проверкой', String(c.rejected)),
+      a.lastHook ? kv('Последнее сообщение от Evolution', a.lastHook) : null));
+    var inp = h('input', { class: 'inp', type: 'text', maxlength: '500', autocomplete: 'off', placeholder: 'Например: сколько стоит обучение?', 'aria-label': 'Вопрос для проверки ассистента', value: wa.aiq || '', disabled: wa.aiBusy,
+      oninput: function () { wa.aiq = inp.value; },
+      onkeydown: function (e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); waAiTest(); } } });
+    card.appendChild(h('div', { class: 'tpl' },
+      h('b', { text: 'Проверить ассистента' }),
+      h('div', { class: 'hint', text: 'Ответ модели без отправки в WhatsApp. Работает и при выключенном ассистенте.' }),
+      h('label', { class: 'field' }, h('span', { text: 'Вопрос' }), inp),
+      h('div', { class: 'actions' }, btn(wa.aiBusy ? 'Думаю…' : 'Спросить', waAiTest, '', wa.aiBusy))));
+    var r = wa.aiRes;
+    if (r && r.text) card.appendChild(h('div', { class: 'note warn', role: 'status', text: r.text }));
+    else if (r) {
+      card.appendChild(h('div', { class: 'serbody howto', text: r.reply }));
+      card.appendChild(h('div', { class: 'hint', text: r.note + (r.reasons.length ? ' Проверка отклоняла: ' + r.reasons.join('; ') + '.' : '') + (r.handoff ? ' Передача Аяне: да.' : '') }));
+    }
+    card.appendChild(h('div', { class: 'tpl' }, h('b', { text: 'Последние диалоги' })));
+    if (!a.dialogs.length) { card.appendChild(h('div', { class: 'empty', text: 'Диалогов пока нет.' })); return card; }
+    var list = h('div', { class: 'list' });
+    a.dialogs.forEach(function (d) {
+      var num = wa.aiNums[d.id];
+      list.appendChild(h('div', { class: 'row' },
+        kv(d.at, num || d.who),
+        h('div', { class: 'serbody', text: 'Человек: ' + d.last }),
+        d.reply ? h('div', { class: 'serbody', text: 'Ассистент: ' + d.reply }) : h('div', { class: 'hint', text: 'Ответа пока нет.' }),
+        h('div', { class: 'flags' },
+          d.handoff ? h('span', { class: 'badge no', text: 'передан Аяне' }) : null,
+          num ? null : h('button', { class: 'btn small ghost', type: 'button', text: 'Показать номер', onclick: function () { waAiNumber(d.id); } }))));
+    });
+    card.appendChild(list);
+    return card;
+  }
+  function waAiTest() {
+    if (wa.aiBusy || wa.busy) return;
+    var q = String(wa.aiq || '').trim();
+    if (!q) { wa.aiRes = { text: 'Напиши вопрос, например: сколько стоит обучение?' }; waDraw(); return; }
+    wa.aiBusy = true; wa.aiRes = null; waDraw();
+    api('wa/ai/test', null, { method: 'POST', body: JSON.stringify({ question: q }) }).then(function (r) {
+      wa.aiRes = { reply: r.reply || '', note: r.message || '', reasons: r.reasons || [], handoff: !!r.handoff };
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      wa.aiRes = { text: err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером. Попробуйте ещё раз.' };
+    }).then(function () { wa.aiBusy = false; if (ui.tab === 'wa') waDraw(); });
+  }
+  function waAiNumber(id) {
+    api('wa/ai/number', new URLSearchParams({ id: id })).then(function (r) {
+      wa.aiNums[id] = r.number || '';
+      if (ui.tab === 'wa') waDraw();
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { waStop(); fail(err); return; }
+      waNotice(err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Нет связи с сервером. Попробуйте ещё раз.', true);
+      waDraw();
+    });
   }
 
   // ── режим ──

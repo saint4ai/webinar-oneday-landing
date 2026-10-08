@@ -99,6 +99,11 @@ export const evo = {
   fail: null as ((c: ECall) => Override) | null,
   /** Нарушения защиты номера: сообщение не в группу или добавление участников. */
   violations: [] as string[],
+  /** Тесты ИИ-ассистента: ответ человеку в личку (sendText на @s.whatsapp.net или @lid) не нарушение, а запись в directs. */
+  allowDirect: false,
+  directs: [] as Array<{ to: string; text: string; delay: number | undefined; linkPreview: unknown }>,
+  /** Вебхук инстанса, как его хранит Evolution после POST /webhook/set. null: не ставился. */
+  webhook: null as null | { enabled: boolean; url: string; events: string[]; byEvents: unknown; base64: unknown; headers: Record<string, string> | undefined },
   async start() {
     this.server = createServer((req, res) => {
       const chunks: Buffer[] = [];
@@ -212,7 +217,21 @@ export const evo = {
           }
           case "GET /group/findGroupInfos":
             return send(200, { id: jid, size: this.members.get(jid) ?? 2 });
+          case "POST /webhook/set": {
+            // Форма тела как в Evolution 2.3.7 (webhookSchema): { webhook: { enabled, url, … } }, enabled и url обязательны.
+            const w = body?.webhook;
+            if (!w || typeof w !== "object" || typeof w.enabled !== "boolean" || typeof w.url !== "string") {
+              return send(400, { status: 400, error: "Bad Request", response: { message: [{ property: "webhook", message: "requires property enabled, url" }] } });
+            }
+            this.webhook = { enabled: w.enabled, url: w.url, events: w.enabled ? w.events || [] : [], byEvents: w.byEvents, base64: w.base64, headers: w.headers };
+            return send(201, { webhook: { enabled: w.enabled, url: w.url, events: this.webhook.events } });
+          }
           case "POST /message/sendText":
+            if (this.allowDirect && /@(s\.whatsapp\.net|lid)$/.test(String(body?.number || ""))) {
+              this.directs.push({ to: String(body.number), text: String(body.text), delay: body.delay, linkPreview: body.linkPreview });
+              return send(201, { key: { remoteJid: body.number, fromMe: true, id: `MSG${++this.msgSeq}` } });
+            }
+          // eslint-disable-next-line no-fallthrough
           case "POST /message/sendMedia":
           case "POST /message/sendPoll":
             if (!String(body?.number || "").endsWith("@g.us")) this.violations.push(`сообщение не в группу: ${body?.number}`);
@@ -259,6 +278,9 @@ export const evo = {
     this.rejectJids.clear();
     this.rejectCode = "404";
     this.allGroups = defaultGroups();
+    this.allowDirect = false;
+    this.directs = [];
+    this.webhook = null;
   },
   /** Человек отсканировал QR или ввёл код на телефоне: подключение стало open. */
   scan() {
@@ -272,6 +294,74 @@ export const evo = {
   },
   seq() {
     return this.calls.map((c) => `${c.method} ${c.path.split("/").slice(0, 3).join("/")}`);
+  },
+};
+
+// ───────────────────────── подставной OpenAI ─────────────────────────
+
+export const OPENAI_KEY = "sk-test-openai-key-8f2d41";
+export type OaiCall = { path: string; auth: string | undefined; body: any };
+/** Подмена ответа модели: status и json (ошибка), hang (оборвать), delay (мс) либо просто текст ответа. */
+export type OaiAnswer = string | { text?: string; status?: number; json?: unknown; hang?: boolean; delay?: number; finish?: string };
+export const DEFAULT_ANSWER = "Здравствуйте! Эфир каждый день в 20:00 по Алматы. Записаться можно здесь: https://onai.academy/workshop-montazh/";
+
+export const openai = {
+  server: null as Server | null,
+  calls: [] as OaiCall[],
+  /** Нарушения контракта вызова: ключ, поля тела, temperature. */
+  violations: [] as string[],
+  /** Что отвечает модель: готовый ответ или функция от запроса. */
+  answer: ((_c: OaiCall) => DEFAULT_ANSWER) as OaiAnswer | ((c: OaiCall) => OaiAnswer),
+  async start() {
+    this.server = createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c) => chunks.push(c));
+      req.on("end", async () => {
+        let body: any = null;
+        try {
+          body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        } catch {
+          body = null;
+        }
+        const call: OaiCall = { path: (req.url || "").split("?")[0], auth: req.headers["authorization"] as string | undefined, body };
+        this.calls.push(call);
+        const send = (status: number, json: unknown) => {
+          res.writeHead(status, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(json));
+        };
+        if (call.path !== "/v1/chat/completions" || req.method !== "POST") return send(404, { error: { message: "not found" } });
+        if (call.auth !== `Bearer ${OPENAI_KEY}`) return send(401, { error: { message: "Incorrect API key provided" } });
+        if (body?.model !== "gpt-5.6-luna") this.violations.push(`model: ${body?.model}`);
+        if (body?.reasoning_effort !== "low") this.violations.push(`reasoning_effort: ${body?.reasoning_effort}`);
+        if (typeof body?.max_completion_tokens !== "number" || body.max_completion_tokens < 800 || body.max_completion_tokens > 1600) this.violations.push(`max_completion_tokens: ${body?.max_completion_tokens}`);
+        if ("temperature" in (body || {}) || "max_tokens" in (body || {})) this.violations.push("temperature или max_tokens в теле");
+        if (!Array.isArray(body?.messages) || body.messages[0]?.role !== "system") this.violations.push("нет system-сообщения первым");
+        const a = typeof this.answer === "function" ? this.answer(call) : this.answer;
+        const o = typeof a === "string" ? { text: a } : a;
+        if (o.delay) await new Promise((r) => setTimeout(r, o.delay));
+        if (o.hang) return void req.socket.destroy();
+        if (o.status !== undefined || o.json !== undefined) return send(o.status ?? 500, o.json ?? { error: { message: "boom" } });
+        return send(200, { id: "chatcmpl-test", choices: [{ index: 0, finish_reason: o.finish ?? "stop", message: { role: "assistant", content: o.text ?? "" } }] });
+      });
+    });
+    await new Promise<void>((r) => this.server!.listen(0, "127.0.0.1", r));
+    process.env.OPENAI_BASE_URL = `http://127.0.0.1:${(this.server!.address() as { port: number }).port}/v1`;
+  },
+  async stop() {
+    await new Promise<void>((r) => {
+      this.server!.closeAllConnections?.();
+      this.server!.close(() => r());
+    });
+  },
+  reset() {
+    this.calls = [];
+    this.violations = [];
+    this.answer = () => DEFAULT_ANSWER;
+  },
+  /** Что человек написал в последнем запросе (последнее user-сообщение). */
+  lastUser(): string {
+    const m = [...(this.calls[this.calls.length - 1]?.body?.messages || [])].reverse().find((x: any) => x.role === "user");
+    return String(m?.content ?? "");
   },
 };
 

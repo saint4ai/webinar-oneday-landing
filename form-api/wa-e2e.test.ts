@@ -16,7 +16,8 @@ import { createServer as createNetServer } from "node:net";
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EVO_KEY, evo, INSTANCE_TOKEN, PNG_B64, runWaPage, tg } from "./wa-testkit";
+import { EVO_KEY, evo, INSTANCE_TOKEN, openai, OPENAI_KEY, PNG_B64, runWaPage, tg } from "./wa-testkit";
+import { aiFlush } from "./wa-assistant";
 import { _waRt, joinsTick, resetWaGroups, waTick } from "./wa-groups";
 import { setUtcOffsetMinutes } from "./tg-time";
 import { readWhatsAppLink } from "../lib/whatsapp-link";
@@ -89,6 +90,7 @@ const keep = (r: Resp) => (seen.push(r.text), r);
 test.before(async () => {
   await tg.start();
   await evo.start();
+  await openai.start();
   evo.state = "absent"; // инстанса нет: первое подключение с создания
   dataDir = mkdtempSync(join(tmpdir(), "wa-e2e-"));
   const tgSeries = JSON.parse(readFileSync(join(REPO, "form-api", "tg-series.json"), "utf8"));
@@ -147,6 +149,7 @@ test.after(async () => {
   await new Promise<void>((r) => server.close(() => r()));
   await tg.stop();
   await evo.stop();
+  await openai.stop();
   assert.deepEqual(evo.violations, [], "защита номера: ни одного сообщения людям и добавления участников");
 });
 
@@ -499,4 +502,70 @@ test("итог: ключ Evolution и токен инстанса не попа�
   assert.ok(seen.some((x) => x.includes(PNG_B64)), "а в ответ пульту QR попадает: он для того и нужен");
   assert.deepEqual(evo.violations, []);
   for (const c of evo.of("/message/")) assert.ok(String(c.body.number).endsWith("@g.us"), "сообщения только в группы");
+});
+
+test("ИИ-ассистент через настоящий сервер: /api/wa-hook (127.0.0.1, секрет, прокси) и маршруты пульта ai/toggle, ai/test, ai/number только под сессией админки", async () => {
+  openai.reset();
+  process.env.OPENAI_API_KEY = OPENAI_KEY;
+  process.env.WA_AI_QUIET_MS = "100000";
+  evo.state = "open";
+  evo.scan();
+  await waTick();
+  evo.allowDirect = true;
+  evo.directs.length = 0;
+  const secretOf = () => (_waRt()!.state as any).assistant.secret as string;
+  const hookCall = (body: unknown, headers: Record<string, string> = {}) =>
+    fetch(`${base()}/api/wa-hook`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) }).then(async (r) => (await r.arrayBuffer(), r.status));
+  const msg = (id: string, text: string) => ({ event: "messages.upsert", instance: "workshop", data: { key: { remoteJid: "77015556677@s.whatsapp.net", fromMe: false, id }, message: { conversation: text }, messageTimestamp: Math.floor(clock.t / 1000) } });
+
+  // доступ: без сессии админки 403; включение без подтверждения 400
+  assert.equal((await call("POST", "/api/admin/wa/ai/toggle", { body: { enabled: true, confirm: true } })).status, 403);
+  assert.equal((await call("POST", "/api/admin/wa/ai/test", { body: { question: "привет" } })).status, 403);
+  assert.equal((await call("GET", "/api/admin/wa/ai/number?id=abc")).status, 403);
+  assert.equal((await wa("POST", "ai/toggle", { enabled: true })).status, 400);
+  assert.equal(JSON.stringify(evo.webhook), "null", "без подтверждения вебхук не ставится");
+  // выключенный ассистент: секрета ещё нет, вебхук закрыт
+  assert.equal(await hookCall(msg("E0", "Привет")), 401);
+
+  // включили из пульта: вебхук стоит в Evolution с секретом, ключи в ответ пульту не попадают
+  const on = keep(await wa("POST", "ai/toggle", { enabled: true, confirm: true }));
+  assert.equal(on.status, 200, on.text);
+  assert.equal(evo.webhook?.enabled, true);
+  assert.equal(evo.webhook?.headers?.["X-Wa-Hook-Secret"], secretOf());
+  const secret = secretOf();
+
+  // вебхук: секрет и локальный адрес
+  assert.equal(await hookCall(msg("E1", "Привет")), 401, "без секрета");
+  assert.equal(await hookCall(msg("E1", "Привет"), { "X-Wa-Hook-Secret": "wrong" }), 401, "чужой секрет");
+  assert.equal(await hookCall(msg("E1", "Привет"), { "X-Wa-Hook-Secret": secret, "X-Forwarded-For": "203.0.113.9" }), 403, "через прокси");
+  assert.equal((await fetch(`${base()}/api/wa-hook`, { headers: { "X-Wa-Hook-Secret": secret } })).status, 404, "только POST");
+  assert.equal(openai.calls.length, 0);
+  assert.equal(await hookCall(msg("E1", "Когда эфир?"), { "X-Wa-Hook-Secret": secret }), 200);
+  await aiFlush();
+  assert.equal(evo.directs.length, 1);
+  assert.equal(evo.directs[0].to, "77015556677@s.whatsapp.net");
+
+  // пульт: состояние с блоком ассистента, проверка вопроса, номер по id
+  const st = keep(await wa("GET", "state")).json;
+  assert.deepEqual([st.assistant.enabled, st.assistant.counters.replies, st.assistant.dialogs[0].who], [true, 1, "7701***6677"]);
+  assert.equal(JSON.stringify(st).includes("77015556677"), false);
+  clock.t += 5000;
+  const t = keep(await wa("POST", "ai/test", { question: "Что будет на эфире?" }));
+  assert.deepEqual([t.status, t.json.verdict], [200, "ok"]);
+  assert.equal(evo.directs.length, 1, "проверка в WhatsApp не отправляет");
+  assert.equal((await wa("POST", "ai/test", { question: "" })).status, 400);
+  const num = keep(await wa("GET", `ai/number?id=${st.assistant.dialogs[0].id}`));
+  assert.deepEqual([num.status, num.json.number], [200, "+77015556677"]);
+  assert.equal((await wa("GET", "ai/number?id=nope")).status, 404);
+
+  // выключили: вебхук снят, больше никому не отвечаем
+  assert.equal((await wa("POST", "ai/toggle", { enabled: false })).status, 200);
+  assert.equal(evo.webhook?.enabled, false);
+  const calls = openai.calls.length;
+  assert.equal(await hookCall(msg("E2", "Ещё вопрос"), { "X-Wa-Hook-Secret": secret }), 200);
+  await aiFlush();
+  assert.equal(evo.directs.length, 1);
+  assert.equal(openai.calls.length, calls);
+  assert.equal(seen.join("\n").includes(OPENAI_KEY) || seen.join("\n").includes(secret), false, "ни ключа OpenAI, ни секрета вебхука в ответах пульта");
+  evo.allowDirect = false;
 });

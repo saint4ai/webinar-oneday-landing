@@ -34,9 +34,9 @@ __export(server_exports, {
 });
 module.exports = __toCommonJS(server_exports);
 var import_node_http = require("node:http");
-var import_node_crypto5 = require("node:crypto");
-var import_node_fs9 = require("node:fs");
-var import_node_path9 = require("node:path");
+var import_node_crypto6 = require("node:crypto");
+var import_node_fs10 = require("node:fs");
+var import_node_path10 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -1916,12 +1916,12 @@ var scrub = (s) => {
   return t ? s.split(t).join("***") : s;
 };
 var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function botCall(method, params, timeoutMs = API_TIMEOUT_MS) {
+async function botCall(method, params, timeoutMs2 = API_TIMEOUT_MS) {
   const token = botToken();
   if (!token) return { ok: false, code: 0, description: "no_token" };
   try {
     const init = params instanceof FormData ? { method: "POST", body: params } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) };
-    const res = await fetch(`${apiBase()}/bot${token}/${method}`, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+    const res = await fetch(`${apiBase()}/bot${token}/${method}`, { ...init, signal: AbortSignal.timeout(timeoutMs2) });
     const data = await res.json().catch(() => null);
     if (data?.ok) return { ok: true, result: data.result };
     return {
@@ -1971,8 +1971,8 @@ async function pump() {
     pumping = false;
   }
 }
-function pauseAll(seconds) {
-  pausedUntil = Math.max(pausedUntil, Date.now() + Math.min(60, Math.max(0, seconds)) * 1e3 + 250);
+function pauseAll(seconds2) {
+  pausedUntil = Math.max(pausedUntil, Date.now() + Math.min(60, Math.max(0, seconds2)) * 1e3 + 250);
 }
 async function botSend(method, params, prio = "hi", opts = {}) {
   let netRetried = false;
@@ -2228,7 +2228,7 @@ async function sendGreeting(sub, now) {
     noteSendResult(sub.chatId, r2, now);
   }
 }
-var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send"]);
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test"]);
 var waHook = null;
 var waReport = null;
 function registerWa(h) {
@@ -2255,6 +2255,8 @@ var HELP_TEXT = [
   "/wa_pause, /wa_resume: \u043F\u0430\u0443\u0437\u0430 \u0438 \u0432\u043E\u0437\u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 WhatsApp-\u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0438",
   "/wa_new [\u0434\u0430\u0442\u0430]: \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u0435\u0439\u0447\u0430\u0441",
   "/wa_send <id>: \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430",
+  "/wa_ai on|off: \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u043B\u0438 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 \u0432 \u043B\u0438\u0447\u043A\u0435 WhatsApp (\u0431\u0435\u0437 \u0430\u0440\u0433\u0443\u043C\u0435\u043D\u0442\u0430: \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435)",
+  "/wa_ai_test <\u0432\u043E\u043F\u0440\u043E\u0441>: \u043E\u0442\u0432\u0435\u0442 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 \u0431\u0435\u0437 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u0432 WhatsApp",
   "",
   "\u041C\u0435\u0442\u043A\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430: \u0434\u043E\u0431\u0430\u0432\u044C ?start=2gis \u043A \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u0431\u043E\u0442\u0430 (t.me/workshop_aiprod_bot?start=2gis), \u0432 \u043E\u0442\u0447\u0451\u0442\u0430\u0445 \u043E\u043D\u0430 \u043F\u043E\u043A\u0430\u0436\u0435\u0442\u0441\u044F \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A."
 ].join("\n");
@@ -2705,7 +2707,9 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
     case "wa_pause":
     case "wa_resume":
     case "wa_new":
-    case "wa_send": {
+    case "wa_send":
+    case "wa_ai":
+    case "wa_ai_test": {
       if (!waHook) {
         await plain(chatId, "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u043B\u0441\u044F (\u0441\u043C. /api/health).");
         return;
@@ -7205,8 +7209,8 @@ function handleAdminApp(req, res) {
 }
 
 // form-api/wa-groups.ts
-var import_node_fs8 = require("node:fs");
-var import_node_path8 = require("node:path");
+var import_node_fs9 = require("node:fs");
+var import_node_path9 = require("node:path");
 
 // form-api/wa-evolution.ts
 var env3 = (k) => (process.env[k] || "").trim();
@@ -7226,7 +7230,7 @@ function errorText(data, fallback) {
   const text = Array.isArray(m) ? m.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join("; ") : typeof m === "string" ? m : m ? JSON.stringify(m) : "";
   return scrub2((text || fallback).slice(0, 300));
 }
-async function evoCall(method, path, body, timeoutMs = TIMEOUT_MS) {
+async function evoCall(method, path, body, timeoutMs2 = TIMEOUT_MS) {
   const key = evoKey();
   if (!key) return { ok: false, status: 0, error: "no_api_key" };
   try {
@@ -7234,7 +7238,7 @@ async function evoCall(method, path, body, timeoutMs = TIMEOUT_MS) {
       method,
       headers: { apikey: key, ...body !== void 0 ? { "Content-Type": "application/json" } : {} },
       ...body !== void 0 ? { body: JSON.stringify(body) } : {},
-      signal: AbortSignal.timeout(timeoutMs)
+      signal: AbortSignal.timeout(timeoutMs2)
     });
     const text = await res.text();
     let data = null;
@@ -7362,8 +7366,21 @@ function sentOf(r) {
   if (!r.ok) return r;
   return { ok: true, status: r.status, data: { messageId: String(r.data?.key?.id || "") } };
 }
-async function sendText2(jid, text) {
-  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text, linkPreview: false }));
+async function sendText2(jid, text, opts = {}) {
+  const delay = opts.delay && opts.delay > 0 ? Math.round(opts.delay) : 0;
+  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text, linkPreview: false, ...delay ? { delay } : {} }, delay ? TIMEOUT_MS + delay : TIMEOUT_MS));
+}
+function setWebhook(p) {
+  return evoCall("POST", `/webhook/set/${I()}`, {
+    webhook: {
+      enabled: p.enabled,
+      url: p.url,
+      events: p.enabled ? p.events ?? ["MESSAGES_UPSERT"] : [],
+      byEvents: false,
+      base64: false,
+      ...p.enabled && p.headers ? { headers: p.headers } : {}
+    }
+  });
 }
 async function sendMedia2(jid, p) {
   const mimetype = p.mediatype === "video" ? "video/mp4" : /\.png$/i.test(p.url) ? "image/png" : "image/jpeg";
@@ -7375,12 +7392,792 @@ async function sendPoll(jid, p) {
   return sentOf(await evoCall("POST", `/message/sendPoll/${I()}`, { number: jid, name: p.name, selectableCount: p.selectableCount, values: p.values }));
 }
 
-// form-api/wa-groups.ts
+// form-api/wa-assistant.ts
+var import_node_fs8 = require("node:fs");
+var import_node_crypto5 = require("node:crypto");
+var import_node_path8 = require("node:path");
 var env4 = (k) => (process.env[k] || "").trim();
-var waEnabled = () => env4("WA_GROUPS").toLowerCase() === "on";
-var adminNumbers = () => env4("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
 var MIN = 6e4;
 var HOUR = 36e5;
+var DAY = 24 * HOUR;
+var HISTORY = 16;
+var LIMIT_PERSON = 30;
+var LIMIT_TOTAL = 400;
+var SILENCE_MS = 12 * HOUR;
+var quietMs = () => {
+  const n = Number(env4("WA_AI_QUIET_MS"));
+  return Number.isFinite(n) && n >= 0 && env4("WA_AI_QUIET_MS") !== "" ? n : 8e3;
+};
+var timeoutMs = () => {
+  const n = Number(env4("WA_AI_TIMEOUT_MS"));
+  return Number.isFinite(n) && n > 0 ? n : 3e4;
+};
+var STALE_MS = 15 * MIN;
+var PAUSE_MS = [2e3, 5e3];
+var MAX_TEXT = 1500;
+var FILE_TAIL_BYTES = 3 * 1024 * 1024;
+var FILE_COMPACT_BYTES = 6 * 1024 * 1024;
+var MODEL = () => env4("WA_AI_MODEL") || "gpt-5.6-luna";
+var openaiBase = () => (env4("OPENAI_BASE_URL") || "https://api.openai.com/v1").replace(/\/+$/, "");
+var apiKey = () => env4("OPENAI_API_KEY");
+var promptDir = () => env4("WA_AI_DIR") || (0, import_node_path8.join)(__dirname, "wa-assistant");
+var hookUrl = () => env4("WA_HOOK_URL") || `http://127.0.0.1:${env4("PORT") || "4010"}/api/wa-hook`;
+var SAFE_FALLBACK = "\u041F\u043E\u0434\u0441\u043A\u0430\u0436\u0435\u0442 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 \u0448\u043A\u043E\u043B\u044B: https://onai.academy/workshop-montazh/chat";
+var MEDIA_PHRASE = "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435, \u043F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430, \u0442\u0435\u043A\u0441\u0442\u043E\u043C.";
+var fail = (code, message) => ({ ok: false, code, message });
+var ALLOWED_LINKS = ["onai.academy/workshop-montazh", "wa.me/77085834575", "t.me/futleid", "t.me/workshop_aiprod_bot"];
+var ALLOWED_HANDLES = /* @__PURE__ */ new Set(["@futleid", "@workshop_aiprod_bot", "@saint4ai"]);
+var AYANA_RE = /wa\.me\/77085834575|t\.me\/futleid|@futleid/i;
+var URL_RE = /(?:https?:\/\/|www\.)[^\s<>"'«»]+/giu;
+var BARE_RE = /(?<![\p{L}\p{N}_@./-])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?![\p{L}\p{N}-])(?:[/?#][^\s<>"'«»]*)?/giu;
+var TIME_RE = /(?<!\d)\d{1,2}[:.]\d{2}(?!\d)/g;
+function allowedLink(candidate) {
+  let s = candidate.trim().replace(/[.,;:!?)\]}»"'…]+$/u, "").toLowerCase();
+  if (s.startsWith("http://")) return false;
+  s = s.replace(/^https:\/\//, "").replace(/^www\./, "");
+  if (/^[a-z][a-z0-9+.-]*:\/\//.test(s)) return false;
+  return ALLOWED_LINKS.some((p) => s === p || s.startsWith(`${p}/`) || s.startsWith(`${p}?`) || s.startsWith(`${p}#`));
+}
+var PRICE_WORD = new RegExp("(?<![\\p{L}])(?:\u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\\p{L}*|\u0441\u0442\u043E\u0438\u0442|\u0441\u0442\u043E\u044F\u0442|\u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\\p{L}*|\u0446\u0435\u043D(?:\u0430|\u044B|\u0443|\u0435|\u043E\u0439)(?![\\p{L}])|\u043F\u0440\u0435\u0434\u043E\u043F\u043B\u0430\u0442\\p{L}*|\u0431\u0440\u043E\u043D\u044C|\u0431\u0440\u043E\u043D\u0438|\u0441\u043A\u0438\u0434\u043A\\p{L}*|\u043E\u0431\u043E\u0439\u0434\\p{L}*|\u0437\u0430\u043F\u043B\u0430\u0442\\p{L}*)", "giu");
+var CURRENCY_AFTER = new RegExp("\\d\\s*(?:[.,]\\d+\\s*)?(?:\u20B8|\\$|\u20AC|\u20BD|\u0442\u0435\u043D\u0433\u0435|\u0442\u0433(?![\\p{L}])|usd|kzt|rub|\u0440\u0443\u0431|\u0434\u043E\u043B\u043B\u0430\u0440|\u0435\u0432\u0440\u043E|\u0441\u043E\u043C(?![\\p{L}])|\u0441\u0443\u043C(?![\\p{L}])|\u0442\u044B\u0441\\p{L}*|\u043C\u043B\u043D|\u043C\u0438\u043B\u043B\u0438\u043E\u043D\\p{L}*|[k\u043A](?![\\p{L}]))", "iu");
+var CURRENCY_BEFORE = /(?:₸|\$|€|₽)\s*\d/u;
+var BIG_NUMBER = /\d{1,3}(?:[\u00a0\u202f ]\d{3})+|\d{5,}/u;
+var FORBIDDEN2 = /the\s*one\s*system|onesystem|erickson|эриксон|жумабае/iu;
+var REASON_TEXT = {
+  price: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0446\u0435\u043D\u0430, \u0441\u0443\u043C\u043C\u0430, \u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\u0430 \u0438\u043B\u0438 \u0443\u0441\u043B\u043E\u0432\u0438\u044F \u043E\u043F\u043B\u0430\u0442\u044B \u0441 \u0446\u0438\u0444\u0440\u0430\u043C\u0438",
+  link: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \u0430\u0434\u0440\u0435\u0441 \u043D\u0435 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445",
+  forbidden: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0443\u043F\u043E\u043C\u044F\u043D\u0443\u0442\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u044B \u0448\u043A\u043E\u043B\u044B \u0438\u043B\u0438 \u043A\u0435\u0439\u0441\u044B",
+  phone: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0438\u043B\u0438 \u0434\u043B\u0438\u043D\u043D\u043E\u0435 \u0447\u0438\u0441\u043B\u043E",
+  handle: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0438\u043C\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F \u043D\u0435 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445",
+  long: "\u043E\u0442\u0432\u0435\u0442 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u043B\u0438\u043D\u043D\u044B\u0439",
+  empty: "\u043E\u0442\u0432\u0435\u0442 \u043F\u0443\u0441\u0442\u043E\u0439"
+};
+var MAX_REPLY = 600;
+function checkReply(text) {
+  const out = /* @__PURE__ */ new Set();
+  if (!text.trim()) return ["empty"];
+  if (text.length > MAX_REPLY) out.add("long");
+  if (FORBIDDEN2.test(text)) out.add("forbidden");
+  let rest = text;
+  const judge = (m) => {
+    if (!allowedLink(m)) out.add("link");
+    return " ";
+  };
+  rest = rest.replace(URL_RE, judge).replace(BARE_RE, judge);
+  if (/(?<![\p{L}])(?:mailto|tel|sms|javascript|data|ftp|file):/iu.test(rest) || /(?<!\d)\d{1,3}(?:\.\d{1,3}){3}(?!\d)/.test(rest)) out.add("link");
+  for (const h of rest.match(/@[A-Za-z0-9_]{3,}/g) || []) if (!ALLOWED_HANDLES.has(h.toLowerCase())) out.add("handle");
+  const plain2 = rest.replace(TIME_RE, " ");
+  for (const m of plain2.match(/\+?\d[\d\s().-]{7,}\d/g) || []) if (m.replace(/\D/g, "").length >= 9) out.add("phone");
+  if (CURRENCY_AFTER.test(plain2) || CURRENCY_BEFORE.test(plain2) || BIG_NUMBER.test(plain2)) out.add("price");
+  for (const m of plain2.matchAll(PRICE_WORD)) {
+    const i = m.index ?? 0;
+    if (/\d/.test(plain2.slice(Math.max(0, i - 30), i + m[0].length + 30))) {
+      out.add("price");
+      break;
+    }
+  }
+  return [...out];
+}
+var EMOJI = new RegExp("\\p{Extended_Pictographic}(?:\uFE0F|\u200D\\p{Extended_Pictographic})*", "gu");
+function cleanReply(raw) {
+  let mark = false;
+  let summary = "";
+  const take = (_m, inner) => {
+    const x = /^\s*(?:АЯНА|ПЕРЕДАНО АЯНЕ)\s*:?\s*([\s\S]*)$/iu.exec(inner);
+    if (x) {
+      mark = true;
+      summary = x[1].trim();
+    }
+    return "";
+  };
+  let t = raw.replace(/\[\[([^\]]*)\]\]/g, take).replace(/\[\s*(АЯНА|ПЕРЕДАНО АЯНЕ)\s*:([^\]]*)\]/giu, (_m, _a, s) => {
+    mark = true;
+    summary = summary || s.trim();
+    return "";
+  });
+  t = t.replace(/\s+[\u2014\u2013]\s+/g, ", ").replace(/[\u2014\u2013]/g, "-").replace(/\*\*([^*\n]+)\*\*/g, "$1").replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, "$1$2").replace(/__([^_\n]+)__/g, "$1").replace(/`+/g, "").replace(/^\s{0,3}#{1,6}\s+/gm, "").replace(/^\s*>\s?/gm, "");
+  let seen = 0;
+  t = t.replace(EMOJI, (m) => ++seen === 1 ? m : "");
+  t = t.replace(/[ \t]+\n/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  return { text: t, mark, summary };
+}
+function personJid(remoteJid) {
+  const m = /^(\d{5,20})(?::\d+)?@(s\.whatsapp\.net|lid)$/.exec(String(remoteJid || ""));
+  return m ? `${m[1]}@${m[2]}` : null;
+}
+function unwrap(m) {
+  let cur = m;
+  for (let i = 0; i < 4 && cur && typeof cur === "object"; i++) {
+    const inner = cur.ephemeralMessage?.message ?? cur.viewOnceMessage?.message ?? cur.viewOnceMessageV2?.message ?? cur.documentWithCaptionMessage?.message ?? cur.editedMessage?.message;
+    if (!inner) break;
+    cur = inner;
+  }
+  return cur;
+}
+function seconds(ts) {
+  let n = 0;
+  if (typeof ts === "number") n = ts;
+  else if (typeof ts === "string") n = Number(ts);
+  else if (ts && typeof ts === "object") n = Number(ts.low ?? ts.toString?.());
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return n > 1e12 ? n / 1e3 : n;
+}
+function classifyIncoming(d) {
+  const key = d?.key;
+  if (!key || typeof key !== "object" || key.fromMe === true) return null;
+  const jid = personJid(key.remoteJid);
+  if (!jid) return null;
+  const m = unwrap(d.message);
+  if (!m || typeof m !== "object") return null;
+  const mid = typeof key.id === "string" ? key.id.slice(0, 80) : "";
+  const ts = seconds(d.messageTimestamp) * 1e3;
+  const clip2 = (s) => s.replace(/\u0000/g, "").trim().slice(0, MAX_TEXT);
+  const plain2 = typeof m.conversation === "string" ? m.conversation : typeof m.extendedTextMessage?.text === "string" ? m.extendedTextMessage.text : typeof m.buttonsResponseMessage?.selectedDisplayText === "string" ? m.buttonsResponseMessage.selectedDisplayText : typeof m.templateButtonReplyMessage?.selectedDisplayText === "string" ? m.templateButtonReplyMessage.selectedDisplayText : typeof m.listResponseMessage?.title === "string" ? m.listResponseMessage.title : "";
+  if (plain2) return clip2(plain2) ? { jid, mid, kind: "text", text: clip2(plain2), ts } : null;
+  const media = [
+    ["audioMessage", "[\u0433\u043E\u043B\u043E\u0441\u043E\u0432\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435]"],
+    ["ptvMessage", "[\u0432\u0438\u0434\u0435\u043E]"],
+    ["imageMessage", "[\u0444\u043E\u0442\u043E]"],
+    ["videoMessage", "[\u0432\u0438\u0434\u0435\u043E]"],
+    ["documentMessage", "[\u0444\u0430\u0439\u043B]"]
+  ];
+  for (const [k, label] of media) {
+    if (!m[k] || typeof m[k] !== "object") continue;
+    const caption = typeof m[k].caption === "string" ? clip2(m[k].caption) : "";
+    return caption ? { jid, mid, kind: "text", text: caption, ts } : { jid, mid, kind: "media", text: label, ts };
+  }
+  return null;
+}
+var A = null;
+var maskJid = (jid) => {
+  const d = jid.replace(/[:@].*$/, "").replace(/\D/g, "");
+  const tag = jid.endsWith("@lid") ? " (lid)" : "";
+  return (d.length >= 9 ? `${d.slice(0, 4)}***${d.slice(-4)}` : d ? "***" : "") + tag;
+};
+var idOf = (jid) => (0, import_node_crypto5.createHash)("sha256").update(`wa-ai|${jid}`).digest("hex").slice(0, 12);
+var clipText = (s, n) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
+};
+var scrub3 = (s) => {
+  let out = s;
+  for (const k of [apiKey(), evoKey(), A?.host.state().secret || "", env4("WA_HOOK_SECRET")]) if (k) out = out.split(k).join("***");
+  return out;
+};
+var log = (msg, ...args) => console.log(`[wa-ai] ${msg}`, ...args);
+function statsOf(a, day) {
+  let s = a.stats.get(day);
+  if (!s) {
+    s = { replies: 0, handoffs: 0, rejected: 0, fallbacks: 0, errors: 0, dialogs: /* @__PURE__ */ new Set(), per: /* @__PURE__ */ new Map() };
+    a.stats.set(day, s);
+    for (const k of [...a.stats.keys()].sort().slice(0, -3)) a.stats.delete(k);
+  }
+  return s;
+}
+function convoOf(a, jid) {
+  let c = a.convos.get(jid);
+  if (!c) {
+    c = { jid, rows: [], silencedUntil: 0, lastAt: 0 };
+    a.convos.set(jid, c);
+  }
+  return c;
+}
+function rememberMid(a, mid) {
+  if (!mid) return;
+  a.seen.add(mid);
+  if (a.seen.size > 5e3) a.seen.delete(a.seen.values().next().value);
+}
+function append(a, row) {
+  try {
+    (0, import_node_fs8.appendFileSync)(a.file, JSON.stringify(row) + "\n", "utf8");
+  } catch (e) {
+    console.error("[wa-ai] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C wa-assistant.jsonl:", e.message);
+  }
+}
+function readTail(file, maxBytes) {
+  try {
+    const size = (0, import_node_fs8.statSync)(file).size;
+    const start = Math.max(0, size - maxBytes);
+    const buf = Buffer.alloc(size - start);
+    const fd = (0, import_node_fs8.openSync)(file, "r");
+    try {
+      (0, import_node_fs8.readSync)(fd, buf, 0, buf.length, start);
+    } finally {
+      (0, import_node_fs8.closeSync)(fd);
+    }
+    let text = buf.toString("utf8");
+    if (start > 0) text = text.slice(text.indexOf("\n") + 1);
+    const out = [];
+    for (const line of text.split("\n")) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        out.push(JSON.parse(s));
+      } catch {
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+function apply(a, row) {
+  const ts = typeof row?.ts === "number" ? row.ts : Date.parse(String(row?.ts || ""));
+  const jid = typeof row?.jid === "string" ? row.jid : "";
+  if (!Number.isFinite(ts) || !jid) return;
+  const day = dayKeyOf(ts);
+  if (row.role === "user" || row.role === "assistant") {
+    const c = convoOf(a, jid);
+    c.rows.push({ ts, jid, role: row.role, text: String(row.text || ""), ...row.mid ? { mid: String(row.mid) } : {}, ...row.via ? { via: String(row.via) } : {} });
+    if (c.rows.length > HISTORY) c.rows.splice(0, c.rows.length - HISTORY);
+    c.lastAt = Math.max(c.lastAt, ts);
+    const s = statsOf(a, day);
+    if (row.role === "user") {
+      s.dialogs.add(jid);
+      if (row.mid) rememberMid(a, String(row.mid));
+    } else {
+      s.replies++;
+      s.per.set(jid, (s.per.get(jid) || 0) + 1);
+    }
+  } else if (row.ev === "handoff") {
+    statsOf(a, day).handoffs++;
+    const c = convoOf(a, jid);
+    c.silencedUntil = Math.max(c.silencedUntil, ts + SILENCE_MS);
+  } else if (row.ev === "reject") statsOf(a, day).rejected++;
+  else if (row.ev === "fallback") statsOf(a, day).fallbacks++;
+  else if (row.ev === "error") statsOf(a, day).errors++;
+}
+function aiInit(host) {
+  aiReset();
+  (0, import_node_fs8.mkdirSync)(host.dir, { recursive: true });
+  const a = {
+    host,
+    file: (0, import_node_path8.join)(host.dir, "wa-assistant.jsonl"),
+    convos: /* @__PURE__ */ new Map(),
+    pending: /* @__PURE__ */ new Map(),
+    inflight: /* @__PURE__ */ new Set(),
+    running: /* @__PURE__ */ new Set(),
+    seen: /* @__PURE__ */ new Set(),
+    stats: /* @__PURE__ */ new Map(),
+    alarmAt: /* @__PURE__ */ new Map(),
+    lastHookAt: 0,
+    hookTryAt: 0,
+    hookAssertAt: 0,
+    hookFails: 0,
+    toggling: false,
+    testAt: [],
+    skipNoteAt: 0
+  };
+  try {
+    if ((0, import_node_fs8.existsSync)(a.file) && (0, import_node_fs8.statSync)(a.file).size > FILE_COMPACT_BYTES) {
+      const keep = readTail(a.file, 2 * 1024 * 1024);
+      const tmp = `${a.file}.tmp.${process.pid}`;
+      (0, import_node_fs8.writeFileSync)(tmp, keep.map((r) => JSON.stringify(r)).join("\n") + "\n", "utf8");
+      (0, import_node_fs8.renameSync)(tmp, a.file);
+    }
+  } catch (e) {
+    console.error("[wa-ai] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u0436\u0430\u0442\u044C wa-assistant.jsonl:", e.message);
+  }
+  const from = host.now() - 30 * DAY;
+  for (const row of readTail(a.file, FILE_TAIL_BYTES)) if ((typeof row?.ts === "number" ? row.ts : Date.parse(String(row?.ts || ""))) >= from) apply(a, row);
+  A = a;
+}
+function aiReset() {
+  if (A) {
+    for (const p of A.pending.values()) if (p.timer) clearTimeout(p.timer);
+  }
+  A = null;
+}
+var cache = null;
+function loadSystem() {
+  const dir = promptDir();
+  try {
+    const f1 = (0, import_node_path8.join)(dir, "prompt.md");
+    const f2 = (0, import_node_path8.join)(dir, "knowledge.md");
+    const key = `${dir}|${(0, import_node_fs8.statSync)(f1).mtimeMs}|${(0, import_node_fs8.statSync)(f2).mtimeMs}`;
+    if (cache?.key === key) return { ok: true, system: cache.system };
+    const prompt = (0, import_node_fs8.readFileSync)(f1, "utf8").trim();
+    const knowledge = (0, import_node_fs8.readFileSync)(f2, "utf8").trim();
+    if (!prompt || !knowledge) return { ok: false, error: "prompt.md \u0438\u043B\u0438 knowledge.md \u043F\u0443\u0441\u0442\u043E\u0439" };
+    cache = { key, system: `${prompt}
+
+# \u0411\u0430\u0437\u0430 \u0437\u043D\u0430\u043D\u0438\u0439
+
+${knowledge}` };
+    return { ok: true, system: cache.system };
+  } catch {
+    return { ok: false, error: `\u043D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 prompt.md \u0438 knowledge.md \u0432 ${dir}` };
+  }
+}
+function prerequisites() {
+  if (!apiKey()) return { ok: false, reason: "\u041D\u0435\u0442 \u043A\u043B\u044E\u0447\u0430 OPENAI_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
+  const f = loadSystem();
+  if (!f.ok) return { ok: false, reason: `\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442: ${f.error}.` };
+  if (!evoKey()) return { ok: false, reason: "\u041D\u0435\u0442 EVOLUTION_API_KEY: \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
+  return { ok: true };
+}
+async function callModel(messages) {
+  const key = apiKey();
+  if (!key) return { ok: false, error: "\u043D\u0435\u0442 \u043A\u043B\u044E\u0447\u0430 OPENAI_API_KEY" };
+  try {
+    const res = await fetch(`${openaiBase()}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: MODEL(), messages, reasoning_effort: "low", max_completion_tokens: 1200 }),
+      signal: AbortSignal.timeout(timeoutMs())
+    });
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch {
+      data = null;
+    }
+    if (!res.ok) return { ok: false, error: scrub3(`${res.status} ${clipText(data?.error?.message || res.statusText || raw, 120)}`) };
+    const choice = data?.choices?.[0];
+    const text = choice?.message?.content;
+    if (choice?.finish_reason === "length") return { ok: false, error: "\u043E\u0442\u0432\u0435\u0442 \u043E\u0431\u043E\u0440\u0432\u0430\u043B\u0441\u044F \u043F\u043E \u0434\u043B\u0438\u043D\u0435" };
+    if (typeof text !== "string" || !text.trim()) return { ok: false, error: choice?.message?.refusal ? "\u043C\u043E\u0434\u0435\u043B\u044C \u043E\u0442\u043A\u0430\u0437\u0430\u043B\u0430\u0441\u044C \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C" : "\u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438" };
+    return { ok: true, text };
+  } catch (e) {
+    const err = e;
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, error: "\u0442\u0430\u0439\u043C\u0430\u0443\u0442" };
+    return { ok: false, error: scrub3(String(err?.cause?.code || err?.message || err)).slice(0, 120) };
+  }
+}
+var reviewNote = (reasons) => `\u0421\u043B\u0443\u0436\u0435\u0431\u043D\u043E\u0435 \u0437\u0430\u043C\u0435\u0447\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438: \u0442\u0432\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D, \u043F\u043E\u0442\u043E\u043C\u0443 \u0447\u0442\u043E ${reasons.map((r) => REASON_TEXT[r]).join("; ")}. \u041D\u0430\u043F\u0438\u0448\u0438 \u043D\u043E\u0432\u044B\u0439 \u043E\u0442\u0432\u0435\u0442: \u0434\u043E 350 \u0437\u043D\u0430\u043A\u043E\u0432, \u0431\u0435\u0437 \u0446\u0435\u043D \u0438 \u043B\u044E\u0431\u044B\u0445 \u0446\u0438\u0444\u0440 \u043E\u043F\u043B\u0430\u0442\u044B, \u0431\u0435\u0437 \u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\u0438 \u0438 \u043F\u0440\u0435\u0434\u043E\u043F\u043B\u0430\u0442\u044B, \u0431\u0435\u0437 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432 \u0438 \u043A\u0435\u0439\u0441\u043E\u0432, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u043E\u0432 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u0432, \u0442\u043E\u043B\u044C\u043A\u043E \u0441\u0441\u044B\u043B\u043A\u0438 \u0438 \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u044B \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445, \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u0438\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u0435\u043D \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440, \u0434\u0430\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0430 \u0448\u043A\u043E\u043B\u044B. \u0412\u044B\u0434\u0430\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u0435\u043A\u0441\u0442 \u043E\u0442\u0432\u0435\u0442\u0430.`;
+async function makeReply(messages) {
+  const rejected = [];
+  const first = await callModel(messages);
+  if (!first.ok) return { ok: false, error: first.error, rejected };
+  let c = cleanReply(first.text);
+  let reasons = checkReply(c.text);
+  const accept = (x) => ({ ok: true, text: x.text, via: "model", handoff: x.mark || AYANA_RE.test(x.text), summary: x.summary, rejected });
+  if (!reasons.length) return accept(c);
+  rejected.push(reasons);
+  const second = await callModel([...messages, { role: "assistant", content: first.text }, { role: "system", content: reviewNote(reasons) }]);
+  if (!second.ok) return { ok: false, error: second.error, rejected };
+  c = cleanReply(second.text);
+  reasons = checkReply(c.text);
+  if (!reasons.length) return accept(c);
+  rejected.push(reasons);
+  return { ok: true, text: SAFE_FALLBACK, via: "fallback", handoff: false, summary: "", rejected };
+}
+function buildMessages(system, conv, now) {
+  const out = [{ role: "system", content: `${system}
+
+\u0421\u0435\u0439\u0447\u0430\u0441 ${hhmmOf(now)} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.` }];
+  for (const r of conv.rows.slice(-HISTORY)) {
+    const last = out[out.length - 1];
+    if (last.role === r.role) last.content += `
+${r.text}`;
+    else out.push({ role: r.role, content: r.text });
+  }
+  return out;
+}
+async function alarmOnce(a, key, windowMs, text) {
+  const now = a.host.now();
+  if (now - (a.alarmAt.get(key) || 0) < windowMs) return;
+  a.alarmAt.set(key, now);
+  try {
+    await a.host.alarm(text);
+  } catch {
+  }
+}
+function schedule(a, jid) {
+  const p = a.pending.get(jid);
+  if (!p) return;
+  if (p.timer) clearTimeout(p.timer);
+  const cap = Number(env4("WA_AI_MAX_WAIT_MS")) || Math.max(6e4, quietMs());
+  const wait = Math.min(quietMs(), Math.max(0, p.firstAt + cap - Date.now()));
+  p.timer = setTimeout(() => runBatch(a, jid), wait);
+  p.timer.unref?.();
+}
+function runBatch(a, jid) {
+  const p = a.pending.get(jid);
+  if (!p) return Promise.resolve();
+  if (p.timer) {
+    clearTimeout(p.timer);
+    p.timer = null;
+  }
+  if (a.inflight.has(jid)) {
+    p.firstAt = Date.now();
+    schedule(a, jid);
+    return Promise.resolve();
+  }
+  a.pending.delete(jid);
+  a.inflight.add(jid);
+  const job = answer(a, jid, p).catch((e) => console.error("[wa-ai] \u043E\u0442\u0432\u0435\u0442 \u0443\u043F\u0430\u043B:", scrub3(String(e?.message || e)).slice(0, 200))).finally(() => {
+    a.inflight.delete(jid);
+    a.running.delete(job);
+  });
+  a.running.add(job);
+  return job;
+}
+function ingest(a, inc3) {
+  const now = a.host.now();
+  const st = a.host.state();
+  if (!st.enabled) return;
+  if (inc3.ts && now - inc3.ts > STALE_MS) return;
+  if (a.host.ignoreDigits().includes(inc3.jid.replace(/@.*$/, ""))) return;
+  if (inc3.mid) {
+    if (a.seen.has(inc3.mid)) return;
+    rememberMid(a, inc3.mid);
+  }
+  const row = { ts: now, jid: inc3.jid, role: "user", text: inc3.text, ...inc3.mid ? { mid: inc3.mid } : {} };
+  append(a, row);
+  apply(a, row);
+  const conv = convoOf(a, inc3.jid);
+  if (conv.silencedUntil > now) return;
+  let p = a.pending.get(inc3.jid);
+  if (!p) {
+    p = { texts: [], timer: null, firstAt: Date.now() };
+    a.pending.set(inc3.jid, p);
+  }
+  if (inc3.kind === "text") p.texts.push(inc3.text);
+  schedule(a, inc3.jid);
+}
+async function answer(a, jid, p) {
+  const h = a.host;
+  const now0 = h.now();
+  if (!h.state().enabled) return;
+  const can = h.canSend();
+  if (!can.ok) {
+    if (now0 - a.skipNoteAt > HOUR) {
+      a.skipNoteAt = now0;
+      h.journal({ ev: "ai_skip", who: maskJid(jid), why: can.why });
+    }
+    return;
+  }
+  const conv = convoOf(a, jid);
+  if (conv.silencedUntil > now0) return;
+  const day = dayKeyOf(now0);
+  const s = statsOf(a, day);
+  if (s.replies >= LIMIT_TOTAL) {
+    await alarmOnce(a, `total:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u0443\u0436\u0435 ${LIMIT_TOTAL} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0441 \u043D\u043E\u043C\u0435\u0440\u0430, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B. \u0414\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043B\u044E\u0434\u044F\u043C \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
+    return;
+  }
+  if ((s.per.get(jid) || 0) >= LIMIT_PERSON) {
+    await alarmOnce(a, `person:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0447\u0435\u043B\u043E\u0432\u0435\u043A ${maskJid(jid)} \u043F\u043E\u043B\u0443\u0447\u0438\u043B ${LIMIT_PERSON} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438. \u0415\u043C\u0443 \u0434\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
+    return;
+  }
+  let text = MEDIA_PHRASE;
+  let via = "media";
+  let handoff = false;
+  let summary = "";
+  if (!p.texts.length) {
+    const lastBot = [...conv.rows].reverse().find((r) => r.role === "assistant");
+    if (lastBot?.text === MEDIA_PHRASE) return;
+  } else {
+    const sys = loadSystem();
+    if (!sys.ok) {
+      await alarmOnce(a, "files", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0435\u0442\u0438\u0442\u044C: ${sys.error}.`);
+      return;
+    }
+    const made = await makeReply(buildMessages(sys.system, conv, now0));
+    for (const reasons of made.rejected) {
+      append(a, { ts: h.now(), jid, ev: "reject", reasons });
+      statsOf(a, day).rejected++;
+    }
+    if (!made.ok) {
+      append(a, { ts: h.now(), jid, ev: "error", error: clipText(made.error, 120) });
+      statsOf(a, day).errors++;
+      log("\u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (%s): %s", maskJid(jid), made.error);
+      await alarmOnce(a, "openai", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (${made.error}). \u0427\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
+      return;
+    }
+    text = made.text;
+    via = made.via;
+    handoff = made.handoff;
+    summary = made.summary;
+    if (made.via === "fallback") {
+      append(a, { ts: h.now(), jid, ev: "fallback" });
+      statsOf(a, day).fallbacks++;
+    }
+  }
+  if (!h.state().enabled || convoOf(a, jid).silencedUntil > h.now()) return;
+  const can2 = h.canSend();
+  if (!can2.ok) return;
+  const delay = PAUSE_MS[0] + Math.round(h.rand() * (PAUSE_MS[1] - PAUSE_MS[0]));
+  const sent = await h.exclusive(() => sendText2(jid, text, { delay }));
+  if (!sent.ok) {
+    append(a, { ts: h.now(), jid, ev: "error", error: clipText(sent.error, 120) });
+    statsOf(a, day).errors++;
+    log("\u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u043E\u0441\u044C (%s): %s", maskJid(jid), sent.error);
+    await alarmOnce(a, "send", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 ${maskJid(jid)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clipText(sent.error, 100)}). \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
+    return;
+  }
+  const ts = h.now();
+  const row = { ts, jid, role: "assistant", text, via };
+  append(a, row);
+  apply(a, row);
+  log("\u043E\u0442\u0432\u0435\u0442 \u0443\u0448\u0451\u043B: %s, %s", maskJid(jid), via);
+  if (handoff) {
+    const last = [...conv.rows].reverse().find((r) => r.role === "user")?.text || "";
+    const why = clipText(stripLinks(summary) || stripLinks(last), 200);
+    append(a, { ts, jid, ev: "handoff", summary: why });
+    apply(a, { ts, jid, ev: "handoff" });
+    h.journal({ ev: "ai_handoff", who: maskJid(jid), why: clipText(why, 120) });
+    try {
+      await h.notify(
+        `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp \u043F\u0435\u0440\u0435\u0434\u0430\u043B \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u0410\u044F\u043D\u0435: +${jid.replace(/[:@].*$/, "")}${jid.endsWith("@lid") ? " (\u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0439 ID WhatsApp, \u043D\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D)" : ""}.
+\u0421\u0443\u0442\u044C: ${why || "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430"}.
+\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432.`
+      );
+    } catch {
+    }
+  }
+}
+function stripLinks(s) {
+  return s.replace(URL_RE, "[\u0441\u0441\u044B\u043B\u043A\u0430]").replace(BARE_RE, "[\u0430\u0434\u0440\u0435\u0441]");
+}
+var LOCAL_ADDR = /* @__PURE__ */ new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+var PROXY_HEADERS = ["x-forwarded-for", "x-real-ip", "forwarded", "x-forwarded-host", "x-forwarded-proto"];
+var hashOf = (s) => (0, import_node_crypto5.createHash)("sha256").update(s).digest();
+function hookSecret() {
+  return env4("WA_HOOK_SECRET") || A?.host.state().secret || "";
+}
+function hookAuth(req) {
+  if (!LOCAL_ADDR.has(req.socket.remoteAddress || "") || PROXY_HEADERS.some((h) => req.headers[h] !== void 0)) return 403;
+  const secret = hookSecret();
+  const got = req.headers["x-wa-hook-secret"];
+  const provided = Array.isArray(got) ? got[0] : got;
+  if (!secret || !provided || !(0, import_node_crypto5.timingSafeEqual)(hashOf(secret), hashOf(provided))) return 401;
+  return 0;
+}
+function readLimited3(req, max) {
+  return new Promise((resolve) => {
+    let size = 0;
+    let over = false;
+    const chunks = [];
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > max) over = true;
+      else chunks.push(c);
+    });
+    req.on("end", () => resolve(over ? null : Buffer.concat(chunks).toString("utf8")));
+    req.on("error", () => resolve(null));
+  });
+}
+function ingestPayload(a, body) {
+  const ev = String(body?.event || "").toLowerCase().replace(/_/g, ".");
+  if (ev !== "messages.upsert") return;
+  if (body?.instance && String(body.instance) !== evoInstance()) return;
+  const list = Array.isArray(body?.data) ? body.data : body?.data ? [body.data] : [];
+  for (const d of list) {
+    const inc3 = classifyIncoming(d);
+    if (inc3) ingest(a, inc3);
+  }
+}
+async function handleWaHook(req, res) {
+  const send2 = (status, body) => {
+    const payload = JSON.stringify(body);
+    res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
+    res.end(payload);
+  };
+  const bad = hookAuth(req);
+  if (bad) {
+    req.resume();
+    return send2(bad, { ok: false });
+  }
+  const raw = await readLimited3(req, 512 * 1024);
+  const a = A;
+  if (a) a.lastHookAt = a.host.now();
+  send2(200, { ok: true });
+  if (!a || raw === null || !a.host.state().enabled) return;
+  try {
+    ingestPayload(a, JSON.parse(raw));
+  } catch (e) {
+    console.error("[wa-ai] \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B \u0432\u0435\u0431\u0445\u0443\u043A:", scrub3(String(e?.message || e)).slice(0, 120));
+  }
+}
+var hookArgs = (on) => ({ url: hookUrl(), enabled: on, events: ["MESSAGES_UPSERT"], headers: { "X-Wa-Hook-Secret": hookSecret() } });
+function ensureSecret(a) {
+  const cur = a.host.state().secret;
+  if (cur || env4("WA_HOOK_SECRET")) return cur;
+  const secret = (0, import_node_crypto5.randomBytes)(24).toString("hex");
+  a.host.patch({ secret });
+  return secret;
+}
+async function aiTick(now) {
+  const a = A;
+  if (!a) return;
+  const st = a.host.state();
+  const want = st.enabled && prerequisites().ok;
+  if (want === st.hookOn && !(want && now - a.hookAssertAt >= 6 * HOUR)) return;
+  if (now - a.hookTryAt < MIN) return;
+  a.hookTryAt = now;
+  if (want) ensureSecret(a);
+  const r = await setWebhook(hookArgs(want));
+  if (r.ok) {
+    a.hookFails = 0;
+    a.hookAssertAt = now;
+    if (want !== st.hookOn) {
+      a.host.patch({ hookOn: want });
+      a.host.journal({ ev: want ? "ai_on" : "ai_off", by: "tick" });
+    }
+    return;
+  }
+  a.hookFails++;
+  log("\u0432\u0435\u0431\u0445\u0443\u043A Evolution \u043D\u0435 %s: %s", want ? "\u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B\u0441\u044F" : "\u0441\u043D\u044F\u043B\u0441\u044F", r.error);
+  if (a.hookFails >= 3) await alarmOnce(a, "hook", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0432\u0435\u0431\u0445\u0443\u043A Evolution ${want ? "\u043D\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F" : "\u043D\u0435 \u0441\u043D\u0438\u043C\u0430\u0435\u0442\u0441\u044F"} (${clipText(r.error, 100)}). \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E Evolution \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442.`);
+}
+var ddmm2 = (ms) => {
+  const d = dayKeyOf(ms);
+  return `${d.slice(8, 10)}.${d.slice(5, 7)}`;
+};
+var agoText = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1e3));
+  return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
+};
+function aiPanel(nowArg) {
+  const a = A;
+  if (!a) return { available: false };
+  const now = nowArg ?? a.host.now();
+  const st = a.host.state();
+  const s = statsOf(a, dayKeyOf(now));
+  const pre = prerequisites();
+  let reason = "";
+  if (!pre.ok) reason = pre.reason;
+  else if (st.enabled) {
+    const can = a.host.canSend();
+    if (!can.ok) reason = `\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${can.why}.`;
+    else if (!st.hookOn) reason = "\u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D, \u043F\u043E\u0432\u0442\u043E\u0440\u044E \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0443\u044E \u043C\u0438\u043D\u0443\u0442\u0443.";
+    else if (!a.lastHookAt) reason = "\u0412\u0435\u0431\u0445\u0443\u043A \u0441\u0442\u043E\u0438\u0442, \u043D\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u043E\u0442 Evolution \u0441 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0431\u044B\u043B\u043E.";
+  }
+  const dialogs = [...a.convos.values()].filter((c) => c.rows.length).sort((x, y) => y.lastAt - x.lastAt).slice(0, 20).map((c) => {
+    const lastUser = [...c.rows].reverse().find((r) => r.role === "user");
+    const lastBot = [...c.rows].reverse().find((r) => r.role === "assistant");
+    return {
+      id: idOf(c.jid),
+      who: maskJid(c.jid),
+      at: `${ddmm2(c.lastAt)} ${hhmmOf(c.lastAt)}`,
+      last: clipText(lastUser?.text, 140),
+      reply: clipText(lastBot?.text, 200),
+      answered: !!lastBot && (!lastUser || lastBot.ts >= lastUser.ts),
+      handoff: c.silencedUntil > now
+    };
+  });
+  return {
+    available: true,
+    enabled: st.enabled,
+    hookOn: st.hookOn,
+    canEnable: pre.ok,
+    reason,
+    model: MODEL(),
+    counters: { dialogs: s.dialogs.size, replies: s.replies, handoffs: s.handoffs, rejected: s.rejected },
+    limits: { person: LIMIT_PERSON, total: LIMIT_TOTAL },
+    lastHook: a.lastHookAt ? agoText(now - a.lastHookAt) : "",
+    dialogs
+  };
+}
+function aiNumber(id) {
+  const a = A;
+  if (!a) return fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D.");
+  const c = typeof id === "string" ? [...a.convos.values()].find((x) => idOf(x.jid) === id) : void 0;
+  if (!c) return fail("not_found", "\u0414\u0438\u0430\u043B\u043E\u0433 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D.");
+  const digits = c.jid.replace(/[:@].*$/, "");
+  return { ok: true, message: c.jid.endsWith("@lid") ? "\u042D\u0442\u043E \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0439 ID WhatsApp, \u0430 \u043D\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D." : "\u041D\u043E\u043C\u0435\u0440 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430.", number: c.jid.endsWith("@lid") ? `${digits} (lid)` : `+${digits}` };
+}
+var MODULE_OFF = fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
+async function aiSetEnabled(on) {
+  const a = A;
+  if (!a) return MODULE_OFF;
+  if (typeof on !== "boolean") return fail("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (a.toggling) return fail("busy", "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0435\u0449\u0451 \u0438\u0434\u0451\u0442, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434.");
+  a.toggling = true;
+  try {
+    const st = a.host.state();
+    if (on) {
+      if (st.enabled && st.hookOn) return { ok: true, code: "same", message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
+      const pre = prerequisites();
+      if (!pre.ok) return fail("no_key", `${pre.reason} \u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
+      ensureSecret(a);
+      const r = await a.host.exclusive(() => setWebhook(hookArgs(true)));
+      if (!r.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A \u0432 Evolution: ${clipText(r.error, 120)}. \u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
+      a.host.patch({ enabled: true, hookOn: true });
+      a.hookAssertAt = a.host.now();
+      a.hookFails = 0;
+      a.host.journal({ ev: "ai_on", by: "panel" });
+      log("\u0432\u043A\u043B\u044E\u0447\u0451\u043D");
+      return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D. \u041E\u043D \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u0435\u043C, \u043A\u0442\u043E \u043D\u0430\u043F\u0438\u0441\u0430\u043B \u043D\u043E\u043C\u0435\u0440\u0443 \u0432 \u043B\u0438\u0447\u043A\u0443. \u041F\u0435\u0440\u0432\u044B\u043C \u043D\u0438\u043A\u043E\u043C\u0443 \u043D\u0435 \u043F\u0438\u0448\u0435\u0442." };
+    }
+    if (!st.enabled && !st.hookOn) return { ok: true, code: "same", message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D." };
+    a.host.patch({ enabled: false });
+    for (const p of a.pending.values()) if (p.timer) clearTimeout(p.timer);
+    a.pending.clear();
+    a.host.journal({ ev: "ai_off", by: "panel" });
+    log("\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D");
+    if (st.hookOn) {
+      a.hookTryAt = a.host.now();
+      const r = await a.host.exclusive(() => setWebhook(hookArgs(false)));
+      if (r.ok) a.host.patch({ hookOn: false });
+      else return { ok: true, code: "hook_pending", message: `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0441\u043D\u044F\u0442\u044C \u043D\u0435 \u0432\u044B\u0448\u043B\u043E (${clipText(r.error, 100)}), \u043F\u043E\u0432\u0442\u043E\u0440\u044E \u0441\u0430\u043C \u0432 \u0442\u0435\u0447\u0435\u043D\u0438\u0435 \u043C\u0438\u043D\u0443\u0442\u044B.` };
+    }
+    return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0441\u043D\u044F\u0442, \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043A OpenAI \u043D\u0435\u0442." };
+  } finally {
+    a.toggling = false;
+  }
+}
+async function aiTest(question) {
+  const a = A;
+  if (!a) return MODULE_OFF;
+  const q2 = typeof question === "string" ? question.replace(/\u0000/g, "").trim().slice(0, 1e3) : "";
+  if (!q2) return fail("bad_request", "\u041D\u0430\u043F\u0438\u0448\u0438 \u0432\u043E\u043F\u0440\u043E\u0441, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0442\u043E\u0438\u0442 \u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435?");
+  const pre = prerequisites();
+  if (!pre.ok) return fail("no_key", pre.reason);
+  const now = a.host.now();
+  a.testAt = a.testAt.filter((t) => now - t < HOUR);
+  if (a.testAt.length && now - a.testAt[a.testAt.length - 1] < 3e3) return fail("rate", "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0447\u0430\u0441\u0442\u043E, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043F\u0430\u0440\u0443 \u0441\u0435\u043A\u0443\u043D\u0434.");
+  if (a.testAt.length >= 20) return fail("rate", "\u041F\u0440\u043E\u0432\u0435\u0440\u043E\u043A \u0437\u0430 \u0447\u0430\u0441 \u0443\u0436\u0435 20. \u041F\u043E\u0434\u043E\u0436\u0434\u0438, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0442\u0440\u0430\u0442\u0438\u0442\u044C \u0434\u0435\u043D\u044C\u0433\u0438 \u043D\u0430 \u043C\u043E\u0434\u0435\u043B\u044C.");
+  a.testAt.push(now);
+  const sys = loadSystem();
+  if (!sys.ok) return fail("no_key", `\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442: ${sys.error}.`);
+  const made = await makeReply([
+    { role: "system", content: `${sys.system}
+
+\u0421\u0435\u0439\u0447\u0430\u0441 ${hhmmOf(now)} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.` },
+    { role: "user", content: q2 }
+  ]);
+  if (!made.ok) return fail("model", `\u041C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430: ${made.error}.`);
+  const reasons = made.rejected.flat().map((r) => REASON_TEXT[r]);
+  return {
+    ok: true,
+    message: made.via === "fallback" ? "\u041E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u043F\u0440\u043E\u0448\u0451\u043B \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0434\u0432\u0430\u0436\u0434\u044B, \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u0443\u0448\u043B\u0430 \u0431\u044B \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u0437\u0430\u0433\u043E\u0442\u043E\u0432\u043A\u0430." : "\u041E\u0442\u0432\u0435\u0442 \u043F\u0440\u043E\u0448\u0451\u043B \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443.",
+    reply: made.text,
+    verdict: made.via === "fallback" ? "fallback" : "ok",
+    reasons: [...new Set(reasons)],
+    handoff: made.handoff
+  };
+}
+async function aiCommand(cmd, args) {
+  if (!A) return MODULE_OFF.message;
+  if (cmd === "wa_ai_test") {
+    const r = await aiTest(args);
+    if (!r.ok) return r.message;
+    return `\u041E\u0442\u0432\u0435\u0442 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 (\u0432 WhatsApp \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u043B\u0441\u044F):
+${r.reply}
+
+${r.message}${r.reasons?.length ? `
+\u041E\u0442\u043A\u043B\u043E\u043D\u044F\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439: ${r.reasons.join("; ")}.` : ""}${r.handoff ? "\n\u041F\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u0410\u044F\u043D\u0435: \u0434\u0430." : ""}`;
+  }
+  const arg = args.trim().toLowerCase();
+  if (arg === "on" || arg === "off") return (await aiSetEnabled(arg === "on")).message;
+  const p = aiPanel();
+  const c = p.counters;
+  return [
+    `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: ${p.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0451\u043D" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D"}${p.reason ? `. ${p.reason}` : ""}`,
+    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F: \u0434\u0438\u0430\u043B\u043E\u0433\u043E\u0432 ${c.dialogs}, \u043E\u0442\u0432\u0435\u0442\u043E\u0432 ${c.replies}, \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E \u0410\u044F\u043D\u0435 ${c.handoffs}, \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439 ${c.rejected}.`,
+    "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_ai on, \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_ai off, \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u043E\u0442\u0432\u0435\u0442 \u0431\u0435\u0437 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438: /wa_ai_test \u0432\u043E\u043F\u0440\u043E\u0441"
+  ].join("\n");
+}
+
+// form-api/wa-groups.ts
+var env5 = (k) => (process.env[k] || "").trim();
+var waEnabled = () => env5("WA_GROUPS").toLowerCase() === "on";
+var adminNumbers = () => env5("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
+var MIN2 = 6e4;
+var HOUR2 = 36e5;
 var TICK_MS2 = 3e4;
 var JOINS_TICK_MS = 5e3;
 var LOCK_STALE_MS2 = 3 * TICK_MS2;
@@ -7478,7 +8275,8 @@ var freshState = () => ({
   connSince: 0,
   mode: "daily",
   daily: { enabled: false },
-  event: freshEvent()
+  event: freshEvent(),
+  assistant: { enabled: false, hookOn: false, secret: "" }
 });
 var defaultDeps2 = {
   now: () => Date.now(),
@@ -7488,26 +8286,26 @@ var defaultDeps2 = {
 };
 var rt = null;
 var initError = "";
-var fJournal = (r) => (0, import_node_path8.join)(r.dir, "wa-journal.jsonl");
-var fJoins = (r) => (0, import_node_path8.join)(r.dir, "wa-joins.jsonl");
-var fState = (r) => (0, import_node_path8.join)(r.dir, "wa-state.json");
-var fLock = (r) => (0, import_node_path8.join)(r.dir, "wa.lock");
+var fJournal = (r) => (0, import_node_path9.join)(r.dir, "wa-journal.jsonl");
+var fJoins = (r) => (0, import_node_path9.join)(r.dir, "wa-joins.jsonl");
+var fState = (r) => (0, import_node_path9.join)(r.dir, "wa-state.json");
+var fLock = (r) => (0, import_node_path9.join)(r.dir, "wa.lock");
 var iso = (ms) => new Date(ms).toISOString();
 var need = () => {
   if (!rt) throw new Error("wa-groups \u043D\u0435 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D");
   return rt;
 };
-function append(file, row) {
+function append2(file, row) {
   try {
-    (0, import_node_fs8.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
+    (0, import_node_fs9.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
   } catch (e) {
     console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C %s:", file, e.message);
   }
 }
 function readJsonl2(file) {
-  if (!(0, import_node_fs8.existsSync)(file)) return [];
+  if (!(0, import_node_fs9.existsSync)(file)) return [];
   const out = [];
-  for (const line of (0, import_node_fs8.readFileSync)(file, "utf8").split("\n")) {
+  for (const line of (0, import_node_fs9.readFileSync)(file, "utf8").split("\n")) {
     const s = line.trim();
     if (!s) continue;
     try {
@@ -7520,8 +8318,8 @@ function readJsonl2(file) {
 function save(r) {
   try {
     const tmp = `${fState(r)}.tmp.${process.pid}`;
-    (0, import_node_fs8.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
-    (0, import_node_fs8.renameSync)(tmp, fState(r));
+    (0, import_node_fs9.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
+    (0, import_node_fs9.renameSync)(tmp, fState(r));
   } catch (e) {
     console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C wa-state.json:", e.message);
   }
@@ -7529,8 +8327,8 @@ function save(r) {
 function loadState(r) {
   const st = freshState();
   try {
-    if (!(0, import_node_fs8.existsSync)(fState(r))) return st;
-    const raw = JSON.parse((0, import_node_fs8.readFileSync)(fState(r), "utf8"));
+    if (!(0, import_node_fs9.existsSync)(fState(r))) return st;
+    const raw = JSON.parse((0, import_node_fs9.readFileSync)(fState(r), "utf8"));
     const num = (x) => typeof x === "number" && Number.isFinite(x) ? x : 0;
     const str = (x) => typeof x === "string" ? x : "";
     st.targets = Array.isArray(raw.targets) ? raw.targets.filter((t) => t && typeof t.id === "string" && typeof t.jid === "string").map((t) => ({ ...t, done: t.done || {}, tries: t.tries || {} })) : [];
@@ -7561,21 +8359,23 @@ function loadState(r) {
       };
     }
     if (st.mode === "event") st.daily.enabled = false;
+    const as = raw.assistant;
+    if (as && typeof as === "object") st.assistant = { enabled: as.enabled === true, hookOn: as.hookOn === true, secret: typeof as.secret === "string" ? as.secret : "" };
   } catch {
     console.warn("[wa] wa-state.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0441 \u043F\u0443\u0441\u0442\u043E\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F");
   }
   return st;
 }
 function seriesPath2(explicit) {
-  return explicit || env4("WA_SERIES_FILE") || (0, import_node_path8.join)(__dirname, "wa-series.json");
+  return explicit || env5("WA_SERIES_FILE") || (0, import_node_path9.join)(__dirname, "wa-series.json");
 }
 function initWaGroups(opts = {}) {
-  const cfg = validateWaSeries(JSON.parse((0, import_node_fs8.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
-  const kindEnv = env4("WA_TARGET").toLowerCase();
+  const cfg = validateWaSeries(JSON.parse((0, import_node_fs9.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
+  const kindEnv = env5("WA_TARGET").toLowerCase();
   if (kindEnv === "group" || kindEnv === "community") cfg.target = kindEnv;
   if (opts.kind) cfg.target = opts.kind;
-  const dir = opts.dir || env4("DATA_DIR") || (0, import_node_path8.join)(__dirname, "data");
-  (0, import_node_fs8.mkdirSync)(dir, { recursive: true });
+  const dir = opts.dir || env5("DATA_DIR") || (0, import_node_path9.join)(__dirname, "data");
+  (0, import_node_fs9.mkdirSync)(dir, { recursive: true });
   const r = {
     cfg,
     state: freshState(),
@@ -7643,6 +8443,25 @@ function initWaGroups(opts = {}) {
   }
   rt = r;
   initError = "";
+  aiInit(aiHostOf(r));
+}
+function aiHostOf(r) {
+  return {
+    dir: r.dir,
+    now: () => r.deps.now(),
+    rand: () => r.deps.rand(),
+    alarm: (text) => alarm(r, text),
+    notify: (text) => r.deps.notify(text),
+    journal: (row) => journal(r, row),
+    exclusive: (fn) => exclusive(r, fn),
+    canSend: () => r.state.paused ? { ok: false, why: "\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435" } : r.conn.state !== "open" ? { ok: false, why: `\u043D\u043E\u043C\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state})` } : r.lockedOutLogged ? { ok: false, why: "\u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441" } : { ok: true },
+    state: () => r.state.assistant,
+    patch: (p) => {
+      Object.assign(r.state.assistant, p);
+      save(r);
+    },
+    ignoreDigits: () => [...adminNumbers(), digitsOf(r.state.ownerJid)].filter(Boolean)
+  };
 }
 function startWaGroups(opts = {}) {
   if (!waEnabled()) return () => {
@@ -7724,8 +8543,8 @@ function createAtOf(r, day) {
   }
   return atTime(addDays(day, -1), c.streamStart);
 }
-var ddmm2 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
-var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm2(day)) + (seq > 1 ? ` (${seq})` : "");
+var ddmm3 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm3(day)) + (seq > 1 ? ` (${seq})` : "");
 var pad2 = (n) => String(n).padStart(2, "0");
 var minsOf = (hhmm) => {
   const p = parseHHMM(hhmm);
@@ -7743,7 +8562,7 @@ var OFFER_ID = "offer";
 function shiftedPlan(r, t, m) {
   const base = atTime(t.day, m.at);
   const d = startShift(r, t.start);
-  return d && followsStart(r, m) ? base + d * MIN : base;
+  return d && followsStart(r, m) ? base + d * MIN2 : base;
 }
 function planOf(r, t, m) {
   const own = shiftedPlan(r, t, m);
@@ -7818,7 +8637,7 @@ function exclusive(r, fn) {
   return next;
 }
 function journal(r, row) {
-  append(fJournal(r), { ts: iso(r.deps.now()), ...row });
+  append2(fJournal(r), { ts: iso(r.deps.now()), ...row });
 }
 async function alarm(r, text) {
   journal(r, { ev: "alarm", text });
@@ -7882,8 +8701,8 @@ function pidAlive2(pid) {
 function holdLock2(r) {
   const f = fLock(r);
   try {
-    if ((0, import_node_fs8.existsSync)(f)) {
-      const cur = JSON.parse((0, import_node_fs8.readFileSync)(f, "utf8"));
+    if ((0, import_node_fs9.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs9.readFileSync)(f, "utf8"));
       if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS2 && pidAlive2(cur.pid)) {
         if (!r.lockedOutLogged) console.warn("[wa] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442", cur.pid);
         r.lockedOutLogged = true;
@@ -7891,7 +8710,7 @@ function holdLock2(r) {
       }
     }
     r.lockedOutLogged = false;
-    (0, import_node_fs8.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    (0, import_node_fs9.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
     return true;
   } catch (e) {
     console.error("[wa] \u0437\u0430\u043C\u043E\u043A \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
@@ -7901,7 +8720,7 @@ function holdLock2(r) {
 function releaseLock2(r) {
   try {
     const f = fLock(r);
-    if ((0, import_node_fs8.existsSync)(f) && JSON.parse((0, import_node_fs8.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs8.unlinkSync)(f);
+    if ((0, import_node_fs9.existsSync)(f) && JSON.parse((0, import_node_fs9.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs9.unlinkSync)(f);
   } catch {
   }
 }
@@ -7914,7 +8733,7 @@ async function checkConnection(r, now) {
   if (st === "open") r.downSince = 0;
   else if (!r.downSince) r.downSince = now;
   if (st === "open") {
-    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR) {
+    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR2) {
       const i = await fetchInstance();
       if (i.ok && i.data.ownerJid) {
         r.state.ownerJid = i.data.ownerJid;
@@ -7925,20 +8744,20 @@ async function checkConnection(r, now) {
     }
     return true;
   }
-  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN) {
+  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN2) {
     r.state.lastConnAlertAt = now;
     save(r);
-    const since = r.downSince && now - r.downSince >= 30 * MIN ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
+    const since = r.downSince && now - r.downSince >= 30 * MIN2 ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
     await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st}).${since} \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
   }
   return false;
 }
-var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR).length;
+var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR2).length;
 var capReached = (r, now) => dayCreations(r, now) >= r.cfg.maxNewPerDay;
 function noteCreation(r, now) {
-  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR), now];
+  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR2), now];
 }
-var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR;
+var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR2;
 function dueCreateDays(r, now) {
   const out = [];
   if (!daytime(now)) return out;
@@ -8040,7 +8859,7 @@ async function createTarget(r, day, seq, now, opts = {}) {
   noteOk(r);
   return { ok: true, target: t };
 }
-var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm2(t.day)));
+var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm3(t.day)));
 async function setupSteps(r, t) {
   const order = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "link", "avatar", "welcome"];
   let first = true;
@@ -8049,7 +8868,7 @@ async function setupSteps(r, t) {
     const now = r.deps.now();
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
-    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
+    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN2)) continue;
     if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
@@ -8198,7 +9017,7 @@ function dueSends(r, now) {
     for (const msg of r.cfg.messages) {
       if (msg.enabled === false) continue;
       const plan = planOf(r, t, msg);
-      if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
+      if (now < plan || now > plan + r.cfg.graceMinutes * MIN2) continue;
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
       if (!sendableTime(plan)) {
@@ -8246,7 +9065,7 @@ function extractMembers(info, announcementJid) {
   return found.length ? Math.max(...found) : void 0;
 }
 async function refreshMembers(r, t, now) {
-  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN) return false;
+  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN2) return false;
   const x = t.kind === "community" ? await communityInfo(t.jid) : await groupInfo(t.jid);
   t.membersAt = now;
   if (x.ok) {
@@ -8299,6 +9118,11 @@ async function waTick() {
     return await exclusive(r, async () => {
       const now = r.deps.now();
       if (!holdLock2(r)) return { skipped: "lock", sent: 0, created: 0 };
+      try {
+        await aiTick(now);
+      } catch (e) {
+        console.error("[wa] \u0432\u0435\u0431\u0445\u0443\u043A \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430:", e?.message || e);
+      }
       finishEventIfOver(r, now);
       syncEventCommunity(r);
       if (r.state.paused) return { skipped: "paused", sent: 0, created: 0 };
@@ -8319,7 +9143,7 @@ async function waTick() {
           if (r.state.capAlertDay !== dayKeyOf(now)) {
             r.state.capAlertDay = dayKeyOf(now);
             save(r);
-            await alarm(r, `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm2(day)} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u043F\u043E\u0437\u0436\u0435: /wa_new.`);
+            await alarm(r, `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm3(day)} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u043F\u043E\u0437\u0436\u0435: /wa_new.`);
           }
           break;
         }
@@ -8382,7 +9206,7 @@ function noteJoinedDay(r, target, day) {
 function nextJoinDelay(r, serving, now) {
   const jp = r.cfg.joinPolling;
   if (!serving) return between(r, jp.otherSec) * 1e3;
-  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN;
+  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN2;
   return between(r, hot ? jp.servingSec : jp.idleSec) * 1e3;
 }
 async function pollJoins(r, t, now) {
@@ -8397,7 +9221,7 @@ async function pollJoins(r, t, now) {
     const k = `${t.jid}|${q2.jid}`;
     if (r.seenReq.has(k)) continue;
     r.seenReq.add(k);
-    append(fJoins(r), { ts: iso(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q2.jid, phone: phoneOf(q2.raw), raw: q2.raw });
+    append2(fJoins(r), { ts: iso(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q2.jid, phone: phoneOf(q2.raw), raw: q2.raw });
   }
   const waiting = reqs.map((q2) => q2.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3);
   if (!waiting.length) {
@@ -8416,7 +9240,7 @@ async function pollJoins(r, t, now) {
     if (d.status >= 400 && d.status < 500 && ![401, 403, 408, 429].includes(d.status)) {
       for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
     }
-    append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
+    append2(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
     await softJoinFail(r, now, `\u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A ${t.id}: ${d.error}`);
     return 0;
   }
@@ -8425,7 +9249,7 @@ async function pollJoins(r, t, now) {
   let full = false;
   for (const x of normalizeDecisions(d.data, todo)) {
     const k = `${t.jid}|${x.jid}`;
-    append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
+    append2(fJoins(r), { ts: iso(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
     if (x.ok) {
       r.approved.add(k);
       r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
@@ -8451,7 +9275,7 @@ var LIMIT_REFUSAL = /^419$|full|limit/i;
 async function softJoinFail(r, now, what) {
   r.joinFailStreak++;
   console.warn("[wa] \u0437\u0430\u044F\u0432\u043A\u0438, \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s", r.joinFailStreak, what);
-  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR) {
+  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR2) {
     r.joinAlertAt = now;
     await alarm(r, `WhatsApp: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u0432\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u043D\u0435 \u043E\u0434\u043E\u0431\u0440\u044F\u044E\u0442\u0441\u044F (${r.joinFailStreak} \u043E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434). \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${what}. \u041B\u044E\u0434\u0438 \u0436\u0434\u0443\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F.`);
   }
@@ -8468,7 +9292,7 @@ async function joinsTick() {
       let n = 0;
       for (const t of r.state.targets) {
         if (t.kind !== "community" || !isReady(t)) continue;
-        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN) continue;
+        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN2) continue;
         if (now < (r.joinNextAt.get(t.id) || 0)) continue;
         n += await pollJoins(r, t, now);
         r.joinNextAt.set(t.id, r.deps.now() + nextJoinDelay(r, serving?.id === t.id, r.deps.now()));
@@ -8482,12 +9306,12 @@ async function joinsTick() {
     r.joining = false;
   }
 }
-var agoText = (ms) => {
+var agoText2 = (ms) => {
   const s = Math.max(0, Math.round(ms / 1e3));
   return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
 };
 var inText = (ms) => {
-  const m = Math.max(0, Math.round(ms / MIN));
+  const m = Math.max(0, Math.round(ms / MIN2));
   if (m < 90) return `\u0447\u0435\u0440\u0435\u0437 ${m} \u043C\u0438\u043D`;
   if (m >= 2880) return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 1440)} \u0434\u043D. ${Math.floor(m % 1440 / 60)} \u0447`;
   return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
@@ -8519,16 +9343,16 @@ function nextMessage(r, now) {
 }
 function nextMessageText(r, now) {
   const b = nextMessage(r, now);
-  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm2(b.day)}), ${inText(b.plan - now)}` : "\u043D\u0435\u0442";
+  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm3(b.day)}), ${inText(b.plan - now)}` : "\u043D\u0435\u0442";
 }
 function targetLine(r, label, day, now) {
   const ts = [...targetsOf(r, day)].reverse().filter((t) => r.state.mode === "event" || t.source !== "event");
   const at = createAtOf(r, day);
-  if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm2(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm2(dayKeyOf(at))}` : `${label} ${ddmm2(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E`;
+  if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm3(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm3(dayKeyOf(at))}` : `${label} ${ddmm3(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E`;
   return ts.map((t) => {
-    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText(now - (t.membersAt || now))})`;
+    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText2(now - (t.membersAt || now))})`;
     const joined = t.kind === "community" ? `, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${r.joinedCount.get(t.id) || 0}` : "";
-    return `${label} ${ddmm2(day)}: \xAB${t.name}\xBB, ${isReady(t) ? "\u0433\u043E\u0442\u043E\u0432\u043E" : "\u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F"}, ${mem}${joined}`;
+    return `${label} ${ddmm3(day)}: \xAB${t.name}\xBB, ${isReady(t) ? "\u0433\u043E\u0442\u043E\u0432\u043E" : "\u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F"}, ${mem}${joined}`;
   }).join("\n");
 }
 async function cmdStatus(r, now) {
@@ -8558,13 +9382,15 @@ async function cmdStatus(r, now) {
   const ev = r.state.event;
   const lines = [
     `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C: ${r.state.paused ? `\u043D\u0430 \u043F\u0430\u0443\u0437\u0435 (${r.state.pausedReason || "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u0430"})` : "\u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442"}, \u0442\u0438\u043F ${r.cfg.target === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430"}`,
-    r.state.mode === "event" ? `\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440${ev.date ? ` ${ddmm2(ev.date)} \u0432 ${ev.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm2(ev.recruitFrom)}` : ", \u0434\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430"}` : `\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${r.state.daily.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`,
+    r.state.mode === "event" ? `\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440${ev.date ? ` ${ddmm3(ev.date)} \u0432 ${ev.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm3(ev.recruitFrom)}` : ", \u0434\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430"}` : `\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${r.state.daily.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`,
     `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${conn}${conn === "open" ? `, ${number}` : ""}`,
-    ...r.state.mode === "event" ? [ev.date ? eventTarget(r) ? targetLine(r, "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430", ev.date, now) : `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm2(ev.date)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C ${ddmm2(ev.recruitFrom)} \u0432 ${EVENT_CREATE_AT}` : "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442"] : [targetLine(r, "\u042D\u0444\u0438\u0440", cur, now), targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now)],
+    ...r.state.mode === "event" ? [ev.date ? eventTarget(r) ? targetLine(r, "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430", ev.date, now) : `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm3(ev.date)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C ${ddmm3(ev.recruitFrom)} \u0432 ${EVENT_CREATE_AT}` : "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442"] : [targetLine(r, "\u042D\u0444\u0438\u0440", cur, now), targetLine(r, "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", next, now)],
     `\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u0435\u0439\u0447\u0430\u0441: ${link ?? "\u0441\u0442\u0430\u0440\u0430\u044F \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F (\u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442)"}`,
     `\u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${nextMessageText(r, now)}`,
     `\u041D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438: ${dayCreations(r, now)} \u0438\u0437 ${r.cfg.maxNewPerDay}`,
-    `\u041E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434: ${r.state.failStreak} \u0438\u0437 ${r.cfg.retry.pauseAfter}`
+    `\u041E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434: ${r.state.failStreak} \u0438\u0437 ${r.cfg.retry.pauseAfter}`,
+    // Строка про ассистента только когда он включён: при выключенном вывод /wa прежний.
+    ...r.state.assistant.enabled ? ["\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432 \u043B\u0438\u0447\u043A\u0435: \u0432\u043A\u043B\u044E\u0447\u0451\u043D (/wa_ai \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u0441\u0447\u0451\u0442\u0447\u0438\u043A\u0438 \u0437\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F)"] : []
   ];
   return { text: lines.join("\n") };
 }
@@ -8575,7 +9401,7 @@ function nextStreamAfter(r, day) {
   return d;
 }
 async function cmdQr(r, now) {
-  const wait = r.state.lastQrAt + MIN - now;
+  const wait = r.state.lastQrAt + MIN2 - now;
   if (wait > 0) return { text: `QR \u043C\u043E\u0436\u043D\u043E \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C \u0440\u0430\u0437 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u0435\u0449\u0451 ${Math.ceil(wait / 1e3)} \u0441.` };
   r.state.lastQrAt = now;
   save(r);
@@ -8630,20 +9456,20 @@ function cmdResume(r) {
   journal(r, { ev: "resume" });
   return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
 }
-var fail = (code, message) => ({ ok: false, code, message });
+var fail2 = (code, message) => ({ ok: false, code, message });
 function eventCreateCheck(r, now) {
   const ev = r.state.event;
-  if (r.state.mode !== "event") return fail("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0441\u044C \u043D\u0430 \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440.");
-  if (!ev.date) return fail("no_event", "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438.");
-  if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0443\u0436\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u0417\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u0443\u044E \u0434\u0430\u0442\u0443.`);
-  if (r.state.pendingCreate) return fail("pending", "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443 (\u043E\u043D\u0430 \u043E\u0431\u043D\u0443\u043B\u0438\u0442 \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435).");
-  if (r.state.paused) return fail("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
+  if (r.state.mode !== "event") return fail2("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0441\u044C \u043D\u0430 \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440.");
+  if (!ev.date) return fail2("no_event", "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0434\u0430\u0439 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438.");
+  if (ev.done || now >= closeAtOf(r, ev.date)) return fail2("over", `\u042D\u0444\u0438\u0440 ${ddmm3(ev.date)} \u0443\u0436\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F. \u0417\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u0443\u044E \u0434\u0430\u0442\u0443.`);
+  if (r.state.pendingCreate) return fail2("pending", "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443 (\u043E\u043D\u0430 \u043E\u0431\u043D\u0443\u043B\u0438\u0442 \u043E\u0436\u0438\u0434\u0430\u043D\u0438\u0435).");
+  if (r.state.paused) return fail2("paused", "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443.");
   const existing = eventTarget(r);
   if (existing) {
     syncEventCommunity(r);
-    return { ok: true, code: "exists", message: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(ev.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+    return { ok: true, code: "exists", message: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm3(ev.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
   }
-  if (capReached(r, now)) return fail("cap", `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.`);
+  if (capReached(r, now)) return fail2("cap", `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.`);
   return null;
 }
 async function eventCreateNow(r, now) {
@@ -8653,9 +9479,9 @@ async function eventCreateNow(r, now) {
     const late = eventCreateCheck(r, Math.max(now, r.deps.now()));
     if (late) return late;
     const ev = r.state.event;
-    if (!await checkConnection(r, now)) return fail("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
+    if (!await checkConnection(r, now)) return fail2("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
     const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
-    if (!res.ok) return fail("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
+    if (!res.ok) return fail2("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
     syncEventCommunity(r);
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
@@ -8667,7 +9493,7 @@ function cmdNewCheck(r, day, now) {
   if (r.state.pendingCreate) return { text: "\u041F\u0440\u043E\u0448\u043B\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0438 \u0441\u0434\u0435\u043B\u0430\u0439 /wa_resume." };
   if (r.state.paused) return { text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume." };
   const existing = targetsOf(r, day)[0];
-  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
+  if (existing) return { text: `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm3(day)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C: \xAB${existing.name}\xBB${existing.link ? `, \u0441\u0441\u044B\u043B\u043A\u0430 ${existing.link}` : ", \u0441\u0441\u044B\u043B\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432\u0430"}.` };
   if (capReached(r, now)) return { text: `\u041B\u0438\u043C\u0438\u0442 ${r.cfg.maxNewPerDay} \u043D\u043E\u0432\u044B\u0445 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432 \u0441\u0443\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.` };
   return null;
 }
@@ -8685,8 +9511,8 @@ async function cmdNew(r, args, now) {
     day = dayKeyOf(now);
     for (let i = 0; i < 400 && (!isStreamDay(day, c) || r.state.targets.some((t) => t.day === day)); i++) day = addDays(day, 1);
   }
-  if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `\u042D\u0444\u0438\u0440 ${ddmm2(day)} \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u0430\u043B\u0435\u043A\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0437\u0430 \u0442\u0440\u0438 \u0434\u043D\u044F \u0434\u043E \u043D\u0435\u0433\u043E.` };
-  if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u044D\u0444\u0438\u0440\u044B \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0431\u0435\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430: ${ddmm2(day)}. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u043D\u044C\u0448\u0435 \u0441\u0440\u043E\u043A\u0430, \u0443\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443: /wa_new ${day}` };
+  if (arg && day > addDays(dayKeyOf(now), 3)) return { text: `\u042D\u0444\u0438\u0440 ${ddmm3(day)} \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u0430\u043B\u0435\u043A\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0437\u0430 \u0442\u0440\u0438 \u0434\u043D\u044F \u0434\u043E \u043D\u0435\u0433\u043E.` };
+  if (!arg && day > addDays(dayKeyOf(now), 1)) return { text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u044D\u0444\u0438\u0440\u044B \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0431\u0435\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430: ${ddmm3(day)}. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u043D\u044C\u0448\u0435 \u0441\u0440\u043E\u043A\u0430, \u0443\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443: /wa_new ${day}` };
   const early = cmdNewCheck(r, day, now);
   if (early) return early;
   return exclusive(r, async () => {
@@ -8698,7 +9524,7 @@ async function cmdNew(r, args, now) {
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
     const t = res.target;
-    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
+    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN2)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
   });
 }
 function currentTargets(r, now) {
@@ -8715,7 +9541,7 @@ async function sendSeries(r, id, now) {
   if (r.state.paused) return { ok: false, code: "paused", text: "\u041C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 /wa_resume.", ...zero };
   const { day, list: targets } = currentTargets(r, now);
   if (!targets.length) {
-    const text = r.state.mode === "event" ? day ? `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 (${ddmm2(day)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` : "\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442." : `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm2(dayKeyOf(now))}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.`;
+    const text = r.state.mode === "event" ? day ? `\u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 (${ddmm3(day)}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.` : "\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442." : `\u0414\u043B\u044F \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0433\u043E \u044D\u0444\u0438\u0440\u0430 (${ddmm3(dayKeyOf(now))}) \u043D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430.`;
     return { ok: false, code: "no_target", text, ...zero };
   }
   return exclusive(r, async () => {
@@ -8751,6 +9577,7 @@ async function waCommand(cmd, args, now) {
     if (cmd === "wa_resume") return cmdResume(r);
     if (cmd === "wa_new") return await cmdNew(r, args, now);
     if (cmd === "wa_send") return await cmdSend(r, args, now);
+    if (cmd === "wa_ai" || cmd === "wa_ai_test") return { text: await aiCommand(cmd, args) };
     return { text: "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430\u044F \u043A\u043E\u043C\u0430\u043D\u0434\u0430 WhatsApp." };
   } catch (e) {
     console.error("[wa] \u043A\u043E\u043C\u0430\u043D\u0434\u0430 %s \u0443\u043F\u0430\u043B\u0430:", cmd, e?.stack || e);
@@ -8767,13 +9594,13 @@ function waReportLine(day) {
   const done = ts.reduce((s, t) => s + r.cfg.messages.filter((m) => m.enabled !== false && isDone(r, m, t, true)).length, 0);
   return `WhatsApp: \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${joined}, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0441\u0435\u0440\u0438\u0438 \u0443\u0448\u043B\u043E ${done} \u0438\u0437 ${total}.`;
 }
-var MODULE_OFF = fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
+var MODULE_OFF2 = fail2("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
 var clock = (r, now) => now ?? r.deps.now();
-var when = (ms) => `${ddmm2(dayKeyOf(ms))} \u0432 ${hhmmOf(ms)}`;
+var when = (ms) => `${ddmm3(dayKeyOf(ms))} \u0432 ${hhmmOf(ms)}`;
 function waSetMode(mode, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
-  if (mode !== "daily" && mode !== "event") return fail("bad_request", "\u0420\u0435\u0436\u0438\u043C: daily \u0438\u043B\u0438 event.");
+  if (!r) return MODULE_OFF2;
+  if (mode !== "daily" && mode !== "event") return fail2("bad_request", "\u0420\u0435\u0436\u0438\u043C: daily \u0438\u043B\u0438 event.");
   if (r.state.mode === mode) return { ok: true, code: "same", message: "\u042D\u0442\u043E\u0442 \u0440\u0435\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
   r.state.mode = mode;
   if (mode === "event") {
@@ -8789,10 +9616,10 @@ function waSetMode(mode, nowArg) {
 }
 function waSetDaily(enabled, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
-  if (typeof enabled !== "boolean") return fail("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (!r) return MODULE_OFF2;
+  if (typeof enabled !== "boolean") return fail2("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
   if (!enabled && r.state.mode !== "daily") return { ok: true, code: "same", message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
-  if (r.state.mode !== "daily") return fail("wrong_mode", "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
+  if (r.state.mode !== "daily") return fail2("wrong_mode", "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
   if (r.state.daily.enabled === enabled) return { ok: true, code: "same", message: enabled ? "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
   r.state.daily.enabled = enabled;
   save(r);
@@ -8800,42 +9627,42 @@ function waSetDaily(enabled, nowArg) {
   const now = clock(r, nowArg);
   if (!enabled) return { ok: true, message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E: \u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u044E\u0442\u0441\u044F. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0434\u043E \u043A\u043E\u043D\u0446\u0430." };
   const nx = nextDailyCreate(r, now);
-  return { ok: true, message: nx ? `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E, \u044D\u0444\u0438\u0440 ${ddmm2(nx.day)}, \u0441\u043E\u0437\u0434\u0430\u043C ${when(nx.at)}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
+  return { ok: true, message: nx ? `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E, \u044D\u0444\u0438\u0440 ${ddmm3(nx.day)}, \u0441\u043E\u0437\u0434\u0430\u043C ${when(nx.at)}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
 }
 var START_MIN = 18 * 60;
 var START_MAX = 21 * 60;
 function waSetEvent(p, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
-  if (r.state.mode !== "event") return fail("wrong_mode", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440\xBB. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
+  if (!r) return MODULE_OFF2;
+  if (r.state.mode !== "event") return fail2("wrong_mode", "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \xAB\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440\xBB. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438 \u0440\u0435\u0436\u0438\u043C.");
   const now = clock(r, nowArg);
   const today = dayKeyOf(now);
   const cur = r.state.event;
-  if (!cur.done && cur.communityId && eventTarget(r)) return fail("locked", "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0442\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0434\u0430\u0442\u044B \u0438 \u0432\u0440\u0435\u043C\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F. \u041D\u0430\u0436\u043C\u0438 \xAB\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u044D\u0444\u0438\u0440\xBB \u0438 \u0437\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u044B\u0439.");
-  if (!isDayKey(p.date)) return fail("bad_date", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430.");
-  if (p.date < today) return fail("bad_date", "\u0414\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430.");
-  if (p.date > addDays(today, 90)) return fail("bad_date", "\u042D\u0444\u0438\u0440 \u0434\u0430\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 90 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
+  if (!cur.done && cur.communityId && eventTarget(r)) return fail2("locked", "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0442\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0434\u0430\u0442\u044B \u0438 \u0432\u0440\u0435\u043C\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F. \u041D\u0430\u0436\u043C\u0438 \xAB\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u044D\u0444\u0438\u0440\xBB \u0438 \u0437\u0430\u0434\u0430\u0439 \u043D\u043E\u0432\u044B\u0439.");
+  if (!isDayKey(p.date)) return fail2("bad_date", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443 \u044D\u0444\u0438\u0440\u0430.");
+  if (p.date < today) return fail2("bad_date", "\u0414\u0430\u0442\u0430 \u044D\u0444\u0438\u0440\u0430 \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430.");
+  if (p.date > addDays(today, 90)) return fail2("bad_date", "\u042D\u0444\u0438\u0440 \u0434\u0430\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 90 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
   let start;
   try {
     start = normHHMM(String(p.start || r.cfg.streamStart));
   } catch {
-    return fail("bad_start", "\u0412\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0432\u0438\u0434\u0430 20:00.");
+    return fail2("bad_start", "\u0412\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0432\u0438\u0434\u0430 20:00.");
   }
-  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 18:00 \u0434\u043E 21:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440, \u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u0443\u0445\u043E\u0434\u0438\u0442\u044C \u0434\u043E 09:00.");
-  if (!isDayKey(p.recruitFrom)) return fail("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
-  if (p.recruitFrom > p.date) return fail("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
-  if (p.recruitFrom < addDays(p.date, -30)) return fail("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
+  if (minsOf(start) < START_MIN || minsOf(start) > START_MAX) return fail2("bad_start", "\u0421\u0442\u0430\u0440\u0442 \u044D\u0444\u0438\u0440\u0430 \u043E\u0442 18:00 \u0434\u043E 21:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B: \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0432\u0435\u0447\u0435\u0440\u043D\u0438\u0439 \u044D\u0444\u0438\u0440, \u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u0443\u0445\u043E\u0434\u0438\u0442\u044C \u0434\u043E 09:00.");
+  if (!isDayKey(p.recruitFrom)) return fail2("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
+  if (p.recruitFrom > p.date) return fail2("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
+  if (p.recruitFrom < addDays(p.date, -30)) return fail2("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
   r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
   syncEventCommunity(r);
   save(r);
   journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
   const at = eventCreateAt(r);
-  const text = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm2(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? daytime(now) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B (\u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB).` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm2(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
+  const text = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm3(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? daytime(now) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm3(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm3(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B (\u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB).` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm3(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
   return { ok: true, message: text };
 }
 function waEventReset() {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
   save(r);
   journal(r, { ev: "event_reset", by: "panel" });
@@ -8843,50 +9670,50 @@ function waEventReset() {
 }
 async function waEventCreateNow(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   try {
     return await eventCreateNow(r, clock(r, nowArg));
   } catch (e) {
-    return fail("internal", `\u041E\u0448\u0438\u0431\u043A\u0430: ${e?.message || e}`);
+    return fail2("internal", `\u041E\u0448\u0438\u0431\u043A\u0430: ${e?.message || e}`);
   }
 }
 async function waDailyCreateNow(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
-  if (r.state.mode !== "daily") return fail("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB \u0432 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.");
+  if (!r) return MODULE_OFF2;
+  if (r.state.mode !== "daily") return fail2("wrong_mode", "\u0421\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB \u0432 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430\u0445.");
   const text = (await cmdNew(r, "", clock(r, nowArg))).text;
   return { ok: /^Создано:/.test(text) || /сообщество уже есть/.test(text), message: text };
 }
 function waPause(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   const was = r.state.paused;
   const reply2 = cmdPause(r, clock(r, nowArg), "panel");
   return { ok: true, code: was ? "same" : "paused", message: reply2.text };
 }
 function waResume() {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   return { ok: true, message: cmdResume(r).text };
 }
 async function waSendSeries(id, nowArg) {
   const r = rt;
-  if (!r) return { ...MODULE_OFF, sent: 0, skipped: 0, failed: 0, targets: 0 };
-  if (typeof id !== "string" || !id) return { ...fail("bad_request", "\u0412\u044B\u0431\u0435\u0440\u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438."), sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (!r) return { ...MODULE_OFF2, sent: 0, skipped: 0, failed: 0, targets: 0 };
+  if (typeof id !== "string" || !id) return { ...fail2("bad_request", "\u0412\u044B\u0431\u0435\u0440\u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u0441\u0435\u0440\u0438\u0438."), sent: 0, skipped: 0, failed: 0, targets: 0 };
   const x = await sendSeries(r, id, clock(r, nowArg));
   return { ok: x.ok, code: x.code, message: x.text, sent: x.sent, skipped: x.skipped, failed: x.failed, targets: x.targets };
 }
 var numberOf = (r) => r.state.ownerJid ? `+${r.state.ownerJid.replace(/[:@].*$/, "")}` : "";
 async function waConnection(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     if (r.conn.at && now - r.conn.at < 3e3 && r.conn.state !== "open") return { ok: true, state: r.conn.state, number: "", profile: "" };
     const cs = await connectionState();
     if (!cs.ok) {
       setConn(r, "unreachable", now);
-      return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+      return fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     }
     setConn(r, cs.data.state, now);
     if (cs.data.state === "open") await refreshOwner(r, now);
@@ -8905,11 +9732,11 @@ async function refreshOwner(r, now) {
 var cleanQr = (x) => typeof x === "string" ? x.replace(/^data:image\/\w+;base64,/, "") : "";
 async function waQr(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const cs = await connectionState();
-    if (!cs.ok) return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+    if (!cs.ok) return fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     const st = cs.data.state;
     setConn(r, st, now);
     if (st === "open") {
@@ -8922,18 +9749,18 @@ async function waQr(nowArg) {
     let qr;
     if (st === "absent") {
       const c = await createInstance();
-      if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
+      if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
       qr = c.data?.qrcode?.base64;
     } else {
       const c = await connectInstance();
-      if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C QR: ${c.error}`);
+      if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C QR: ${c.error}`);
       qr = c.data?.base64;
     }
     const b64 = cleanQr(qr);
     if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64) || b64.length > 4e5) return { ok: true, state: shown, qr: null, message: "QR \u0433\u043E\u0442\u043E\u0432\u0438\u0442\u0441\u044F, \u043E\u043D \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434." };
     const data = `data:image/png;base64,${b64}`;
     r.qrCache = { at: now, state: shown, data };
-    if (now - r.qrJournalAt > 5 * MIN) {
+    if (now - r.qrJournalAt > 5 * MIN2) {
       r.qrJournalAt = now;
       journal(r, { ev: "qr", by: "panel" });
     }
@@ -8942,11 +9769,11 @@ async function waQr(nowArg) {
 }
 async function waLogout(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const x = await logoutInstance();
-    if (!x.ok) return fail("evolution", `\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043D\u043E\u043C\u0435\u0440: ${x.error}`);
+    if (!x.ok) return fail2("evolution", `\u041D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043D\u043E\u043C\u0435\u0440: ${x.error}`);
     setConn(r, "close", now);
     r.statusCache = null;
     r.pairCache = null;
@@ -9057,7 +9884,7 @@ function describeStatus(r, state, info, infoErr, now, evoErr = "") {
 }
 async function waStatus(nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const cached = r.statusCache;
@@ -9093,10 +9920,10 @@ var PAIR_MIN_GAP_MS = 15e3;
 var PAIR_TTL_SEC = 60;
 async function waPairing(numberRaw, nowArg) {
   const r = rt;
-  if (!r) return MODULE_OFF;
+  if (!r) return MODULE_OFF2;
   const text = typeof numberRaw === "number" ? String(numberRaw) : typeof numberRaw === "string" ? numberRaw : "";
   const digits = /^[\d\s+()-]+$/.test(text) ? text.replace(/\D/g, "") : "";
-  if (digits.length < 11 || digits.length > 15) return fail("bad_number", "\u041D\u043E\u043C\u0435\u0440: \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u043E\u0442 11 \u0434\u043E 15, \u0441 \u043A\u043E\u0434\u043E\u043C \u0441\u0442\u0440\u0430\u043D\u044B.");
+  if (digits.length < 11 || digits.length > 15) return fail2("bad_number", "\u041D\u043E\u043C\u0435\u0440: \u0442\u043E\u043B\u044C\u043A\u043E \u0446\u0438\u0444\u0440\u044B, \u043E\u0442 11 \u0434\u043E 15, \u0441 \u043A\u043E\u0434\u043E\u043C \u0441\u0442\u0440\u0430\u043D\u044B.");
   return exclusive(r, async () => {
     const now = clock(r, nowArg);
     const pc = r.pairCache;
@@ -9107,33 +9934,33 @@ async function waPairing(numberRaw, nowArg) {
     const cs = await connectionState();
     if (!cs.ok) {
       setConn(r, "unreachable", now);
-      return fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
+      return fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     }
     const st = cs.data.state;
     setConn(r, st, now);
     r.statusCache = null;
-    if (st === "open") return fail("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
+    if (st === "open") return fail2("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
     const codeOf = (x) => String(x ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     let code = "";
     if (st === "absent") {
       const c = await createInstance(digits);
-      if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
+      if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
       code = codeOf(c.data?.qrcode?.pairingCode);
     } else {
       if (st === "connecting") {
         const i = await fetchInstance();
-        if (i.ok && i.data.ownerJid) return fail("reconnecting", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.");
+        if (i.ok && i.data.ownerJid) return fail2("reconnecting", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.");
         await logoutInstance();
       }
       for (let attempt = 0; attempt < 3 && !code; attempt++) {
         if (attempt) await r.deps.sleep(2500);
         const c = await connectInstance(digits);
-        if (!c.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u043A\u043E\u0434: ${c.error}`);
+        if (!c.ok) return fail2("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u043A\u043E\u0434: ${c.error}`);
         if (c.data?.instance?.state === "open") return { ok: true, state: "open", pairingCode: "", number: maskNumber(digits), ttlSec: 0, cached: false };
         code = codeOf(c.data?.pairingCode);
       }
     }
-    if (code.length !== 8) return fail("no_code", "Evolution \u043D\u0435 \u0432\u044B\u0434\u0430\u043B \u043A\u043E\u0434. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434\xBB.");
+    if (code.length !== 8) return fail2("no_code", "Evolution \u043D\u0435 \u0432\u044B\u0434\u0430\u043B \u043A\u043E\u0434. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434\xBB.");
     r.qrCache = null;
     r.pairCache = { at: now, digits, code };
     journal(r, { ev: "pair", by: "panel" });
@@ -9172,20 +9999,20 @@ var GROUPS_CACHE_MS = 6e4;
 var GROUPS_MIN_GAP_MS = 2e4;
 async function waGroups(force = false, nowArg) {
   const r = rt;
-  if (!r) return { ...MODULE_OFF, items: [], at: 0, cached: false };
+  if (!r) return { ...MODULE_OFF2, items: [], at: 0, cached: false };
   const now = clock(r, nowArg);
   const c = r.groupsCache;
   if (c && (!force ? now - c.at < GROUPS_CACHE_MS : now - r.groupsCallAt < GROUPS_MIN_GAP_MS)) return { ok: true, message: "", items: c.items, at: c.at, cached: true };
   return exclusive(r, async () => {
     r.groupsCallAt = now;
     const cs = await connectionState();
-    if (!cs.ok) return { ...fail("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (!cs.ok) return { ...fail2("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     setConn(r, cs.data.state, now);
-    if (cs.data.state !== "open") return { ...fail("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${cs.data.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (cs.data.state !== "open") return { ...fail2("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${cs.data.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     if (!r.state.ownerJid) await refreshOwner(r, now);
     let res = await fetchAllGroups(true);
     if (!res.ok) res = await fetchAllGroups(false);
-    if (!res.ok) return { ...fail("evolution", `\u0421\u043F\u0438\u0441\u043E\u043A \u0433\u0440\u0443\u043F\u043F \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: ${res.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
+    if (!res.ok) return { ...fail2("evolution", `\u0421\u043F\u0438\u0441\u043E\u043A \u0433\u0440\u0443\u043F\u043F \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: ${res.error}`), items: c?.items ?? [], at: c?.at ?? 0, cached: !!c };
     const rank = (g) => g.type === "community" ? 0 : g.type === "announce" ? 1 : g.type === "subgroup" ? 2 : 3;
     const items = res.data.slice(0, 300).map((g) => groupView(r, g)).filter((g) => g.id).sort((a, b) => rank(a) - rank(b) || (b.size ?? -1) - (a.size ?? -1) || a.name.localeCompare(b.name));
     r.groupsCache = { at: now, items };
@@ -9194,14 +10021,14 @@ async function waGroups(force = false, nowArg) {
 }
 function readJsonlTail(file, maxBytes = 256 * 1024) {
   try {
-    const size = (0, import_node_fs8.statSync)(file).size;
+    const size = (0, import_node_fs9.statSync)(file).size;
     const start = Math.max(0, size - maxBytes);
     const buf = Buffer.alloc(size - start);
-    const fd = (0, import_node_fs8.openSync)(file, "r");
+    const fd = (0, import_node_fs9.openSync)(file, "r");
     try {
-      (0, import_node_fs8.readSync)(fd, buf, 0, buf.length, start);
+      (0, import_node_fs9.readSync)(fd, buf, 0, buf.length, start);
     } finally {
-      (0, import_node_fs8.closeSync)(fd);
+      (0, import_node_fs9.closeSync)(fd);
     }
     let text = buf.toString("utf8");
     if (start > 0) text = text.slice(text.indexOf("\n") + 1);
@@ -9219,8 +10046,8 @@ function readJsonlTail(file, maxBytes = 256 * 1024) {
     return [];
   }
 }
-var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn"]);
-var stampOf = (ms) => `${ddmm2(dayKeyOf(ms))} ${hhmmOf(ms)}`;
+var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip"]);
+var stampOf = (ms) => `${ddmm3(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 var clip = (s, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
   return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
@@ -9269,13 +10096,13 @@ function journalView(r, limit = 20) {
         text = `\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435: ${x.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E"}`;
         break;
       case "event_set":
-        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: ${ddmm2(String(x.date))} \u0432 ${x.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm2(String(x.recruitFrom))}`;
+        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440: ${ddmm3(String(x.date))} \u0432 ${x.start}, \u043D\u0430\u0431\u043E\u0440 \u0441 ${ddmm3(String(x.recruitFrom))}`;
         break;
       case "event_reset":
         text = "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B";
         break;
       case "event_done":
-        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 ${ddmm2(String(x.date))} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0441\u0441\u044B\u043B\u043A\u0430 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F`;
+        text = `\u0416\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 ${ddmm3(String(x.date))} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0441\u0441\u044B\u043B\u043A\u0430 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F`;
         break;
       case "logout":
         kind = "error";
@@ -9290,6 +10117,19 @@ function journalView(r, limit = 20) {
       case "conn":
         kind = x.state === "open" ? "ok" : "error";
         text = x.state === "open" ? "WhatsApp \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D" : `\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${x.state}`;
+        break;
+      case "ai_on":
+        kind = "ok";
+        text = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D";
+        break;
+      case "ai_off":
+        text = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D";
+        break;
+      case "ai_handoff":
+        text = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043B ${clip(x.who, 24)} \u0410\u044F\u043D\u0435: ${clip(x.why, 100)}. \u041C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432`;
+        break;
+      case "ai_skip":
+        text = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
         break;
     }
     return { ts, t: ts ? stampOf(ts) : "", kind, text };
@@ -9312,14 +10152,14 @@ function cardOf(r, t, now, serving) {
     id: t.id,
     name: t.name,
     day: t.day,
-    dayLabel: ddmm2(t.day),
+    dayLabel: ddmm3(t.day),
     kind: t.kind,
     source: t.source ?? "daily",
     ready: isReady(t),
     link: isReady(t) ? t.link : "",
     onSite: serving?.id === t.id,
     members: t.members ?? null,
-    membersAgo: t.membersAt ? agoText(now - t.membersAt) : "",
+    membersAgo: t.membersAt ? agoText2(now - t.membersAt) : "",
     joinedToday: r.joinedByDay.get(t.id)?.get(dayKeyOf(now)) ?? 0,
     joinedTotal: r.joinedCount.get(t.id) ?? 0
   };
@@ -9341,12 +10181,12 @@ function waPanel(nowArg) {
   let evText = "\u042D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D. \u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443, \u0432\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438.";
   if (ev.done) {
     evStatus = "done";
-    evText = `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F.`;
+    evText = `\u042D\u0444\u0438\u0440 ${ddmm3(ev.date)} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F.`;
   } else if (ev.date) {
     const startAt = atTime(ev.date, startEff);
     if (st.mode !== "event") {
       evStatus = "inactive";
-      evText = `\u042D\u0444\u0438\u0440 ${ddmm2(ev.date)} \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C.`;
+      evText = `\u042D\u0444\u0438\u0440 ${ddmm3(ev.date)} \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C.`;
     } else if (!evTarget) {
       if (now < eventCreateAt(r)) {
         evStatus = "scheduled";
@@ -9358,7 +10198,7 @@ function waPanel(nowArg) {
     } else if (now < startAt) {
       evStatus = "recruiting";
       evText = "\u0418\u0434\u0451\u0442 \u043D\u0430\u0431\u043E\u0440: \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430.";
-    } else if (now < startAt + r.cfg.streamMinutes * MIN) {
+    } else if (now < startAt + r.cfg.streamMinutes * MIN2) {
       evStatus = "live";
       evText = "\u042D\u0444\u0438\u0440 \u0438\u0434\u0451\u0442. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E.";
     } else {
@@ -9372,7 +10212,7 @@ function waPanel(nowArg) {
   if (st.mode === "event") {
     if (ev.date) {
       const cards = cardsOf2(ev.date);
-      current = { title: "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430", day: ev.date, dayLabel: ddmm2(ev.date), cards, pending: cards.length ? "" : evText };
+      current = { title: "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430", day: ev.date, dayLabel: ddmm3(ev.date), cards, pending: cards.length ? "" : evText };
     }
   } else {
     const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
@@ -9380,7 +10220,7 @@ function waPanel(nowArg) {
     const pend = (day) => r.state.daily.enabled ? `\u0411\u0443\u0434\u0435\u0442 \u0441\u043E\u0437\u0434\u0430\u043D\u043E ${when(createAtOf(r, day))}.` : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F.";
     const mk = (title, day) => {
       const cards = cardsOf2(day);
-      return { title, day, dayLabel: ddmm2(day), cards, pending: cards.length ? "" : pend(day) };
+      return { title, day, dayLabel: ddmm3(day), cards, pending: cards.length ? "" : pend(day) };
     };
     current = mk("\u042D\u0444\u0438\u0440", cur);
     next = mk("\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u044D\u0444\u0438\u0440", nxt);
@@ -9414,21 +10254,21 @@ function waPanel(nowArg) {
       pendingCreate: !!st.pendingCreate,
       kind: r.cfg.target
     },
-    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText2(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
     /** Последний статус подключения из памяти (без запроса к Evolution): пульт показывает его сразу, пока приходит свежий. */
     status: r.statusCache ? r.statusCache.value : null,
     mode: st.mode,
     daily: { enabled: st.daily.enabled, next: (() => {
       const n = nextDailyCreate(r, now);
-      return n ? { day: n.day, dayLabel: ddmm2(n.day), at: n.at, text: when(n.at) } : null;
+      return n ? { day: n.day, dayLabel: ddmm3(n.day), at: n.at, text: when(n.at) } : null;
     })() },
     event: {
       date: ev.date,
-      dateLabel: ev.date ? ddmm2(ev.date) : "",
+      dateLabel: ev.date ? ddmm3(ev.date) : "",
       start: startEff,
       startDefault: r.cfg.streamStart,
       recruitFrom: ev.recruitFrom,
-      recruitLabel: ev.recruitFrom ? ddmm2(ev.recruitFrom) : "",
+      recruitLabel: ev.recruitFrom ? ddmm3(ev.recruitFrom) : "",
       createTime: EVENT_CREATE_AT,
       createAt: ev.recruitFrom ? eventCreateAt(r) : 0,
       status: evStatus,
@@ -9447,9 +10287,10 @@ function waPanel(nowArg) {
     },
     current,
     next,
-    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm2(nm.day), inText: inText(nm.plan - now) } : null,
+    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm3(nm.day), inText: inText(nm.plan - now) } : null,
     sendTo: targets.map((t) => t.name),
     series: series2,
+    assistant: aiPanel(now),
     journal: journalView(r, 20)
   };
 }
@@ -9466,6 +10307,9 @@ var STATUS = {
   no_id: 400,
   confirm: 400,
   evolution: 502,
+  model: 502,
+  rate: 429,
+  not_found: 404,
   internal: 500
 };
 var statusOf = (a) => a.ok ? 200 : STATUS[a.code || ""] ?? 409;
@@ -9500,6 +10344,10 @@ async function handleWaAdmin(req, res, path) {
       }
       if (what === "groups") {
         const x = await waGroups(qs.get("refresh") === "1");
+        return adminJson(res, statusOf(x), x);
+      }
+      if (what === "ai/number") {
+        const x = aiNumber(qs.get("id"));
         return adminJson(res, statusOf(x), x);
       }
       return adminJson(res, 404, { ok: false, error: "not_found" });
@@ -9541,6 +10389,12 @@ async function handleWaAdmin(req, res, path) {
         const x = await waSendSeries(body.id);
         return adminJson(res, statusOf(x), x);
       }
+      case "ai/toggle":
+        return body.enabled === false || confirmed ? done(await aiSetEnabled(body.enabled)) : done(NEED_CONFIRM);
+      case "ai/test": {
+        const x = await aiTest(body.question);
+        return adminJson(res, statusOf(x), x);
+      }
     }
     return adminJson(res, 404, { ok: false, error: "not_found" });
   } catch (e) {
@@ -9552,7 +10406,7 @@ async function handleWaAdmin(req, res, path) {
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs9.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path9.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs10.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path10.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -9626,7 +10480,7 @@ async function handleLead(req, res) {
   const forwarded = req.headers["x-forwarded-for"];
   const clientIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
   const userAgent = req.headers["user-agent"] || void 0;
-  const metaEventId = eventId || (0, import_node_crypto5.randomUUID)();
+  const metaEventId = eventId || (0, import_node_crypto6.randomUUID)();
   const fbclid = fbc ? fbc.split(".").slice(3).join(".") || void 0 : void 0;
   const captured = await captureLead({
     eventId: metaEventId,
@@ -9709,7 +10563,7 @@ function secretOk2(provided) {
   const a = Buffer.from(provided);
   const b = Buffer.from(TG_SECRET);
   if (a.length !== b.length) return false;
-  return (0, import_node_crypto5.timingSafeEqual)(a, b);
+  return (0, import_node_crypto6.timingSafeEqual)(a, b);
 }
 function webhookReply(res, chatId, text) {
   return json(res, 200, { method: "sendMessage", chat_id: chatId, text, disable_web_page_preview: true });
@@ -9778,7 +10632,7 @@ function handleCalendar(res) {
 }
 function readVersion() {
   try {
-    return (0, import_node_fs9.readFileSync)((0, import_node_path9.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+    return (0, import_node_fs10.readFileSync)((0, import_node_path10.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
   } catch {
     return "dev";
   }
@@ -9814,6 +10668,7 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
     if ((method === "GET" || method === "HEAD") && url === "/api/admin-app") return handleAdminApp(req, res);
     if ((method === "GET" || method === "HEAD") && url === "/api/tg-web-app.js") return handleTgSdk(req, res);
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
+    if (method === "POST" && url === "/api/wa-hook") return await handleWaHook(req, res);
     if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);

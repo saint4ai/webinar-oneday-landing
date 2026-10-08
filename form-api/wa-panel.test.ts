@@ -11,7 +11,8 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
-import { EVO_KEY, evo, tg } from "./wa-testkit";
+import { EVO_KEY, evo, openai, OPENAI_KEY, tg } from "./wa-testkit";
+import { aiFlush, aiHookBody, aiNumber, aiSetEnabled, aiTest } from "./wa-assistant";
 import { initWaGroups, resetWaGroups, waConnection, waGroups, waLogout, waPairing, waPanel, waQr, waStatus } from "./wa-groups";
 import { setUtcOffsetMinutes } from "./tg-time";
 
@@ -146,7 +147,7 @@ function loadPanel() {
   const store = new Map<string, string>([["adm_token", "t.k"], ["adm_ui", JSON.stringify({ period: "t", from: "", to: "", basis: "reg", tab: "wa" })]]);
   const fetched: Fetched[] = [];
   let pending = 0;
-  const route = async (path: string, init: any): Promise<{ status: number; body: any }> => {
+  const route = async (path: string, init: any, rawUrl = ""): Promise<{ status: number; body: any }> => {
     const body = init?.body ? JSON.parse(init.body) : {};
     const res = (x: any) => ({ status: x && x.ok === false ? 409 : 200, body: x });
     switch (path) {
@@ -164,6 +165,12 @@ function loadPanel() {
         return res(body.confirm === true ? await waLogout() : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
       case "wa/groups":
         return res(await waGroups());
+      case "wa/ai/toggle":
+        return res(body.enabled === false || body.confirm === true ? await aiSetEnabled(body.enabled) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
+      case "wa/ai/test":
+        return res(await aiTest(body.question));
+      case "wa/ai/number":
+        return res(aiNumber(new URL(rawUrl, "http://x").searchParams.get("id")));
     }
     return { status: 404, body: { ok: false, error: "not_found" } };
   };
@@ -185,7 +192,7 @@ function loadPanel() {
       const path = String(url).replace("/workshop/api/admin/", "").split("?")[0];
       fetched.push({ url: String(url), method: init.method || "GET", body: init.body ? JSON.parse(init.body) : null });
       pending++;
-      return route(path, init).then((r) => ({ ok: r.status < 400, status: r.status, json: async () => r.body })).finally(() => void pending--);
+      return route(path, init, String(url)).then((r) => ({ ok: r.status < 400, status: r.status, json: async () => r.body })).finally(() => void pending--);
     },
     setInterval: (fn: () => void, ms: number) => intervals.push({ fn, ms, cleared: false }),
     clearInterval: (id: number) => {
@@ -229,16 +236,21 @@ function loadPanel() {
 test.before(async () => {
   await tg.start();
   await evo.start();
+  await openai.start();
   setUtcOffsetMinutes(300);
 });
 test.after(async () => {
   resetWaGroups();
   await tg.stop();
   await evo.stop();
+  await openai.stop();
   assert.deepEqual(evo.violations, [], "защита номера цела");
 });
 test.beforeEach(() => {
   evo.reset();
+  openai.reset();
+  process.env.OPENAI_API_KEY = OPENAI_KEY;
+  process.env.WA_AI_QUIET_MS = "100000";
   clock.t = alm(2026, 10, 8, 12, 0);
   resetWaGroups();
   initWaGroups({ dir: mkdtempSync(join(tmpdir(), "wa-panel-")), seriesFile: join(REPO, "form-api", "wa-series.json"), deps: { now: () => clock.t, sleep: async () => {}, rand: () => 0.5, notify: async () => 1 } });
@@ -371,4 +383,87 @@ test("панель: подключение по номеру: поле пуст�
   assert.equal(p.intervals.some((i) => i.ms === 3500 && !i.cleared), false, "частая проверка остановлена");
   assert.match(p.cards()[0].textContent, /Подключён/);
   assert.ok(p.buttons().includes("Отключить номер"));
+});
+
+test("панель: блок «ИИ-ассистент в личке»: выключатель с подтверждением, счётчики, проверка вопроса, диалоги с закрытыми номерами и «Показать номер»", async () => {
+  const p = loadPanel();
+  await p.settle();
+  const card = () => p.cards().find((c) => /^ИИ-ассистент в личке/.test(c.textContent))!;
+  assert.ok(card(), "блок есть");
+  const sw = () => all(card(), (e) => e.attrs.get("role") === "switch")[0];
+  assert.equal(sw().attrs.get("aria-checked"), "false");
+  assert.match(card().textContent, /Выключен: вебхука нет, запросов к OpenAI нет/);
+  assert.match(card().textContent, /Диалогов сегодня0/);
+  assert.match(card().textContent, /Отклонено проверкой0/);
+  assert.match(card().textContent, /Диалогов пока нет/);
+
+  // включение: подтверждение в странице, без подтверждения запроса нет
+  sw().dispatch("click");
+  assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/ai/toggle")).length, 0);
+  assert.match(card().textContent, /Включить ИИ-ассистента\? Он начнёт отвечать всем/);
+  p.button("Включить").dispatch("click");
+  await p.settle();
+  const toggles = p.fetched.filter((f) => f.url.endsWith("wa/ai/toggle"));
+  assert.deepEqual(toggles.map((t) => t.body), [{ enabled: true, confirm: true }]);
+  assert.equal(sw().attrs.get("aria-checked"), "true");
+  assert.equal(evo.webhook?.enabled, true);
+
+  // проверка вопроса: ответ модели на экране, в WhatsApp ничего не уходит
+  const input = all(card(), (e) => e.tag === "input")[0];
+  input.value = "Что будет на эфире?";
+  input.dispatch("input");
+  p.button("Спросить").dispatch("click");
+  await p.settle();
+  assert.deepEqual(p.fetched.filter((f) => f.url.endsWith("wa/ai/test")).map((f) => f.body), [{ question: "Что будет на эфире?" }]);
+  assert.match(card().textContent, /Здравствуйте! Эфир каждый день в 20:00 по Алматы/);
+  assert.match(card().textContent, /Ответ прошёл проверку/);
+  assert.equal(evo.of("/message").length, 0);
+
+  // диалоги: человек написал, ассистент ответил; номер закрыт, по кнопке показывается целиком
+  await waStatus();
+  evo.allowDirect = true;
+  aiHookBody({ event: "messages.upsert", instance: "workshop", data: { key: { remoteJid: "77015556677@s.whatsapp.net", fromMe: false, id: "P1" }, message: { conversation: "Когда начало?" }, messageTimestamp: Math.floor(clock.t / 1000) } });
+  await aiFlush();
+  assert.equal(evo.directs.length, 1);
+  await p.tick(20000);
+  assert.match(card().textContent, /Диалогов сегодня1/);
+  assert.match(card().textContent, /Ответов сегодня1/);
+  assert.match(card().textContent, /7701\*\*\*6677/);
+  assert.match(card().textContent, /Человек: Когда начало\?/);
+  assert.match(card().textContent, /Ассистент: Здравствуйте!/);
+  assert.equal(p.text().includes("77015556677"), false, "полного номера на экране нет");
+  p.button("Показать номер").dispatch("click");
+  await p.settle();
+  assert.match(card().textContent, /\+77015556677/);
+  const urls = p.fetched.filter((f) => /wa\/ai\/number/.test(f.url));
+  assert.equal(urls.length, 1);
+  assert.match(urls[0].url, /\?id=[0-9a-f]{12}$/);
+  evo.directs.length = 0;
+
+  // выключение сразу, без подтверждения
+  sw().dispatch("click");
+  await p.settle();
+  assert.deepEqual(p.fetched.filter((f) => f.url.endsWith("wa/ai/toggle")).map((f) => f.body).pop(), { enabled: false });
+  assert.equal(sw().attrs.get("aria-checked"), "false");
+  assert.equal(evo.webhook?.enabled, false);
+  // номер остаётся открытым, пока вкладка открыта; со вкладки ушли, и он снова закрыт
+  assert.match(card().textContent, /\+77015556677/);
+  p.cards();
+});
+
+test("панель: нет ключа OpenAI: выключатель недоступен, причина написана, проверка вопроса отвечает тем же", async () => {
+  delete process.env.OPENAI_API_KEY;
+  const p = loadPanel();
+  await p.settle();
+  const card = p.cards().find((c) => /^ИИ-ассистент в личке/.test(c.textContent))!;
+  const sw = all(card, (e) => e.attrs.get("role") === "switch")[0];
+  assert.equal(sw.disabled, true, "включить нельзя");
+  assert.match(card.textContent, /Нет ключа OPENAI_API_KEY в \.env на сервере: ассистент не стартует/);
+  const input = all(card, (e) => e.tag === "input")[0];
+  input.value = "привет";
+  input.dispatch("input");
+  p.button("Спросить").dispatch("click");
+  await p.settle();
+  assert.match(p.cards().find((c) => /^ИИ-ассистент в личке/.test(c.textContent))!.textContent, /Нет ключа OPENAI_API_KEY/);
+  assert.equal(evo.of("/webhook").length, 0);
 });
