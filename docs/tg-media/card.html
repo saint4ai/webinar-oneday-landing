@@ -56,6 +56,8 @@ html,body{width:1080px;height:1350px}
 .train .row .ic{width:144px;height:144px;flex:none;display:flex;align-items:center;justify-content:center}
 .train .row .ic img{max-width:144px;max-height:144px;display:block;filter:drop-shadow(0 12px 14px rgba(0,0,0,.45))}
 .train .row .t{font-weight:700;font-size:42px;line-height:1.18;color:var(--cream)}
+.train .row.bonus{border-color:var(--gold);background:linear-gradient(145deg,rgba(227,192,123,.24),rgba(227,192,123,.07))}
+.train .row .t small{display:block;margin-top:8px;font-weight:800;font-size:30px;letter-spacing:.04em;color:var(--gold)}
 
 /* offer */
 .offer .old{position:absolute;left:80px;top:166px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:64px;line-height:1;color:rgba(251,243,228,.55);letter-spacing:-.01em;white-space:nowrap}
@@ -68,6 +70,9 @@ html,body{width:1080px;height:1350px}
 .offer .until{position:absolute;left:80px;top:604px;display:inline-flex;align-items:center;gap:18px;height:92px;padding:0 42px;border-radius:999px;
   border:2px solid var(--gold);background:linear-gradient(135deg,rgba(227,192,123,.22),rgba(227,192,123,.06));font-weight:800;font-size:40px;color:var(--cream);box-shadow:0 14px 40px rgba(0,0,0,.35)}
 .offer .until b{display:block;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 7px rgba(227,192,123,.2)}
+.offer .gift{left:80px;top:744px;width:372px;padding:30px 28px 32px;border-radius:30px}
+.offer .gift .k{font-weight:800;font-size:26px;letter-spacing:.14em;color:var(--gold)}
+.offer .gift .t{margin-top:14px;font-weight:700;font-size:35px;line-height:1.24;color:var(--cream);white-space:nowrap}
 </style></head>
 <body>
 <div class="card" id="card"></div>
@@ -79,9 +84,9 @@ const head = (h, size) => `<h1 class="h" data-fit="w" style="font-size:${size}px
 const lab = (t) => `<div class="label"><i></i>${t}</div>`;
 
 // digitCss: для двузначных цифр (10, 30) уменьшаем кегль, чтобы цифра не вышла за рамку
-const topic = (n, label, h, obj, objCss, floor, gx, digitCss) => ({
+const topic = (n, label, h, obj, objCss, floor, gx, digitCss, size) => ({
   cls: "topic", gx: gx || "78%", gy: "30%",
-  html: `${lab(label)}${head(h, 76)}
+  html: `${lab(label)}${head(h, size || 76)}
     <div class="digit" style="${digitCss || ""}">${n}</div>
     <div class="shadow-floor" style="${floor}"></div>
     <img class="obj" src="${obj}" style="${objCss}" alt="">${LOGO}`
@@ -95,23 +100,20 @@ const cards = {
   },
   "warm-cases": {
     cls: "cases", gx: "76%", gy: "36%",
-    html: `${lab("НЕ ТОЛЬКО РИЛСЫ")}${head("Агент собирает продукты для бизнеса", 62)}
+    html: `${lab("МОИ КЕЙСЫ")}${head("Агент собирает продукты для бизнеса", 62)}
       <div class="glass f"><div class="in"><img src="../../public/montage/cases/ai-targetolog.webp" alt=""></div></div>
       <div class="cap"><b>AI-Таргетолог</b> · заменяет специалиста по рекламе: сам запускает кампании, управляет ими и присылает отчёты</div>
       <div class="glass plaque"><div class="ic"><img src="${X3}lg-i-cards-x3.png" alt=""></div><div class="t"><b>Erickson Central Asia</b> · платформа обучения коучей за 2&nbsp;месяца</div></div>${LOGO}`
   },
-  "topic-p1": topic("1", "ПРАКТИКА 1 ИЗ 3", "Рилс без знаний<br>монтажа", L + "lg-ch1-clapper.webp",
-    "left:380px;top:590px;width:640px", "left:430px;top:1120px;width:560px;height:70px", "70%"),
-  "topic-p2": topic("2", "ПРАКТИКА 2 ИЗ 3", "Презентация<br>по брифу", X3 + "lg-i-cards-x3.png",
-    "left:470px;top:640px;width:540px", "left:470px;top:1090px;width:520px;height:64px", "70%"),
-  "topic-p3": topic("3", "ПРАКТИКА 3 ИЗ 3", "Приложение<br>из описания", X3 + "lg-i-phones-x3.png",
-    "left:450px;top:668px;width:560px", "left:460px;top:1095px;width:540px;height:64px", "70%"),
+  // с 08.10.2026 карточки практик 2 и 3 не нужны: на эфире видеоурок про весь путь рилса из семи шагов
+  "topic-p1": topic("7", "ПРАКТИКА · 7 ШАГОВ", "Весь путь рилса<br>от идеи до заявки", L + "lg-ch1-clapper.webp",
+    "left:380px;top:590px;width:640px", "left:430px;top:1120px;width:560px;height:70px", "70%", "", 70),
   "training": {
     cls: "train", gx: "84%", gy: "10%",
     html: `${lab("ОБУЧЕНИЕ VIBE PRODUCTION")}${head("<em>3</em> модуля,<br><em>15</em> уроков,<br><em>1</em> месяц", 84)}
       <div class="glass row" style="top:496px"><div class="ic"><img src="${X3}lg-i-clapper-x3.png" alt=""></div><div class="t">AI-монтаж</div></div>
-      <div class="glass row" style="top:720px"><div class="ic"><img src="${X3}lg-i-robot-x3.png" alt=""></div><div class="t">AI-креатор</div></div>
-      <div class="glass row" style="top:944px"><div class="ic"><img src="${X3}lg-i-botchat-x3.png" alt=""></div><div class="t">Ассистенты и автоматизация</div></div>${LOGO}`
+      <div class="glass row" style="top:720px"><div class="ic"><img src="${X3}lg-i-botchat-x3.png" alt=""></div><div class="t">Ассистенты и автоматизация</div></div>
+      <div class="glass row bonus" style="top:944px"><div class="ic"><img src="${X3}lg-i-robot-x3.png" alt=""></div><div class="t">AI-креатор<small>бонус до конца дня</small></div></div>${LOGO}`
   },
   "offer": {
     cls: "offer", gx: "30%", gy: "22%",
@@ -123,21 +125,8 @@ const cards = {
       <div class="until"><b></b>до 23:59 по Алматы</div>
       <div class="light-floor" style="left:330px;top:640px;width:780px;height:700px;opacity:.55"></div>
       <div class="shadow-floor" style="left:500px;top:1196px;width:520px;height:56px"></div>
-      <img style="position:absolute;left:468px;top:708px;width:560px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${L}lg-s41-deadline.webp" alt="">${LOGO}`
-  },
-
-  // Пакетный оффер: два курса вместе, та же композиция, что у offer
-  "offer-bundle": {
-    cls: "offer", gx: "30%", gy: "22%",
-    html: `${lab("ТОЛЬКО ДЛЯ УЧАСТНИКОВ ЭФИРА")}
-      <div class="old">440&nbsp;900&nbsp;₸</div><div class="old-usd">≈&nbsp;$984</div>
-      <div class="price">390&nbsp;000&nbsp;₸</div>
-      <div class="usd">≈&nbsp;$871</div>
-      <div class="inst" style="width:920px">Vibe Production и Vibe Coding PRO,<br>оба курса с обратной связью</div>
-      <div class="until"><b></b>до 23:59 по Алматы</div>
-      <div class="light-floor" style="left:330px;top:640px;width:780px;height:700px;opacity:.55"></div>
-      <div class="shadow-floor" style="left:490px;top:1176px;width:540px;height:60px"></div>
-      <img style="position:absolute;left:480px;top:716px;width:540px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${X3}lg-i-cards-x3.png" alt="">${LOGO}`
+      <img style="position:absolute;left:468px;top:708px;width:560px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${L}lg-s41-deadline.webp" alt="">
+      <div class="glass gift"><div class="k">В ПОДАРОК</div><div class="t">Модуль 3<br>«AI-креатор»<br>и 6&nbsp;месяцев<br>доступа вместо&nbsp;3</div></div>${LOGO}`
   },
 
   // Карточки рассылки (Telegram и WhatsApp): до эфира, в эфире, последний звонок

@@ -2644,7 +2644,7 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
     case "fire": {
       const id = args.split(/\s+/)[0];
       if (!id) {
-        await plain(chatId, "\u0423\u043A\u0430\u0436\u0438 id \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: /fire topic-p23. \u0421\u043F\u0438\u0441\u043E\u043A: /series");
+        await plain(chatId, "\u0423\u043A\u0430\u0436\u0438 id \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: /fire topic-p1. \u0421\u043F\u0438\u0441\u043E\u043A: /series");
         return;
       }
       if (!fireHook) {

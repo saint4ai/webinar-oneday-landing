@@ -733,6 +733,51 @@ test("tg-series.json в репозитории: проходит проверк�
   assert.equal(warn.includes("PREPAY"), false);
 });
 
+test("tg-series.json: воркшоп только про AI-монтаж, продаётся только Vibe Production (решение 08.10)", () => {
+  const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
+  const sr = validateSeries(raw);
+  const ids = sr.messages.map((m) => m.id);
+  // практики 2 и 3 и пакет двух курсов убраны
+  for (const id of ["topic-p23", "offer-bundle-2145"]) assert.equal(ids.includes(id), false, id);
+  // ни в текстах, ни в кнопках, ни в адресах картинок нет PRO, пакета, презентации по брифу, приложения из ТЗ, вайбкодинга
+  const everything = JSON.stringify([raw.welcome, raw.messages]);
+  const bad: RegExp[] = [
+    /Vibe Coding/i, /\bPRO\b/, /(^|[^А-Яа-яЁё])ПРО([^А-Яа-яЁё]|$)/, /390 000/, /440 900/, /50 900/, /\$871/, /\$984/,
+    /презентаци\S* по брифу/i, /приложени\S* из/i, /вайбкодинг/i, /практик\S* \d/i, /практик\S* из/i,
+    /tg-dva/, /\/dva/, /Vibe-Coding-PRO/, /plus-PRO/, /offer-bundle/, /topic-p[23]/, /Три практики/i,
+  ];
+  for (const re of bad) assert.equal(re.test(everything), false, String(re));
+  // PDF только один: презентация Vibe Production (файлом в 10:30 и кнопкой в 15:00)
+  const decks = [...everything.matchAll(/assets\/decks\/[^"\\]+/g)].map((m) => m[0]);
+  assert.ok(decks.length >= 2);
+  for (const d of decks) assert.equal(d, "assets/decks/Vibe-Production.pdf", d);
+  // в текстах только цены Vibe Production: 150 000, 250 000, 140 000 за игру, бронь 10 000 и рассрочка от 6 250
+  for (const m of sr.messages) {
+    for (const price of m.text.matchAll(/(\d{1,3}(?: \d{3})+) ₸/g)) {
+      assert.ok(["150 000", "250 000", "140 000", "10 000", "6 250"].includes(price[1]), m.id + ": цена " + price[1]);
+    }
+  }
+  // перерисованные картинки отдаются с новой версией в адресе, иначе бот пришлёт старую из кеша file_id
+  assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0810a$/);
+  for (const id of ["topic-p1", "warm-1700", "training-2058", "offer-2118"]) {
+    assert.match(sr.messages.find((m) => m.id === id)!.media!.url, /\.jpg\?v=0810a$/, id);
+  }
+  // оффер и дожимы дня эфира идут только тем, кто был на эфире (нажал кнопку), остальным цену не называем
+  const byId = new Map(sr.messages.map((m) => [m.id, m]));
+  for (const id of ["offer-2118", "push-2130", "push-2230", "push-2330"]) assert.equal(byId.get(id)!.audience, "clickedNotPaid", id);
+  assert.equal(/₸/.test(raw.welcome.before), false, "в подтверждении записи цены нет");
+  for (const m of sr.messages) {
+    if (m.audience === "notClicked" || (m.dayOffset ?? 0) === 0 && m.at < "21:18") assert.equal(/₸/.test(m.text), false, m.id + ": цена до эфира или тем, кто не был на эфире");
+  }
+  assert.match(byId.get("next-day-1100")!.text, /специальную цену/);
+  // бонус за покупку до конца дня есть во всех офферах и дожимах: модуль 3 «AI-креатор» и 6 месяцев доступа вместо 3
+  for (const id of ["offer-2118", "push-2130", "push-2230", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) {
+    const t = byId.get(id)!.text;
+    assert.match(t, /AI-креатор/, id);
+    assert.match(t, /6 месяцев/, id);
+  }
+});
+
 test("tg-series.json: дожим следующего дня follow-* и next-day-1100 (зов пропустивших на сегодня)", () => {
   const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
   const sr = validateSeries(raw);
@@ -740,7 +785,7 @@ test("tg-series.json: дожим следующего дня follow-* и next-da
   const DECKS_URL = "https://onai.academy/workshop-montazh/assets/decks/";
   const follow: Array<[string, string, string | null]> = [
     ["follow-1030", "10:30", "Vibe-Production.pdf"],
-    ["follow-1500", "15:00", "Vibe-Production-plus-PRO.pdf"],
+    ["follow-1500", "15:00", null],
     ["follow-2145", "21:45", null],
   ];
   for (const [id, at, pdf] of follow) {
@@ -759,9 +804,9 @@ test("tg-series.json: дожим следующего дня follow-* и next-da
     const kb = buildKeyboard(m.buttons, ctxFor(sr))!;
     assert.equal(kb.flat().length, m.buttons!.flat().length);
   }
-  // PDF программы PRO, на который ведёт кнопка второго дожима
-  const pro = byId.get("follow-1500")!.buttons!.flat().find((b) => b.url?.endsWith(".pdf"))!;
-  assert.equal(pro.url, DECKS_URL + "Vibe-Coding-PRO.pdf");
+  // второй дожим файл не шлёт (PDF ушёл в 10:30), презентация Vibe Production открывается кнопкой
+  const pres = byId.get("follow-1500")!.buttons!.flat().find((b) => b.url?.endsWith(".pdf"))!;
+  assert.equal(pres.url, DECKS_URL + "Vibe-Production.pdf");
   // подпись к файлу влезает в 1024 даже с самым длинным именем
   assert.deepEqual(seriesWarnings(sr).filter((w) => w.startsWith("follow-")), []);
   // оба оффера действуют до 23:59 по Алматы следующего дня
@@ -1186,7 +1231,7 @@ test("серия из репозитория, следующий день: до�
   assert.equal(doc.length, 1);
   assert.equal(doc[0].body.chat_id, 81);
   assert.equal(doc[0].body.document, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
-  assert.match(String(doc[0].body.caption), /^Доброе утро! Вчера ты был на эфире/);
+  assert.match(String(doc[0].body.caption), /^Доброе утро! Вчера ты был(?:\(а\))? на эфире/);
   assert.deepEqual(doc[0].body.reply_markup.inline_keyboard.map((r: any[]) => r[0].text), [
     "Оплатить через Kaspi", "Другие страны и рассрочка: Аяна", "Написать Аяне в WhatsApp", "Я уже оплатил(а)",
   ]);
@@ -1210,8 +1255,10 @@ test("серия из репозитория, следующий день: до�
   fake.reset();
   assert.equal(await run(alm(2026, 10, 7, 15, 5)), 1);
   assert.deepEqual(only(/follow/), [`follow-1500@${D}:81`]);
-  assert.equal(fake.of("sendDocument")[0].body.document, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production-plus-PRO.pdf");
-  assert.equal(fake.of("sendDocument")[0].body.reply_markup.inline_keyboard[2][0].url, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Coding-PRO.pdf");
+  assert.equal(fake.of("sendDocument").length, 0, "второй дожим без файла: PDF уже ушёл в 10:30");
+  const second = fake.of("sendMessage").find((c) => c.body.chat_id === 81)!;
+  assert.match(String(second.body.text), /^Вчера на эфире мы разобрали весь путь рилса/);
+  assert.equal(second.body.reply_markup.inline_keyboard[2][0].url, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
 
   // 19:50 сегодня: перешедший получает ссылку на сегодняшний эфир (день T1), был на вчерашнем эфире нет
   log.length = 0;

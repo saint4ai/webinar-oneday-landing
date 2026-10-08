@@ -43,12 +43,12 @@ h1 span{display:block;background:var(--gold-grad);-webkit-background-clip:text;b
 .c-reel .views{position:absolute;left:10px;bottom:10px;display:flex;align-items:center;gap:8px;padding:0 15px 0 12px;height:42px;border-radius:999px;
   background:rgba(20,16,14,.72);border:1px solid rgba(227,192,123,.5);backdrop-filter:blur(8px);font-weight:800;font-size:22px;color:var(--cream)}
 .c-reel .views svg{width:22px;height:22px;flex:none}
-.c-slide{left:1078px;top:786px;width:348px;height:192px;padding:9px;border-radius:26px;transform:rotate(-4deg)}
-.c-slide .in{position:relative;width:100%;height:100%;border-radius:18px;overflow:hidden;background:#FBF3E4}
-.c-slide img{position:absolute;left:-9px;top:-61px;width:585px;max-width:none}
-.c-app{left:1590px;top:786px;width:312px;height:204px;padding:9px;border-radius:26px;transform:rotate(3deg)}
-.c-app .in{position:relative;width:100%;height:100%;border-radius:18px;overflow:hidden;background:#0d0d0f}
-.c-app img{position:absolute;left:-92px;top:-26px;width:560px;max-width:none}
+.c-step{display:flex;align-items:center;gap:18px;height:176px;padding:0 26px 0 18px;border-radius:28px}
+.c-step img{flex:none;width:118px;height:auto;max-height:140px;object-fit:contain;filter:drop-shadow(0 12px 14px rgba(0,0,0,.45))}
+.c-step b{display:block;font-weight:800;font-size:34px;line-height:1.1;color:var(--cream);white-space:nowrap}
+.c-step span{display:block;font-weight:600;font-size:25px;line-height:1.2;color:rgba(251,243,228,.78);margin-top:6px;white-space:nowrap}
+.c-a{left:1074px;top:800px;width:350px;transform:rotate(-4deg)}
+.c-b{left:1560px;top:806px;width:340px;transform:rotate(3deg)}
 </style></head>
 <body>
 <div class="stage" id="stage">
@@ -62,14 +62,14 @@ h1 span{display:block;background:var(--gold-grad);-webkit-background-clip:text;b
     <img src="../../workshop-montazh/assets/tg/reel-119k.jpg" alt="">
     <div class="views"><svg viewBox="0 0 24 24" fill="none" stroke="#E3C07B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>119 тыс.</div>
   </div></div>
-  <div class="glass c-slide"><div class="in"><img src="../deck-v2/shots/05.jpg" alt=""></div></div>
-  <div class="glass c-app"><div class="in"><img src="../../public/montage/cases/ai-targetolog.webp" alt=""></div></div>
+  <div class="glass c-step c-a"><img src="obj/lg-i-clapper-x3.png" alt=""><div><b>Монтаж</b><span>делает агент</span></div></div>
+  <div class="glass c-step c-b"><img src="obj/lg-i-botchat-x3.png" alt=""><div><b>Заявка</b><span>в Telegram</span></div></div>
 
   <div class="copy">
     <div class="kicker"><i></i>Бесплатный воркшоп · Вайб-продакшен</div>
     <div>
-      <h1>Рилс, презентация<br>и приложение<span>за один вечер</span></h1>
-      <p class="sub">Покажу вживую, как ИИ-агент делает это по голосу. Без монтажёра, дизайнера и программиста.</p>
+      <h1>Рилсы без<br>монтажёра<span>и без лица</span></h1>
+      <p class="sub">Покажу весь путь: агент пишет сценарий, монтирует и отвечает клиентам в директе.</p>
       <div class="pill"><b></b>СТАРТ В 20:00 ПО АЛМАТЫ</div>
     </div>
     <img class="logo" src="onai-logo-night.svg" alt="onAI">

@@ -1359,7 +1359,7 @@ async function ownerCommand(cmd: string, args: string, m: TgMessage, now: number
     case "fire": {
       const id = args.split(/\s+/)[0];
       if (!id) {
-        await plain(chatId, "Укажи id сообщения: /fire topic-p23. Список: /series");
+        await plain(chatId, "Укажи id сообщения: /fire topic-p1. Список: /series");
         return;
       }
       if (!fireHook) {

@@ -15,11 +15,12 @@ const imgDir = join(root, "workshop-montazh/assets/img");
 mkdirSync(outDir, { recursive: true });
 mkdirSync(reportDir, { recursive: true });
 
+// topic-p2, topic-p3 и offer-bundle с 08.10.2026 не используются (воркшоп только про AI-монтаж, продаётся только Vibe Production):
+// шаблоны убраны из card.html, готовые файлы остаются в assets/tg/
 const CARD_IDS = [
-  "warm-edits", "warm-cases", "topic-p1", "topic-p2", "topic-p3", "training", "offer",
+  "warm-edits", "warm-cases", "topic-p1", "training", "offer",
   // карточки рассылки: до эфира, в эфире, последний звонок
   "reg-bonus", "live-bonus", "t-minus-10", "live-now", "last-call",
-  "offer-bundle",
 ];
 const what = process.argv[2] || "all";
 // Третий аргумент: снять только перечисленные карточки, остальные не перезаписывать.
