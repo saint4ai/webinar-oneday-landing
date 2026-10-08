@@ -18,7 +18,7 @@ import { resetAdminCache } from "./tg-admin";
 import { approvedOf, normalizeTemplates } from "./wazzup";
 import { _waRt, initWaGroups, resetWaGroups, waCommand, waPanel, waReportLine } from "./wa-groups";
 import {
-  DECLINE_TEXT, LINK_TEXT, _dz, buildValues, cleanName, dateWord, defaultMap, dzFlush, dzHookSet, dzPanel, dzSave, dzSetEnabled, dzTemplates, dzTestSend, dzTick,
+  DECLINE_TEXT, LINK_TEXT, _dz, buildValues, cleanName, dateWord, defaultMap, dzCommand, dzFlush, dzHookSet, dzPanel, dzSave, dzSetEnabled, dzTemplates, dzTestSend, dzTick,
   evaluate, handleWazzupHook, isDecline, normalizePhone, windowStart,
 } from "./wa-dozhim";
 
@@ -1209,4 +1209,19 @@ test("ревью 08.10: замер, где участники без номер�
   await tick();
   assert.equal(sentChats().length, 0, "без номеров участников не понять, кто вступил: никому не пишем");
   assert.equal(w.members().targets[idOf("2026-10-08")], undefined, "замер не сохранён");
+});
+
+test("команды владельца без пульта: шаблон по названию, окно и лимит, вебхук", async () => {
+  boot();
+  const list = await dzCommand("wa_dozhim", "tpls");
+  assert.match(list, /Напоминание/);
+  assert.match(await dzCommand("wa_dozhim", "tpl напоминание"), /./);
+  assert.equal(_dz()!.host.state().templateName.includes("Напоминание"), true, "выбран запасной шаблон");
+  await dzCommand("wa_dozhim", "set to=19:30 limit=90 delay=30");
+  const st = _dz()!.host.state();
+  assert.deepEqual([st.to, st.dailyLimit, st.delayMin], ["19:30", 90, 30]);
+  assert.match(await dzCommand("wa_dozhim", "set to=25:99"), /Окно часов/);
+  assert.match(await dzCommand("wa_dozhim", "set foo=1"), /Не понял/);
+  assert.match(await dzCommand("wa_dozhim", "hook on"), /Вебхук Wazzup поставлен/);
+  assert.equal(_dz()!.host.state().hookOn, true);
 });

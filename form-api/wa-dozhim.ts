@@ -1499,6 +1499,36 @@ export async function dzCommand(cmd: string, args: string): Promise<string> {
   }
   const arg = args.trim().toLowerCase();
   if (arg === "on" || arg === "off") return (await dzSetEnabled(arg === "on")).message;
+  // Настройки без пульта: /wa_dozhim hook on|off, /wa_dozhim tpls, /wa_dozhim tpl <часть названия>, /wa_dozhim set to=19:30 limit=90 delay=30 cutoff=19:30
+  const [sub, ...restParts] = args.trim().split(/\s+/);
+  const rest = restParts.join(" ").trim();
+  const subL = (sub || "").toLowerCase();
+  if (subL === "hook" && (rest === "on" || rest === "off")) return (await dzHookSet(rest === "on")).message;
+  if (subL === "tpls" || subL === "tpl") {
+    const r = (await dzTemplates(true)) as any;
+    if (!r.ok) return r.message;
+    const items: Array<{ id: string; title: string; name: string; vars: number | null }> = r.items;
+    if (subL === "tpls" || !rest) return [r.note || "Одобренные шаблоны:", ...items.map((x) => `• ${x.title || x.name} (${x.vars ?? "?"} перем.)`)].join("\n");
+    const q = rest.toLowerCase();
+    const hit = items.filter((x) => `${x.title} ${x.name}`.toLowerCase().includes(q));
+    if (hit.length !== 1) return hit.length ? `Подходит несколько: ${hit.map((x) => x.title || x.name).join(", ")}. Уточни.` : "Такого одобренного шаблона нет. Список: /wa_dozhim tpls";
+    return (await dzSave({ templateId: hit[0].id })).message;
+  }
+  if (subL === "set" && rest) {
+    const kv: Record<string, string> = {};
+    for (const part of rest.split(/\s+/)) {
+      const m = part.match(/^(to|from|cutoff|limit|delay)=(.+)$/i);
+      if (!m) return `Не понял «${part}». Пример: /wa_dozhim set to=19:30 limit=90 delay=30 cutoff=19:30`;
+      kv[m[1].toLowerCase()] = m[2];
+    }
+    const p: Record<string, unknown> = {};
+    if (kv.from) p.from = kv.from;
+    if (kv.to) p.to = kv.to;
+    if (kv.cutoff) p.cutoff = kv.cutoff;
+    if (kv.limit) p.dailyLimit = Number(kv.limit);
+    if (kv.delay) p.delayMin = Number(kv.delay);
+    return (await dzSave(p)).message;
+  }
   const p = dzPanel() as any;
   const c = p.counters;
   return [
@@ -1506,5 +1536,6 @@ export async function dzCommand(cmd: string, args: string): Promise<string> {
     `Шаблон: ${p.template.name || "не выбран"}. Вебхук Wazzup: ${p.webhook.on ? "стоит" : "не стоит"}.`,
     `Сегодня: кандидатов ${c.candidates}, отправлено ${c.sent}, ответили ${c.replied}, получили ссылку ${c.links}, вступили после дожима ${c.joinedAfter}.`,
     "Включить: /wa_dozhim on, выключить: /wa_dozhim off, тест на свой номер: /wa_dozhim_test 77011234567",
+    "Настройки: /wa_dozhim tpls, /wa_dozhim tpl <часть названия>, /wa_dozhim set to=19:30 limit=90 delay=30, /wa_dozhim hook on|off",
   ].join("\n");
 }

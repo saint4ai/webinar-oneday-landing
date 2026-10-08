@@ -9436,13 +9436,43 @@ async function dzCommand(cmd, args) {
   }
   const arg = args.trim().toLowerCase();
   if (arg === "on" || arg === "off") return (await dzSetEnabled(arg === "on")).message;
+  const [sub, ...restParts] = args.trim().split(/\s+/);
+  const rest = restParts.join(" ").trim();
+  const subL = (sub || "").toLowerCase();
+  if (subL === "hook" && (rest === "on" || rest === "off")) return (await dzHookSet(rest === "on")).message;
+  if (subL === "tpls" || subL === "tpl") {
+    const r = await dzTemplates(true);
+    if (!r.ok) return r.message;
+    const items = r.items;
+    if (subL === "tpls" || !rest) return [r.note || "\u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0435 \u0448\u0430\u0431\u043B\u043E\u043D\u044B:", ...items.map((x) => `\u2022 ${x.title || x.name} (${x.vars ?? "?"} \u043F\u0435\u0440\u0435\u043C.)`)].join("\n");
+    const q2 = rest.toLowerCase();
+    const hit = items.filter((x) => `${x.title} ${x.name}`.toLowerCase().includes(q2));
+    if (hit.length !== 1) return hit.length ? `\u041F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E: ${hit.map((x) => x.title || x.name).join(", ")}. \u0423\u0442\u043E\u0447\u043D\u0438.` : "\u0422\u0430\u043A\u043E\u0433\u043E \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u043E\u0433\u043E \u0448\u0430\u0431\u043B\u043E\u043D\u0430 \u043D\u0435\u0442. \u0421\u043F\u0438\u0441\u043E\u043A: /wa_dozhim tpls";
+    return (await dzSave({ templateId: hit[0].id })).message;
+  }
+  if (subL === "set" && rest) {
+    const kv = {};
+    for (const part of rest.split(/\s+/)) {
+      const m = part.match(/^(to|from|cutoff|limit|delay)=(.+)$/i);
+      if (!m) return `\u041D\u0435 \u043F\u043E\u043D\u044F\u043B \xAB${part}\xBB. \u041F\u0440\u0438\u043C\u0435\u0440: /wa_dozhim set to=19:30 limit=90 delay=30 cutoff=19:30`;
+      kv[m[1].toLowerCase()] = m[2];
+    }
+    const p2 = {};
+    if (kv.from) p2.from = kv.from;
+    if (kv.to) p2.to = kv.to;
+    if (kv.cutoff) p2.cutoff = kv.cutoff;
+    if (kv.limit) p2.dailyLimit = Number(kv.limit);
+    if (kv.delay) p2.delayMin = Number(kv.delay);
+    return (await dzSave(p2)).message;
+  }
   const p = dzPanel();
   const c = p.counters;
   return [
     `\u0414\u043E\u0436\u0438\u043C WABA: ${p.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0451\u043D" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D"}${p.reason ? `. ${p.reason}` : ""}`,
     `\u0428\u0430\u0431\u043B\u043E\u043D: ${p.template.name || "\u043D\u0435 \u0432\u044B\u0431\u0440\u0430\u043D"}. \u0412\u0435\u0431\u0445\u0443\u043A Wazzup: ${p.webhook.on ? "\u0441\u0442\u043E\u0438\u0442" : "\u043D\u0435 \u0441\u0442\u043E\u0438\u0442"}.`,
     `\u0421\u0435\u0433\u043E\u0434\u043D\u044F: \u043A\u0430\u043D\u0434\u0438\u0434\u0430\u0442\u043E\u0432 ${c.candidates}, \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${c.sent}, \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0438 ${c.replied}, \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 \u0441\u0441\u044B\u043B\u043A\u0443 ${c.links}, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E\u0441\u043B\u0435 \u0434\u043E\u0436\u0438\u043C\u0430 ${c.joinedAfter}.`,
-    "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_dozhim on, \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_dozhim off, \u0442\u0435\u0441\u0442 \u043D\u0430 \u0441\u0432\u043E\u0439 \u043D\u043E\u043C\u0435\u0440: /wa_dozhim_test 77011234567"
+    "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_dozhim on, \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_dozhim off, \u0442\u0435\u0441\u0442 \u043D\u0430 \u0441\u0432\u043E\u0439 \u043D\u043E\u043C\u0435\u0440: /wa_dozhim_test 77011234567",
+    "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438: /wa_dozhim tpls, /wa_dozhim tpl <\u0447\u0430\u0441\u0442\u044C \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F>, /wa_dozhim set to=19:30 limit=90 delay=30, /wa_dozhim hook on|off"
   ].join("\n");
 }
 
