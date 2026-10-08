@@ -836,7 +836,9 @@ test("tg-series.json: кнопки оплаты ведут прямо на бр�
   const pay = [{ text: "Бронь через Kaspi", url: "{PREPAY_KZ}" }, { text: "Бронь из России и других стран", url: "{PREPAY_INTL}" }, { text: "Менеджер: рассрочка и вопросы", url: CHAT }];
   const paid = { text: "Я уже оплатил(а)", callback: "paid" };
   const flat = (id: string) => byId.get(id)!.buttons!.map((r) => r[0]);
-  for (const id of ["offer-2118", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) assert.deepEqual(flat(id), [...pay, paid], id);
+  for (const id of ["offer-2118", "push-2330", "follow-1500", "follow-2145"]) assert.deepEqual(flat(id), [...pay, paid], id);
+  // 10:30 следующего дня: картинка, а презентация кнопкой (Александр: картинка под каждым постом)
+  assert.deepEqual(flat("follow-1030"), [{ text: "Скачать презентацию (PDF)", url: "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf" }, ...pay, paid]);
   assert.deepEqual(flat("push-2230"), [...pay, { text: "Игра Token Runner", url: "{GAME}" }, paid]);
   // каждая кнопка в своём ряду, ни одна не выпадает из-за пустой ссылки
   for (const m of sr.messages) {
@@ -877,7 +879,7 @@ test("tg-series.json: следующий день v3.3: дожим был-на-�
   const byId = new Map(sr.messages.map((m) => [m.id, m]));
   const TG = "https://onai.academy/workshop-montazh/assets/tg/";
   const follow: Array<[string, string, unknown]> = [
-    ["follow-1030", "10:30", { type: "document", url: "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf" }],
+    ["follow-1030", "10:30", { type: "photo", url: TG + "next-1030.jpg?v=0910a" }],
     ["follow-1500", "15:00", { type: "photo", url: TG + "next-1500.jpg?v=0910a" }],
     ["follow-2145", "21:45", { type: "photo", url: TG + "next-2145.jpg?v=0910a" }],
   ];
@@ -1324,18 +1326,19 @@ test("серия из репозитория, следующий день: до�
   const caption = (c: Call) => String(c.body.caption ?? c.body.text);
   const keys = (c: Call) => (c.body.reply_markup.inline_keyboard as Array<Array<{ text: string; url?: string }>>).map((r) => r[0]);
 
-  // 10:30 следующего дня: презентация файлом тому, кто был на эфире и не оплатил
+  // 10:30 следующего дня: карточка и презентация кнопкой тому, кто был на эфире и не оплатил
   assert.equal(await run(alm(2026, 10, 7, 10, 35)), 1);
   assert.deepEqual(log, [`follow-1030@${D}:81`]);
-  const doc = fake.of("sendDocument");
+  const doc = fake.of("sendPhoto").filter((c) => String(c.body.photo).includes("next-1030.jpg"));
   assert.equal(doc.length, 1);
   assert.equal(doc[0].body.chat_id, 81);
-  assert.equal(doc[0].body.document, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
+  assert.equal(fake.of("sendDocument").length, 0, "PDF файлом больше не шлём");
   assert.match(String(doc[0].body.caption), /^Вчерашний эфир в одной презентации, и условия для участников ещё на день\./);
-  assert.deepEqual(keys(doc[0]).map((b) => b.text), ["Бронь через Kaspi", "Бронь из России и других стран", "Менеджер: рассрочка и вопросы", "Я уже оплатил(а)"]);
-  assert.equal(keys(doc[0])[0].url, base.links.prepayKz);
-  assert.equal(keys(doc[0])[1].url, base.links.prepayIntl);
-  assert.equal(keys(doc[0])[2].url, "https://onai.academy/workshop-montazh/chat");
+  assert.deepEqual(keys(doc[0]).map((b) => b.text), ["Скачать презентацию (PDF)", "Бронь через Kaspi", "Бронь из России и других стран", "Менеджер: рассрочка и вопросы", "Я уже оплатил(а)"]);
+  assert.equal(keys(doc[0])[0].url, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
+  assert.equal(keys(doc[0])[1].url, base.links.prepayKz);
+  assert.equal(keys(doc[0])[2].url, base.links.prepayIntl);
+  assert.equal(keys(doc[0])[3].url, "https://onai.academy/workshop-montazh/chat");
 
   // 11:00: пропустившим приходит зов на повтор (картинка с подписью, кнопок нет), был на эфире не получает
   log.length = 0;
