@@ -4,9 +4,9 @@
  * MontageDeck — эфир Vibe Production. Показ 6 октября 2026, 20:00 (до этого — 1 октября). На слайдах дату не пишем: «сегодня в 20:00».
  * Бренд-код сайтов onai.academy (theme.ts ← fx/brand.ts). Правые 40% кадра — зона камеры: только фон слайда (кроме lv: видеоурок на весь кадр).
  * 08.10.2026 (решение Александра, ТЗ docs/tasks/deck_ai_montage.md): воркшоп только про AI-монтаж. Порядок: вступление (обложка, опросы, программа,
- * обещание) → обо мне и доказательства (кейсы 08c, результаты) → проблема монтажа и блог без лица (11–16, nf1, nf2, nf3, 23, 23v) → практика: подводка pr и видеоурок lv
+ * обещание) → обо мне и доказательства (кейсы 08c, результаты) → проблема монтажа и блог без лица (11–16, nf1, nf2, 23, car, 23v) → практика: подводка pr и видеоурок lv
  * «весь путь рилса» (его монтирует «Монтаж Reels», сценарий docs/workshop-v2/videourok-pipeline.md) → после урока (22, 22r, 44, 50, 30–32) →
- * продажа только Vibe Production (33, 34, 34a «Научу работать с агентами», 35, 37, 37w, 37v, 38, 39a, 39, bon «Бонус до конца дня», 36 «AI-креатор», 41, оплата pay1)
+ * продажа только Vibe Production (33, 34, 34a «Научу работать с агентами», 35, hf «Higgsfield прямо из Claude», 37, 37w, 37v, 38, 39a, 39, bon «Бонус до конца дня», 36 «AI-креатор», bon3 «Третий бонус: реклама и AI-таргетолог», 41, оплата pay1)
  * → окно продаж 2 (51–55, 57g, оплата pay3) → финал.
  * Практики «презентация по брифу» и «приложение из описания», блок Vibe Coding PRO и пакет двух курсов 390 000 ₸ из показа убраны (ключи — в комментариях ниже).
  * Слайды оплаты — slides/pay.tsx (два QR: Kaspi и карты СНГ/мира), в показе варианты production и final.
@@ -35,8 +35,7 @@ import { M_ToPractice } from "./slides/handoff";
 import { M_PayQR } from "./slides/pay";
 import { M_DocsHow, M_DocsLive, M_AppsBuilds, M_AIStudio, M_AppBrief, M_AppStart, M_AppNext, M_WebApps, M_MainConclusion, M_DeckByAgent } from "./slides/practice";
 import { M_VcWho, M_VcProgram, M_VcTariffs, M_VcBundle, M_VcChoose, M_VcBook } from "./slides/vcpro";
-import { M_VoiceNoFace, M_LessonVideo, M_AgentsSetup, M_Bonus, M_NoFaceStory, M_NoFaceFormats, M_NoFaceReels } from "./slides/pipeline";
-import { NOFACE_REELS } from "./noface-reels";
+import { M_VoiceNoFace, M_LessonVideo, M_AgentsSetup, M_Bonus, M_Bonus3, M_Higgsfield, M_NoFaceStory, M_NoFaceFormats, M_NoFaceReels, M_Carousels } from "./slides/pipeline";
 
 /** Файлы из public/montage/, которые page.tsx нашёл на диске. Нет файла — на слайде пунктирное место. */
 export type Shots = { intro?: string; doc?: string; growth?: (string | undefined)[]; viral?: (string | undefined)[] };
@@ -76,12 +75,14 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_OnePhrase key="15" />,
     <M_OneOf14 key="16" />,
     // Блок «Блог без лица» (Александр 08.10 вечером, вместо слайдов про вайбкодинг и три практики): nf1 история «я начинал без лица»,
-    // nf2 два формата для тех, кто не может снимать лицо, nf3 рилсы без лица целиком (телефоны, клик со звуком), потом 23 форматы и 23v голос.
-    // nf3 в колоду попадает, только когда заполнен массив NOFACE_REELS (noface-reels.ts): без роликов слайд был бы пустым. Видео кладёт монтажёр в public/montage/noface/
+    // nf2 два формата для тех, кто не может снимать лицо, 23 четыре формата с рилсами целиком (телефон, клик со звуком), car карусели, 23v голос.
+    // nf3 (M_NoFaceReels, рилсы без лица рядом) убран из показа 08.10, 14:30: оба рилса без лица теперь внутри слайда 23, повтор не нужен.
+    // Вернуть: вставить M_NoFaceReels с ключом nf3 после nf2 (импорт уже есть, данные в noface-reels.ts остались).
     <M_NoFaceStory key="nf1" />,
     <M_NoFaceFormats key="nf2" />,
-    ...(NOFACE_REELS.length > 0 ? [<M_NoFaceReels key="nf3" />] : []),
     <M_NoFace key="23" />,
+    // car · Карусели: ещё один вид контента (08.10, 14:30). Две настоящие карусели Александра в public/montage/carousels/, цифры из Instagram API на 08.10
+    <M_Carousels key="car" />,
     <M_VoiceNoFace key="23v" />,
     // Практика: видеоурок «весь путь рилса» (решение Александра 08.10). pr — семь шагов пути, lv — видео на весь кадр.
     // Файл public/montage/lesson/videourok-pipeline.mp4 кладёт монтажёр «Монтаж Reels»; пока его нет, lv показывает постер.
@@ -112,15 +113,19 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     // 35 (модуль 1, AI-монтаж), 37 (модуль 2, ассистенты и автоматизация), потом опрос 03 переворачивается (37w) и «сами или с обучением» (37v).
     // Режиссура: docs/tasks/deck_wave4_directions.md. Порядок модулей с 08.10: 1 AI-монтаж (35), 2 ассистенты и автоматизация (37), 3 AI-креатор (36, он же бонус).
     <M_ShopReel key="35" />,
+    // hf · Higgsfield прямо из Claude (Александр 08.10, 15:00): как с ним работать на обучении, сразу после модуля 1
+    <M_Higgsfield key="hf" />,
     <M_ShopLead key="37" />,
     <M_ForYou key="37w" />,
     <M_SoloVsCourse key="37v" />,
     <M_Anchor key="38" />,
     <M_Discount key="39a" />,
     <M_Installments key="39" />,
-    // Бонус за покупку до конца дня (Александр 08.10): bon — модуль 3 AI-креатор и 6 месяцев доступа, 36 — раскрытие модуля 3 с видеоуроком (раньше модуль 2 перед 37)
+    // Бонус за покупку до конца дня (Александр 08.10): bon — модуль 3 AI-креатор, 6 месяцев доступа и модуль по рекламе (третий подарок), 36 — раскрытие модуля 3 с видеоуроком (раньше модуль 2 перед 37)
     <M_Bonus key="bon" />,
     <M_ShopAd key="36" />,
+    // bon3 · третий бонус до конца дня (08.10, 15:00): модуль по рекламе через Claude и скилл AI-таргетолога, после раскрытия модуля 3
+    <M_Bonus3 key="bon3" />,
     // 40 M_SixMonths («6 месяцев вместо 3») убран 08.10: то же самое говорит первый подарок на bon. Вернуть: вставить M_SixMonths с ключом 40 после 36 (импорт уже есть)
     <M_HowToBook key="41" />,
     // Оплата Vibe Production: два QR (Kaspi и карты СНГ/мира), текст над ними с ценой 150 000 ₸ (slides/pay.tsx)

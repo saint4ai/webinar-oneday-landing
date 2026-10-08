@@ -10,7 +10,7 @@ import { Phone } from "../Phone";
 import { Statement } from "../Statement";
 import { BOOKING_PRICE, BUNDLE_PRICE, PRO_SOLO_PRICE, money, moneyBoth, moneyUsd } from "../prices";
 import { NUM_ACCENT, LT, T, card, goldButton, goldText, pricePlate } from "../theme";
-import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, UsdTag, at, nb, thousands, txt } from "../ui";
+import { Card, DrawLine, EASE, Em, H, Kicker, Lead, Note, Num, Px, Rise, STEP, Stagger, UsdTag, at, glueNode, nb, thousands, txt } from "../ui";
 
 /** Чип-условие: золотая рамка на светлом золоте. */
 export const GoldChip = ({ children, size = "0.95cqw" }: { children: React.ReactNode; size?: string }) => (
@@ -307,7 +307,7 @@ export function M_Inaction() {
   );
 }
 
-/** 53 · Всё на одном экране: три модуля (08.10: AI-креатор стал модулем 3 с золотой пометкой «бонус до конца дня»), под ними условия золотыми чипами. */
+/** 53 · Всё на одном экране: три модуля (08.10: AI-креатор стал модулем 3 с золотой пометкой «бонус до конца дня»), под ними условия золотыми чипами, среди них третий бонус: модуль по рекламе и AI-таргетолог. */
 export function M_OneScreen() {
   const mods = [["Модуль 1", "AI-монтаж", "Рилсы без знаний монтажа", "lg-i-clapper"], ["Модуль 2", "Автоматизация", "Заявки из директа сами", "lg-i-chatkey"], ["Модуль 3", "AI-креатор", "Реклама товара из фото", "lg-i-box"]];
   return (
@@ -329,6 +329,12 @@ export function M_OneScreen() {
           <Stagger key={c} i={3 + i}><GoldChip>{c}</GoldChip></Stagger>
         ))}
         <Stagger i={8}><GoldChip>Разбор работ в общем чате потока</GoldChip></Stagger>
+        {/* третий бонус до конца дня (Александр, 08.10, 15:00): подробности на слайде bon3 */}
+        <Stagger i={9}>
+          <span style={{ display: "inline-block", maxWidth: "100%", borderRadius: 999, padding: "0.65cqw 1.2cqw", ...goldButton, border: `1px solid ${T.gold2}`, ...txt, color: LT.ink, fontWeight: 700, fontSize: "0.95cqw" }}>
+            Бонус до конца дня: модуль по рекламе и AI-таргетолог
+          </span>
+        </Stagger>
       </div>
       {/* строка про пакет двух курсов (07.10) убрана 08.10: продаём только Vibe Production. Вернуть: GoldChip с BUNDLE_PRICE и SEPARATE_PRICE из prices.ts */}
     </Statement>
@@ -355,26 +361,45 @@ export function M_Doubts() {
   );
 }
 
-/** 55 · Что ещё понадобится: подписки строками по очереди, итог золотом. */
+/**
+ * 55 · Что ещё понадобится: две группы (Александр, 08.10, 15:00). Обязательно только Claude, остальное по желанию, итог золотом.
+ * Цены из ТЗ: ElevenLabs $6, Higgsfield $15, OpenAI API пополнить на $5 в месяц, SYNTX около $10. Сумма «около $51» убрана.
+ */
 export function M_Subscriptions() {
-  const rows = [["Claude Pro", "агент-монтажёр, модули 1 и 2", "$20"], ["Higgsfield", "реклама из фото", "$15"], ["SYNTX", "кадры и движение", "около $10"], ["ElevenLabs", "копия голоса", "$6"]];
+  const must = [["Claude", "агент-монтажёр и вся система", "от $20 в месяц"]];
+  const opt = [
+    ["ElevenLabs", "голос, если не записываете сами", "$6"],
+    ["Higgsfield", "объекты для монтажа и картинки для каруселей", "$15"],
+    ["OpenAI API", "генерация картинок", "пополнить на $5 в месяц"],
+    ["SYNTX", "кадры и движение для рекламы, модуль 3", "около $10"],
+  ];
+  const group = (title: string, rows: string[][], from: number, gold?: boolean) => (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 + from * STEP, duration: 0.35 }}
+        style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.85cqw", color: gold ? T.gold2 : T.accent, padding: "0.5cqw 0 0.1cqw" }}>{title}</motion.div>
+      {rows.map(([n, d, p], i) => (
+        <motion.div key={n} className="flex items-baseline gap-[1cqw]" initial={{ opacity: 0, x: "-1cqw" }} animate={{ opacity: 1, x: "0cqw" }}
+          transition={{ delay: 0.4 + (from + i + 1) * STEP, duration: 0.35, ease: EASE }} style={{ padding: "0.6cqw 0", borderBottom: `1px solid ${T.line}` }}>
+          <span style={{ ...txt, fontWeight: 700, minWidth: "8cqw" }}>{n}</span>
+          <span style={{ ...txt, fontWeight: 500, color: T.muted, fontSize: "0.95cqw" }}>{glueNode(d)}</span>
+          <span style={{ ...txt, fontWeight: 700, marginLeft: "auto", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{p}</span>
+        </motion.div>
+      ))}
+    </>
+  );
   return (
     <Statement kicker="Без сюрпризов" title={<>Что ещё <Em>понадобится</Em></>} size="2.8cqw">
-      <Stagger i={0} style={{ ...card, borderRadius: 22, padding: "1.2cqw 1.6cqw", maxWidth: "44cqw" }}>
-        {rows.map(([n, d, p], i) => (
-          <motion.div key={n} className="flex items-baseline gap-[1cqw]" initial={{ opacity: 0, x: "-1cqw" }} animate={{ opacity: 1, x: "0cqw" }}
-            transition={{ delay: 0.4 + i * STEP, duration: 0.35, ease: EASE }} style={{ padding: "0.7cqw 0", borderBottom: `1px solid ${T.line}` }}>
-            <span style={{ ...txt, fontWeight: 700, minWidth: "8cqw" }}>{n}</span>
-            <span style={{ ...txt, fontWeight: 500, color: T.muted, fontSize: "0.95cqw" }}>{d}</span>
-            <span style={{ ...txt, fontWeight: 700, marginLeft: "auto", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{p}</span>
-          </motion.div>
-        ))}
-        <motion.div className="flex items-baseline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.4 }} style={{ paddingTop: "0.9cqw" }}>
-          <span style={{ ...txt, fontWeight: 700 }}>На старт</span>
-          <span style={{ marginLeft: "auto" }}><Num size="1.8cqw" color={T.brown}>около $51 в месяц</Num></span>
+      <Stagger i={0} style={{ ...card, borderRadius: 22, padding: "0.9cqw 1.6cqw 1cqw", maxWidth: "52cqw" }}>
+        {group("Обязательно", must, 0, true)}
+        {group("По желанию", opt, 2)}
+        <motion.div className="flex items-baseline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1, duration: 0.4 }} style={{ paddingTop: "0.9cqw" }}>
+          <Num size="1.35cqw" color={T.gold}>Обязательно только Claude, от $20 в месяц</Num>
         </motion.div>
       </Stagger>
-      <Note>Claude Max за $200 в месяц хватает на 150 роликов. Цены на 26 сентября 2026</Note>
+      <Stagger i={5} base={0.6} style={{ ...txt, fontWeight: 600, fontSize: "1.15cqw", lineHeight: 1.45, maxWidth: "46cqw", marginTop: "1.3cqw" }}>
+        {glueNode("Не хотите лишних подписок? Записывайте голос и видео сами, для монтажа хватит Claude.")}
+      </Stagger>
+      <Note style={{ marginTop: "0.8cqw" }}>Claude Max за $200 в месяц хватает на 150 роликов. Цены на 26 сентября 2026</Note>
     </Statement>
   );
 }

@@ -360,22 +360,23 @@ export function M_ReadyReel() {
 }
 
 const FORMATS = [
-  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026
+  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026.
+  // 08.10, 14:30 (Александр): четыре формата вместо шести. Подкаст, «Половина и окно в углу» и «Спикер внизу» убраны: это тот же формат, что половина экрана.
+  // Вернуть: face-corner-jarvis (9,6 тыс.), face-bottom-github (112 тыс.), face-podcast-dilorom (6,1 тыс.), файлы лежат в public/montage/noface.
   { f: "01-polovina-ekrana", t: "Половина экрана", full: "face-half-connectors", views: "120 тыс." },
-  { f: "02-polovina-okno", t: "Половина и окно в углу", full: "face-corner-jarvis", views: "9,6 тыс." },
-  { f: "03-kartochka-spikera", t: "Карточка спикера", full: "face-card-unlazy", views: "3,1 тыс." },
-  { f: "04-spiker-vnizu", t: "Спикер внизу, графика сверху", full: "face-bottom-github", views: "112 тыс." },
-  { f: "05-bez-lica", t: "Без лица, на весь кадр", noFace: true, full: "noface-puppet-zashita", views: "16,4 тыс." },
-  { f: "06-podcast", t: "Подкаст", full: "face-podcast-dilorom", views: "6,1 тыс." },
+  { f: "02-kartochka-spikera", t: "Карточка спикера, как в Screen Studio", full: "face-card-unlazy", views: "3,1 тыс." },
+  { f: "03-bez-lica-golova", t: "Без лица: анимированная голова", noFace: true, full: "noface-puppet-zashita", views: "16,4 тыс." },
+  // у ролика с закадровым голосом текущей цифры просмотров нет (снят с ленты), счётчик не показываем
+  { f: "04-bez-lica-golos", t: "Без лица: голос и графика", noFace: true, full: "noface-voice-searchconsole", views: "" },
 ];
 
 /**
- * 23 ✦ · Без лица: шесть форматов, ведущий сам включает нужный. Автопереключения нет: клик по пункту или клавиши 1–6, ↑ и ↓.
- * Старт на пятом формате «Без лица». Видео в телефоне каждый раз идёт с начала, повторный клик по тому же пункту тоже запускает его заново.
+ * 23 ✦ · Без лица: четыре формата, ведущий сам включает нужный. Автопереключения нет: клик по пункту или клавиши 1–4 (по длине списка), ↑ и ↓.
+ * Старт на третьем формате «Без лица: анимированная голова». Видео в телефоне каждый раз идёт с начала, повторный клик по тому же пункту тоже запускает его заново.
  * Клик и эти клавиши презентацию не листают: цифры и стрелки вверх и вниз общая колода не использует (SlideDeck слушает ← → пробел PageUp PageDown Home End F S).
  */
 export function M_NoFace() {
-  const [k, setK] = useState(4);
+  const [k, setK] = useState(2);
   const [run, setRun] = useState(0); // счётчик включений: новый ключ запускает видео сначала
   const [playing, setPlaying] = useState<number | null>(null); // какой рилс играет со звуком
   const pick = (i: number) => { setK(i); setRun((r) => r + 1); };
@@ -389,7 +390,7 @@ export function M_NoFace() {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
       const n = FORMATS.length;
-      if (/^[1-6]$/.test(e.key)) pickRef.current(Number(e.key) - 1);
+      if (/^[1-9]$/.test(e.key) && Number(e.key) <= n) pickRef.current(Number(e.key) - 1);
       else if (e.key === "ArrowDown") pickRef.current((kRef.current + 1) % n);
       else if (e.key === "ArrowUp") pickRef.current((kRef.current + n - 1) % n);
       else return;

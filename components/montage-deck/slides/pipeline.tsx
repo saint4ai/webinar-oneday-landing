@@ -15,8 +15,11 @@ import { Arrow, EASE, Em, Kicker, MaskIcon, Note, Num, Px, Stagger, glueNode, nb
  * Слайды воркшопа под AI-монтаж (08.10.2026, ТЗ docs/tasks/deck_ai_montage.md; сценарий урока docs/workshop-v2/videourok-pipeline.md):
  *   nf1 M_NoFaceStory   «Я начинал без лица» (блок «Блог без лица» после 16, дополнение к ТЗ 08.10 вечером);
  *   nf2 M_NoFaceFormats «Если не можете снимать лицо»: два формата, которые придумал Александр;
- *   nf3 M_NoFaceReels   рилсы без лица из noface-reels.ts (пока массив пустой, слайд в колоду не вставляется);
+ *   nf3 M_NoFaceReels   рилсы без лица из noface-reels.ts (с 08.10, 14:30 вне показа: оба рилса без лица теперь внутри слайда 23, код и данные оставлены);
+ *   car M_Carousels     «Карусели: ещё один вид контента» (после 23): две настоящие карусели Александра, листаются кликом (08.10, 14:30);
  *   23v M_VoiceNoFace  два способа получить голос для блога без лица;
+ *   hf  M_Higgsfield   «Higgsfield прямо из Claude» (после 35, модуль 1), 08.10, 15:00;
+ *   bon3 M_Bonus3      третий бонус до конца дня: модуль по рекламе и AI-таргетолог (после 36), 08.10, 15:00;
  *   lv  M_LessonVideo  видеоурок «весь путь рилса» на весь кадр 16:9;
  *   34a M_AgentsSetup  «Научу работать с агентами» (в продаже, после слайда 34);
  *   bon M_Bonus        «Бонус, если купите до конца дня»: модуль 3 AI-креатор и 6 месяцев доступа (после рассрочки 39, перед модулем 3 на слайде 36).
@@ -177,6 +180,7 @@ const Tick = ({ children }: { children: ReactNode }) => (
  * bon · Бонус, если купите до конца дня (Александр, 08.10, дополнение и уточнение к ТЗ): модуль 3 «AI-креатор» и 6 месяцев доступа вместо 3.
  * В модуле 3: вирусная реклама для брендов и их продуктов, рекламные ролики на основе продуктов клиента, готовые референсы и показ, как такие
  * ролики создаются. Дальше слайд 36 раскрывает модуль с видеоуроком. Модулей по-прежнему три (число на слайдах 33 и 53 прежнее).
+ * С 08.10, 15:00 третий подарок строкой снизу: модуль по рекламе через Claude и скилл AI-таргетолога (раскрывает слайд bon3 после 36).
  */
 export function M_Bonus() {
   return (
@@ -200,6 +204,16 @@ export function M_Bonus() {
             <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: T.accent, marginBottom: "0.6cqw" }}>Подарок 2</div>
             <Num size="3.2cqw" color={T.gold}>{nb("6 месяцев")}</Num>
             <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", lineHeight: 1.3, marginTop: "0.6cqw" }}>доступа к обучению вместо 3</div>
+          </div>
+        </Stagger>
+        {/* подарок 3 (Александр, 08.10, 15:00): коротко, подробности на слайде bon3 после модуля 3 */}
+        <Stagger i={2} style={{ gridColumn: "1 / -1" }}>
+          <div className="flex items-center" style={{ ...card, borderRadius: 22, padding: "0.9cqw 1.5cqw", gap: "1.3cqw" }}>
+            <Px name="lg-i-phonearrow" size="4.2cqw" bob={false} delay={0.45} style={{ margin: "-0.3cqw 0 -0.3cqw -0.3cqw" }} />
+            <div>
+              <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: T.accent, marginBottom: "0.4cqw" }}>Подарок 3</div>
+              <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", lineHeight: 1.3 }}>{glueNode("Модуль по рекламе через Claude и скилл AI-таргетолога")}</div>
+            </div>
           </div>
         </Stagger>
       </div>
@@ -322,6 +336,206 @@ export function M_NoFaceReels() {
         ))}
       </div>
       <Note style={{ marginTop: "1.2cqw" }}>{sources.join(". ")}</Note>
+    </Statement>
+  );
+}
+
+/** Две настоящие карусели Александра для car: public/montage/carousels/<base>-1…4.jpg (4:5), цифры Instagram API на 8 октября 2026. */
+const CAROUSELS = [
+  { base: "chat4", title: "Один чат. 4 канала", views: "4,1 тыс.", saves: "91", savesWord: "сохранение" },
+  { base: "lazyweb", title: "Почему AI рисует серенько", views: "3,9 тыс.", saves: "97", savesWord: "сохранений" },
+];
+const CAROUSEL_SLIDES = 4;
+
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" style={{ width: "1.25cqw", height: "1.25cqw" }} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12Z" /><circle cx="12" cy="12" r="3.2" />
+  </svg>
+);
+const BookmarkIcon = () => (
+  <svg viewBox="0 0 24 24" style={{ width: "1.25cqw", height: "1.25cqw" }} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M6 3.5h12v17l-6-4.6-6 4.6z" />
+  </svg>
+);
+
+/** Строка счётчика под каруселью: значок, число золотом, подпись. */
+const Stat = ({ icon, n, label }: { icon: ReactNode; n: string; label: string }) => (
+  <div className="flex items-center" style={{ gap: "0.55cqw" }}>
+    <span style={{ display: "flex", color: T.gold2 }}>{icon}</span>
+    <Num size="1.2cqw" color={T.gold}>{nb(n)}</Num>
+    <span style={{ ...txt, fontWeight: 500, fontSize: "0.95cqw", color: T.muted }}>{label}</span>
+  </div>
+);
+
+/**
+ * Одна карусель: слайды лентой в рамке 4:5, как листают в Instagram (клик по рамке или по точке листает, после четвёртого слайда снова первый).
+ * За рамкой выглядывают два следующих слайда, потемнее: стопка. Под рамкой точки, название и счётчики.
+ * pointer-events: auto — слой слайда в колоде пропускает клики насквозь, кнопкам их нужно вернуть; stopPropagation не даёт кликом листать колоду.
+ */
+function CarouselStack({ c }: { c: (typeof CAROUSELS)[number] }) {
+  const [n, setN] = useState(0);
+  const ks = Array.from({ length: CAROUSEL_SLIDES }, (_, k) => k);
+  const src = (k: number) => `/montage/carousels/${c.base}-${k + 1}.jpg`;
+  const R = "1.3cqw";
+  const last = n === CAROUSEL_SLIDES - 1;
+  return (
+    <div style={{ width: "17.6cqw", flexShrink: 0 }}>
+      <div className="relative" style={{ width: "16cqw", aspectRatio: "4/5" }}>
+        {[2, 1].map((d) => (
+          <div key={d} aria-hidden className="absolute inset-0 overflow-hidden"
+            style={{ borderRadius: R, transformOrigin: "left center", transform: `translateX(${d * 1.68}cqw) scale(${1 - d * 0.055})`, filter: `brightness(${1 - d * 0.26})`, boxShadow: T.shadowSm }}>
+            <img src={src((n + d) % CAROUSEL_SLIDES)} alt="" draggable={false} className="h-full w-full object-cover" />
+          </div>
+        ))}
+        <button type="button" aria-label={`Карусель «${c.title}»: ${last ? "сначала" : "следующий слайд"}`}
+          onClick={(e) => { e.stopPropagation(); setN((v) => (v + 1) % CAROUSEL_SLIDES); }}
+          className="absolute inset-0 overflow-hidden"
+          style={{ pointerEvents: "auto", cursor: "pointer", border: 0, padding: 0, borderRadius: R, background: T.night2, boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
+          <div className="flex h-full" style={{ width: `${CAROUSEL_SLIDES * 100}%`, transform: `translateX(-${(n * 100) / CAROUSEL_SLIDES}%)`, transition: "transform .55s cubic-bezier(.23,1,.32,1)" }}>
+            {ks.map((k) => (
+              <img key={k} src={src(k)} alt={`${c.title}, слайд ${k + 1}`} draggable={false} style={{ width: `${100 / CAROUSEL_SLIDES}%`, height: "100%", objectFit: "cover", flexShrink: 0, display: "block" }} />
+            ))}
+          </div>
+          {/* номер слайда, как в Instagram */}
+          <span style={{ position: "absolute", top: "0.7cqw", right: "0.7cqw", padding: "0.3cqw 0.7cqw", borderRadius: 999, background: "rgba(10,8,7,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            color: "#fff", fontFamily: "var(--font-manrope)", fontWeight: 700, fontSize: "0.8cqw", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{n + 1}/{CAROUSEL_SLIDES}</span>
+          {/* стрелка «дальше» на правом краю, на последнем слайде её нет */}
+          {!last && (
+            <span className="flex items-center justify-center" style={{ position: "absolute", right: "0.6cqw", top: "50%", width: "1.9cqw", height: "1.9cqw", marginTop: "-0.95cqw", borderRadius: 999, background: "rgba(255,255,255,.88)", boxShadow: "0 0.3cqw 0.8cqw rgba(0,0,0,.35)" }}>
+              <svg viewBox="0 0 24 24" style={{ width: "1.1cqw", height: "1.1cqw" }} fill="none" stroke="#14100E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+            </span>
+          )}
+        </button>
+      </div>
+      <div className="flex items-center justify-center" style={{ width: "16cqw", marginTop: "0.5cqw" }}>
+        {ks.map((k) => (
+          <button key={k} type="button" aria-label={`Слайд ${k + 1}`} onClick={(e) => { e.stopPropagation(); setN(k); }}
+            style={{ pointerEvents: "auto", cursor: "pointer", border: 0, background: "transparent", padding: "0.35cqw 0.18cqw" }}>
+            <span style={{ display: "block", width: k === n ? "1.2cqw" : "0.5cqw", height: "0.5cqw", borderRadius: 999, background: k === n ? T.gold : `${T.muted}77`, transition: "width .3s, background .3s" }} />
+          </button>
+        ))}
+      </div>
+      <div style={{ ...txt, fontWeight: 700, fontSize: "1.05cqw", lineHeight: 1.3, marginTop: "0.4cqw", maxWidth: "16cqw" }}>{glueNode(c.title)}</div>
+      <div className="grid" style={{ gap: "0.35cqw", marginTop: "0.7cqw" }}>
+        <Stat icon={<EyeIcon />} n={c.views} label="просмотров" />
+        <Stat icon={<BookmarkIcon />} n={c.saves} label={c.savesWord} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * car · Карусели: ещё один вид контента (Александр, 08.10, 14:30): карусели тоже контент без лица, в них можно поставить свой видеоряд с монтажом или просто картинки.
+ * Две настоящие карусели Александра по 4 слайда (public/montage/carousels), счётчики из Instagram API на 8 октября 2026.
+ * Всё в левых 60% кадра. Листание только кликом по рамке или точке: клавиши колоды (стрелки, пробел) заняты листанием слайдов презентации.
+ */
+export function M_Carousels() {
+  return (
+    <Statement kicker="Блог без лица · Карусели" title={<>Карусели:<br /><Em>ещё один вид контента</Em></>} lead="Карусели тоже контент без лица." size="3cqw">
+      <div className="flex items-start" style={{ maxWidth: "54cqw", gap: "2.2cqw" }}>
+        {CAROUSELS.map((c, i) => <Stagger key={c.base} i={i} style={{ flexShrink: 0 }}><CarouselStack c={c} /></Stagger>)}
+        <Stagger i={2} style={{ flex: 1, minWidth: 0, alignSelf: "stretch" }}>
+          <div className="flex h-full flex-col justify-center" style={{ gap: "0.8cqw", maxHeight: "20cqw" }}>
+            <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.85cqw", lineHeight: 1.3, color: T.accent }}>В карусель можно поставить</div>
+            <div style={{ ...card, borderRadius: 20, padding: "1cqw 1.2cqw", border: `1.5px solid ${T.gold2}` }}>
+              <Px name="lg-i-laptopfilm" size="3.8cqw" bob={false} delay={0.5} style={{ margin: "-0.3cqw 0 0.4cqw -0.3cqw" }} />
+              <div style={{ ...txt, fontWeight: 700, fontSize: "1.15cqw", lineHeight: 1.3 }}>{glueNode("Свой видеоряд с монтажом")}</div>
+            </div>
+            <div style={{ ...card, borderRadius: 20, padding: "1cqw 1.2cqw" }}>
+              <Px name="lg-i-box" size="3.8cqw" bob={false} delay={0.57} style={{ margin: "-0.3cqw 0 0.4cqw -0.3cqw" }} />
+              <div style={{ ...txt, fontWeight: 700, fontSize: "1.15cqw", lineHeight: 1.3 }}>{glueNode("Просто картинки")}</div>
+            </div>
+          </div>
+        </Stagger>
+      </div>
+      <Note style={{ marginTop: "0.8cqw" }}>Просмотры и сохранения: Instagram API, 8 октября 2026</Note>
+    </Statement>
+  );
+}
+
+/**
+ * hf · Higgsfield прямо из Claude (Александр, 08.10, 15:00; после слайда 35, модуль 1): через Higgsfield MCP агент в Claude генерирует объекты для монтажа,
+ * картинки для каруселей и связки (картинка в ролик, объект в кадр). Логотип: public/montage/logos/higgsfield.png (иконка приложения, 192×192),
+ * слева настоящий скрин страницы Higgsfield про подключение к Claude (public/screenshots/higgsfield_claude_mcp.png).
+ * LEGO-объекты колоды как «примеры сгенерированного» не показываем: они сделаны в gpt-image, не в Higgsfield, поэтому подписи «сделано в Higgsfield» им нельзя.
+ */
+export function M_Higgsfield() {
+  const uses: [string, string, string][] = [
+    ["lg-i-clapper", "Объекты для монтажа", "Предметы, которые встают в кадр рилса"],
+    ["lg-i-cards", "Картинки для каруселей", "Агент рисует их прямо в разговоре"],
+    ["lg-i-laptopfilm", "Связки", "Картинка в ролик, объект в кадр"],
+  ];
+  return (
+    <Statement kicker="Модуль 1 · Higgsfield" title={<>Higgsfield <Em>прямо из Claude</Em></>} lead="На обучении покажу, как с ним работать. Через Higgsfield MCP агент генерирует прямо в разговоре." size="3.2cqw">
+      <Stagger i={0} className="flex items-center" style={{ gap: "0.9cqw", marginBottom: "1.2cqw" }}>
+        <span className="inline-flex items-center" style={{ ...card, borderRadius: 999, padding: "0.5cqw 1.1cqw 0.5cqw 0.8cqw", gap: "0.6cqw" }}>
+          <MaskIcon name="claude" color={T.gold} size="1.6cqw" />
+          <span style={{ ...txt, fontWeight: 700, fontSize: "1.1cqw" }}>Claude</span>
+        </span>
+        <Arrow color={T.gold2} size="1.5cqw" />
+        <span className="inline-flex items-center" style={{ ...card, borderRadius: 999, padding: "0.5cqw 1.1cqw 0.5cqw 0.5cqw", gap: "0.6cqw" }}>
+          <img src="/montage/logos/higgsfield.png" alt="Higgsfield" style={{ width: "2cqw", height: "2cqw", borderRadius: "0.45cqw", display: "block" }} />
+          <span style={{ ...txt, fontWeight: 700, fontSize: "1.1cqw" }}>Higgsfield MCP</span>
+        </span>
+      </Stagger>
+      <div className="flex items-start" style={{ maxWidth: "54cqw", gap: "1.6cqw" }}>
+        <Stagger i={1} style={{ width: "26cqw", flexShrink: 0 }}>
+          <div style={{ ...card, borderRadius: 20, padding: "0.5cqw" }}>
+            {/* скрин увеличен в 1,5 раза и обрезан по заголовку: иначе мелкий текст страницы не читается */}
+            <div className="relative" style={{ width: "100%", aspectRatio: "16/8", overflow: "hidden", borderRadius: "1.5cqw", background: "#000" }}>
+              <img src="/screenshots/higgsfield_claude_mcp.png" alt="Страница Higgsfield: подключение к Claude" style={{ display: "block", width: "150%", maxWidth: "none", marginLeft: "-25%", marginTop: "-4%" }} />
+              {/* нижняя половина страницы (вкладки и шаги установки) растворяется: на слайде нужен только заголовок */}
+              <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 48%, #000 80%)" }} />
+            </div>
+          </div>
+          <Note style={{ marginTop: "0.6cqw" }}>Страница Higgsfield: подключение к Claude</Note>
+        </Stagger>
+        <div className="grid" style={{ flex: 1, minWidth: 0, gap: "0.8cqw" }}>
+          {uses.map(([ic, t, d], i) => (
+            <Stagger key={t} i={2 + i}>
+              <div className="flex items-center" style={{ ...card, borderRadius: 20, padding: "0.7cqw 1.2cqw 0.7cqw 0.9cqw", gap: "0.9cqw" }}>
+                <div className="flex justify-center" style={{ width: "4.2cqw", flexShrink: 0 }}><Px name={ic} size="3.4cqw" bob={false} delay={0.4 + i * 0.07} /></div>
+                <div>
+                  <div style={{ ...txt, fontWeight: 700, fontSize: "1.1cqw", lineHeight: 1.3 }}>{glueNode(t)}</div>
+                  <div style={{ ...txt, fontWeight: 500, fontSize: "0.9cqw", lineHeight: 1.35, color: T.muted, marginTop: "0.2cqw" }}>{glueNode(d)}</div>
+                </div>
+              </div>
+            </Stagger>
+          ))}
+        </div>
+      </div>
+    </Statement>
+  );
+}
+
+/**
+ * bon3 · Третий бонус за покупку до конца дня (Александр, 08.10, 15:00; после 36): бонусный модуль по запуску рекламы через Claude и скилл AI-таргетолога.
+ * Площадки модуля: Facebook, Instagram, YouTube, TikTok. Честная подпись: скилл работает с Facebook и Instagram.
+ * Текст слов Александра из ТЗ. Логотипы: public/montage/logos (brand-logos и workshop-montazh/assets/logos).
+ */
+export function M_Bonus3() {
+  const platforms: [string, string][] = [["Facebook", "facebook"], ["Instagram", "instagram"], ["YouTube", "youtube"], ["TikTok", "tiktok"]];
+  return (
+    <Statement obj="lg-i-rocket" objSize="8cqw" kicker="Бонус 3, если купите до конца дня" title={<>Модуль по рекламе и мой <Em><span style={{ whiteSpace: "nowrap" }}>AI-таргетолог</span></Em></>} size="3cqw">
+      <Stagger i={0} style={{ ...card, borderRadius: 22, padding: "1.3cqw 1.6cqw", maxWidth: "54cqw", borderLeft: `0.28cqw solid ${T.gold2}` }}>
+        <p style={{ ...txt, fontWeight: 600, fontSize: "1.25cqw", lineHeight: 1.5, textWrap: "pretty" }}>
+          {glueNode("Так же, как я привлёк вас на этот воркшоп рекламой, я дам вам бонусный модуль по запуску рекламы через Claude и свой скилл. Вы передадите его Claude, и он как профессиональный таргетолог будет сам запускать и вести рекламные кампании.")}
+        </p>
+      </Stagger>
+      <Stagger i={2} style={{ marginTop: "1.6cqw" }}>
+        <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.85cqw", color: T.accent, marginBottom: "0.7cqw" }}>Площадки модуля</div>
+        <div className="flex" style={{ gap: "0.8cqw" }}>
+          {platforms.map(([name, file], i) => (
+            <Stagger key={file} i={3 + i}>
+              <div className="flex items-center" style={{ ...card, borderRadius: 18, padding: "0.8cqw 1.2cqw", gap: "0.7cqw" }}>
+                <MaskIcon name={file} color={T.gold} size="1.9cqw" />
+                <span style={{ ...txt, fontWeight: 700, fontSize: "1.1cqw" }}>{name}</span>
+              </div>
+            </Stagger>
+          ))}
+        </div>
+      </Stagger>
+      <Note style={{ marginTop: "1cqw" }}>Скилл AI-таргетолога работает с Facebook и Instagram</Note>
     </Statement>
   );
 }
