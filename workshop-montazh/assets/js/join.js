@@ -7,7 +7,7 @@
  *   [data-join="tg"]    ссылка на бота (в href запасная ссылка, модуль допишет метку заявки)
  *   [data-join="live"]  строка «Эфир идёт прямо сейчас…», показывается, когда EFIR.state === 'live'
  *   [data-join="help"]  подсказка для iOS во встроенном браузере, показывается только там
- *   [data-join="tgroute"]  строка под кнопкой Telegram «В России WhatsApp работает с перебоями…», только когда Telegram идёт первым
+ *   [data-join="tgroute"]  строка под кнопкой Telegram «В России WhatsApp работает с перебоями…», только для номеров России
  *   [data-join="hint"]  прежняя подсказка «Из России или WhatsApp работает с перебоями? Выбирайте Telegram.», прячется, когда Telegram и так первый
  *   [data-join="copy"]  кнопки «Скопировать ссылку», у каждой data-copy="wa" или "tg"
  *   [data-join="head"]  заголовок, к которому добавляется имя из заявки
@@ -108,7 +108,7 @@
         box.setAttribute('data-route', first ? 'tg' : 'wa');
       }
     }
-    all(root, '[data-join="tgroute"]').forEach(function(n){ n.hidden = !first; });
+    all(root, '[data-join="tgroute"]').forEach(function(n){ n.hidden = route !== 'ru'; });   // строка про перебои WhatsApp только для России
     all(root, '[data-join="hint"]').forEach(function(n){ n.hidden = first; });
   }
 

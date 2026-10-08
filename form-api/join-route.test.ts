@@ -149,14 +149,15 @@ test("порядок кнопок: Казахстан и без номера Wha
     assert.deepEqual([b.route.hidden, b.hint.hidden], [true, false]);
     assert.equal(inst.route, phone === "+7 701 234 56 78" ? "kz" : "");
   }
-  // Россия и другие коды: Telegram первый, строка под его кнопкой показана, старая подсказка спрятана (она о том же)
+  // Россия и другие коды: Telegram первый, старая подсказка спрятана; строка про перебои WhatsApp под кнопкой Telegram только для России
   for (const phone of ["+7 916 123 45 67", "+380 67 123 45 67", "+1 202 555 0123", "89161234567"]) {
     const b = buildJoin();
     const { Join } = loadJoin(phone);
     Join.mount(b.root, { src: "pp" });
     assert.equal(order(b), "tg,wa", phone);
     assert.equal(b.box.getAttribute("data-route"), "tg");
-    assert.deepEqual([b.route.hidden, b.hint.hidden], [false, true]);
+    const isRu = phone === "+7 916 123 45 67" || phone === "89161234567";
+    assert.deepEqual([b.route.hidden, b.hint.hidden], [!isRu, true], "строка про перебои только для России");
     assert.equal(b.route.parentNode, b.tgCell, "строка стоит под кнопкой Telegram, в её ячейке");
     // обе кнопки на месте и ведут туда же, куда вели
     assert.equal(b.wa.href, "https://chat.whatsapp.com/IfLyJvWLo7HDq5yleoKCzz");
@@ -174,6 +175,7 @@ test("порядок кнопок: Казахстан и без номера Wha
   session.set("efirPhone", "+49 151 1234 5678");
   Join.mount(b.root, { src: "pp" });
   assert.equal(order(b), "tg,wa");
+  assert.equal(b.route.hidden, true, "строка «В России WhatsApp работает с перебоями» только для номеров России");
   // повторный вызов с тем же маршрутом порядок не трогает
   Join.build.applyRoute(b.root, "other");
   assert.equal(order(b), "tg,wa");
