@@ -1,5 +1,6 @@
 // Рендер картинок серии, обложки Bizon, аватарки и контактного листа.
-// Запуск: node docs/tg-media/render.mjs [cover|cards|avatar|bizon|og|contact|all]
+// Запуск: node docs/tg-media/render.mjs [cover|cards|avatar|bizon|og|contact|sheet|all]
+// sheet: лист превью всех карточек по 280 px (без браузера), docs/reports/tg-media-1009/preview-sheet.jpg
 // Нужен Chromium Playwright: npx playwright install chromium
 import { chromium } from "@playwright/test";
 import sharp from "sharp";
@@ -9,8 +10,9 @@ import { mkdirSync, statSync, writeFileSync, existsSync } from "node:fs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "../..");
-const outDir = join(root, "workshop-montazh/assets/tg");
-const reportDir = join(root, "docs/reports/tg-media-1006");
+// TG_OUT: снять карточки в другую папку (для проб), не трогая готовые файлы
+const outDir = process.env.TG_OUT || join(root, "workshop-montazh/assets/tg");
+const reportDir = join(root, process.env.TG_REPORT || "docs/reports/tg-media-1009");
 const imgDir = join(root, "workshop-montazh/assets/img");
 mkdirSync(outDir, { recursive: true });
 mkdirSync(reportDir, { recursive: true });
@@ -18,10 +20,16 @@ mkdirSync(reportDir, { recursive: true });
 // topic-p2, topic-p3 и offer-bundle с 08.10.2026 не используются (воркшоп только про AI-монтаж, продаётся только Vibe Production):
 // шаблоны убраны из card.html, готовые файлы остаются в assets/tg/
 const CARD_IDS = [
-  "warm-edits", "warm-cases", "topic-p1", "training", "offer",
-  // карточки рассылки: до эфира, в эфире, последний звонок
-  "reg-bonus", "live-bonus", "t-minus-10", "live-now", "last-call",
+  // день эфира, по времени сообщений (лента v3.3, imgHook у каждого сообщения)
+  "reg-bonus", "warm-edits", "warm-cases", "live-bonus", "t-minus-30", "t-minus-10", "live-now", "live-10", "topic-p1",
+  "training", "bonus-got", "vaib", "offer", "installment", "last-call",
+  // следующий день (повтор эфира в 20:00): 10:30, 11:00, 15:00, 19:50, 21:45
+  "next-1030", "again-today", "next-1500", "next-1950", "next-2145",
 ];
+// размеры, отличные от карточки 1080x1350 (сейчас таких нет: у видео свои обложки)
+const CARD_SIZE = {};
+// предел веса jpg карточки: 250 КБ (ТЗ 09.10.2026)
+const CARD_MAX = 250 * 1024;
 const what = process.argv[2] || "all";
 // Третий аргумент: снять только перечисленные карточки, остальные не перезаписывать.
 // Пример: node docs/tg-media/render.mjs cards reg-bonus,live-bonus
@@ -44,16 +52,21 @@ async function ready(page) {
 async function toJpg(pngBuf, file, { quality = 88, maxBytes = 0 } = {}) {
   let q = quality;
   let buf;
+  let sub = "4:4:4";
   for (;;) {
-    buf = await sharp(pngBuf).jpeg({ quality: q, mozjpeg: true, chromaSubsampling: "4:4:4" }).toBuffer();
-    if (!maxBytes || buf.length <= maxBytes || q <= 80) break;
-    q -= 2;
+    buf = await sharp(pngBuf).jpeg({ quality: q, mozjpeg: true, chromaSubsampling: sub }).toBuffer();
+    if (!maxBytes || buf.length <= maxBytes) break;
+    if (q > 80) q -= 2;
+    else if (sub === "4:4:4") sub = "4:2:0"; // цвет в карточках плавный, 4:2:0 почти не виден
+    else if (q > 66) q -= 2;
+    else break;
   }
   writeFileSync(file, buf);
-  return { q, bytes: buf.length };
+  return { q, bytes: buf.length, sub };
 }
 
-const browser = await chromium.launch();
+// режим sheet собирается без браузера (только sharp), остальные запускают один Chromium
+const browser = what === "sheet" ? null : await chromium.launch();
 const log = [];
 
 async function shoot(name, query, w, h, scale = 1) {
@@ -68,6 +81,17 @@ async function shoot(name, query, w, h, scale = 1) {
     document.querySelectorAll("[data-fit]").forEach((el) => {
       const widthOnly = el.dataset.fit === "w";
       if (el.scrollWidth > el.clientWidth + 1 || (!widthOnly && el.scrollHeight > el.clientHeight + 1)) bad.push(el.className || el.tagName);
+    });
+    // data-edge: текст не должен уходить правее 1000 px (поле 80 px с каждой стороны)
+    document.querySelectorAll("[data-edge]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.right > 1002) bad.push(`${el.className} вылез вправо до ${Math.round(r.right)}`);
+    });
+    // заголовок не должен переноситься сам: высота = число строк (<br>) x кегль x 1.1
+    document.querySelectorAll(".h").forEach((el) => {
+      const lines = el.innerHTML.split(/<br\s*\/?>/i).length;
+      const lh = parseFloat(getComputedStyle(el).fontSize) * 1.1;
+      if (el.getBoundingClientRect().height > lines * lh + 4) bad.push(`заголовок перенёсся сам: ${Math.round(el.getBoundingClientRect().height / lh)} строк вместо ${lines}`);
     });
     return bad;
   });
@@ -88,12 +112,13 @@ if (what === "cover" || what === "all") {
 
 if (what === "cards" || what === "all") {
   for (const id of onlyIds || CARD_IDS) {
-    const { png, overflow } = await shoot("card.html", `?id=${id}`, 1080, 1350);
-    const r = await toJpg(png, join(outDir, `${id}.jpg`), { quality: 88, maxBytes: 450 * 1024 });
-    // превью 540x675, как в чате Telegram
-    const prev = await sharp(png).resize(540, 675, { kernel: "lanczos3" }).jpeg({ quality: 92 }).toBuffer();
-    writeFileSync(join(reportDir, `${id}-540x675.jpg`), prev);
-    log.push(`${id}.jpg q${r.q} ${r.bytes} B, overflow: ${overflow.join(",") || "нет"}`);
+    const [cw, ch] = CARD_SIZE[id] || [1080, 1350];
+    const { png, overflow } = await shoot("card.html", `?id=${id}`, cw, ch);
+    const r = await toJpg(png, join(outDir, `${id}.jpg`), { quality: 90, maxBytes: CARD_MAX });
+    // превью шириной 540, как в чате Telegram
+    const prev = await sharp(png).resize(540, Math.round((540 * ch) / cw), { kernel: "lanczos3" }).jpeg({ quality: 92 }).toBuffer();
+    writeFileSync(join(reportDir, `${id}-540.jpg`), prev);
+    log.push(`${id}.jpg ${cw}x${ch} q${r.q} ${r.sub} ${r.bytes} B (${Math.round(r.bytes / 1024)} КБ), проверка: ${overflow.join("; ") || "нет замечаний"}`);
   }
 }
 
@@ -131,7 +156,7 @@ if (what === "og" || what === "all") {
 if (what === "contact" || what === "all") {
   const items = [
     ["cover-bizon.jpg", 1920, 1080],
-    ...CARD_IDS.map((id) => [`${id}.jpg`, 1080, 1350]),
+    ...CARD_IDS.map((id) => [`${id}.jpg`, ...(CARD_SIZE[id] || [1080, 1350])]),
     ["avatar.jpg", 640, 640],
   ].filter(([f]) => existsSync(join(outDir, f)));
   const cells = items
@@ -163,5 +188,31 @@ if (what === "contact" || what === "all") {
   log.push(`contact.jpg q${r.q} ${r.bytes} B`);
 }
 
-await browser.close();
+if (what === "sheet") {
+  // Лист превью: все карточки сеткой, каждая уменьшена до 280 px по ширине (так их видно в ленте чата).
+  // Читаем готовые jpg из outDir, браузер не нужен.
+  const W = 280, GAP = 22, COLS = 6, CAP = 44, CELL_H = Math.round((W * 1350) / 1080);
+  const ids = CARD_IDS.filter((id) => existsSync(join(outDir, id + ".jpg")));
+  const rows = Math.ceil(ids.length / COLS);
+  const comps = [];
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i], file = join(outDir, id + ".jpg");
+    const x = GAP + (i % COLS) * (W + GAP), y = GAP + Math.floor(i / COLS) * (CELL_H + CAP + GAP);
+    const meta = await sharp(file).metadata();
+    const h = Math.round((W * meta.height) / meta.width);
+    // обложка 9:16 выше карточки: вписываем её в высоту ячейки
+    const k = h > CELL_H ? CELL_H / h : 1;
+    const buf = await sharp(file).resize(Math.round(W * k), Math.round(h * k), { kernel: "lanczos3" }).png().toBuffer();
+    comps.push({ input: buf, left: x + Math.round((W - Math.round(W * k)) / 2), top: y });
+    const kb = Math.round(statSync(file).size / 1024);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${CAP}"><text x="0" y="22" font-size="18" font-weight="700" fill="#FBF3E4" font-family="Arial, sans-serif">${id}</text><text x="0" y="40" font-size="14" fill="#9d8f7e" font-family="Arial, sans-serif">${meta.width}x${meta.height}, ${kb} KB</text></svg>`;
+    comps.push({ input: Buffer.from(svg), left: x, top: y + CELL_H + 6 });
+  }
+  const sw = GAP + COLS * (W + GAP), sh = GAP + rows * (CELL_H + CAP + GAP);
+  const sheet = await sharp({ create: { width: sw, height: sh, channels: 3, background: "#3a342f" } }).composite(comps).jpeg({ quality: 90 }).toBuffer();
+  writeFileSync(join(reportDir, "preview-sheet.jpg"), sheet);
+  log.push(`preview-sheet.jpg ${sw}x${sh}, ${ids.length} карточек, ${Math.round(sheet.length / 1024)} КБ`);
+}
+
+if (browser) await browser.close();
 console.log(log.join("\n"));

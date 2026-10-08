@@ -12,145 +12,342 @@ html,body{width:1080px;height:1350px}
     radial-gradient(1000px 800px at 0% 0%,#2b221c 0%,transparent 65%),
     linear-gradient(165deg,#211A16 0%,#14100E 72%)}
 .frame{position:absolute;inset:26px;border-radius:36px;border:1px solid rgba(227,192,123,.17);pointer-events:none}
-.label{position:absolute;left:80px;top:84px;display:flex;align-items:center;gap:18px;font-weight:700;font-size:27px;letter-spacing:.16em;color:var(--gold);white-space:nowrap}
-.label i{display:block;width:44px;height:2px;background:var(--gold)}
+/* метка сверху: кегль 42 px (с 09.10.2026, раньше 27: в превью чата не читалась) */
+.label{position:absolute;left:80px;top:68px;display:flex;align-items:center;gap:20px;font-weight:800;font-size:42px;line-height:1;letter-spacing:.07em;color:var(--gold);white-space:nowrap}
+.label i{display:block;flex:none;width:52px;height:3px;background:currentColor}
 .logo{position:absolute;left:80px;bottom:68px;height:52px;width:auto}
 .h{position:absolute;left:80px;top:150px;width:920px;font-family:'Unbounded',sans-serif;font-weight:700;color:var(--cream);letter-spacing:-.015em;line-height:1.1}
 .h em{font-style:normal;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .glass{border-radius:34px}
-.shadow-floor{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent);filter:blur(6px)}
+.shadow-floor{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.62),rgba(0,0,0,.3) 55%,transparent);filter:blur(5px)}
 .light-floor{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(227,192,123,.35),transparent)}
+.obj{position:absolute;display:block;filter:drop-shadow(0 12px 16px rgba(0,0,0,.45))}
+.big{position:absolute;font-family:'Unbounded',sans-serif;font-weight:700;line-height:1;letter-spacing:-.04em;white-space:nowrap;padding:.14em .04em .02em;margin:-.14em -.04em -.02em;
+  background:linear-gradient(180deg,#F0D49A 0%,#E3C07B 42%,rgba(160,83,42,.78) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 18px 34px rgba(0,0,0,.35))}
 
-/* warm-edits */
-.edits .shot{left:98px;top:404px;width:884px;padding:12px}
-.edits .shot .in{position:relative;width:100%;aspect-ratio:1700/1510;border-radius:24px;overflow:hidden;background:#111}
-.edits .shot img{position:absolute;left:0;top:0;width:100%;display:block}
+/* светлый вариант: кремовый фон, тёмный текст, золото как акцент (чередуем с тёмными, чтобы в ленте чата карточки не сливались) */
+.card.light{
+  background:
+    radial-gradient(900px 720px at var(--gx) var(--gy),rgba(227,192,123,.62),rgba(227,192,123,.18) 55%,transparent 76%),
+    radial-gradient(860px 700px at 4% 104%,rgba(201,160,90,.34),transparent 70%),
+    linear-gradient(165deg,#FBF3E4 0%,#F1E2C4 100%)}
+.light .frame{border-color:rgba(42,33,28,.16)}
+.light .grain{opacity:.045}
+.light .label{color:#8F5E1E}
+.light .h{color:#2A211C}
+.light .h em,.light .big{background:linear-gradient(180deg,#C99236 0%,#A8741F 55%,#7E4F17 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.light .big{filter:drop-shadow(0 14px 22px rgba(120,80,30,.22))}
+.light .glass{background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(255,248,232,.58));border-color:rgba(160,83,42,.38);
+  box-shadow:0 24px 54px rgba(120,80,30,.22),inset 0 1px 0 #fff}
+.light .shadow-floor{background:radial-gradient(closest-side,rgba(70,40,15,.6),rgba(70,40,15,.28) 55%,transparent)}
+.light .light-floor{background:radial-gradient(closest-side,rgba(227,192,123,.55),transparent)}
+.light .obj{filter:drop-shadow(0 12px 16px rgba(70,40,15,.38))}
+.light .logo{content:url("../../workshop-montazh/assets/logos/onai-logo-brown.svg")}
 
-/* warm-cases */
-.cases .f{left:80px;top:344px;width:920px;padding:12px}
-.cases .f .in{position:relative;width:100%;aspect-ratio:1.6;border-radius:24px;overflow:hidden;background:#111}
-.cases .f .in img{width:100%;height:100%;object-fit:cover;display:block}
-.cases .cap{position:absolute;left:80px;top:956px;width:920px;font-weight:600;font-size:29px;line-height:1.34;color:rgba(251,243,228,.92)}
-.cases .cap b{font-weight:800;color:var(--gold)}
-.cases .plaque{left:80px;top:1070px;width:920px;height:124px;display:flex;align-items:center;gap:26px;padding:0 40px 0 30px;border-radius:30px}
-.cases .plaque .ic{width:104px;height:104px;flex:none;display:flex;align-items:center;justify-content:center}
-.cases .plaque .ic img{max-width:104px;max-height:104px;display:block;filter:drop-shadow(0 10px 12px rgba(0,0,0,.45))}
-.cases .plaque .t{font-weight:600;font-size:28px;line-height:1.32;color:rgba(251,243,228,.92)}
-.cases .plaque .t b{font-weight:800;color:var(--gold)}
+/* warm-edits: крупный пузырь чата */
+.edits .bubble{position:absolute;left:80px;top:440px;width:840px;padding:54px 58px 58px;border-radius:64px 64px 64px 18px;
+  background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 55%,#D3A85F 100%);color:#2A211C;
+  font-weight:800;font-size:70px;line-height:1.14;letter-spacing:-.01em;
+  box-shadow:0 34px 60px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.55)}
+.edits .bubble b{display:block;margin-bottom:18px;font-weight:800;font-size:30px;letter-spacing:.14em;color:rgba(42,33,28,.62)}
+.edits .bubble .tail{position:absolute;right:92px;bottom:-40px;width:64px;height:60px;
+  background:#D3A85F;clip-path:polygon(0 0,100% 0,18% 100%)}
 
-/* topic */
-.topic .digit{position:absolute;left:62px;top:326px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:760px;line-height:1;letter-spacing:-.04em;
-  background:linear-gradient(180deg,#F0D49A 0%,#E3C07B 40%,rgba(160,83,42,.75) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 20px 40px rgba(0,0,0,.35));opacity:.96}
-.topic .obj{position:absolute;display:block;filter:drop-shadow(0 34px 38px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(227,192,123,.18))}
-
-/* live-now: вместо цифры плашка LIVE с красной точкой */
-.live .onair{left:80px;top:392px;height:176px;display:flex;align-items:center;gap:36px;padding:0 66px 0 52px;border-radius:999px;
-  font-family:'Unbounded',sans-serif;font-weight:700;font-size:112px;line-height:1;letter-spacing:.02em;color:var(--cream);white-space:nowrap}
-.live .onair .dot{display:block;flex:none;width:76px;height:76px;border-radius:50%;
-  background:radial-gradient(circle at 36% 30%,#FF8A6B 0%,#E5472C 52%,#B02A18 100%);
-  box-shadow:0 0 0 14px rgba(229,71,44,.22),0 0 0 30px rgba(229,71,44,.09),0 0 64px rgba(255,98,64,.6)}
-
-/* training */
+/* warm-cases / training: строки со стеклом */
 .train .row{left:80px;width:920px;height:198px;display:flex;align-items:center;gap:34px;padding:0 44px 0 34px}
 .train .row .ic{width:144px;height:144px;flex:none;display:flex;align-items:center;justify-content:center}
 .train .row .ic img{max-width:144px;max-height:144px;display:block;filter:drop-shadow(0 12px 14px rgba(0,0,0,.45))}
+.train .row .ic.wide{width:190px;height:150px}
+.train .row .ic.wide img{max-width:none;max-height:none}
+.light.train .row .ic img{filter:drop-shadow(0 8px 10px rgba(70,40,15,.3))}
+.train .row .ic.strip{overflow:hidden}
+.train .row .ic.strip img{filter:none}
 .train .row .t{font-weight:700;font-size:42px;line-height:1.18;color:var(--cream)}
 .train .row.bonus{border-color:var(--gold);background:linear-gradient(145deg,rgba(227,192,123,.24),rgba(227,192,123,.07))}
 .train .row .t small{display:block;margin-top:8px;font-weight:800;font-size:30px;letter-spacing:.04em;color:var(--gold)}
+.light .train .row .t,.light.train .row .t{color:#2A211C}
+.light.train .row .t small{color:#8F5E1E}
+
+/* topic (большая цифра) */
+.topic .digit{position:absolute;left:62px;top:326px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:760px;line-height:1;letter-spacing:-.04em;
+  background:linear-gradient(180deg,#F0D49A 0%,#E3C07B 40%,rgba(160,83,42,.75) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 20px 40px rgba(0,0,0,.35));opacity:.96}
+
+/* live: плашка LIVE с красной точкой */
+.live .onair{left:80px;height:164px;display:flex;align-items:center;gap:32px;padding:0 60px 0 48px;border-radius:999px;
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:98px;line-height:1;letter-spacing:.02em;color:var(--cream);white-space:nowrap}
+.live .onair .dot{display:block;flex:none;width:68px;height:68px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#FF8A6B 0%,#E5472C 52%,#B02A18 100%);
+  box-shadow:0 0 0 13px rgba(229,71,44,.22),0 0 0 28px rgba(229,71,44,.09),0 0 60px rgba(255,98,64,.6)}
+.light .live .onair,.light.live .onair{background:linear-gradient(145deg,#2d231d,#17110e);border-color:rgba(227,192,123,.7);box-shadow:0 26px 54px rgba(60,35,15,.4)}
 
 /* offer */
-.offer .old{position:absolute;left:80px;top:166px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:64px;line-height:1;color:rgba(251,243,228,.55);letter-spacing:-.01em;white-space:nowrap}
+.offer .badge{position:absolute;left:80px;top:150px;width:360px;height:156px;border-radius:40px;transform:rotate(-4deg);display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 55%,#C9A05A 100%);box-shadow:0 26px 50px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.55);
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:92px;letter-spacing:-.03em;color:#2A211C;white-space:nowrap}
+.offer .old{position:absolute;left:490px;top:206px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:60px;line-height:1;color:rgba(251,243,228,.6);letter-spacing:-.01em;white-space:nowrap}
 .offer .old::after{content:"";position:absolute;left:-14px;right:-14px;top:50%;height:6px;border-radius:3px;background:#C0562A;transform:rotate(-4deg);box-shadow:0 2px 10px rgba(0,0,0,.4)}
-.offer .price{position:absolute;left:74px;top:246px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:136px;line-height:1.05;letter-spacing:-.035em;white-space:nowrap;
+.offer .price{position:absolute;left:74px;top:346px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:140px;line-height:1.05;letter-spacing:-.035em;white-space:nowrap;
   background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 10px 34px rgba(227,192,123,.28))}
-.offer .old-usd{position:absolute;left:520px;top:182px;font-weight:600;font-size:40px;line-height:1;color:rgba(251,243,228,.5);white-space:nowrap}
-.offer .usd{position:absolute;left:80px;top:392px;font-family:'Unbounded',sans-serif;font-weight:600;font-size:48px;line-height:1;letter-spacing:-.01em;color:rgba(251,243,228,.82);white-space:nowrap}
-.offer .inst{position:absolute;left:80px;top:476px;width:620px;font-weight:600;font-size:44px;line-height:1.3;color:rgba(251,243,228,.9)}
-.offer .until{position:absolute;left:80px;top:604px;display:inline-flex;align-items:center;gap:18px;height:92px;padding:0 42px;border-radius:999px;
+.offer .inst{position:absolute;left:80px;top:512px;width:620px;font-weight:600;font-size:42px;line-height:1.3;color:rgba(251,243,228,.9)}
+.offer .until{position:absolute;left:80px;top:648px;display:inline-flex;align-items:center;gap:18px;height:92px;padding:0 42px;border-radius:999px;
   border:2px solid var(--gold);background:linear-gradient(135deg,rgba(227,192,123,.22),rgba(227,192,123,.06));font-weight:800;font-size:40px;color:var(--cream);box-shadow:0 14px 40px rgba(0,0,0,.35)}
 .offer .until b{display:block;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 7px rgba(227,192,123,.2)}
-.offer .gift{left:80px;top:744px;width:384px;padding:30px 26px 30px;border-radius:30px}
-.offer .gift .k{font-weight:800;font-size:26px;letter-spacing:.14em;color:var(--gold)}
-.offer .gift .t{margin-top:12px;font-weight:700;font-size:33px;line-height:1.24;color:var(--cream);white-space:nowrap}
+.offer .gift{left:80px;top:776px;width:420px;padding:26px 28px 26px;border-radius:30px}
+.offer .gift .k{font-weight:800;font-size:28px;letter-spacing:.14em;color:var(--gold)}
+.offer .gift .t{margin-top:10px;font-weight:700;font-size:32px;line-height:1.22;color:var(--cream);white-space:nowrap}
 .offer .gift .k+.t{margin-top:14px}
-.offer .gift .t+.t{margin-top:14px;padding-top:14px;border-top:1px solid rgba(227,192,123,.28)}
+.offer .gift .t+.t{margin-top:12px;padding-top:12px;border-top:1px solid rgba(227,192,123,.28)}
+
+/* reg-bonus, bonus-got: обложки PDF бонусов */
+.paper{position:absolute;overflow:hidden;border-radius:30px;border:3px solid rgba(227,192,123,.9);box-shadow:0 34px 50px rgba(0,0,0,.55),0 0 70px rgba(227,192,123,.16)}
+.paper img{display:block;width:100%;height:100%;object-fit:cover}
+.paper .pdf{position:absolute;right:18px;top:18px;height:46px;padding:0 18px;display:flex;align-items:center;border-radius:12px;background:#2A211C;color:var(--gold);font-weight:800;font-size:27px;letter-spacing:.1em}
+.paper.sm{border-radius:22px;border-width:2px}
+
+/* t-minus-30, again-today: крупное время */
+.clock{position:absolute;font-family:'Unbounded',sans-serif;font-weight:700;line-height:1;letter-spacing:-.04em;white-space:nowrap}
+
+/* vaib: гигантское слово */
+.vaib .word{position:absolute;left:62px;top:300px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:268px;line-height:1;letter-spacing:-.04em;white-space:nowrap}
+
+/* training: строка с фактами курса под заголовком */
+.facts{position:absolute;left:80px;top:372px;height:78px;display:flex;align-items:center;gap:18px;font-weight:700;font-size:38px;color:#2A211C;white-space:nowrap}
+.facts b{font-family:'Unbounded',sans-serif;font-weight:700;font-size:44px;background:linear-gradient(180deg,#C99236,#8F5E1E);-webkit-background-clip:text;background-clip:text;color:transparent;margin-right:-6px}
+.facts i{display:block;width:8px;height:8px;border-radius:50%;background:#A8741F;margin:0 8px}
+
+/* installment */
+.inst-card .pill{position:absolute;left:80px;top:470px;height:92px;padding:0 40px;display:flex;align-items:center;border-radius:999px;
+  background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 60%,#D3A85F 100%);color:#2A211C;font-weight:800;font-size:42px;box-shadow:0 18px 36px rgba(120,80,30,.3)}
+
+/* topic-p1: подпись справа от цифры 7 */
+.steps{position:absolute;left:640px;top:470px;font-weight:700;font-size:44px;line-height:1.26;color:var(--cream)}
+
+/* bonus-got: четыре обложки веером */
+.fan{position:absolute;left:0;top:0;width:1080px;height:1350px}
+.fan .paper{left:300px;top:540px;width:480px;height:480px;border-radius:26px;border-width:3px;transform-origin:50% 190%}
+.fan .paper .pdf{display:none}
+
+/* again-today: билет с печатью «Повтор» */
+.ticket{position:absolute;left:70px;top:408px;width:940px;height:340px;transform:rotate(-3deg);border-radius:30px;
+  background:linear-gradient(135deg,#FBF3E4 0%,#F2E0BA 100%);box-shadow:0 36px 56px rgba(0,0,0,.55);
+  -webkit-mask:radial-gradient(circle 30px at 0 50%,#0000 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 30px at 100% 50%,#0000 97%,#000) right/51% 100% no-repeat}
+.ticket .tk-time{position:absolute;left:54px;top:56px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:158px;line-height:1;letter-spacing:-.04em;
+  background:linear-gradient(180deg,#C99236 0%,#A8741F 55%,#7E4F17 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:.12em .04em .02em;margin:-.12em -.04em -.02em}
+.ticket .tk-sub{position:absolute;left:54px;bottom:34px;font-weight:800;font-size:40px;line-height:1.2;color:#2A211C}
+.ticket .tk-cut{position:absolute;left:690px;top:34px;bottom:34px;border-left:4px dashed rgba(42,33,28,.28)}
+.ticket .tk-stamp{position:absolute;left:712px;top:50px;padding:8px 18px;border:6px solid #A0532A;border-radius:14px;transform:rotate(-8deg);
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:36px;letter-spacing:.02em;color:#A0532A;opacity:.92}
+
+/* next-1030: обложка презентации и наклейка «+1 день» */
+.deck{position:absolute;left:70px;top:470px;width:780px;border-radius:26px;overflow:hidden;transform:rotate(-4deg);
+  border:3px solid rgba(227,192,123,.85);box-shadow:0 40px 60px rgba(0,0,0,.6),0 0 80px rgba(227,192,123,.16)}
+.deck img{display:block;width:100%}
+.sticker{position:absolute;left:690px;top:420px;height:88px;padding:0 34px;display:flex;align-items:center;border-radius:999px;transform:rotate(7deg);
+  background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 60%,#D3A85F 100%);color:#2A211C;font-family:'Unbounded',sans-serif;font-weight:700;font-size:44px;
+  box-shadow:0 20px 40px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.55);white-space:nowrap}
+
+/* next-1950: кнопка «Открыть повтор» */
+.btn{position:absolute;left:80px;top:690px;height:122px;padding:0 54px 0 44px;display:flex;align-items:center;gap:28px;border-radius:999px;white-space:nowrap;
+  background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 60%,#D3A85F 100%);color:#2A211C;font-weight:800;font-size:50px;
+  box-shadow:0 24px 46px rgba(0,0,0,.5),0 0 0 10px rgba(227,192,123,.16),inset 0 2px 0 rgba(255,255,255,.55)}
+.btn .play{display:block;width:0;height:0;border-left:34px solid #2A211C;border-top:21px solid transparent;border-bottom:21px solid transparent}
+
+/* doubts: вопрос -> ответ */
+.doubts .qa{position:absolute;left:80px;width:920px;height:148px;display:flex;align-items:center}
+.doubts .q{position:relative;flex:none;width:400px;height:100%;display:flex;align-items:center;padding:0 30px;border-radius:34px;font-weight:700;font-size:44px;color:#2A211C}
+.doubts .arr{flex:none;width:92px;height:40px;display:flex;align-items:center;justify-content:center}
+.doubts .a::before{content:"";flex:none;width:54px;height:54px;border-radius:50%;background:#2A211C url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 54 54'><path d='M15 28l8 8 16-18' fill='none' stroke='%23E3C07B' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/54px no-repeat}
+.doubts .a{flex:1;height:100%;display:flex;align-items:center;gap:16px;padding:0 24px;border-radius:34px;font-weight:800;font-size:48px;letter-spacing:-.01em;color:#2A211C;
+  background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 60%,#D3A85F 100%);box-shadow:0 20px 40px rgba(120,80,30,.32),inset 0 2px 0 rgba(255,255,255,.55)}
 </style></head>
 <body>
 <div class="card" id="card"></div>
+<script src="bbox.js"></script>
 <script>
 const L = "../../public/montage/lego/";
 const X3 = "obj/";
+const P = "../../public/montage/";
+const BONUS = "../../workshop-montazh/assets/bonus/";
 const LOGO = '<img class="logo" src="onai-logo-night.svg" alt="">';
-const head = (h, size) => `<h1 class="h" data-fit="w" style="font-size:${size}px">${h}</h1>`;
-const lab = (t) => `<div class="label"><i></i>${t}</div>`;
+const head = (h, size, extra) => `<h1 class="h" data-fit="w" style="font-size:${size}px;${extra || ""}">${h}</h1>`;
+const lab = (t) => `<div class="label" data-edge><i></i>${t}</div>`;
+const srcOf = (k) => ({ L, X: X3, P }[k[0]]) + k.slice(2);
+
+// Ставит объект так, чтобы низ его видимой части (по альфа-каналу) лёг точно на тень, без зазора.
+// cx: центр объекта по x, foot: y низа объекта, vw: ширина видимой части. По умолчанию рисует тень-эллипс под ногами.
+function stand(key, o) {
+  const [w, h, l, t, r, b] = BB[key];
+  const iw = o.vw / (r - l), ih = iw * h / w;
+  const left = o.cx - ((l + r) / 2) * iw, top = o.foot - b * ih;
+  const sw = o.sw || o.vw * 0.9, sh = o.sh || Math.max(40, o.vw * 0.1);
+  const shadow = o.noShadow ? "" : `<div class="shadow-floor" style="left:${o.cx - sw / 2}px;top:${o.foot - sh * 0.58}px;width:${sw}px;height:${sh}px"></div>`;
+  return shadow + `<img class="obj" src="${srcOf(key)}" style="left:${left}px;top:${top}px;width:${iw}px;${o.css || ""}" alt="">`;
+}
+const glow = (x, y, w, h, op) => `<div class="light-floor" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;opacity:${op == null ? .5 : op}"></div>`;
 
 // digitCss: для двузначных цифр (10, 30) уменьшаем кегль, чтобы цифра не вышла за рамку
-const topic = (n, label, h, obj, objCss, floor, gx, digitCss, size) => ({
+const topic = (n, label, h, objHtml, gx, digitCss, size) => ({
   cls: "topic", gx: gx || "78%", gy: "30%",
   html: `${lab(label)}${head(h, size || 76)}
-    <div class="digit" style="${digitCss || ""}">${n}</div>
-    <div class="shadow-floor" style="${floor}"></div>
-    <img class="obj" src="${obj}" style="${objCss}" alt="">${LOGO}`
+    <div class="digit" style="${digitCss || ""}">${n}</div>${objHtml}${LOGO}`
 });
 
 const cards = {
+  // ---------- готовые карточки, правки 09.10.2026 ----------
   "warm-edits": {
     cls: "edits", gx: "82%", gy: "12%",
-    html: `${lab("КАК Я ПРАВЛЮ МОНТАЖ")}${head("Правлю словами,<br>монтажку не<br>открываю", 64)}
-      <div class="glass shot"><div class="in"><img src="obj/layout-sheet-top.jpg" alt=""></div></div>${LOGO}`
+    html: `${lab("ПРАВИШЬ МОНТАЖ СЛОВАМИ")}${head("Монтажку<br>не открывал", 88)}
+      ${glow(560, 700, 640, 640, .45)}
+      ${stand("X:lg-i-botchat-x3.png", { cx: 790, foot: 1242, vw: 370 })}
+      <div class="bubble">лицо в окошке внизу, субтитры крупнее<div class="tail"></div></div>${LOGO}`
   },
   "warm-cases": {
     // с 08.10.2026 кейсов в рассылках нет (Александр): цифры охвата и заявок и форматы монтажа
     cls: "train", gx: "84%", gy: "10%",
-    html: `${lab("МОИ ЦИФРЫ ЗА 30 ДНЕЙ")}${head("Мои рилсы<br>монтирует<br><em style=\"white-space:nowrap\">ИИ-агент</em>", 78)}
-      <div class="glass row" style="top:496px"><div class="ic"><img src="${X3}lg-i-phones-x3.png" alt=""></div><div class="t">927&nbsp;тыс. просмотров<small>Instagram, TikTok и YouTube</small></div></div>
-      <div class="glass row" style="top:720px"><div class="ic"><img src="${X3}lg-i-botchat-x3.png" alt=""></div><div class="t">2&nbsp;218 человек<small>написали мне в директ</small></div></div>
-      <div class="glass row" style="top:944px"><div class="ic"><img src="${X3}lg-i-clapper-x3.png" alt=""></div><div class="t">4 формата<small>два из них без лица в кадре</small></div></div>${LOGO}`
+    html: `${lab("ЗА 30 ДНЕЙ")}${head("<em style=\"white-space:nowrap\">927 тысяч</em><br>просмотров", 96)}
+      <div class="glass row" style="top:496px"><div class="ic wide strip"><img src="${L}lg-s16-phones.webp" style="height:128px;width:auto;margin-left:-6px" alt=""></div><div class="t">Три площадки<small>Instagram, TikTok и YouTube</small></div></div>
+      <div class="glass row" style="top:720px"><div class="ic wide"><img src="${L}lg-ch3-leads.webp" style="height:150px;width:auto" alt=""></div><div class="t">2&nbsp;218 человек<small>написали мне в директ</small></div></div>
+      <div class="glass row" style="top:944px"><div class="ic wide"><img src="${L}lg-s23-noface.webp" style="height:150px;width:auto" alt=""></div><div class="t">4 формата<small>два из них без лица в кадре</small></div></div>${LOGO}`
+  },
+  "live-now": {
+    cls: "live", gx: "72%", gy: "38%",
+    html: `${lab("МЫ В ЭФИРЕ")}${head("Начали", 128)}
+      ${glow(430, 420, 700, 800, .55)}
+      <div class="light-floor" style="left:520px;top:400px;width:560px;height:560px;background:radial-gradient(closest-side,rgba(229,71,44,.16),transparent);opacity:1"></div>
+      ${stand("P:alex-cacao.webp", { cx: 800, foot: 1372, vw: 620, noShadow: true })}
+      <div class="glass onair" data-fit style="top:340px"><span class="dot"></span>LIVE</div>${LOGO}`
   },
   // с 08.10.2026 карточки практик 2 и 3 не нужны: на эфире видеоурок про весь путь рилса из семи шагов
-  "topic-p1": topic("7", "ПРАКТИКА · 7 ШАГОВ", "Весь путь рилса<br>от идеи до заявки", L + "lg-ch1-clapper.webp",
-    "left:380px;top:590px;width:640px", "left:430px;top:1120px;width:560px;height:70px", "70%", "", 70),
+  "topic-p1": {
+    // 20:15: «последняя ссылка», на эфире практика (семь шагов от идеи до заявки)
+    cls: "topic", gx: "70%", gy: "30%",
+    html: `${lab("ПОСЛЕДНЯЯ ССЫЛКА")}${head("Начинается<br>практика", 96)}
+      <div class="digit" style="font-size:680px;left:60px;top:352px">7</div>
+      <div class="steps">шагов от идеи<br>до заявки</div>
+      ${stand("L:lg-s49-factory.webp", { cx: 690, foot: 1190, vw: 700, sh: 66 })}${LOGO}`
+  },
   "training": {
-    cls: "train", gx: "84%", gy: "10%",
-    html: `${lab("ОБУЧЕНИЕ VIBE PRODUCTION")}${head("<em>3</em> модуля,<br><em>15</em> уроков,<br><em>1</em> месяц", 84)}
-      <div class="glass row" style="top:496px"><div class="ic"><img src="${X3}lg-i-clapper-x3.png" alt=""></div><div class="t">AI-монтаж</div></div>
-      <div class="glass row" style="top:720px"><div class="ic"><img src="${X3}lg-i-botchat-x3.png" alt=""></div><div class="t">Ассистенты и автоматизация</div></div>
-      <div class="glass row bonus" style="top:944px"><div class="ic"><img src="${X3}lg-i-robot-x3.png" alt=""></div><div class="t">AI-креатор<small>бонус до конца дня</small></div></div>${LOGO}`
+    cls: "train light", gx: "84%", gy: "10%", light: 1,
+    html: `${lab("СЕЙЧАС НА ЭФИРЕ")}${head("Курс<br><em>Vibe Production</em>", 84)}
+      <div class="facts"><b>3</b> модуля<i></i><b>15</b> уроков<i></i><b>1</b> месяц</div>
+      <div class="glass row" style="top:496px"><div class="ic"><img src="${L}lg-s21-robot.webp" alt=""></div><div class="t">AI-монтаж</div></div>
+      <div class="glass row" style="top:720px"><div class="ic"><img src="${L}lg-ch3-leads.webp" alt=""></div><div class="t">Ассистенты и автоматизация</div></div>
+      <div class="glass row bonus" style="top:944px"><div class="ic"><img src="${L}lg-s02-creator.webp" alt=""></div><div class="t">AI-креатор<small>бонус до конца дня</small></div></div>${LOGO}`
   },
   "offer": {
     cls: "offer", gx: "30%", gy: "22%",
     html: `${lab("ДЛЯ УЧАСТНИКОВ ЭФИРА")}
-      <div class="old">250&nbsp;000&nbsp;₸</div><div class="old-usd">≈&nbsp;$558</div>
+      <div class="badge">−40%</div><div class="old">250&nbsp;000&nbsp;₸</div>
       <div class="price">150&nbsp;000&nbsp;₸</div>
-      <div class="usd">≈&nbsp;$335</div>
-      <div class="inst" style="width:920px">или от 6&nbsp;250&nbsp;₸ (≈&nbsp;$14) в месяц,<br>рассрочка до 24&nbsp;месяцев</div>
+      <div class="inst">или от 6&nbsp;250&nbsp;₸ в месяц,<br>рассрочка до 24&nbsp;месяцев</div>
       <div class="until"><b></b>до 23:59 по Алматы</div>
-      <div class="light-floor" style="left:330px;top:640px;width:780px;height:700px;opacity:.55"></div>
-      <div class="shadow-floor" style="left:500px;top:1196px;width:520px;height:56px"></div>
-      <img style="position:absolute;left:468px;top:708px;width:560px;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55))" src="${L}lg-s41-deadline.webp" alt="">
+      ${glow(430, 560, 700, 800, .5)}
+      ${stand("P:alex-cacao.webp", { cx: 810, foot: 1372, vw: 520, noShadow: true })}
       <div class="glass gift"><div class="k">В ПОДАРОК</div><div class="t">Модуль 3<br>«AI-креатор»</div><div class="t">6&nbsp;месяцев доступа<br>вместо&nbsp;3</div><div class="t">Модуль по рекламе<br>через Claude</div></div>${LOGO}`
   },
 
-  // Карточки рассылки (Telegram и WhatsApp): до эфира, в эфире, последний звонок
-  "reg-bonus": topic("2", "ЗА РЕГИСТРАЦИЮ", "Два бонуса<br>уже твои", X3 + "lg-i-box-x3.png",
-    "left:460px;top:740px;width:580px", "left:470px;top:1160px;width:560px;height:66px", "70%"),
-  "live-bonus": topic("2", "ТОЛЬКО НА ЭФИРЕ", "Ещё два бонуса<br>в конце эфира", X3 + "lg-s50-plan.png",
-    "left:490px;top:690px;width:540px", "left:490px;top:1160px;width:520px;height:62px", "70%"),
-  "t-minus-10": topic("10", "СЕГОДНЯ 20:00 ПО АЛМАТЫ", "Через 10 минут<br>начинаем", X3 + "lg-s41-alarm-x2.png",
-    "left:575px;top:725px;width:420px", "left:570px;top:1190px;width:440px;height:58px", "70%",
-    "font-size:560px;left:56px;top:340px"),
-  "live-now": {
-    cls: "live", gx: "72%", gy: "38%",
-    html: `${lab("ПРЯМОЙ ЭФИР")}${head("Мы в эфире,<br>заходи", 76)}
-      <div class="glass onair" data-fit><span class="dot"></span>LIVE</div>
-      <div class="light-floor" style="left:380px;top:620px;width:700px;height:640px;opacity:.5"></div>
-      <div class="shadow-floor" style="left:440px;top:1200px;width:580px;height:64px"></div>
-      <img class="obj" style="position:absolute;left:410px;top:555px;width:620px;filter:drop-shadow(0 34px 38px rgba(0,0,0,.55)) drop-shadow(0 0 40px rgba(227,192,123,.18))" src="${X3}lg-i-camera-x3.png" alt="">${LOGO}`
+  // ---------- карточки рассылки: до эфира, в эфире, последний звонок (не менялись, только метка крупнее) ----------
+  "reg-bonus": {
+    cls: "topic", gx: "70%", gy: "36%",
+    html: `${lab("БОНУС ЗА РЕГИСТРАЦИЮ")}${head("30 хуков<br>под нишу", 92)}
+      ${glow(80, 420, 940, 800, .55)}
+      <div class="paper" style="left:520px;top:640px;width:490px;height:490px;transform:rotate(6deg)"><img src="${BONUS}bonus-referensy.png" alt=""><span class="pdf">PDF</span></div>
+      <div class="paper" style="left:46px;top:470px;width:510px;height:510px;transform:rotate(-7deg)"><img src="${BONUS}bonus-hooks.png" alt=""><span class="pdf">PDF</span></div>${LOGO}`
   },
-  "last-call": topic("30", "ДО 23:59 ПО АЛМАТЫ", "Осталось<br>30 минут", X3 + "lg-i-hourglass-x3.png",
-    "left:560px;top:560px;width:450px", "left:545px;top:1195px;width:480px;height:58px", "70%",
+  "live-bonus": topic("2", "ТОЛЬКО НА ЭФИРЕ", "2 бонуса<br>в конце",
+    stand("X:lg-s50-plan.png", { cx: 770, foot: 1235, vw: 530, sh: 62 }), "70%"),
+  "t-minus-10": topic("10", "ЧЕРЕЗ 10 МИНУТ", "Открой эфир<br>сейчас",
+    stand("X:lg-s41-alarm-x2.png", { cx: 785, foot: 1245, vw: 420, sh: 58 }), "70%",
+    "font-size:560px;left:56px;top:340px"),
+  "last-call": topic("30", "ОСТАЛОСЬ 30 МИНУТ", "Сгорает<br>в 23:59",
+    stand("X:lg-i-hourglass-x3.png", { cx: 785, foot: 1250, vw: 380, sh: 58 }), "70%",
     "font-size:520px;left:56px;top:350px"),
+
+  // ---------- 09.10.2026: картинка к каждому сообщению серии (Александр: «читать без картинки скучно, нужен хук») ----------
+  "t-minus-30": {
+    cls: "topic light", gx: "78%", gy: "30%", light: 1,
+    html: `${lab("ЧЕРЕЗ 30 МИНУТ")}${head("Я уже<br>в студии", 92)}
+      <div class="big" style="left:56px;top:372px;font-size:236px">20:00</div>
+      <div class="clock" style="left:84px;top:606px;font-size:40px;letter-spacing:0;font-family:Manrope,sans-serif;font-weight:800;color:#6b4a1e">по Алматы · 18:00 по Москве</div>
+      ${glow(260, 640, 780, 620, .55)}
+      ${stand("L:lg-s02-creator.webp", { cx: 640, foot: 1238, vw: 510 })}${LOGO}`
+  },
+  "live-10": {
+    cls: "live light", gx: "72%", gy: "38%", light: 1,
+    html: `${lab("ИДЁТ 10 МИНУТ")}${head("Заходи<br>на практику", 92)}
+      <div class="glass onair" data-fit style="top:404px"><span class="dot"></span>LIVE</div>
+      ${glow(280, 600, 800, 660, .6)}
+      ${stand("L:lg-ch3-leads.webp", { cx: 580, foot: 1238, vw: 640 })}${LOGO}`
+  },
+  "bonus-got": {
+    cls: "topic", gx: "50%", gy: "42%",
+    html: `${lab("ДЛЯ УЧАСТНИКОВ ЭФИРА")}${head("Твои 4<br>бонуса", 104)}
+      ${glow(60, 500, 960, 760, .55)}
+      <div class="fan">
+        <div class="paper" style="transform:rotate(-15deg)"><img src="${BONUS}bonus-hooks.png" alt=""></div>
+        <div class="paper" style="transform:rotate(-5deg)"><img src="${BONUS}bonus-referensy.png" alt=""></div>
+        <div class="paper" style="transform:rotate(5deg)"><img src="${BONUS}bonus-virusny.png" alt=""></div>
+        <div class="paper" style="transform:rotate(15deg)"><img src="${BONUS}bonus-plan.png" alt=""><span class="pdf">PDF</span></div>
+      </div>${LOGO}`
+  },
+  "vaib": {
+    cls: "train light", gx: "84%", gy: "10%", light: 1,
+    html: `${lab("БОНУСЫ ЭФИРА")}${head("Напиши Аяне", 92)}
+      <div class="word big" style="left:62px;top:292px;font-size:272px">ВАЙБ</div>
+      ${glow(220, 620, 860, 640, .6)}
+      ${stand("L:lg-s44-codeword.webp", { cx: 570, foot: 1210, vw: 680 })}${LOGO}`
+  },
+  "installment": {
+    cls: "train inst-card light", gx: "84%", gy: "10%", light: 1,
+    html: `${lab("НЕТ ВСЕЙ СУММЫ")}${head("Меньше<br><em style=\"white-space:nowrap\">210&nbsp;₸</em> в день", 96)}
+      <div class="pill">рассрочка от 6&nbsp;250&nbsp;₸ в месяц</div>
+      <div class="glass row" style="top:640px;width:470px;height:226px;display:block;padding:34px 36px"><div class="t" style="font-size:44px">до 24 месяцев<small style="font-size:30px;line-height:1.28">без переплаты, проценты банка на нас</small></div></div>
+      ${glow(500, 760, 620, 560, .6)}
+      ${stand("L:lg-s38-piggy.webp", { cx: 790, foot: 1238, vw: 520 })}${LOGO}`
+  },
+  "again-today": {
+    cls: "topic", gx: "78%", gy: "30%",
+    html: `${lab("ПОВТОР ЭФИРА")}${head("Не успел?<br>Сегодня в 20:00", 74)}
+      ${glow(300, 520, 800, 700, .5)}
+      <div class="ticket">
+        <div class="tk-time">20:00</div>
+        <div class="tk-sub">по Алматы<br>18:00 по Москве</div>
+        <div class="tk-cut"></div>
+        <div class="tk-stamp">ПОВТОР</div>
+      </div>
+      ${stand("X:lg-s41-alarm-x2.png", { cx: 800, foot: 1245, vw: 400 })}${LOGO}`
+  },
+  "next-1030": {
+    cls: "topic", gx: "70%", gy: "36%",
+    html: `${lab("ПРЕЗЕНТАЦИЯ ЭФИРА")}${head("Условия<br>ещё на день", 96)}
+      ${glow(60, 480, 960, 760, .55)}
+      <div class="deck"><img src="${X3}deck-vibe-production-cover.jpg" alt=""></div>
+      <div class="sticker">+1 день</div>
+      ${stand("L:lg-s39-calendar.webp", { cx: 830, foot: 1240, vw: 400 })}${LOGO}`
+  },
+  "next-1500": {
+    cls: "doubts light", gx: "84%", gy: "10%", light: 1,
+    html: `${lab("3 ВОПРОСА ПЕРЕД РЕШЕНИЕМ")}${head("Монтаж уметь<br>не нужно", 80)}
+      ${["Монтировать?|Нет", "Лицо?|Не нужно", "Директ?|Ассистент"].map((s, i) => { const [q, a] = s.split("|"); return `<div class="qa" style="top:${372 + i * 168}px"><div class="glass q">${q}</div><div class="arr"><svg width="74" height="36" viewBox="0 0 74 36"><path d="M2 18H66M50 4L68 18L50 32" fill="none" stroke="#8F5E1E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="a">${a}</div></div>`; }).join("")}
+      ${stand("X:lg-i-botchat-x3.png", { cx: 860, foot: 1242, vw: 232 })}${LOGO}`
+  },
+  "next-2145": {
+    cls: "topic", gx: "78%", gy: "30%",
+    html: `${lab("ДО 23:59")}${head("Решаешь ты", 104)}
+      <div class="big" style="left:50px;top:318px;font-size:268px">−40%</div>
+      ${glow(300, 540, 800, 820, .55)}
+      ${stand("P:alex-cacao.webp", { cx: 800, foot: 1420, vw: 560, noShadow: true })}${LOGO}`
+  },
+  "next-1950": {
+    cls: "topic", gx: "78%", gy: "30%",
+    html: `${lab("ПОВТОР ЭФИРА")}${head("Через<br>10 минут", 100)}
+      <div class="big" style="left:56px;top:398px;font-size:238px">10:00</div>
+      <div class="btn"><span class="play"></span>Открыть повтор</div>
+      ${glow(420, 780, 700, 560, .5)}
+      ${stand("X:lg-i-clapper-x3.png", { cx: 780, foot: 1242, vw: 470 })}${LOGO}`
+  },
 };
 
 const id = new URLSearchParams(location.search).get("id") || "warm-edits";

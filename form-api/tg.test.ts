@@ -627,14 +627,14 @@ test("кнопки: пустой {PAY} выпадает, новые {PREPAY_KZ} 
     [{ text: "Оплатить", url: "{PAY}" }],
     [{ text: "Kaspi", url: "{PREPAY_KZ}" }],
     [{ text: "Россия", url: "{PREPAY_INTL}" }],
-    [{ text: "Аяне", url: "{MANAGER}" }],
+    [{ text: "Менеджеру", url: "{MANAGER}" }],
     [{ text: "WhatsApp", url: "{WHATSAPP_TEMPLATE}" }],
     [{ text: "Эфир", url: "{STREAM}" }, { text: "Кейсы", url: "{CASES}" }, { text: "Игра", url: "{GAME}" }],
     [{ text: "Я оплатил", callback: "paid" }],
     [{ text: "Мусор", url: "{UNKNOWN}" }],
   ];
   const kb = buildKeyboard(rows, ctxFor(sr))!;
-  assert.deepEqual(kb.map((r) => r.map((b) => b.text)), [["Kaspi"], ["Россия"], ["Аяне"], ["WhatsApp"], ["Эфир", "Кейсы", "Игра"], ["Я оплатил"]]);
+  assert.deepEqual(kb.map((r) => r.map((b) => b.text)), [["Kaspi"], ["Россия"], ["Менеджеру"], ["WhatsApp"], ["Эфир", "Кейсы", "Игра"], ["Я оплатил"]]);
   assert.equal(kb[0][0].url, "https://pay.kaspi.kz/pay/abc");
   assert.equal(kb[1][0].url, "https://pay.example.ru/x");
   assert.equal(kb[2][0].url, sr.links.manager);
@@ -709,6 +709,11 @@ test("validateSeries: id, HH:MM, аудитории, плейсхолдеры, c
   bad([msg("x", "10:00")], /utcOffsetMinutes/, { utcOffsetMinutes: "5" });
   assert.throws(() => validateSeries({ ...rawSeries([msg("x", "10:00")]), links: { ...base.links, prepayKz: undefined } }), /links.prepayKz/);
   assert.throws(() => validateSeries({ ...rawSeries([msg("x", "10:00")]), welcome: { ...base.welcome, lateToday: "a — b" } }), /длинное тире/);
+  // кнопки под приветствием (beforeButtons) проверяются так же, как кнопки сообщений; без них приветствие по-прежнему допустимо
+  assert.throws(() => validateSeries({ ...rawSeries([msg("x", "10:00")]), welcome: { ...base.welcome, beforeButtons: [[{ text: "a" }]] } }), /welcome\.beforeButtons.*url или callback/);
+  assert.throws(() => validateSeries({ ...rawSeries([msg("x", "10:00")]), welcome: { ...base.welcome, beforeButtons: [[{ text: "a", url: "http://plain.example" }]] } }), /https/);
+  const { beforeButtons: _drop, ...welcomeNoButtons } = base.welcome;
+  assert.doesNotThrow(() => validateSeries({ ...rawSeries([msg("x", "10:00")]), welcome: welcomeNoButtons }));
 });
 
 test("предупреждения: подпись с очень длинным именем больше 1024 будет разбита", () => {
@@ -729,14 +734,20 @@ test("tg-series.json в репозитории: проходит проверк�
   for (const m of sr.messages) if (m.media) assert.match(m.media.url, /^https:\/\//);
   assert.equal("prepay" in sr.links, false);
   const warn = payWarning(sr);
-  assert.ok(sr.links.pay ? warn === "" : warn.includes("{PAY}"));
+  // лента v3.2 кнопки {PAY} («Оплатить всю сумму») не использует: тогда предупреждать не о чем,
+  // а если кнопка {PAY} в серии появится при пустой links.pay, предупреждение обязано её назвать
+  const usesPay = sr.messages.some((m) => m.enabled !== false && (m.buttons || []).some((row) => row.some((b) => b.url?.includes("{PAY}"))));
+  assert.ok(sr.links.pay || !usesPay ? warn === "" : warn.includes("{PAY}"));
   assert.equal(warn.includes("PREPAY"), false);
+  const withPay = validateSeries({ ...JSON.parse(readFileSync(seriesFile, "utf8")), links: { ...sr.links, pay: "" }, messages: [{ id: "p", at: "21:18", audience: "all", text: "x", buttons: [[{ text: "Оплатить", url: "{PAY}" }]] }] });
+  assert.ok(payWarning(withPay).includes("{PAY}"), "кнопка {PAY} при пустой ссылке по-прежнему даёт предупреждение");
 });
 
 test("tg-series.json: воркшоп только про AI-монтаж, продаётся только Vibe Production (решение 08.10)", () => {
   const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
   const sr = validateSeries(raw);
   const ids = sr.messages.map((m) => m.id);
+  const byId = new Map(sr.messages.map((m) => [m.id, m]));
   // практики 2 и 3 и пакет двух курсов убраны
   for (const id of ["topic-p23", "offer-bundle-2145"]) assert.equal(ids.includes(id), false, id);
   // ни в текстах, ни в кнопках, ни в адресах картинок нет PRO, пакета, презентации по брифу, приложения из ТЗ, вайбкодинга
@@ -747,9 +758,14 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
     /tg-dva/, /\/dva/, /Vibe-Coding-PRO/, /plus-PRO/, /offer-bundle/, /topic-p[23]/, /Три практики/i,
   ];
   for (const re of bad) assert.equal(re.test(everything), false, String(re));
-  // PDF только один: презентация Vibe Production (файлом в 10:30 и кнопкой в 15:00)
+  // имя менеджера нигде не пишем (Александр, 09.10): только «менеджер», он может смениться
+  assert.equal(/Аян/.test(readFileSync(seriesFile, "utf8")), false, "в tg-series.json нет имени менеджера");
+  assert.equal(raw.links.managerName, "менеджер");
+  assert.equal(raw.welcome.other, "Этот бот не читает сообщения. Вопрос по эфиру, обучению или оплате? Напиши менеджеру: @futleid");
+  assert.equal(raw.welcome.paidAck, "Спасибо! Больше не напоминаю про оплату. Пришли чек менеджеру @futleid: он проверит оплату и напишет, что дальше.");
+  // PDF только один: презентация Vibe Production (файлом в 10:30 следующего дня)
   const decks = [...everything.matchAll(/assets\/decks\/[^"\\]+/g)].map((m) => m[0]);
-  assert.ok(decks.length >= 2);
+  assert.ok(decks.length >= 1);
   for (const d of decks) assert.equal(d, "assets/decks/Vibe-Production.pdf", d);
   // в текстах только цены Vibe Production: 150 000, 250 000, 140 000 за игру, бронь 10 000 и рассрочка от 6 250
   for (const m of sr.messages) {
@@ -757,83 +773,151 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
       assert.ok(["150 000", "250 000", "140 000", "10 000", "6 250"].includes(price[1]), m.id + ": цена " + price[1]);
     }
   }
-  // перерисованные картинки отдаются с новой версией в адресе, иначе бот пришлёт старую из кеша file_id
-  assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0810a$/);
-  for (const id of ["topic-p1", "training-2058"]) {
-    assert.match(sr.messages.find((m) => m.id === id)!.media!.url, /\.jpg\?v=0810a$/, id);
-  }
-  // карточка warm-cases перерисована под цифры без кейсов (Александр 08.10): версия 0810c
-  assert.match(sr.messages.find((m) => m.id === "warm-1700")!.media!.url, /warm-cases\.jpg\?v=0810c$/);
-  // карточка оффера перерисована второй раз (третий бонус на плашке «В подарок»): версия 0810b
-  assert.match(sr.messages.find((m) => m.id === "offer-2118")!.media!.url, /offer\.jpg\?v=0810b$/);
-  // оффер и дожимы дня эфира идут только тем, кто был на эфире (нажал кнопку), остальным цену не называем
-  const byId = new Map(sr.messages.map((m) => [m.id, m]));
-  for (const id of ["offer-2118", "push-2130", "push-2230", "push-2330"]) assert.equal(byId.get(id)!.audience, "clickedNotPaid", id);
+  // лента v3.3 (09.10): все карточки отдаются с новой версией в адресе, иначе бот пришлёт старую из кеша file_id
+  assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0910a$/);
+  const photos = sr.messages.filter((m) => m.media?.type === "photo");
+  assert.ok(photos.length >= 15, "карточки есть почти у всех сообщений");
+  for (const m of photos) assert.match(m.media!.url, /^https:\/\/onai\.academy\/workshop-montazh\/assets\/tg\/[a-z0-9-]+\.jpg\?v=0910a$/, m.id);
+  // видео: прежний рилс 119K с прежними обложкой и размерами, рилс без лица в 16:00, остальные с размерами вертикального экрана
+  assert.deepEqual(byId.get("warm-1200")!.media, {
+    type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/reel-119k.mp4", poster: "https://onai.academy/workshop-montazh/assets/tg/reel-119k.jpg", width: 720, height: 1280, duration: 68,
+  });
+  assert.deepEqual(byId.get("noface-1600")!.media, {
+    type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.mp4?v=0910a", poster: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.jpg?v=0910a", width: 720, height: 1280, duration: 51,
+  });
+  assert.equal(byId.get("video-1730")!.media?.type, "video");
+  // личное видео Александра 15:00 ещё не снято: сообщение выключено, пока файл не появится (включить: enabled или /on personal-1500)
+  assert.equal(byId.get("personal-1500")!.enabled, false);
+  assert.equal(byId.get("personal-1500")!.media?.type, "video");
+  // ни метки места под видео, ни пометок в квадратных скобках в начале текста для людей нет
+  for (const m of sr.messages) assert.equal(/^\[/.test(m.text), false, m.id + ": метка [Видео ...] не идёт в подпись");
+  // убранные из ленты сообщения
+  for (const id of ["topic-p1", "topic-reel", "nudge-2030", "nudge-2050", "push-2130"]) assert.equal(byId.has(id), false, id);
+  // шаблон для менеджера из оффера убран: ссылка на менеджера теперь кнопкой
+  assert.equal(/\{TEMPLATE\}|<code>/.test(JSON.stringify(sr.messages)), false, "в сообщениях серии нет {TEMPLATE}");
+  // аудитории: кнопка эфира и ссылка идут тем, кто ещё не перешёл; оффер и дожимы только тем, кто был на эфире и не оплатил
+  for (const id of ["live-2000", "nudge-2010", "last-link-2015", "bonus-miss-2115", "next-day-1100", "replay-link-1950"]) assert.equal(byId.get(id)!.audience, "notClicked", id);
+  for (const id of ["training-2058", "bonus-2115"]) assert.equal(byId.get(id)!.audience, "clicked", id);
+  for (const id of ["offer-2118", "push-2230", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) assert.equal(byId.get(id)!.audience, "clickedNotPaid", id);
   assert.equal(/₸/.test(raw.welcome.before), false, "в подтверждении записи цены нет");
   for (const m of sr.messages) {
     if (m.audience === "notClicked" || (m.dayOffset ?? 0) === 0 && m.at < "21:18") assert.equal(/₸/.test(m.text), false, m.id + ": цена до эфира или тем, кто не был на эфире");
   }
-  assert.match(byId.get("next-day-1100")!.text, /специальную цену/);
-  // бонус за покупку до конца дня из трёх частей есть во всех офферах и дожимах (и в ленте эфира 20:58):
-  // модуль 3 «AI-креатор», 6 месяцев доступа вместо 3 и модуль по рекламе через Claude со скиллом AI-таргетолога
-  for (const id of ["training-2058", "offer-2118", "push-2130", "push-2230", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) {
+  assert.match(byId.get("next-day-1100")!.text, /Цену курса назову только участникам эфира\./);
+  // подарок за покупку до конца дня из трёх частей назван целиком там, где его перечисляют (лента эфира 20:58, оффер, последний звонок, дожимы):
+  // модуль 3 «AI-креатор», 6 месяцев доступа вместо 3 и модуль по рекламе через Claude с моим готовым AI-таргетологом
+  for (const id of ["training-2058", "offer-2118", "push-2330", "follow-1030", "follow-2145"]) {
     const t = byId.get(id)!.text;
     assert.match(t, /AI-креатор/, id);
     assert.match(t, /6 месяцев доступа вместо 3/, id);
-    assert.match(t, /модуль по рекламе через Claude (с моим|со) скиллом AI-таргетолога/, id);
+    assert.match(t, /модуль по рекламе через Claude с моим готовым AI-таргетологом/, id);
   }
-  // бронь и предоплата закрепляют цену и весь бонус, а не только его часть
-  for (const id of ["offer-2118", "push-2230", "push-2330"]) assert.match(byId.get(id)!.text, /цену и весь бонус/, id);
-  // расходы: обязательна только Claude от $20 в месяц, прежнего «около $51 в месяц» нигде нет
-  assert.match(byId.get("offer-2118")!.text, /Из подписок обязательна только Claude, от \$20 в месяц\. Остальное по желанию\./);
+  // бронь закрепляет цену и подарок: в оффере, рассрочке, последнем звонке и втором дожиме следующего дня
+  assert.match(byId.get("offer-2118")!.text, /Как закрепить цену:/);
+  assert.match(byId.get("offer-2118")!.text, /Бронь входит в цену\. Не подойдёт курс, бронь вернём\./);
+  assert.match(byId.get("push-2230")!.text, /закрепит цену и весь подарок за покупку сегодня/);
+  assert.match(byId.get("push-2330")!.text, /Закрепи всё бронью 10 000 ₸/);
+  assert.match(byId.get("follow-1500")!.text, /весь подарок за покупку сегодня/);
+  // расходы: нужна только Claude от $20 в месяц, прежнего «около $51 в месяц» нигде нет
+  assert.match(byId.get("offer-2118")!.text, /Из подписок нужна только Claude, от \$20 в месяц\./);
   assert.equal(/\$51/.test(JSON.stringify([raw.welcome, raw.messages])), false, "«$51 в месяц» убрано");
   assert.equal(/Подписки на сервисы отдельно/.test(JSON.stringify(raw.messages)), false);
-  // подпись оффера с самым длинным именем влезает в 1024, картинка и текст идут одним сообщением
-  assert.deepEqual(seriesWarnings(sr).filter((w) => w.startsWith("offer-2118")), []);
+  // подпись оффера длиннее 1024 даже без имени: картинка и текст с кнопками идут двумя сообщениями (как бот делит длинное).
+  // Остальные подписи, в том числе приветствие с самым длинным именем, влезают в 1024 и идут одним сообщением.
+  assert.deepEqual(seriesWarnings(sr).map((w) => w.split(":")[0]), ["offer-2118"]);
+  const offerLen = visibleLength(expandText(byId.get("offer-2118")!.text, ctxFor(sr)));
+  assert.ok(offerLen > 1024 && offerLen < 4096, `оффер ${offerLen} знаков`);
 });
 
-test("tg-series.json: дожим следующего дня follow-* и next-day-1100 (зов пропустивших на сегодня)", () => {
+test("tg-series.json: кнопки оплаты ведут прямо на бронь и менеджера, шаблона для менеджера нет (лента v3.3)", () => {
+  const sr = validateSeries(JSON.parse(readFileSync(seriesFile, "utf8")));
+  const byId = new Map(sr.messages.map((m) => [m.id, m]));
+  const CHAT = "https://onai.academy/workshop-montazh/chat";
+  const pay = [{ text: "Бронь через Kaspi", url: "{PREPAY_KZ}" }, { text: "Бронь из России и других стран", url: "{PREPAY_INTL}" }, { text: "Менеджер: рассрочка и вопросы", url: CHAT }];
+  const paid = { text: "Я уже оплатил(а)", callback: "paid" };
+  const flat = (id: string) => byId.get(id)!.buttons!.map((r) => r[0]);
+  for (const id of ["offer-2118", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) assert.deepEqual(flat(id), [...pay, paid], id);
+  assert.deepEqual(flat("push-2230"), [...pay, { text: "Игра Token Runner", url: "{GAME}" }, paid]);
+  // каждая кнопка в своём ряду, ни одна не выпадает из-за пустой ссылки
+  for (const m of sr.messages) {
+    if (!m.buttons) continue;
+    assert.ok(m.buttons.every((r) => r.length === 1), `${m.id}: по одной кнопке в ряд`);
+    assert.equal(buildKeyboard(m.buttons, ctxFor(sr))!.flat().length, m.buttons.flat().length, m.id);
+  }
+  // приветствие: бонусы за запись кнопками под текстом
+  assert.deepEqual(sr.welcome.beforeButtons, [
+    [{ text: "Забрать 30 хуков", url: "https://onai.academy/workshop-montazh/assets/bonus/30-hukov.pdf" }],
+    [{ text: "Забрать карту референсов", url: "https://onai.academy/workshop-montazh/assets/bonus/karta-6-referensov.pdf" }],
+  ]);
+  // бонусы по слову ВАЙБ тем, кто смотрел по другой ссылке
+  assert.deepEqual(flat("bonus-miss-2115").map((b) => b.text), ["Забрать в Telegram", "Забрать в WhatsApp"]);
+});
+
+test("tg-series.json: файлы медиа включённых сообщений лежат в репозитории (карточки, которые ещё рисуются, перечислены)", () => {
+  const sr = validateSeries(JSON.parse(readFileSync(seriesFile, "utf8")));
+  // Карточки 09.10 дорисовывает второй исполнитель: пока файла нет, имя из серии обязано быть в этом списке.
+  // Когда карточка появилась в workshop-montazh/assets/tg, её можно убрать отсюда (с ней тест тоже зелёный).
+  const PENDING = new Set(["t-minus-30.jpg", "live-10.jpg", "bonus-got.jpg", "vaib.jpg", "installment.jpg", "again-today.jpg", "next-1030.jpg", "next-1500.jpg", "next-1950.jpg", "next-2145.jpg"]);
+  const missing: string[] = [];
+  const check = (id: string, media?: { url: string; poster?: string }) => {
+    for (const u of [media?.url, media?.poster]) {
+      if (!u) continue;
+      const rel = u.replace("https://onai.academy/", "").split("?")[0];
+      if (!existsSync(join(REPO, rel)) && !PENDING.has(rel.split("/").pop() as string)) missing.push(`${id}: ${rel}`);
+    }
+  };
+  check("welcome", sr.welcome.media);
+  for (const m of sr.messages) if (m.enabled !== false) check(m.id, m.media);
+  assert.deepEqual(missing, [], "файла нет в репозитории и в списке дорисовываемых");
+});
+
+test("tg-series.json: следующий день v3.3: дожим был-на-эфире-не-оплатил, зов и ссылка на повтор для не пришедших", () => {
   const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
   const sr = validateSeries(raw);
   const byId = new Map(sr.messages.map((m) => [m.id, m]));
-  const DECKS_URL = "https://onai.academy/workshop-montazh/assets/decks/";
-  const follow: Array<[string, string, string | null]> = [
-    ["follow-1030", "10:30", "Vibe-Production.pdf"],
-    ["follow-1500", "15:00", null],
-    ["follow-2145", "21:45", null],
+  const TG = "https://onai.academy/workshop-montazh/assets/tg/";
+  const follow: Array<[string, string, unknown]> = [
+    ["follow-1030", "10:30", { type: "document", url: "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf" }],
+    ["follow-1500", "15:00", { type: "photo", url: TG + "next-1500.jpg?v=0910a" }],
+    ["follow-2145", "21:45", { type: "photo", url: TG + "next-2145.jpg?v=0910a" }],
   ];
-  for (const [id, at, pdf] of follow) {
+  for (const [id, at, media] of follow) {
     const m = byId.get(id)!;
     assert.ok(m, id);
     assert.equal(m.at, at);
     assert.equal(m.dayOffset, 1);
     assert.equal(m.audience, "clickedNotPaid");
     assert.notEqual(m.enabled, false);
-    if (pdf) assert.deepEqual(m.media, { type: "document", url: DECKS_URL + pdf });
-    else assert.equal(m.media, undefined);
+    assert.deepEqual(m.media, media, id);
     const urls = m.buttons!.flat().map((b) => b.url).filter(Boolean) as string[];
-    assert.ok(urls.includes("{PREPAY_KZ}"), `${id}: кнопка оплаты Kaspi`);
+    assert.ok(urls.includes("{PREPAY_KZ}"), `${id}: бронь через Kaspi`);
+    assert.ok(urls.includes("{PREPAY_INTL}"), `${id}: бронь из России и других стран`);
     assert.ok(m.buttons!.flat().some((b) => b.callback === "paid"), `${id}: «Я уже оплатил(а)»`);
-    // кнопки собираются целиком: ни одна не выпадает из-за пустой ссылки
-    const kb = buildKeyboard(m.buttons, ctxFor(sr))!;
-    assert.equal(kb.flat().length, m.buttons!.flat().length);
   }
-  // второй дожим файл не шлёт (PDF ушёл в 10:30), презентация Vibe Production открывается кнопкой
-  const pres = byId.get("follow-1500")!.buttons!.flat().find((b) => b.url?.endsWith(".pdf"))!;
-  assert.equal(pres.url, DECKS_URL + "Vibe-Production.pdf");
-  // подпись к файлу влезает в 1024 даже с самым длинным именем
-  assert.deepEqual(seriesWarnings(sr).filter((w) => w.startsWith("follow-")), []);
+  // подпись к файлу и к карточкам влезает в 1024 даже с самым длинным именем
+  assert.deepEqual(seriesWarnings(sr).filter((w) => /^(follow-|next-|replay-)/.test(w)), []);
   // оба оффера действуют до 23:59 по Алматы следующего дня
   for (const id of ["follow-1030", "follow-2145"]) assert.match(byId.get(id)!.text, /23:59 по Алматы \(21:59 по Москве\)/);
   assert.match(byId.get("follow-1500")!.text, /до 23:59 сегодня/);
 
+  // не пришедшим: 11:00 зов (без кнопки: ссылка придёт сама) и 19:50 ссылка на повтор
   const nd = byId.get("next-day-1100")!;
   assert.notEqual(nd.enabled, false);
   assert.equal(nd.audience, "notClicked");
   assert.equal(nd.dayOffset, 1);
   assert.equal(nd.at, "11:00");
-  assert.deepEqual(nd.buttons, [[{ text: "Записаться на сегодня", callback: "rejoin" }]]);
-  assert.match(nd.text, /^Если вчера не получилось попасть на эфир, сегодня в 20:00 по Алматы \(18:00 по Москве\)/);
+  assert.equal(nd.buttons, undefined);
+  assert.deepEqual(nd.media, { type: "photo", url: TG + "again-today.jpg?v=0910a" });
+  assert.match(nd.text, /^Вчера не получилось попасть на эфир\? Сегодня в 20:00 по Алматы \(18:00 по Москве\) повтор\./);
+  assert.match(nd.text, /Ссылка придёт сюда в 19:50\./);
+  const rp = byId.get("replay-link-1950")!;
+  assert.notEqual(rp.enabled, false);
+  assert.equal(rp.audience, "notClicked");
+  assert.equal(rp.dayOffset, 1);
+  assert.equal(rp.at, "19:50");
+  assert.deepEqual(rp.media, { type: "photo", url: TG + "next-1950.jpg?v=0910a" });
+  assert.deepEqual(rp.buttons, [[{ text: "Открыть эфир", url: "{STREAM}" }]]);
+  assert.match(rp.text, /^Через 10 минут повтор эфира «Вайб-продакшен»/);
 });
 
 // ───────────────────────── отправка: подпись, медиа, тишина, обход ошибок ─────────────────────────
@@ -1212,10 +1296,11 @@ test("tick: дожим следующего дня идёт только кли�
   assert.deepEqual(f2.sent, []);
 });
 
-test("серия из репозитория, следующий день: дожим только был-на-эфире-не-оплатил, next-day-1100 зовёт пропустивших, rejoin ведёт на сегодняшний эфир", async () => {
+test("серия из репозитория, следующий день: дожим только был-на-эфире-не-оплатил, зов в 11:00 и ссылка на повтор в 19:50 не пришедшим", async () => {
   const { store } = boot(base.messages);
   const reg = alm(2026, 10, 6, 10, 0);
-  sub(store, 80, D, reg);   // записан, на эфир не пришёл
+  sub(store, 80, D, reg);   // записан, на эфир не пришёл, повтор откроет
+  sub(store, 83, D, reg);   // записан, на эфир не пришёл, повтор не откроет
   sub(store, 81, D, reg);   // был на эфире, не оплатил
   sub(store, 82, D, reg);   // был на эфире, оплатил
   store.recordClick(81, D, iso(alm(2026, 10, 6, 20, 5)));
@@ -1223,7 +1308,6 @@ test("серия из репозитория, следующий день: до�
   store.recordEvent({ type: "paid", chat_id: 82, by: "self", ts: iso(alm(2026, 10, 6, 21, 30)) });
   store.setSeriesEnabled(true);
 
-  const T1 = "2026-10-07";
   const log: string[] = [];
   const f = fakeDeps({
     send: async (s, m, day) => {
@@ -1237,6 +1321,8 @@ test("серия из репозитория, следующий день: до�
     return tick(now, f.deps);
   };
   const only = (re: RegExp) => log.filter((x) => re.test(x));
+  const caption = (c: Call) => String(c.body.caption ?? c.body.text);
+  const keys = (c: Call) => (c.body.reply_markup.inline_keyboard as Array<Array<{ text: string; url?: string }>>).map((r) => r[0]);
 
   // 10:30 следующего дня: презентация файлом тому, кто был на эфире и не оплатил
   assert.equal(await run(alm(2026, 10, 7, 10, 35)), 1);
@@ -1245,54 +1331,64 @@ test("серия из репозитория, следующий день: до�
   assert.equal(doc.length, 1);
   assert.equal(doc[0].body.chat_id, 81);
   assert.equal(doc[0].body.document, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
-  assert.match(String(doc[0].body.caption), /^Доброе утро! Вчера ты был(?:\(а\))? на эфире/);
-  assert.deepEqual(doc[0].body.reply_markup.inline_keyboard.map((r: any[]) => r[0].text), [
-    "Оплатить через Kaspi", "Другие страны и рассрочка: Аяна", "Написать Аяне в WhatsApp", "Я уже оплатил(а)",
-  ]);
-  assert.equal(doc[0].body.reply_markup.inline_keyboard[0][0].url, base.links.prepayKz);
+  assert.match(String(doc[0].body.caption), /^Вчерашний эфир в одной презентации, и условия для участников ещё на день\./);
+  assert.deepEqual(keys(doc[0]).map((b) => b.text), ["Бронь через Kaspi", "Бронь из России и других стран", "Менеджер: рассрочка и вопросы", "Я уже оплатил(а)"]);
+  assert.equal(keys(doc[0])[0].url, base.links.prepayKz);
+  assert.equal(keys(doc[0])[1].url, base.links.prepayIntl);
+  assert.equal(keys(doc[0])[2].url, "https://onai.academy/workshop-montazh/chat");
 
-  // 11:00: пропустившему приходит зов на сегодняшний эфир, был на эфире не получает
-  assert.equal(await run(alm(2026, 10, 7, 11, 5)), 1);
-  assert.deepEqual(only(/next-day/), [`next-day-1100@${D}:80`]);
-  const call = fake.texts(80).at(-1)!;
-  assert.match(call, /^Если вчера не получилось попасть на эфир, сегодня в 20:00 по Алматы/);
-
-  // он нажимает «Записаться на сегодня»: день эфира сегодняшний, запись свежая
+  // 11:00: пропустившим приходит зов на повтор (картинка с подписью, кнопок нет), был на эфире не получает
+  log.length = 0;
   fake.reset();
-  await processUpdate(cb(80, "rejoin"), alm(2026, 10, 7, 11, 6));
-  assert.equal(store.subs.get(80)!.streamDay, T1);
-  assert.equal(store.subs.get(80)!.registeredAt, alm(2026, 10, 7, 11, 6));
-  assert.equal(fake.texts(80)[0], base.welcome.rejoinAck);
+  assert.equal(await run(alm(2026, 10, 7, 11, 5)), 2);
+  assert.deepEqual(only(/next-day/), [`next-day-1100@${D}:80`, `next-day-1100@${D}:83`]);
+  const calls = fake.of("sendPhoto").filter((c) => c.body.chat_id === 80);
+  assert.equal(calls.length, 1);
+  assert.match(caption(calls[0]), /^Вчера не получилось попасть на эфир\? Сегодня в 20:00 по Алматы \(18:00 по Москве\) повтор\./);
+  assert.equal(calls[0].body.reply_markup, undefined);
 
-  // 15:00: второй дожим только тому, кто был (вчерашний, для D), а перешедшему на сегодня нет
+  // 15:00: второй дожим только тому, кто был (вчерашний, для D)
   log.length = 0;
   fake.reset();
   assert.equal(await run(alm(2026, 10, 7, 15, 5)), 1);
   assert.deepEqual(only(/follow/), [`follow-1500@${D}:81`]);
-  assert.equal(fake.of("sendDocument").length, 0, "второй дожим без файла: PDF уже ушёл в 10:30");
-  const second = fake.of("sendMessage").find((c) => c.body.chat_id === 81)!;
-  assert.match(String(second.body.text), /^Вчера на эфире мы разобрали весь путь рилса/);
-  assert.equal(second.body.reply_markup.inline_keyboard[2][0].url, "https://onai.academy/workshop-montazh/assets/decks/Vibe-Production.pdf");
+  assert.equal(fake.of("sendDocument").length, 0, "второй дожим без файла: PDF ушёл в 10:30");
+  const second = fake.of("sendPhoto").find((c) => c.body.chat_id === 81)!;
+  assert.match(caption(second), /^Монтировать не нужно\. Лицо показывать не нужно\./);
+  assert.equal(second.body.photo, "https://onai.academy/workshop-montazh/assets/tg/next-1500.jpg?v=0910a");
+  assert.deepEqual(keys(second).map((b) => b.text), ["Бронь через Kaspi", "Бронь из России и других стран", "Менеджер: рассрочка и вопросы", "Я уже оплатил(а)"]);
 
-  // 19:50 сегодня: перешедший получает ссылку на сегодняшний эфир (день T1), был на вчерашнем эфире нет
+  // 19:50 следующего дня: ссылка на повтор уходит всем, кто на вчерашний эфир не пришёл, и только им; ссылка ведёт на день D
   log.length = 0;
   fake.reset();
-  await run(alm(2026, 10, 7, 19, 55));
-  assert.deepEqual(only(/link-1950/), [`link-1950@${T1}:80`]);
-  const link = fake.of("sendMessage").find((c) => c.body.chat_id === 80 && /Через 10 минут стартуем/.test(String(c.body.text)))!;
-  assert.ok(link);
-  const goUrl = link.body.reply_markup.inline_keyboard[0][0].url as string;
-  assert.deepEqual(verifyGoToken(goUrl.split("/").pop()!), { chatId: 80, day: T1 });
+  assert.equal(await run(alm(2026, 10, 7, 19, 55)), 2);
+  assert.deepEqual(only(/link-1950/), [`replay-link-1950@${D}:80`, `replay-link-1950@${D}:83`]);
+  const replay = fake.of("sendPhoto").find((c) => c.body.chat_id === 80)!;
+  assert.match(caption(replay), /^Через 10 минут повтор эфира «Вайб-продакшен»/);
+  assert.equal(replay.body.photo, "https://onai.academy/workshop-montazh/assets/tg/next-1950.jpg?v=0910a");
+  assert.deepEqual(keys(replay).map((b) => b.text), ["Открыть эфир"]);
+  assert.deepEqual(verifyGoToken(keys(replay)[0].url!.split("/").pop()!), { chatId: 80, day: D });
+  assert.equal(fake.of("sendPhoto").some((c) => c.body.chat_id === 81 || c.body.chat_id === 82), false, "был на эфире ссылку на повтор не получает");
+  // тик в 19:56 ничего не дублирует
+  assert.equal(await run(alm(2026, 10, 7, 19, 56)), 0);
 
-  // 21:45: последний дожим вчерашнего дня остаётся только у 81
+  // он открывает повтор: переход по ссылке (handleGo) записывает клик за день D, и вечером он получает последний дожим как «был на эфире»
+  store.recordClick(80, D, iso(alm(2026, 10, 7, 20, 2)));
+
+  // 21:45: последний дожим вчерашнего дня: у кого есть клик за D и нет оплаты (81 и открывший повтор 80)
   log.length = 0;
   await run(alm(2026, 10, 7, 21, 45));
-  assert.deepEqual(only(/follow/), [`follow-2145@${D}:81`]);
-  // оплатившему и пропустившему вчерашний дожим не шёл ни разу
-  for (const chat of [80, 82]) for (const id of ["follow-1030", "follow-1500", "follow-2145"]) assert.equal(store.hasSent(id, D, chat), false, `${id} для ${chat}`);
+  assert.deepEqual(only(/follow/), [`follow-2145@${D}:80`, `follow-2145@${D}:81`]);
+  // оплатившему, а также пропустившему и повтор не открывшему вчерашний дожим не шёл ни разу
+  for (const id of ["follow-1030", "follow-1500", "follow-2145"]) {
+    assert.equal(store.hasSent(id, D, 82), false, `${id} для оплатившего`);
+    assert.equal(store.hasSent(id, D, 83), false, `${id} для не открывшего повтор`);
+  }
+  for (const id of ["follow-1030", "follow-1500"]) assert.equal(store.hasSent(id, D, 80), false, `${id} до клика по повтору`);
 
   // /series показывает аудиторию понятной подписью
   assert.match(buildSeriesText(store, activeSeries(), alm(2026, 10, 7, 22, 0)), /follow-2145 \(были на эфире, не оплатили\)/);
+  assert.match(buildSeriesText(store, activeSeries(), alm(2026, 10, 7, 22, 0)), /replay-link-1950 \(не нажавшим\)/);
 });
 
 test("tick: tg-sent загружен до первого тика, повторный запуск на тех же данных ничего не дублирует", async () => {
@@ -1404,14 +1500,14 @@ test("приветствие: до эфира, во время окна, пос�
   const { store } = boot();
   const text = (c: Call) => String(c.body.caption ?? c.body.text);
 
-  // 12:00: картинка, эфир сегодня, кнопок нет
+  // 12:00: картинка, эфир сегодня, под текстом кнопки бонусов за запись
   await processUpdate(upd(81, "/start"), alm(2026, 10, 6, 12, 0));
   assert.equal(fake.calls.length, 1);
   assert.equal(fake.calls[0].method, "sendPhoto");
   assert.equal(fake.calls[0].body.photo, base.welcome.media.url);
   assert.match(text(fake.calls[0]), /^Привет, Аня! /);
-  assert.match(text(fake.calls[0]), /Эфир сегодня в 20:00/);
-  assert.equal(fake.calls[0].body.reply_markup, undefined);
+  assert.match(text(fake.calls[0]), /на бесплатный эфир «Вайб-продакшен»: сегодня в 20:00 по Алматы \(18:00 по Москве\)\./);
+  assert.deepEqual(fake.calls[0].body.reply_markup.inline_keyboard.map((r: any[]) => r[0].text), ["Забрать 30 хуков", "Забрать карту референсов"]);
   assert.equal(store.subs.get(81)!.streamDay, D);
 
   // 20:30 внутри окна 40 минут: сегодняшний эфир идёт, welcome.live с кнопкой
@@ -1429,8 +1525,8 @@ test("приветствие: до эфира, во время окна, пос�
   await processUpdate(upd(83, "/start"), alm(2026, 10, 6, 20, 50));
   assert.equal(store.subs.get(83)!.streamDay, "2026-10-07");
   assert.deepEqual(fake.calls.map((c) => c.method), ["sendPhoto", "sendMessage"]);
-  assert.match(text(fake.calls[0]), /Эфир завтра в 20:00/);
-  assert.equal(fake.calls[0].body.reply_markup, undefined);
+  assert.match(text(fake.calls[0]), /на бесплатный эфир «Вайб-продакшен»: завтра в 20:00 по Алматы/);
+  assert.equal(fake.calls[0].body.reply_markup.inline_keyboard.length, 2, "бонусы за запись кнопками");
   assert.equal(fake.calls[1].body.text, base.welcome.lateToday);
   const late = fake.calls[1].body.reply_markup.inline_keyboard[0][0];
   assert.equal(late.text, "Открыть эфир");
@@ -1453,11 +1549,11 @@ test("firstDay: до запуска /start записывает на первы�
   const { store } = boot([msg("a", "10:00")], { firstDay: "2026-10-07", skipDays: ["2026-10-09"] });
   await processUpdate(upd(85, "/start"), alm(2026, 10, 6, 12, 0));
   assert.equal(store.subs.get(85)!.streamDay, "2026-10-07");
-  assert.match(String(fake.calls[0].body.caption), /Эфир завтра в 20:00/);
+  assert.match(String(fake.calls[0].body.caption), /на бесплатный эфир «Вайб-продакшен»: завтра в 20:00 по Алматы/);
   fake.reset();
   await processUpdate(upd(86, "/start"), alm(2026, 10, 8, 21, 0));
   assert.equal(store.subs.get(86)!.streamDay, "2026-10-10"); // 9 октября пропущено
-  assert.match(String(fake.calls[0].body.caption), /Эфир 10 октября в 20:00/);
+  assert.match(String(fake.calls[0].body.caption), /на бесплатный эфир «Вайб-продакшен»: 10 октября в 20:00 по Алматы/);
   // /calendar идёт по тому же правилу
   assert.equal(calendarDay(alm(2026, 10, 8, 21, 0)), "2026-10-10");
   assert.equal(calendarDay(alm(2026, 10, 8, 20, 39)), "2026-10-08");
