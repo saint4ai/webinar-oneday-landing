@@ -1721,7 +1721,7 @@ test("server.ts: без WA_GROUPS /api/whatsapp-link отдаёт старую �
     let log = "";
     child.stdout.on("data", (d) => (log += d));
     child.stderr.on("data", (d) => (log += d));
-    await waitFor(() => /listening on/.test(log));
+    await waitFor(() => /listening on/.test(log), 20_000); // под нагрузкой (рендеры на этой машине) старт бывает дольше 8 секунд
     const get = async (p: string) => (await fetch(`http://127.0.0.1:${port}${p}`)).json() as Promise<any>;
     return { child, get, log: () => log };
   };
@@ -1753,7 +1753,7 @@ test("server.ts: без WA_GROUPS /api/whatsapp-link отдаёт старую �
     assert.equal(h.enabled, true);
     assert.equal(h.running, true);
     assert.equal(JSON.stringify(h).includes(NEW), false, "в health ссылок нет");
-    await waitFor(() => evo.of("/instance/connectionState").length >= 1, 9000);
+    await waitFor(() => evo.of("/instance/connectionState").length >= 1, 20_000);
     assert.equal(s2.log().includes(EVO_KEY), false, "ключ API в логе не появляется");
     assert.equal(evo.calls.every((c) => c.key === EVO_KEY), true);
   } finally {
@@ -2119,6 +2119,22 @@ test("ревью п.6: сбой Evolution при одобрении (5xx, обр
   clock.t += 31_000;
   assert.equal(await joinsTick(), 2, "после починки обоих одобрили");
   assert.equal(w.rt().approved.size, 2);
+});
+
+test("ревью п.6: явный отказ на весь пакет (400) засчитывается каждому, «ядовитый» пакет не стопорит очередь навсегда", async () => {
+  const w = boot();
+  const t = await createFor(w, 9);
+  at(9, 10, 0, 0);
+  await waTick();
+  evo.requests.set(t.jid, [{ jid: "bad@lid" }]);
+  const decide = (c: { method: string; path: string }) => c.method === "POST" && c.path.startsWith("/community/requests");
+  evo.fail = (c) => (decide(c) ? { status: 400 } : null);
+  for (let i = 0; i < 5; i++) {
+    clock.t += 31_000;
+    await joinsTick();
+  }
+  assert.equal(w.rt().approveFails.get(`${t.jid}|bad@lid`), 3, "после трёх отказов пакета номер выбывает");
+  assert.equal(w.joins().filter((x) => x.ev === "approve_error").length, 3, "четвёртой и пятой попытки нет");
 });
 
 test("ревью п.7: в wa-series.json опрос заявок щадящий (2 до 4 минут, горячо 10 минут), выдача ссылки ускоряет", async () => {

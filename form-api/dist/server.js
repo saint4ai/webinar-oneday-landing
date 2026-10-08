@@ -8374,6 +8374,9 @@ async function pollJoins(r, t, now) {
   const todo = waiting.slice(0, Math.min(room, r.cfg.joinPolling.batch));
   const d = await communityDecide(t.jid, todo, "approve");
   if (!d.ok) {
+    if (d.status >= 400 && d.status < 500 && ![401, 403, 408, 429].includes(d.status)) {
+      for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
+    }
     append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
     await softJoinFail(r, now, `\u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A ${t.id}: ${d.error}`);
     return 0;

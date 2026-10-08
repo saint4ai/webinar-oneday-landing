@@ -1488,7 +1488,11 @@ async function pollJoins(r: Rt, t: Target, now: number): Promise<number> {
   const todo = waiting.slice(0, Math.min(room, r.cfg.joinPolling.batch));
   const d = await evo.communityDecide(t.jid, todo, "approve");
   if (!d.ok) {
-    // Сбой самого Evolution (таймаут, 5xx, сеть) не вина людей: счётчик отказов не трогаем, заявки уйдут в следующий пакет.
+    // Сбой самого Evolution (таймаут, 5xx, сеть, ключ, частота) не вина людей: счётчик отказов не трогаем, заявки уйдут в следующий пакет.
+    // Явный отказ на весь пакет (400, 404, 422) может вызвать один «ядовитый» номер: считаем попытку каждому, иначе очередь встанет навсегда.
+    if (d.status >= 400 && d.status < 500 && ![401, 403, 408, 429].includes(d.status)) {
+      for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
+    }
     append(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
     await softJoinFail(r, now, `одобрение заявок ${t.id}: ${d.error}`);
     return 0;
