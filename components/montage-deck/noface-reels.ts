@@ -20,5 +20,6 @@ export type NoFaceReel = {
 
 export const NOFACE_REELS: NoFaceReel[] = [
   { file: "noface-puppet-zashita", format: "Анимированная голова-рассказчик", title: "AI-стартап: 5 точек защиты", views: "16,4 тыс.", source: "Просмотры: Instagram API, 8 октября 2026" },
-  { file: "noface-voice-searchconsole", format: "Закадровый голос и графика", title: "Search Console: тренды", views: "", source: "Просмотры: Instagram API, 8 октября 2026" },
+  // 09.10: вместо «Search Console: тренды» (без цифры, снят с ленты) рилс «Бесплатные тарифы 34 нейросетей на GitHub», 8 068 просмотров (instagram.com/reel/Ddvaf6byKio/)
+  { file: "noface-voice-free34", format: "Закадровый голос и графика", title: "Бесплатные тарифы 34 нейросетей на GitHub", views: "8,1 тыс.", source: "Просмотры: Instagram API, 9 октября 2026" },
 ];

@@ -9,6 +9,7 @@
  */
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,10 +31,26 @@ const CONFIGS = {
   "без backdrop-filter": "*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }",
   "без дрейфа свечения": "[data-deck-bg] [style*='radial-gradient(34% 42%'] { transform: none !important; animation: none !important; }",
   "дрейф ступенями 12 Гц": "[data-deck-bg] [style*='radial-gradient(34% 42%'] { animation-timing-function: steps(84, end) !important; }",
+  "пустышка: только движущийся квадрат": ".montage-deck { display: none !important; } body::after { content: ''; position: fixed; left: 100px; top: 100px; width: 200px; height: 200px; background: #E3C07B; animation: ab-move 2s ease-in-out infinite alternate; } @keyframes ab-move { to { transform: translateX(600px); } }",
   "без покачивания объектов": "img[src*='/montage/lego/'], img[src*='/montage/px/'] { transform: none !important; animation: none !important; }",
   "без масок": "[data-deck-bg], [data-deck-bg] * { -webkit-mask-image: none !important; mask-image: none !important; }",
+  "без маски свечения": "[data-deck-bg] > div.overflow-hidden { -webkit-mask-image: none !important; mask-image: none !important; }",
+  "без маски сетки": "[data-deck-bg] > div[style*='fisheye'] { -webkit-mask-image: none !important; mask-image: none !important; }",
+  "без маски свечения и без покачивания": "[data-deck-bg] > div.overflow-hidden { -webkit-mask-image: none !important; mask-image: none !important; } img[src*='/montage/lego/'], img[src*='/montage/px/'] { transform: none !important; animation: none !important; }",
   "без will-change": "* { will-change: auto !important; }",
   "всё сразу": "*, *::before, *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; will-change: auto !important; } [data-deck-bg] [style*='radial-gradient(34% 42%'] { transform: none !important; animation: none !important; } img[src*='/montage/lego/'], img[src*='/montage/px/'] { transform: none !important; animation: none !important; }",
+};
+
+// Только для обложки и финала (тоннель из карточек и видео)
+const TUNNEL = {
+  "тоннель: база": "",
+  "тоннель: без вращения сцены": "[style*='ct-spin'] { animation: none !important; }",
+  "тоннель: без пульса света": "[style*='ct-pulse'] { animation: none !important; }",
+  "тоннель: без теней карточек": "[style*='ct-fly'] { box-shadow: none !important; }",
+  "тоннель: без маски": "[style*='#000 50%'] { -webkit-mask-image: none !important; mask-image: none !important; }",
+  "тоннель: без will-change": "* { will-change: auto !important; }",
+  "тоннель: ничего не летит": "[style*='ct-fly'] { animation: none !important; }",
+  "тоннель: видео на паузе (последним)": "@@pause",
 };
 
 const winChrome = "C:/Program Files/Google/Chrome/Application/chrome.exe";
@@ -58,6 +75,16 @@ async function light() {
   for (const p of pi.processInfo) cpu[p.type] = (cpu[p.type] ?? 0) + p.cpuTime;
   return { wall: Date.now(), task: mm(m).TaskDuration, cpu, frames: f };
 }
+async function memNow() {
+  try {
+    const pi = (await bcdp.send("SystemInfo.getProcessInfo")).processInfo;
+    const ids = pi.map((p) => p.id);
+    const out = execFileSync("powershell.exe", ["-NoProfile", "-Command", `Get-Process -Id ${ids.join(",")} -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Id) $($_.PrivateMemorySize64)" }`], { encoding: "utf8", timeout: 15000 });
+    const m = {}; for (const l of out.split(/\r?\n/)) { const [id, pv] = l.trim().split(" ").map(Number); if (id) m[id] = pv; }
+    const by = {}; for (const p of pi) if (m[p.id]) by[p.type] = (by[p.type] ?? 0) + m[p.id];
+    return { rend: Math.round((by.renderer ?? 0) / 1048576), gpu: Math.round((by.GPU ?? 0) / 1048576) };
+  } catch { return { rend: 0, gpu: 0 }; }
+}
 const res = [];
 for (const key of slidesWanted) {
   const i = keys.indexOf(key);
@@ -65,9 +92,10 @@ for (const key of slidesWanted) {
   await page.goto(`${URL_}?n=${i}#${i + 1}`, { waitUntil: "load" });
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
   await sleep(2500);
-  for (const [name, cssRaw] of Object.entries(CONFIGS)) {
+  for (const [name, cssRaw] of Object.entries(key === "01" || key === "59" ? TUNNEL : CONFIGS)) {
     const mouse = cssRaw === "@@mouse";
-    const css = mouse ? "" : cssRaw;
+    if (cssRaw === "@@pause") await page.evaluate(() => document.querySelectorAll("video").forEach((v) => v.pause()));
+    const css = mouse || cssRaw === "@@pause" ? "" : cssRaw;
     await page.evaluate((c) => {
       document.getElementById("ab")?.remove();
       const s = document.createElement("style"); s.id = "ab"; s.textContent = c; document.head.appendChild(s);
@@ -79,11 +107,12 @@ for (const key of slidesWanted) {
     await sleep(WIN * 1000);
     const b = await light();
     moving = false; await mover;
+    const mem = await memNow();
     const dt = (b.wall - a.wall) / 1000, fr = b.frames - a.frames;
     const pct = (x) => +((x / dt) * 100).toFixed(1);
-    const r = { slide: key, cfg: name, mainPct: pct(b.task - a.task), gpuPct: pct((b.cpu.GPU ?? 0) - (a.cpu.GPU ?? 0)), rendPct: pct((b.cpu.renderer ?? 0) - (a.cpu.renderer ?? 0)), fps: Math.round(fr / dt), mainMs: +(((b.task - a.task) * 1000) / fr).toFixed(2), gpuMs: +((((b.cpu.GPU ?? 0) - (a.cpu.GPU ?? 0)) * 1000) / fr).toFixed(2), rendMs: +((((b.cpu.renderer ?? 0) - (a.cpu.renderer ?? 0)) * 1000) / fr).toFixed(2) };
+    const r = { slide: key, cfg: name, mainPct: pct(b.task - a.task), gpuPct: pct((b.cpu.GPU ?? 0) - (a.cpu.GPU ?? 0)), rendPct: pct((b.cpu.renderer ?? 0) - (a.cpu.renderer ?? 0)), fps: Math.round(fr / dt), memRendMB: mem.rend, memGpuMB: mem.gpu, mainMs: +(((b.task - a.task) * 1000) / fr).toFixed(2), gpuMs: +((((b.cpu.GPU ?? 0) - (a.cpu.GPU ?? 0)) * 1000) / fr).toFixed(2), rendMs: +((((b.cpu.renderer ?? 0) - (a.cpu.renderer ?? 0)) * 1000) / fr).toFixed(2) };
     res.push(r);
-    console.log(`${key.padEnd(4)} ${name.padEnd(26)} fps ${String(r.fps).padStart(4)}  | за секунду: main ${r.mainPct}%  GPU ${r.gpuPct}%  renderer ${r.rendPct}%  | на кадр: main ${r.mainMs} мс  GPU ${r.gpuMs}  renderer ${r.rendMs}`);
+    console.log(`${key.padEnd(4)} ${name.padEnd(26)} fps ${String(r.fps).padStart(4)}  | за секунду: main ${r.mainPct}%  GPU ${r.gpuPct}%  renderer ${r.rendPct}%  | на кадр: main ${r.mainMs} мс  GPU ${r.gpuMs}  renderer ${r.rendMs}  | память: рендерер ${mem.rend} МБ, GPU ${mem.gpu} МБ`);
   }
 }
 mkdirSync(join(here, "data"), { recursive: true });

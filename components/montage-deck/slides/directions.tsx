@@ -13,7 +13,7 @@ import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton, nightCard } from "../theme";
 import { moneyBoth } from "../prices";
-import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, nb, thousands, txt } from "../ui";
+import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, Stagger, glueNode, nb, thousands, txt } from "../ui";
 import { DirectPhone } from "./lesson3";
 
 /**
@@ -161,7 +161,7 @@ export function M_ShopReel() {
           <motion.div className="absolute" style={{ right: 0, top: 0 }} initial={{ opacity: 0, y: "3cqw", scale: 0.92 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
             transition={{ delay: 0.85, type: "spring", stiffness: 120, damping: 16 }}>
             <div className="relative">
-              <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" width="10.8cqw" chrome={false} />
+              <Phone video="/montage/reels/hit-semrush.mp4" src="/montage/reels/hit-semrush.jpg" width="10.8cqw" chrome={false} />
               {/* охват этого рилса: счётчик приложения Instagram, 5 октября 2026 (RESULTS.appCovers) */}
               <Views value="118 тыс." size="0.75cqw" style={{ position: "absolute", left: "0.7cqw", bottom: "0.9cqw" }} />
             </div>
@@ -186,18 +186,68 @@ export function M_ShopReel() {
   );
 }
 
+/**
+ * 35p · Что внутри модуля AI-монтаж (Александр, 09.10): программа обучения не была расписана, люди не понимали, что входит в курс.
+ * Пять уроков строками: номер и название, что делаете, справа золотом результат; под ними золотая карточка бонуса.
+ * Тексты: docs/tasks/deck_program_1009.md. Всё в левых 60% кадра.
+ */
+export function M_ReelProgram() {
+  const rows: [string, string, string, string][] = [
+    ["1", "Рабочее место", "Ставим Claude и систему монтажа по шагам. Терминал не нужен: агент ставит всё сам", "Агент готов монтировать"],
+    ["2", "Сценарий и 3 секунды", "Идея по чужим удачным рилсам, текст с сильным началом", "Сценарий, который не пролистывают"],
+    ["3", "Выбор стиля", "Форматы с лицом и без, голос свой или нейросети", "Ваш стиль закреплён за агентом"],
+    ["4", "Сборка ролика", "Агент собирает графику, субтитры и звук по вашему голосу, вы правите словами", "Готовый рилс"],
+    ["5", "Серия роликов", "Несколько рилсов за раз и план выпуска на месяц", "30 роликов в месяц"],
+  ];
+  return (
+    <Statement kicker="Модуль 1 · AI-монтаж" title={<>Что вы сделаете <Em>за 5 уроков</Em></>} size="2.6cqw">
+      <div style={{ maxWidth: "56cqw" }}>
+        {rows.map(([n, name, what, res], i) => (
+          <motion.div key={n} className="grid items-center" initial={{ opacity: 0, x: "-1cqw" }} animate={{ opacity: 1, x: "0cqw" }}
+            transition={{ delay: 0.4 + i * 0.1, duration: 0.4, ease: EASE }}
+            style={{ gridTemplateColumns: "2.4cqw minmax(0, 1fr) 13.5cqw", columnGap: "1.2cqw", padding: "0.75cqw 0", borderBottom: `1px solid ${T.line}` }}>
+            <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.5cqw", lineHeight: 1, color: T.gold }}>{n}</span>
+            <div className="min-w-0">
+              <div style={{ ...txt, fontWeight: 800, fontSize: "1.2cqw", lineHeight: 1.25 }}>{glueNode(name)}</div>
+              <div style={{ ...txt, fontWeight: 500, fontSize: "0.98cqw", lineHeight: 1.35, color: T.muted, marginTop: "0.2cqw" }}>{glueNode(what)}</div>
+            </div>
+            <span style={{ ...txt, fontWeight: 800, fontSize: "1.05cqw", lineHeight: 1.3, color: T.gold }}>{glueNode(res)}</span>
+          </motion.div>
+        ))}
+      </div>
+      <Stagger i={0} base={1}
+        style={{ ...card, maxWidth: "56cqw", marginTop: "1.2cqw", borderRadius: 22, padding: "1cqw 1.6cqw", border: `1px solid ${T.gold2}`, background: `${T.gold}1F` }}>
+        <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.1cqw", lineHeight: 1.25, color: T.gold }}>{glueNode("Бонус: моя схема выкладки через пробные рилсы")}</div>
+        <div style={{ ...txt, fontWeight: 500, fontSize: "1cqw", lineHeight: 1.4, marginTop: "0.4cqw" }}>
+          {glueNode("Во сколько публикую и как тестирую рилс на новой аудитории, прежде чем его увидят подписчики.")}
+        </div>
+      </Stagger>
+    </Statement>
+  );
+}
+
 /* ───────────── 36 · Цех «Реклама», модуль 3 «AI-креатор»: фото → реклама (с 08.10 бонус за покупку до конца дня) ───────────── */
 
 /**
- * Видеоурок модуля 3 AI-креатор (public/montage/lessons/ai-creator-lesson.mp4, 16:9, 2 мин 17 с, со звуком): в окне браузера, запускается по клику ведущего.
- * Клик и кнопка слайды не листают (stopPropagation), звук включён, автозапуска нет. Слой слайда пропускает клики насквозь, поэтому pointer-events: auto.
+ * Ролик «Альтернатива рекламы» (public/montage/lessons/alt-ad.mp4, 16:9, 15 с, со звуком, Александр 09.10 вместо видеоурока 2 мин 17 с).
+ * Запускается сам при входе на слайд, по кругу, звук приглушён (громкость 0,3). Если браузер не даёт играть со звуком, играет без звука,
+ * клик по ролику включает звук или ставит паузу. Клик слайды не листает (stopPropagation). Видеоурок ai-creator-lesson.mp4 лежит рядом:
+ * вернуть, поменяв src и poster обратно.
  */
 function LessonPlayer() {
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    v.volume = 0.3;
+    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    return () => { v.pause(); };
+  }, []);
   const toggle = () => {
     const v = ref.current;
     if (!v) return;
+    if (v.muted) { v.muted = false; v.volume = 0.3; if (v.paused) v.play().catch(() => {}); return; }
     if (v.paused) v.play().catch(() => {});
     else v.pause();
   };
@@ -208,7 +258,7 @@ function LessonPlayer() {
           {[T.gold, T.brownLt, T.nightMuted].map((c) => <span key={c} style={{ width: "0.6cqw", height: "0.6cqw", borderRadius: 99, background: c }} />)}
         </div>
         <div className="relative" style={{ aspectRatio: "16 / 9", background: "#000" }}>
-          <SlideVideo videoRef={ref} src="/montage/lessons/ai-creator-lesson.mp4" poster="/montage/lessons/ai-creator-lesson.jpg" preload="metadata" playsInline
+          <SlideVideo videoRef={ref} src="/montage/lessons/alt-ad.mp4" poster="/montage/lessons/alt-ad.jpg" preload="auto" playsInline loop
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
             className="absolute inset-0 h-full w-full" style={{ objectFit: "contain", background: "#000" }} />
           <button type="button" aria-label={playing ? "Пауза" : "Воспроизвести видеоурок"} aria-pressed={playing}
@@ -222,7 +272,7 @@ function LessonPlayer() {
           </button>
         </div>
       </div>
-      <div style={{ ...txt, fontSize: "0.95cqw", color: T.muted, marginTop: "0.6cqw" }}>Урок из модуля AI-креатор: видео для бизнеса</div>
+      <div style={{ ...txt, fontSize: "0.95cqw", color: T.muted, marginTop: "0.6cqw" }}>Реклама из модуля AI-креатор</div>
     </motion.div>
   );
 }
@@ -365,8 +415,9 @@ export function M_ForYou() {
 
 /* ───────────── 37v · Сами или с обучением (паттерн Slide_130_WithVsWithout в бренде колоды) ───────────── */
 
-const SOLO = ["Месяцами учите CapCut и Premiere", "Вечер уходит на один ролик", `Монтажёру ${moneyBoth(10000)} за каждый ролик`, "Застряли, спросить некого"];
-const COURSE = ["Готовый движок: 9 стилей и 6 форматов", "Ролик собирает агент, вы утверждаете кадры", "План на 30 роликов в месяц", "Разбор работ в общем чате потока"];
+// 09.10 Александр: сами учиться монтажу в Claude (у него ушло 2 месяца) или со мной: 7 дней на моих шаблонах, 30 дней обучения и обратной связи
+const SOLO = ["Учитесь сами: у меня ушло 2 месяца, хотя у меня опыт", "Сами ищете навыки для Claude и дообучаете его", `Монтажёру ${moneyBoth(10000)} за каждый ролик`, "Застряли, спросить некого"];
+const COURSE = ["За 7 дней первые ролики на моих шаблонах", "Ролик собирает агент, вы утверждаете кадры", "План на 30 роликов в месяц", "30 дней обучения и обратной связи по курсу"];
 
 export function M_SoloVsCourse() {
   return (

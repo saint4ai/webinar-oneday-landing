@@ -11,6 +11,7 @@ import { SlideVideo } from "../SlideVideo";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton } from "../theme";
 import { Arrow, EASE, Em, Kicker, MaskIcon, Note, Num, Px, Stagger, glueNode, nb, txt } from "../ui";
+import { BonusCover, Sheen } from "./bonus-fanfare";
 
 /**
  * Слайды воркшопа под AI-монтаж (08.10.2026, ТЗ docs/tasks/deck_ai_montage.md; сценарий урока docs/workshop-v2/videourok-pipeline.md):
@@ -170,10 +171,10 @@ export function M_AgentsSetup() {
 }
 
 /** Строка с золотой галочкой для карточки подарка. */
-const Tick = ({ children }: { children: ReactNode }) => (
+const Tick = ({ children, size = "1.05cqw" }: { children: ReactNode; size?: string }) => (
   <div className="flex items-start" style={{ gap: "0.7cqw" }}>
     <svg viewBox="0 0 24 24" style={{ width: "1.2cqw", height: "1.2cqw", flexShrink: 0, marginTop: "0.18cqw" }} fill="none" stroke={T.gold2} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-    <span style={{ ...txt, fontWeight: 600, fontSize: "1.05cqw", lineHeight: 1.4 }}>{glueNode(children)}</span>
+    <span style={{ ...txt, fontWeight: 600, fontSize: size, lineHeight: 1.4 }}>{glueNode(children)}</span>
   </div>
 );
 
@@ -182,39 +183,47 @@ const Tick = ({ children }: { children: ReactNode }) => (
  * В модуле 3: вирусная реклама для брендов и их продуктов, рекламные ролики на основе продуктов клиента, готовые референсы и показ, как такие
  * ролики создаются. Дальше слайд 36 раскрывает модуль с видеоуроком. Модулей по-прежнему три (число на слайдах 33 и 53 прежнее).
  * С 08.10, 15:00 третий подарок строкой снизу: модуль по рекламе через Claude и скилл AI-таргетолога (раскрывает слайд bon3 после 36).
+ * С 09.10 «Подарок 1» герой слайда (ТЗ docs/tasks/deck_bonus_cover_1009.md): сгенерированная обложка модуля крупно (26cqw), золотая плашка «ПОДАРОК»,
+ * при входе один раз фанфары (вылет обложки из коробки, вспышка, конфетти и искры, блик по карточке), см. bonus-fanfare.tsx. Подарки 2 и 3 компактнее, тексты прежние.
  */
 export function M_Bonus() {
+  const label: CSSProperties = { fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw" };
   return (
     <Statement kicker="Vibe Production" title={<>Бонус, если купите <Em>до конца дня</Em></>} size="3cqw">
-      <div className="grid gap-[1cqw]" style={{ gridTemplateColumns: "1.2fr 0.8fr", maxWidth: "54cqw" }}>
-        <Stagger i={0} style={{ height: "100%" }}>
-          <div style={{ ...card, borderRadius: 22, padding: "1.3cqw 1.5cqw", height: "100%", border: `1.5px solid ${T.gold2}` }}>
-            <Px name="lg-i-box" size="6.2cqw" bob={false} delay={0.3} style={{ margin: "-0.3cqw 0 0.6cqw -0.3cqw" }} />
-            <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: T.gold2, marginBottom: "0.6cqw" }}>Подарок 1</div>
-            <div style={{ ...txt, fontWeight: 700, fontSize: "1.5cqw", lineHeight: 1.25 }}>Модуль 3 «AI-креатор»</div>
-            <div className="grid" style={{ gap: "0.6cqw", marginTop: "0.9cqw" }}>
-              <Tick>Как создавать вирусную рекламу для брендов и их продуктов</Tick>
-              <Tick>Рекламные ролики на основе продуктов клиента</Tick>
-              <Tick>Готовые референсы от меня и показ, как создаются такие ролики</Tick>
+      <div className="grid gap-[1cqw]" style={{ gridTemplateColumns: "1fr 1fr", maxWidth: "54cqw" }}>
+        <Stagger i={0} style={{ gridColumn: "1 / -1" }}>
+          <div className="flex items-center" style={{ ...card, borderRadius: 22, padding: "1.1cqw 1.5cqw 1.2cqw 1.3cqw", gap: "1.6cqw", border: `1.5px solid ${T.gold2}`, boxShadow: `${card.boxShadow}, 0 0 3cqw -0.6cqw ${T.gold2}66` }}>
+            <BonusCover width="26cqw" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...label, color: T.gold2, marginBottom: "0.6cqw" }}>Подарок 1</div>
+              <div style={{ ...txt, fontWeight: 700, fontSize: "1.75cqw", lineHeight: 1.25 }}>Модуль 3 «AI-креатор»</div>
+              <div className="grid" style={{ gap: "0.75cqw", marginTop: "1cqw" }}>
+                <Tick size="1.1cqw">Как создавать вирусную рекламу для брендов и их продуктов</Tick>
+                <Tick size="1.1cqw">Рекламные ролики на основе продуктов клиента</Tick>
+                <Tick size="1.1cqw">Готовые референсы от меня и показ, как создаются такие ролики</Tick>
+              </div>
             </div>
+            <Sheen radius={22} delay={1} />
           </div>
         </Stagger>
         <Stagger i={1} style={{ height: "100%" }}>
-          <div style={{ ...card, borderRadius: 22, padding: "1.3cqw 1.5cqw", height: "100%" }}>
-            <Px name="lg-s41-deadline" size="6.2cqw" bob={false} delay={0.37} style={{ margin: "-0.3cqw 0 0.6cqw -0.3cqw" }} />
-            <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: T.accent, marginBottom: "0.6cqw" }}>Подарок 2</div>
-            <Num size="3.2cqw" color={T.gold}>{nb("6 месяцев")}</Num>
-            <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", lineHeight: 1.3, marginTop: "0.6cqw" }}>доступа к обучению вместо 3</div>
+          <div style={{ ...card, borderRadius: 22, padding: "1.1cqw 1.4cqw", height: "100%" }}>
+            <div className="flex items-center" style={{ gap: "0.8cqw" }}>
+              <Px name="lg-s41-deadline" size="3.4cqw" bob={false} delay={0.37} style={{ margin: "-0.2cqw 0 -0.2cqw -0.2cqw" }} />
+              <div style={{ ...label, color: T.accent }}>Подарок 2</div>
+            </div>
+            <div style={{ marginTop: "0.7cqw" }}><Num size="3.2cqw" color={T.gold}>{nb("6 месяцев")}</Num></div>
+            <div style={{ ...txt, fontWeight: 700, fontSize: "1.4cqw", lineHeight: 1.3, marginTop: "0.6cqw" }}>доступа к обучению вместо 3</div>
           </div>
         </Stagger>
         {/* подарок 3 (Александр, 08.10, 15:00): коротко, подробности на слайде bon3 после модуля 3 */}
-        <Stagger i={2} style={{ gridColumn: "1 / -1" }}>
-          <div className="flex items-center" style={{ ...card, borderRadius: 22, padding: "0.9cqw 1.5cqw", gap: "1.3cqw" }}>
-            <Px name="lg-i-phonearrow" size="4.2cqw" bob={false} delay={0.45} style={{ margin: "-0.3cqw 0 -0.3cqw -0.3cqw" }} />
-            <div>
-              <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.9cqw", color: T.accent, marginBottom: "0.4cqw" }}>Подарок 3</div>
-              <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", lineHeight: 1.3 }}>{glueNode("Модуль по рекламе через Claude и скилл AI-таргетолога")}</div>
+        <Stagger i={2} style={{ height: "100%" }}>
+          <div style={{ ...card, borderRadius: 22, padding: "1.1cqw 1.4cqw", height: "100%" }}>
+            <div className="flex items-center" style={{ gap: "0.8cqw" }}>
+              <Px name="lg-i-phonearrow" size="3.4cqw" bob={false} delay={0.45} style={{ margin: "-0.2cqw 0 -0.2cqw -0.2cqw" }} />
+              <div style={{ ...label, color: T.accent }}>Подарок 3</div>
             </div>
+            <div style={{ ...txt, fontWeight: 700, fontSize: "1.4cqw", lineHeight: 1.3, marginTop: "0.9cqw" }}>{glueNode("Модуль по рекламе через Claude и скилл AI-таргетолога")}</div>
           </div>
         </Stagger>
       </div>
@@ -519,16 +528,26 @@ export function M_Bonus3() {
   const platforms: [string, string][] = [["Facebook", "facebook"], ["Instagram", "instagram"], ["YouTube", "youtube"], ["TikTok", "tiktok"]];
   return (
     <Statement obj="lg-i-rocket" objSize="8cqw" kicker="Бонус 3, если купите до конца дня" title={<>Модуль по рекламе и мой <Em><span style={{ whiteSpace: "nowrap" }}>AI-таргетолог</span></Em></>} size="3cqw">
-      <Stagger i={0} style={{ ...card, borderRadius: 22, padding: "1.3cqw 1.6cqw", maxWidth: "54cqw", borderLeft: `0.28cqw solid ${T.gold2}` }}>
-        <p style={{ ...txt, fontWeight: 600, fontSize: "1.25cqw", lineHeight: 1.5, textWrap: "pretty" }}>
-          {glueNode("Так же, как я привлёк вас на этот воркшоп рекламой, я дам вам бонусный модуль по запуску рекламы через Claude и свой скилл. Вы передадите его Claude, и он как профессиональный таргетолог будет сам запускать и вести рекламные кампании.")}
-        </p>
-      </Stagger>
-      <Stagger i={2} style={{ marginTop: "1.6cqw" }}>
+      {/* три коротких тезиса вместо абзаца (Александр, 09.10): по одному в строку, номер в золотом кружке */}
+      <div className="grid" style={{ ...card, borderRadius: 22, padding: "1.3cqw 1.6cqw", maxWidth: "54cqw", borderLeft: `0.28cqw solid ${T.gold2}`, gap: "1.1cqw" }}>
+        {([
+          "Вас на этот воркшоп привела моя реклама",
+          "Её запускает и ведёт мой AI-таргетолог",
+          <>Хотите такого же? <Em>Даю его бонусом к обучению по AI-монтажу</Em></>,
+        ] as ReactNode[]).map((t, k) => (
+          <Stagger key={k} i={k} base={0.3}>
+            <div className="flex items-center" style={{ gap: "1.2cqw" }}>
+              <span className="flex items-center justify-center" style={{ ...goldButton, width: "2.7cqw", height: "2.7cqw", borderRadius: 999, flexShrink: 0, fontFamily: "var(--font-unbounded)", fontWeight: 800, fontSize: "1.25cqw", lineHeight: 1 }}>{k + 1}</span>
+              <span style={{ ...txt, fontWeight: 700, fontSize: "1.75cqw", lineHeight: 1.3, textWrap: "pretty" }}>{glueNode(t)}</span>
+            </div>
+          </Stagger>
+        ))}
+      </div>
+      <Stagger i={3} style={{ marginTop: "1.6cqw" }}>
         <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "0.85cqw", color: T.accent, marginBottom: "0.7cqw" }}>Площадки модуля</div>
         <div className="flex" style={{ gap: "0.8cqw" }}>
           {platforms.map(([name, file], i) => (
-            <Stagger key={file} i={3 + i}>
+            <Stagger key={file} i={4 + i}>
               <div className="flex items-center" style={{ ...card, borderRadius: 18, padding: "0.8cqw 1.2cqw", gap: "0.7cqw" }}>
                 <MaskIcon name={file} color={T.gold} size="1.9cqw" />
                 <span style={{ ...txt, fontWeight: 700, fontSize: "1.1cqw" }}>{name}</span>

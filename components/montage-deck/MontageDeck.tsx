@@ -23,8 +23,8 @@ import { GLASS } from "./theme";
 import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
-import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
-import { M_ShopReel, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
+import { M_Case107, M_Want, M_WhoFirst, M_CostNow, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
+import { M_ShopReel, M_ReelProgram, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
 import { M_MyPath } from "./slides/warmup";
 import { M_Cases, M_Platform, M_CasePages } from "./slides/cases";
 import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides/results";
@@ -93,13 +93,14 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     // Вернуть: вставить M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble с ключами 17, 18, 19, 20, 21 после 16 (импорты уже есть)
     // После урока
     <M_ReadyReel key="22" />,
-    <M_ResultMontage key="22r" />,
+    // 22r M_ResultMontage («За месяц: что смонтировал», 927 тыс.) убран 09.10: повторял слайд 10 M_Proof15 (Александр: «зачем повторяется, он уже был»). Вернуть: вставить M_ResultMontage с ключом 22r после 22
     <M_CodeWordFlow key="44" />,
     <M_Plan30 key="50" />,
     // Переход к продаже · 3 мин
     <M_Case107 key="30" />,
     <M_Want key="31" />,
     <M_WhoFirst key="32" />,
+    <M_CostNow key="cost" />,
     // Практика 2 (презентация по брифу: p2, p2a, p2c) и практика 3 (приложение и сайт: p3, p3a, p3b, p3c, p3e, p3i) убраны 08.10 по решению Александра:
     // воркшоп только про AI-монтаж. Компоненты живут в slides/practice.tsx, импорты в начале файла остались.
     // Вернуть: вставить M_Chapter с ключами p2 и p3 (big 2 и 3, kicker «Практика 2 из 3» и «Практика 3 из 3») и по порядку M_DocsHow p2a, M_DocsLive p2c,
@@ -113,6 +114,8 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     // 35 (модуль 1, AI-монтаж), 37 (модуль 2, ассистенты и автоматизация), потом опрос 03 переворачивается (37w) и «сами или с обучением» (37v).
     // Режиссура: docs/tasks/deck_wave4_directions.md. Порядок модулей с 08.10: 1 AI-монтаж (35), 2 ассистенты и автоматизация (37), 3 AI-креатор (36, он же бонус).
     <M_ShopReel key="35" />,
+    // 35p · программа модуля 1: что входит в 5 уроков и бонус (Александр, 09.10)
+    <M_ReelProgram key="35p" />,
     // hf · Higgsfield прямо из Claude (Александр 08.10, 15:00): как с ним работать на обучении, сразу после модуля 1
     <M_Higgsfield key="hf" />,
     <M_ShopLead key="37" />,
@@ -147,7 +150,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_GameBonus key="57g" />,
     <M_PayQR key="pay3" variant="final" />,
     // Финал · 2 мин
-    <M_Guides key="58" kicker="Обещанное" title="Забирайте три гайда" lead="Напишите ГАЙД в чат." />,
+    <M_Guides key="58" kicker="Обещанное" title="Забирайте три гайда" lead="Напишите ГАЙД менеджеру в WhatsApp." contact />,
     // Финал перед прощанием (Александр 06.10, порядок 07.10 вечером): обучение для компаний, внедрение, блог, Instagram, игра — у каждого свой QR.
     // Игра последняя содержательная: на ней прощание, потом последний экран «Спасибо, что пришли»
     <M_TeamTraining key="o1" />,

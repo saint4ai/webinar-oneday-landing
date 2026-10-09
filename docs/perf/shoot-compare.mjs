@@ -12,7 +12,7 @@
  */
 import { chromium } from "playwright";
 import sharp from "sharp";
-import { readFileSync, existsSync, mkdirSync, statSync, writeFileSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, statSync, writeFileSync, openSync, readSync, closeSync } from "node:fs";
 import { join, dirname, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -66,6 +66,7 @@ const OUT = opt("--out");
 if (!OUT) { console.error("нужен --out <папка>"); process.exit(1); }
 const only = opt("--only")?.split(",").map((s) => s.trim());
 const SETTLE = Number(opt("--settle", 3000));
+const VTIME = args.includes("--vtime"); // виртуальное время для всего, что считается в JS (ленты, холсты, Motion): кадры двух сборок сравниваются в одну и ту же миллисекунду
 mkdirSync(OUT, { recursive: true });
 if (!existsSync(join(ROOT, DIST + "/server/app/montage.html"))) { console.error("Нет сборки", DIST); process.exit(1); }
 
@@ -89,17 +90,31 @@ await ctx.route("**/*", async (route) => {
   if (url.searchParams.has("_rsc")) file = join(ROOT, DIST + "/server/app/montage.rsc");
   if (!existsSync(file) || statSync(file).isDirectory()) { missing.add(url.pathname); return route.fulfill({ status: 404, body: "" }); }
   const type = TYPES[extname(file).toLowerCase()] ?? "application/octet-stream";
-  const buf = readFileSync(file);
-  const range = route.request().headers()["range"];
-  if (range && type.startsWith("video/")) {
-    const [s, e] = range.replace("bytes=", "").split("-");
-    const start = Number(s), end = e ? Number(e) : buf.length - 1;
-    return route.fulfill({ status: 206, headers: { "content-type": type, "accept-ranges": "bytes", "content-range": `bytes ${start}-${end}/${buf.length}`, "content-length": String(end - start + 1) }, body: buf.subarray(start, end + 1) });
+  if (type.startsWith("video/")) {
+    // видео отдаём кусками по 4 МБ, не читая файл целиком (видеоурок весит 933 МБ)
+    const size = statSync(file).size;
+    const range = route.request().headers()["range"];
+    const [s0, e0] = (range ?? "bytes=0-").replace("bytes=", "").split("-");
+    const start = Number(s0 || 0), end = Math.min(e0 ? Number(e0) : size - 1, start + 4 * 1048576 - 1, size - 1);
+    const fd = openSync(file, "r");
+    const chunk = Buffer.alloc(end - start + 1);
+    readSync(fd, chunk, 0, chunk.length, start);
+    closeSync(fd);
+    return route.fulfill({ status: 206, headers: { "content-type": type, "accept-ranges": "bytes", "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(chunk.length) }, body: chunk });
   }
-  return route.fulfill({ status: 200, headers: { "content-type": type, "accept-ranges": "bytes" }, body: buf });
+  return route.fulfill({ status: 200, headers: { "content-type": type }, body: readFileSync(file) });
 });
 const page = await ctx.newPage();
 await page.addInitScript(() => { try { localStorage.setItem("sd-speaker", "live"); } catch {} });
+if (VTIME) {
+  await page.addInitScript(() => {
+    let T = 0;
+    performance.now = () => T;
+    const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (cb) => raf(() => cb(T));
+    window.__step = async (to, dt = 16.7) => { while (T < to) { T = Math.min(to, T + dt); await new Promise((r) => raf(() => r())); } };
+  });
+}
 const SLOW = { "09": 4200, "38": 3200, "39a": 3000 };
 const freeze = (t) => {
   // CSS-анимации и WAAPI: бесконечные ставим на паузу в одну точку времени, остальные не трогаем
@@ -123,7 +138,11 @@ for (let i = 0; i < keys.length; i++) {
   await page.goto(`http://deck.offline/montage?n=${i}#${i + 1}`, { waitUntil: "load" });
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
   const settle = SLOW[k] ?? SETTLE;
-  await page.waitForTimeout(settle);
+  if (VTIME) {
+    await page.waitForTimeout(1500);
+    await page.evaluate((t) => window.__step(t), settle);
+    await page.waitForTimeout(900);
+  } else await page.waitForTimeout(settle);
   await page.evaluate(freeze, settle);
   await page.waitForTimeout(250);
   await page.screenshot({ path: join(OUT, k + ".png"), type: "png" });

@@ -18,18 +18,20 @@ for (const label of labels) {
   console.log(`GPU: ${(d.gpu.devices ?? []).join(", ")}; compositing ${d.gpu.feature?.gpu_compositing}`);
 
   // 1) снимки раз в 30 с
-  console.log("\n| с | круг | слайд | heap МБ | heap после GC | узлов DOM | слушателей | видео в DOM / играют / отсоед. | GL | canvas 2d | rAF ждут | интервалов | активных анимаций | renderer МБ (private) | GPU-процесс МБ | главный поток % за окно | длинных задач за окно |");
-  console.log("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
+  console.log("\n| с | круг | слайд | heap МБ | heap после GC | узлов DOM | слушателей | видео в DOM / играют / отсоед. | GL | canvas 2d | rAF ждут | интервалов | активных анимаций | renderer МБ (private) | GPU-процесс МБ | главный поток % за окно | пересчётов стиля в с | раскладок в с | длинных задач за окно |");
+  console.log("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
   let prev = null;
   for (const s of d.samples) {
-    let busy = "-", lt = "-";
+    let busy = "-", lt = "-", rc = "-", lc = "-";
     if (prev) {
       const dt = s.tSec - prev.tSec;
       busy = dt > 0 ? f1(((s.taskSec - prev.taskSec) / dt) * 100) : "-";
+      rc = dt > 5 ? Math.round((s.recalcCount - prev.recalcCount) / dt) : "-";
+      lc = dt > 5 ? Math.round((s.layoutCount - prev.layoutCount) / dt) : "-";
       const t0 = prev.now, t1 = s.now;
       lt = String(d.longtasks.filter(([st]) => st >= t0 && st < t1).length);
     }
-    console.log(`| ${s.tSec} | ${s.lap} | ${s.slide || "-"} | ${s.heapMB} | ${s.heapGcMB ?? ""} | ${s.nodes} | ${s.listeners} | ${s.videos.inDoc} / ${s.videos.playing} / ${s.videos.detachedAlive} | ${s.ctx.liveGL}/${s.ctx.aliveGL} | ${s.ctx.live2d} | ${s.raf.pending} | ${s.iv.active} | ${s.anims.running} | ${s.memMB.renderer?.pv ?? "?"} | ${s.memMB.GPU?.pv ?? "?"} | ${busy} | ${lt} |`);
+    console.log(`| ${s.tSec} | ${s.lap} | ${s.slide || "-"} | ${s.heapMB} | ${s.heapGcMB ?? ""} | ${s.nodes} | ${s.listeners} | ${s.videos.inDoc} / ${s.videos.playing} / ${s.videos.detachedAlive} | ${s.ctx.liveGL}/${s.ctx.aliveGL} | ${s.ctx.live2d} | ${s.raf.pending} | ${s.iv.active} | ${s.anims.running} | ${s.memMB.renderer?.pv ?? "?"} | ${s.memMB.GPU?.pv ?? "?"} | ${busy} | ${rc} | ${lc} | ${lt} |`);
     prev = s;
   }
 

@@ -23,7 +23,7 @@ type Thread = { hue: number; msgs: Msg[] };
 export const DIRECT_THREADS: Thread[] = [
   { hue: 28, msgs: [
     { kind: "time", text: "СБ 22:09" },
-    { kind: "story", img: "/montage/reels/app-2.jpg" },
+    { kind: "story", img: "/montage/reels/new-claude50.jpg" }, // 09.10: вместо обложки «4 умных коннектора» (уже на слайдах 30, 35 и 44): рилс «Весь Claude за 50 секунд»
     { kind: "in", text: "Здравствуйте! Хотим так же монтировать рилсы для клиники. Сколько стоит внедрение?" },
     { kind: "out", text: "Добрый вечер! Давайте созвонимся на 15 минут, покажу, как это устроено" },
     { kind: "voice", dir: "in", sec: "0:42" },

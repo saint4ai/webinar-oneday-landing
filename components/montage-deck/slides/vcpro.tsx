@@ -220,7 +220,7 @@ export function M_VcChoose() {
 /* ───────────── v6 · Как занять место ───────────── */
 
 export function M_VcBook() {
-  const steps = ["Напишите слово в чат: МОНТАЖ, ПРО или ДВА", "Менеджер Аяна пришлёт ссылку на предоплату", `Предоплата ${moneyBoth(BOOKING_PRICE)} закрепляет за вами место`];
+  const steps = ["Напишите слово в чат: МОНТАЖ, ПРО или ДВА", "Менеджер пришлёт ссылку на предоплату", `Предоплата ${moneyBoth(BOOKING_PRICE)} закрепляет за вами место`];
   return (
     <Statement kicker="Как оплатить" title={<>Предоплата <Em>{money(BOOKING_PRICE)}</Em> <UsdTag n={BOOKING_PRICE} /> закрепляет место</>} size="3cqw"
       lead="Она входит в цену выбранного курса.">

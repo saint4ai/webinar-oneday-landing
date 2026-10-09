@@ -19,7 +19,7 @@ import { EASE, Em, Note, Px, Stagger, txt } from "../ui";
  * Данные — components/montage-deck/cases.ts. Всё в левых 60% кадра.
  */
 
-const HOLD = 3.4; // секунд на кейс
+const HOLD = 7; // секунд на кейс: 09.10 Александр не успевал рассказывать при 3,4 с
 const LABELS_MAX = 6; // до стольких кейсов под сегментами подписи, дальше только счётчик
 
 const plural = (n: number) => {

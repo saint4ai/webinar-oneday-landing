@@ -6,7 +6,7 @@ import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { CostDrop3D } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { ReelRail } from "../ReelRail";
-import { RESULTS } from "../results";
+import { RESULTS, coversFrom } from "../results";
 import { Statement } from "../Statement";
 import { GLASS, LT, T, card, glass, goldButton } from "../theme";
 import { moneyUsd } from "../prices";
@@ -127,7 +127,24 @@ function GuideCover({ no, title, text, icon, gold }: { no: number; title: string
 }
 
 /** 7 и 58 · Три гайда за досмотр: обложки раскрываются веером в 3D из одной стопки. */
-export function M_Guides({ kicker, title, lead }: { kicker: string; title: string; lead: string }) {
+/** Финальный слайд гайдов (58): гайды выдаёт менеджер в WhatsApp по слову ГАЙД (Александр 09.10: «пусть пишут не в чат, а нашему менеджеру»).
+ *  Имя менеджера не пишем никогда. QR qr-guide-manager.svg открывает чат https://wa.me/77085834575 с готовым словом ГАЙД. */
+function GuideContact() {
+  return (
+    <motion.div className="flex items-center" style={{ gap: "1.4cqw", marginTop: "0.2cqw" }} initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.35, duration: 0.5, ease: EASE }}>
+      <div style={{ ...card, background: LT.paper, borderRadius: 16, padding: "0.5cqw", width: "8.4cqw", flexShrink: 0, boxShadow: T.shadow }}>
+        <img src="/montage/qr-guide-manager.svg" alt="QR-код: чат с менеджером в WhatsApp со словом ГАЙД" draggable={false} style={{ display: "block", width: "100%", height: "auto" }} />
+      </div>
+      <div>
+        <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.55cqw", lineHeight: 1.2, color: T.ink }}>Напишите <span style={{ color: T.gold }}>ГАЙД</span> менеджеру в WhatsApp</div>
+        <div style={{ ...label, fontSize: "1.2cqw", fontWeight: 700, color: T.gold, marginTop: "0.45cqw", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>+7 708 583 45 75</div>
+        <div style={{ ...label, fontSize: "0.95cqw", fontWeight: 500, color: T.muted, marginTop: "0.25cqw" }}>Или наведите камеру на QR: чат откроется сам</div>
+      </div>
+    </motion.div>
+  );
+}
+
+export function M_Guides({ kicker, title, lead, contact = false }: { kicker: string; title: string; lead: string; contact?: boolean }) {
   const guides = [
     ["Как делать вирусный рилс", "Правило первых 3 секунд и пробные рилсы", "lg-i-rocket"],
     ["Контент-план на месяц", "И схема выкладки: что и когда публиковать", "lg-i-calfilm"],
@@ -136,8 +153,9 @@ export function M_Guides({ kicker, title, lead }: { kicker: string; title: strin
   // Обложки раздвинуты на ширину карточки: средняя не закрывает заголовок крайних (раньше шаг 12cqw при ширине 15cqw)
   const fan = [{ x: -15.4, r: -8, ry: 12, y: 1.2 }, { x: 0, r: 0, ry: 0, y: -0.6 }, { x: 15.4, r: 8, ry: -12, y: 1.2 }];
   return (
-    <Statement kicker={kicker} title={title} lead={lead} size="2.8cqw">
-      <div className="relative" style={{ width: "44cqw", height: "22cqw", perspective: "1600px", marginTop: "0.6cqw", marginLeft: "3.6cqw" }}>
+    <Statement kicker={kicker} title={title} lead={contact ? undefined : lead} size="2.8cqw">
+      {contact && <GuideContact />}
+      <div className="relative" style={{ width: "44cqw", height: "22cqw", perspective: "1600px", marginTop: contact ? "1.2cqw" : "0.6cqw", marginLeft: "3.6cqw", ...(contact ? { transform: "scale(0.86)", transformOrigin: "50% 0" } : {}) }}>
         {guides.map(([t, d, ic], i) => (
           <motion.div key={t} className="absolute top-0" style={{ left: "50%", marginLeft: "-7.5cqw", width: "15cqw", height: "20cqw", zIndex: i === 1 ? 3 : 1, transformOrigin: "50% 100%" }}
             initial={{ opacity: 0, x: "0cqw", y: "3cqw", rotate: 0, rotateY: 0 }}
@@ -151,7 +169,7 @@ export function M_Guides({ kicker, title, lead }: { kicker: string; title: strin
   );
 }
 
-/** 8 · Кто я: фото на свету, рядом скрин профиля Instagram со скруглёнными углами. alex-cacao.webp — alex.webp, где салатовый логотип на футболке перекрашен в золото бренда. */
+/** 8 · Кто я: фото на свету, рядом скрин профиля Instagram со скруглёнными углами. С 09.10 вторая фотография (alex-2-gold.webp: «мое фото 2», фон вырезан, салатовый логотип перекрашен в золото), чтобы не повторять alex-cacao.webp других слайдов (Александр). */
 export function M_About() {
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />} objectColumnSize="25cqw" objectOverflow="visible" contentMinWidth={0}
@@ -160,7 +178,7 @@ export function M_About() {
           {/* Свет: белый блик сверху и золотое пятно за спиной, без жёстких краёв */}
           <div className="absolute" style={{ left: "-30%", right: "-30%", top: "-6%", height: "70%", background: "radial-gradient(closest-side, rgba(251,243,228,.16), rgba(251,243,228,0))" }} />
           <div className="absolute" style={{ left: "-10%", right: "-10%", top: "16%", bottom: "-4%", background: `radial-gradient(closest-side, ${T.gold}B3, ${T.gold}33 60%, ${T.gold}00)` }} />
-          <img src="/montage/alex-cacao.webp" alt="Александр" className="absolute bottom-0 left-[52%] h-[72%] w-auto max-w-none" style={{ translate: "-50% 0", filter: "drop-shadow(0 2cqw 3cqw rgba(42,33,28,.25))" }} />
+          <img src="/montage/alex-2-gold.webp" alt="Александр" className="absolute bottom-0 left-[52%] h-[72%] w-auto max-w-none" style={{ translate: "-50% 0", filter: "drop-shadow(0 2cqw 3cqw rgba(42,33,28,.25))" }} />
         </motion.div>
       }>
       <Rise><Kicker>Кто ведёт</Kicker></Rise>
@@ -208,7 +226,8 @@ export function M_CostStory() {
 
 /**
  * 10 · 30 дней: 927 тыс. просмотров на трёх площадках, по 5 рилсов в день. Под цифрами бесконечная лента обложек рилсов
- * со счётчиком просмотров из приложения Instagram (RESULTS.appCovers, раздатки 05.10, папка 04).
+ * со счётчиком просмотров из приложения Instagram (RESULTS.appCovers, раздатки 05.10, папка 04). Лента начата с третьей обложки (coversFrom(…, 2)),
+ * чтобы слайды с лентой (ключи 10 и 14) открывались разными рилсами; рилс «Четыре сайта с анимациями» с цифрой на 9 октября, подпись RESULTS.appCoversSource.
  * 927 тыс. — сумма трёх площадок со скринов 6 октября (RESULTS.totalViews, разбивка на слайде 10g), не число людей.
  */
 export function M_Proof15() {
@@ -225,7 +244,7 @@ export function M_Proof15() {
         ))}
       </div>
       <motion.div {...inUp(2, 0.22)} style={{ marginTop: "1.2cqw", maxWidth: "54cqw" }}>
-        <ReelRail items={[...RESULTS.appCovers]} itemWidth="8.4cqw" speed={0.3} render={(r) => (
+        <ReelRail items={coversFrom(RESULTS.appCovers, 2)} itemWidth="8.4cqw" speed={0.3} render={(r) => (
           <div>
             <img src={`/montage/reels/${r.file}.jpg`} alt={`${r.title}: ${r.views} просмотров`} draggable={false}
               style={{ display: "block", width: "100%", aspectRatio: "9 / 16", objectFit: "cover", borderRadius: "1cqw", border: `1px solid ${T.line}`, boxShadow: T.shadowSm }} />
@@ -237,7 +256,7 @@ export function M_Proof15() {
           </div>
         )} />
       </motion.div>
-      <Note style={{ marginTop: "0.9cqw" }}>Счётчики Instagram, 05.10.2026. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены (скрины 06.10.2026), это не число людей</Note>
+      <Note style={{ marginTop: "0.9cqw" }}>{RESULTS.appCoversSource}. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены (скрины 06.10.2026), это не число людей</Note>
     </Statement>
   );
 }
