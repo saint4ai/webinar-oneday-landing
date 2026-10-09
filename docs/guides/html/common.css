@@ -1,7 +1,13 @@
 /* Общая основа трёх PDF-гайдов воркшопа «Вайб-продакшен».
    Страница: альбомный A4 297x210 мм. Размеры внутри заданы в px (1 px = 1/96 дюйма, страница 1122 x 794 px).
    Правила для PDF: без анимаций, без CSS-градиентов (они превращаются в тяжёлые shading-узоры,
-   которые мобильные просмотрщики показывают белыми страницами), шрифты только локальные. */
+   которые мобильные просмотрщики показывают белыми страницами), шрифты только локальные.
+   Без артефактов (09.10.2026): никаких box-shadow, text-shadow, filter, backdrop-filter, mix-blend-mode, opacity
+   и полупрозрачных цветов rgba/PNG с альфой: Chrome рисует их растровыми кусками с маской, а часть просмотрщиков
+   на телефоне показывает такие куски тёмными прямоугольниками. Все оттенки сплошные (смешаны с фоном вручную),
+   глубина: тонкая рамка, плотная подложка другого оттенка, плоская смещённая подложка без размытия.
+   Свечение на ночных страницах запечено в непрозрачный фон img/bg-*.jpg (docs/guides/html/prep-bg.py). build.mjs
+   перед печатью проверяет стили страниц и печатает замечания. */
 @font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
 @font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 @font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;src:url(../../../workshop-montazh/assets/fonts/manrope-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
@@ -12,7 +18,8 @@
 @page{size:297mm 210mm;margin:0}
 :root{
   --night:#14100E;--night2:#211A16;--gold:#E3C07B;--gold2:#C9A05A;--brown:#A0532A;--cream:#FBF3E4;--cream2:#F5E9D2;
-  --ink:#2A211C;--muted:#6E5F53;--line:rgba(160,83,42,.26);
+  --ink:#2A211C;--muted:#6E5F53;--line:#E6D1BF;--bd:#EBD9CA;--bd2:#E6D1BF;
+  --nbd:#554733;--on1:#D1CABD;--on2:#B8B1A6;--on3:#A39D93;
   --c-gold:#E3C07B;--c-brown:#A0532A;--c-wine:#6B2B2B;--c-sage:#5F6B47;--c-slate:#4B5F73;--c-ink:#2A211C;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -26,14 +33,14 @@ img{display:block}
 .page{width:297mm;height:210mm;position:relative;overflow:hidden;padding:44px 58px 64px;break-after:page;page-break-after:always;background:#fff;color:var(--ink)}
 .page:last-of-type{break-after:auto;page-break-after:auto}
 .page.cream{background:var(--cream)}
-.page.night{background:var(--night);color:var(--cream)}
+.page.night{background:var(--night) url(img/bg-night.jpg) 0 0/100% 100% no-repeat;color:var(--cream)}
 .foot{position:absolute;left:58px;right:58px;bottom:22px;display:flex;justify-content:space-between;align-items:center;font-size:14px;line-height:1;color:var(--muted);letter-spacing:.01em}
 .foot a{color:var(--brown);font-weight:700}
 .foot .pn{font-family:'Unbounded',sans-serif;font-weight:600;font-size:14px;color:var(--brown)}
-.night .foot{color:rgba(251,243,228,.62)}
+.night .foot{color:var(--on3)}
 .night .foot a,.night .foot .pn{color:var(--gold)}
 .foot::before{content:"";position:absolute;left:0;right:0;top:-12px;height:1px;background:var(--line)}
-.night .foot::before{background:rgba(227,192,123,.22)}
+.night .foot::before{background:#413626}
 
 /* типографика */
 .kicker{font-weight:700;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--brown);display:flex;align-items:center;gap:14px}
@@ -45,10 +52,10 @@ h2{font-size:28px;line-height:1.15}
 .night h1,.night h2{color:var(--cream)}
 .lead{font-size:24px;line-height:1.45}
 .sub{font-size:20px;line-height:1.4;color:var(--muted)}
-.night .sub{color:rgba(251,243,228,.72)}
+.night .sub{color:var(--on2)}
 .note{font-size:15px;line-height:1.35;color:var(--muted);display:flex;gap:10px;align-items:flex-start}
 .note::before{content:"";flex:none;width:7px;height:7px;margin-top:6px;border-radius:50%;background:var(--gold2)}
-.night .note{color:rgba(251,243,228,.62)}
+.night .note{color:var(--on3)}
 b,strong{font-weight:800}
 .gold{color:var(--gold2)}.brown{color:var(--brown)}
 
@@ -58,10 +65,9 @@ b,strong{font-weight:800}
 .rule .mk svg{width:26px;height:26px}
 .cream .rule{background:#fff}
 
-/* ночной блок */
-.nb{position:relative;background:var(--night);border-radius:26px;color:var(--cream);overflow:hidden}
-.nb .glow{position:absolute;width:520px;height:520px;pointer-events:none}
-.nb>*:not(.glow){position:relative}
+/* ночной блок: плотная подложка и тонкая светлая рамка вместо свечения */
+.nb{position:relative;background:var(--night);border:1.5px solid var(--nbd);border-radius:26px;color:var(--cream);overflow:hidden}
+.nb>*{position:relative}
 .nb2{background:var(--night2)}
 
 /* круглый номер */
@@ -82,7 +88,7 @@ b,strong{font-weight:800}
 .night .ch-line{border-color:var(--gold);color:var(--gold)}
 
 /* карточка */
-.card{background:var(--cream);border:1.5px solid rgba(160,83,42,.18);border-radius:22px}
+.card{background:var(--cream);border:1.5px solid var(--bd);border-radius:22px}
 .page.cream .card{background:#fff}
 .sep{height:1px;background:var(--line)}
 .row{display:flex}.col{display:flex;flex-direction:column}
@@ -90,8 +96,7 @@ b,strong{font-weight:800}
 .ctr{align-items:center}.jb{justify-content:space-between}
 
 /* обложка: слева ночь, справа иллюстрация гайда на всю высоту */
-.page.cover{padding:0;background:var(--night);color:var(--cream)}
-.cover .glow{position:absolute;pointer-events:none}
+.page.cover{padding:0;background:var(--night) url(img/bg-cover.jpg) 0 0/100% 100% no-repeat;color:var(--cream)}
 .cover .art{position:absolute;right:0;top:0;bottom:0;width:560px;background:#FCF3E2;overflow:hidden}
 .cover .art img{position:absolute;top:0;height:794px;width:auto;max-width:none}
 .cover .art::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--gold);z-index:2}
@@ -100,13 +105,12 @@ b,strong{font-weight:800}
 .cover .kicker{font-size:15px;line-height:1.5;display:block}
 .cover .kicker::before{display:block;margin-bottom:14px}
 .cover h1{font-size:50px;line-height:1.1;color:var(--cream);margin-top:22px}
-.cover .sub{font-size:23px;line-height:1.42;margin-top:24px;color:rgba(251,243,228,.82)}
-.cover .sig{position:absolute;left:58px;bottom:46px;width:456px;font-size:18px;line-height:1.4;color:rgba(251,243,228,.78);padding-top:18px;border-top:1px solid rgba(227,192,123,.35)}
+.cover .sub{font-size:23px;line-height:1.42;margin-top:24px;color:var(--on1)}
+.cover .sig{position:absolute;left:58px;bottom:46px;width:456px;font-size:18px;line-height:1.4;color:var(--on1);padding-top:18px;border-top:1px solid #5C4D35}
 .cover .sig a{color:var(--gold);font-weight:700}
-.glow{position:absolute;pointer-events:none}
 
 /* плашка просмотров: глаз + цифра (закрывает счётчик, вшитый в скриншот обложки) */
-.vw{position:absolute;left:6px;bottom:6px;display:flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:999px;background:rgba(20,16,14,.9);border:1px solid rgba(227,192,123,.6);font-weight:800;font-size:14px;line-height:1;color:var(--cream);white-space:nowrap}
+.vw{position:absolute;left:6px;bottom:6px;display:flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:999px;background:#14100E;border:1px solid #A8895A;font-weight:800;font-size:14px;line-height:1;color:var(--cream);white-space:nowrap}
 .vw svg{width:15px;height:15px;flex:none}
 .vw.l{left:8px;bottom:8px;font-size:17px;padding:5px 12px 5px 9px;gap:6px}
 .vw.l svg{width:19px;height:19px}

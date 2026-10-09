@@ -1,13 +1,14 @@
 // Сборка PDF-гайдов: Playwright Chromium, альбомный A4, одна секция = одна страница.
-// Запуск: node docs/guides/html/build.mjs [gaid-virusny-rils|kontent-plan|30-hukov|all]
-// Потом: python docs/guides/html/qa.py  (проверка pypdf, текст, ссылки, превью JPG)
+// Запуск: node docs/guides/html/build.mjs [karta-6-referensov|gaid-virusny-rils|kontent-plan|30-hukov|all]
+// Только под замком: powershell -NoProfile -File C:\Проекты\_общее\heavy.ps1 take -who "<сессия>" -what "PDF гайдов воркшопа"
+// Потом: python docs/guides/html/qa.py  (pypdf: текст, ссылки, артефакты PDF; превью рисует PyMuPDF, не Chrome)
 import { chromium } from "@playwright/test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "../../../workshop-montazh/assets/bonus");
-const GUIDES = { "gaid-virusny-rils": "gaid-virusny-rils.html", "kontent-plan": "kontent-plan.html", "30-hukov": "30-hukov.html" };
+const GUIDES = { "karta-6-referensov": "karta-6-referensov.html", "gaid-virusny-rils": "gaid-virusny-rils.html", "kontent-plan": "kontent-plan.html", "30-hukov": "30-hukov.html" };
 const arg = process.argv[2] || "all";
 const names = arg === "all" ? Object.keys(GUIDES) : [arg];
 
@@ -40,6 +41,43 @@ for (const name of names) {
     });
     return out;
   });
+  // проверка артефактов PDF (09.10.2026): тени, фильтры, размытие, прозрачность и градиенты Chrome кладёт в PDF
+  // растровыми кусками с маской, а часть просмотрщиков на телефоне рисует их тёмными прямоугольниками
+  const arts = await page.evaluate(() => {
+    const out = [];
+    const nm = (el) => {
+      const c = el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className;
+      const pg = el.closest(".page");
+      const pi = pg ? [...document.querySelectorAll(".page")].indexOf(pg) + 1 : 0;
+      return `стр.${pi}: ${el.tagName.toLowerCase()}${c ? "." + String(c).trim().split(/\s+/).join(".") : ""} «${(el.textContent || "").trim().slice(0, 24)}»`;
+    };
+    const alpha = (v) => { const m = /^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/.exec(v); return m ? parseFloat(m[4]) : 1; };
+    document.querySelectorAll("body *").forEach((el) => {
+      if (["SCRIPT", "STYLE"].includes(el.tagName)) return;
+      const cs = getComputedStyle(el);
+      const bad = [];
+      if (cs.boxShadow !== "none") bad.push("box-shadow");
+      if (cs.textShadow !== "none") bad.push("text-shadow");
+      if (cs.filter !== "none") bad.push("filter");
+      if ((cs.backdropFilter || "none") !== "none") bad.push("backdrop-filter");
+      if (cs.mixBlendMode !== "normal") bad.push("mix-blend-mode");
+      if (parseFloat(cs.opacity) < 1) bad.push(`opacity ${cs.opacity}`);
+      if (parseFloat(cs.fillOpacity) < 1) bad.push("fill-opacity");
+      if (parseFloat(cs.strokeOpacity) < 1) bad.push("stroke-opacity");
+      if (/gradient/.test(cs.backgroundImage)) bad.push("CSS-градиент");
+      for (const k of ["color", "backgroundColor", "borderTopColor", "borderBottomColor", "borderLeftColor", "borderRightColor"]) {
+        if (k.startsWith("border") && parseFloat(cs[k.replace("Color", "Width")]) === 0) continue;
+        const a = alpha(cs[k]);
+        if (a > 0 && a < 1) { bad.push(`полупрозрачный ${k} ${cs[k]}`); break; }
+      }
+      if (bad.length) out.push(`${nm(el)}: ${bad.join(", ")}`);
+    });
+    document.querySelectorAll("svg linearGradient,svg radialGradient,svg filter,svg mask").forEach((el) => out.push(`${nm(el.closest("svg"))}: SVG ${el.tagName}`));
+    return out;
+  });
+  if (arts.length) { bad += arts.length; console.log(`[${name}] артефакты PDF (${arts.length}):\n  ` + [...new Set(arts)].slice(0, 80).join("\n  ")); }
+  else console.log(`[${name}] артефакты PDF: нет (ни теней, ни фильтров, ни прозрачности)`);
+
   if (issues.length) { bad += issues.length; console.log(`[${name}] проверка вёрстки:\n  ` + [...new Set(issues)].slice(0, 60).join("\n  ")); }
   else console.log(`[${name}] вёрстка: переполнений нет`);
 
@@ -52,3 +90,4 @@ for (const name of names) {
 }
 await browser.close();
 console.log(bad ? `замечаний: ${bad}` : "замечаний нет");
+if (bad) process.exitCode = 1;

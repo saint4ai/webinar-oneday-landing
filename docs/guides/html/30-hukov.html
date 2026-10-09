@@ -16,7 +16,7 @@
 .lg{margin-top:22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .lg .lb{flex:0 0 100%;font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
 .lg .chip{font-size:22px}
-.ex{margin-top:22px;padding:22px 28px;border-radius:22px;background:var(--cream);border:1.5px solid rgba(160,83,42,.2)}
+.ex{margin-top:22px;padding:22px 28px;border-radius:22px;background:var(--cream);border:1.5px solid var(--bd)}
 .ex .lb{font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .ex .fl{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;font-size:24px;font-weight:600}
 .ex .ar{flex:none;width:30px;height:30px}
@@ -46,7 +46,7 @@
 .ph .ln{height:9px;border-radius:5px;background:#4a3c33;width:100%}
 .ph .tb{margin-top:auto;font-size:13px;font-weight:800;color:var(--gold);border:1.5px solid var(--gold2);border-radius:999px;padding:4px 10px 5px;white-space:nowrap}
 .stk{flex:1;display:flex;flex-direction:column;gap:12px}
-.stk .sp{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:20px;background:#fff;border:1.5px solid rgba(160,83,42,.22);font-size:22px;line-height:1.36;font-weight:600;min-height:92px}
+.stk .sp{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:20px;background:#fff;border:1.5px solid var(--bd2);font-size:22px;line-height:1.36;font-weight:600;min-height:92px}
 .stk .sp b{font-weight:800;color:var(--brown)}
 .stk .dn{align-self:center;width:24px;height:24px;margin:-4px 0}
 .cmpb{padding:24px 28px}
@@ -58,18 +58,16 @@
 
 /* стр. 7: плакат */
 .five{margin-top:30px;display:flex;flex-direction:column}
-.five .fv{display:flex;align-items:center;gap:28px;padding:16px 0;border-bottom:1px solid rgba(227,192,123,.26)}
+.five .fv{display:flex;align-items:center;gap:28px;padding:16px 0;border-bottom:1px solid var(--nbd)}
 .five .fv:last-child{border-bottom:0}
 .five .fv .n{flex:none;width:70px;font-family:'Unbounded',sans-serif;font-weight:700;font-size:56px;line-height:1;color:var(--gold)}
 .five .fv .t{font-size:32px;line-height:1.28;font-weight:700;color:var(--cream)}
-.endb{margin-top:24px;padding:20px 28px;border-radius:20px;border:2px solid var(--gold2);background:rgba(227,192,123,.1);font-size:24px;line-height:1.4;font-weight:700;color:var(--cream)}
+.endb{margin-top:24px;padding:20px 28px;border-radius:20px;border:2px solid var(--gold2);background:#29221A;font-size:24px;line-height:1.4;font-weight:700;color:var(--cream)}
 </style></head>
 <body>
 
 <!-- 1. Обложка -->
 <section class="page cover">
-  <img class="glow bleed" src="img/glow-gold.png" style="left:-260px;top:-240px;width:760px;opacity:.55" alt="">
-  <img class="glow bleed" src="img/glow-brown.png" style="left:-200px;bottom:-380px;width:760px;opacity:.7" alt="">
   <img class="logo" src="img/logo-night.svg" alt="onAI">
   <div class="txt">
     <div class="kicker">Гайд 3 из 3 · Бонус воркшопа <span style="white-space:nowrap">«Вайб-продакшен»</span></div>
@@ -134,7 +132,6 @@
   </div>
   <div class="row" style="gap:24px;margin-top:22px;align-items:stretch">
     <div class="nb nb2 cmpb" style="flex:none;width:610px">
-      <img class="glow" src="img/glow-gold.png" style="right:-240px;top:-300px;opacity:.4" alt="">
       <div class="ttl">Доля тех, кто пролистал сразу</div>
       <div class="it"><span class="l">Хук А</span><div class="br" style="width:360px;background:#6E5F53;color:var(--cream)"></div></div>
       <div class="it"><span class="l">Хук Б</span><div class="br" style="width:200px;background:var(--gold);color:var(--night)"><span class="wn"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#14100E" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>победитель</span></div></div>
@@ -145,7 +142,6 @@
 
 <!-- 7. Шпаргалка -->
 <section class="page night">
-  <img class="glow bleed" src="img/glow-gold.png" style="right:-200px;top:-260px;width:760px;opacity:.5" alt="">
   <div class="kicker">Шпаргалка</div>
   <h1 style="font-size:36px">Шпаргалка: 5 правил хука</h1>
   <div class="five">
