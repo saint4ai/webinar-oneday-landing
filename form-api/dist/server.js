@@ -7455,7 +7455,14 @@ var hookUrl = () => env4("WA_HOOK_URL") || `http://127.0.0.1:${env4("PORT") || "
 var SAFE_FALLBACK = "\u041F\u043E\u0434\u0441\u043A\u0430\u0436\u0435\u0442 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 \u0448\u043A\u043E\u043B\u044B: https://onai.academy/workshop-montazh/chat";
 var MEDIA_PHRASE = "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435, \u043F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430, \u0442\u0435\u043A\u0441\u0442\u043E\u043C.";
 var fail = (code, message) => ({ ok: false, code, message });
-var ALLOWED_LINKS = ["onai.academy/workshop-montazh", "wa.me/77085834575", "t.me/futleid", "t.me/workshop_aiprod_bot"];
+var ALLOWED_LINKS = [
+  "onai.academy/workshop-montazh",
+  "wa.me/77085834575",
+  "t.me/futleid",
+  "t.me/workshop_aiprod_bot",
+  "online.bizon365.ru/room/196985",
+  "start.bizon365.ru/room/196985"
+];
 var ALLOWED_HANDLES = /* @__PURE__ */ new Set(["@futleid", "@workshop_aiprod_bot", "@saint4ai"]);
 var AYANA_RE = /wa\.me\/77085834575|t\.me\/futleid|@futleid/i;
 var URL_RE = /(?:https?:\/\/|www\.)[^\s<>"'«»]+/giu;
