@@ -7,6 +7,7 @@ import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { ExtrudedNumber } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
+import { SlideVideo } from "../SlideVideo";
 import { Statement } from "../Statement";
 import { BOOKING_PRICE, BUNDLE_PRICE, PRO_SOLO_PRICE, money, moneyBoth, moneyUsd } from "../prices";
 import { GLASS, NUM_ACCENT, LT, T, card, goldButton, goldText, pricePlate } from "../theme";
@@ -717,7 +718,7 @@ function BonusMotionVideo() {
   };
   return (
     <div className="relative" style={{ width: "15cqw", aspectRatio: "9 / 16", borderRadius: "1.4cqw", overflow: "hidden", border: `1px solid ${T.gold2}`, boxShadow: T.shadow, background: "#000", pointerEvents: "auto" }}>
-      <video src="/montage/bonus/art-motion-35.mp4" poster="/montage/bonus/art-motion-35.jpg" autoPlay muted loop playsInline preload="auto" onClick={toggle}
+      <SlideVideo src="/montage/bonus/art-motion-35.mp4" poster="/montage/bonus/art-motion-35.jpg" autoPlay muted loop playsInline preload="auto" onClick={toggle}
         className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", cursor: "pointer" }} />
       {!sound && (
         <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: "1cqw", pointerEvents: "none" }}>

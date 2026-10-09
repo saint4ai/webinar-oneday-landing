@@ -33,11 +33,12 @@ export function SlideVideo({ videoRef, ...props }: ComponentProps<"video"> & { v
       assign(videoRef, el);
       // Декоративные ролики без звука (петли обложки, телефоны): пока вкладка скрыта, ставим на паузу и не гоним декодер. Ролики со звуком
       // и запускаемые кликом (видеоурок, рилсы) не трогаем: ведущий мог закрыть окно другим, а звук урока должен идти.
-      const decor = !!el && el.muted && el.autoplay;
+      // «Декоративный» проверяем в момент скрытия: если ведущий включил звук (клик по ролику), ролик не трогаем.
+      const decor = !!el && el.autoplay;
       let wasPlaying = false;
       const onVis = () => {
-        if (!el || !decor) return;
-        if (document.hidden) { wasPlaying = !el.paused; if (wasPlaying) el.pause(); }
+        if (!el) return;
+        if (document.hidden) { if (!el.muted) return; wasPlaying = !el.paused; if (wasPlaying) el.pause(); }
         else if (wasPlaying) { wasPlaying = false; el.play().catch(() => {}); }
       };
       if (decor) document.addEventListener("visibilitychange", onVis);
