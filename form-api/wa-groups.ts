@@ -1760,7 +1760,7 @@ export async function waTick(): Promise<TickInfo> {
       for (const t of r.state.targets) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (r.deps.now() >= closeAtOf(r, t.day)) continue;
-        const incomplete = !isReady(t) || (!t.done.welcome && (t.tries.welcome || 0) < 3) || (!t.done.avatar && (t.tries.avatar || 0) < 3) || (!t.done.lock && (t.tries.lock || 0) < 3);
+        const incomplete = !isReady(t) || (!t.done.welcome && (t.tries.welcome || 0) < 3) || (!t.done.avatar && (t.tries.avatar || 0) < 3) || (t.kind === "group" && !t.done.lock && (t.tries.lock || 0) < 3);
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" as const };
