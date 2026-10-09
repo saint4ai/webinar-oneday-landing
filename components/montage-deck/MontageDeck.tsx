@@ -23,7 +23,7 @@ import { GLASS } from "./theme";
 import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
-import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
+import { M_Case107, M_Want, M_WhoFirst, M_CostNow, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
 import { M_ShopReel, M_ReelProgram, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
 import { M_MyPath } from "./slides/warmup";
 import { M_Cases, M_Platform, M_CasePages } from "./slides/cases";
@@ -100,6 +100,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_Case107 key="30" />,
     <M_Want key="31" />,
     <M_WhoFirst key="32" />,
+    <M_CostNow key="cost" />,
     // Практика 2 (презентация по брифу: p2, p2a, p2c) и практика 3 (приложение и сайт: p3, p3a, p3b, p3c, p3e, p3i) убраны 08.10 по решению Александра:
     // воркшоп только про AI-монтаж. Компоненты живут в slides/practice.tsx, импорты в начале файла остались.
     // Вернуть: вставить M_Chapter с ключами p2 и p3 (big 2 и 3, kicker «Практика 2 из 3» и «Практика 3 из 3») и по порядку M_DocsHow p2a, M_DocsLive p2c,

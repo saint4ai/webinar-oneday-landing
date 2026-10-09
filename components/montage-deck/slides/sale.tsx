@@ -405,6 +405,40 @@ export function M_Subscriptions() {
 }
 
 /**
+ * Сколько стоит один рилс (Александр, 09.10): перед продажей обучения, на вопрос «во сколько обходится система и монтаж».
+ * Три карточки: монтаж ролика, обучение системы на своём дизайне, ИИ-ассистент в директе. Цифры примерные, мои расходы в октябре 2026.
+ * Под третьей карточкой скрин отчёта ассистента за 08.10 (public/montage/results/assistant-report.png, 512×156).
+ */
+export function M_CostNow() {
+  const items: { n: string; t: string; d: string }[] = [
+    { n: "≈ $1", t: "Монтаж ролика", d: "Claude Max за $100 в месяц: около 100 роликов. Минута монтажа от $0,8 до $1." },
+    { n: "≈ $5", t: "Обучить систему на своём дизайне", d: "Разово. Зависит от объёма моушн-дизайна и сложности референсов." },
+    { n: "≈ 8 ¢", t: "ИИ-ассистент в директе", d: "За 20 переписок. Закрыли одного клиента: ассистент окупился в 5–20 раз. Как продажник, который работает за копейки." },
+  ];
+  return (
+    <Statement kicker="Без сюрпризов" title={<>Сколько мне обходится <Em>один рилс</Em></>} size="2.8cqw">
+      <div className="grid grid-cols-3 gap-[1cqw]" style={{ maxWidth: "58cqw" }}>
+        {items.map((it, i) => (
+          <Stagger key={it.t} i={i} style={{ ...card, borderRadius: 22, padding: "1.3cqw 1.4cqw 1.4cqw" }}>
+            <Num size="2.6cqw" color={T.ink}>{it.n}</Num>
+            <div style={{ ...txt, fontWeight: 700, fontSize: "1.15cqw", lineHeight: 1.25, marginTop: "0.9cqw" }}>{glueNode(it.t)}</div>
+            <div style={{ ...txt, fontWeight: 500, fontSize: "1cqw", color: T.muted, marginTop: "0.6cqw" }}>{glueNode(it.d)}</div>
+          </Stagger>
+        ))}
+      </div>
+      <Stagger i={4} base={0.6} style={{ maxWidth: "58cqw", marginTop: "1.2cqw" }}>
+        <div className="flex flex-col items-end" style={{ gap: "0.4cqw" }}>
+          <img src="/montage/results/assistant-report.png" alt="Отчёт ассистента за день: модели $0.023, за 7 дней $0.34" draggable={false}
+            style={{ display: "block", width: "22cqw", height: "auto", borderRadius: "0.9cqw", border: `1px solid ${T.line}` }} />
+          <div style={{ ...txt, fontWeight: 500, fontSize: "0.85cqw", color: T.muted }}>Отчёт моего ассистента за день</div>
+        </div>
+      </Stagger>
+      <Note style={{ marginTop: "0.8cqw" }}>Цифры примерные: мои расходы в октябре 2026.</Note>
+    </Statement>
+  );
+}
+
+/**
  * 56 ✦ · Осталось N из 5. Ведущий переключает занятые места клавишами 0–5: занятое место гаснет и оседает.
  * Из показа убран 08.10: условие «первым 5 броням» заменил бонус «купите до конца дня» (слайд bon). Вернуть: вставить M_Slots с ключом 56 после 54, текст под новое условие.
  */
