@@ -179,7 +179,7 @@ test("wa-series.json: проходит проверку и совпадает с
   assert.deepEqual(personal.media, { type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/personal-1500.mp4?v=0909p" });
   // текст 12:00: 121 тысяча и ссылка на рилс; 14:00: «Я не открывал CapCut» и карточка warm-edits.jpg?v=1009c; «вместе соберём ролик» в 11:30, 19:30 и +1 19:50
   const byId = Object.fromEntries(s.messages.map((m) => [m.id, m]));
-  assert.ok(byId["reel-119k"].text.includes("121 тысячу") && byId["reel-119k"].text.includes("Рилс в Instagram: https://www.instagram.com/p/Dc8YwYCt_E_/"));
+  assert.ok(byId["reel-119k"].text.includes("65 тысяч") && byId["reel-119k"].text.includes("Рилс в Instagram: https://www.instagram.com/reel/Dd12LJNTSO0/"));
   assert.ok(byId["warm-edits"].text.startsWith("Я не открывал CapCut"));
   assert.equal(byId["warm-edits"].media?.url, "https://onai.academy/workshop-montazh/assets/tg/warm-edits.jpg?v=1009c");
   for (const id of ["morning", "t-minus-30", "replay-link"]) assert.ok(byId[id].text.includes("мы вместе соберём ролик"), id);
@@ -910,7 +910,7 @@ test("прогрев: в 11:30 картинка с подписью, потом 
   // следующие по расписанию, каждое в своё время (между ними больше промежутка в 4 минуты)
   at(9, 12, 0, 5);
   await waTick();
-  assert.match(evo.of("/message/sendMedia")[1].body.caption, /121 тысячу просмотров/);
+  assert.match(evo.of("/message/sendMedia")[1].body.caption, /65 тысяч просмотров/);
   at(9, 12, 30, 10);
   await waTick();
   const m2 = evo.of("/message/sendMedia")[2].body;
@@ -1137,7 +1137,7 @@ test("очередь: модуль стоял 20 минут, созрели 3 с
   // тиков нет с 12:00 до 12:20: созрели 12:05, 12:10 и 12:15, самое раннее опоздало на 15 минут, это больше grace (12)
   at(9, 12, 20, 0);
   assert.equal((await waTick()).sent, 1, "уходит только первое");
-  assert.match(evo.of("/message/sendMedia")[0].body.caption, /121 тысячу просмотров/);
+  assert.match(evo.of("/message/sendMedia")[0].body.caption, /65 тысяч просмотров/);
   // пульт и /wa: следующее через 4 минуты, в очереди 2
   const nm = (waPanel(clock.t) as any).nextMessage;
   assert.deepEqual([nm.id, nm.at, nm.queued, nm.inText], ["reg-bonus", "12:10", 2, "через 4 мин, в очереди 2"]);
@@ -1148,7 +1148,7 @@ test("очередь: модуль стоял 20 минут, созрели 3 с
   }
   const caps = evo.of("/message/sendMedia").map((c) => String(c.body.caption));
   assert.equal(caps.length, 3);
-  assert.match(caps[0], /121 тысячу просмотров/);
+  assert.match(caps[0], /65 тысяч просмотров/);
   assert.match(caps[1], /Обещанные бонусы за регистрацию/);
   assert.match(caps[2], /Я не открывал CapCut/);
   const rows = mainSends(w).filter((x) => x.msg !== "morning");
@@ -1345,7 +1345,7 @@ test("очередь: опрос после утреннего сообщени�
   assert.equal((await waTick()).sent, 0);
   at(9, 11, 34, 10);
   assert.equal((await waTick()).sent, 1);
-  assert.match(evo.of("/message/sendMedia")[1].body.caption, /121 тысячу просмотров/);
+  assert.match(evo.of("/message/sendMedia")[1].body.caption, /65 тысяч просмотров/);
   assert.deepEqual(mainSends(w2).map((x) => x.msg), ["morning", "reel-119k"], "опрос в основные части не входит");
   assert.deepEqual(w2.journal().filter((x) => x.ev === "send" && x.part === "poll").map((x) => x.ok), [false, true]);
 });
