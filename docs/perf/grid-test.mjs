@@ -23,7 +23,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // сетка с цветом #FBF3E4 и прозрачностью 0.5 * 0.07 вместо currentColor + маски
 const svg = readFileSync(join(ROOT, "public/montage/fisheye-grid.svg"), "utf8").replace('stroke="currentColor"', 'stroke="#FBF3E4"').replace('opacity="0.5"', 'opacity="0.035"');
-const MODE = opt("--mode", "svg"); // svg — векторный фон, png — растровая картинка 2400×1500
+const MODE = opt("--mode", "svg"); // svg: векторный фон, png: растровая картинка 2400×1500
 let dataUri = "data:image/svg+xml;base64," + Buffer.from(svg).toString("base64");
 if (MODE === "png") {
   const png = await sharp(Buffer.from(svg), { density: 108 }).resize(2400, 1500).png({ compressionLevel: 9 }).toBuffer();

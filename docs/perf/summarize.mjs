@@ -48,7 +48,7 @@ for (const label of labels) {
   const l1 = lap(1), l2 = lap(2), l3 = lap(3);
   const byKey = (arr) => Object.fromEntries(arr.map((x) => [x.key, x]));
   const m2 = byKey(l2), m3 = byKey(l3);
-  console.log("\nЗатраты на кадр по слайдам (круг 1; окно ~2,3 с после въезда). main — главный поток, GPU — процесс GPU (CPU-время), мс на кадр; fps в headless без вертикальной синхронизации:");
+  console.log("\nЗатраты на кадр по слайдам (круг 1; окно ~2,3 с после въезда). main: главный поток, GPU: процесс GPU (CPU-время), мс на кадр; fps в headless без вертикальной синхронизации:");
   console.log("| слайд | fps | main мс/кадр | GPU мс/кадр | renderer мс/кадр | круг 2: main / GPU | круг 3: main / GPU | узлов | backdrop | will-change | видео | canvas | бесконечных анимаций |");
   console.log("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
   for (const x of l1) {

@@ -28,7 +28,7 @@ if (args.includes("--compare")) {
   const ci = args.indexOf("--compare");
   const A = args[ci + 1], B = args[ci + 2];
   const N = opt("--noise");
-  const THR = 28; // порог разницы по каналу из 255: ниже — шум сжатия и сглаживания
+  const THR = 28; // порог разницы по каналу из 255: ниже шум сжатия и сглаживания
   const read = async (dir, k) => sharp(join(dir, k + ".png")).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const diff = async (da, db, k) => {
     const a = await read(da, k), b = await read(db, k);
@@ -66,6 +66,7 @@ const OUT = opt("--out");
 if (!OUT) { console.error("нужен --out <папка>"); process.exit(1); }
 const only = opt("--only")?.split(",").map((s) => s.trim());
 const SETTLE = Number(opt("--settle", 3000));
+const NOANIM = args.includes("--noanim"); // выключить покачивание объектов и дрейф свечения: остаются только статические различия
 const VTIME = args.includes("--vtime"); // виртуальное время для всего, что считается в JS (ленты, холсты, Motion): кадры двух сборок сравниваются в одну и ту же миллисекунду
 mkdirSync(OUT, { recursive: true });
 if (!existsSync(join(ROOT, DIST + "/server/app/montage.html"))) { console.error("Нет сборки", DIST); process.exit(1); }
@@ -136,7 +137,7 @@ for (let i = 0; i < keys.length; i++) {
   const k = keys[i];
   if (only && !only.includes(k)) continue;
   await page.goto(`http://deck.offline/montage?n=${i}#${i + 1}`, { waitUntil: "load" });
-  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" + (NOANIM ? " img[src*='/montage/lego/'], img[src*='/montage/px/'], [style*='px-bob'] { transform: none !important; animation: none !important; } [data-deck-bg] [style*='radial-gradient(34% 42%'] { transform: none !important; animation: none !important; }" : "") });
   const settle = SLOW[k] ?? SETTLE;
   if (VTIME) {
     await page.waitForTimeout(1500);

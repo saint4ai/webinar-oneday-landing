@@ -26,7 +26,7 @@ export function MontageBg({ tone = "paper", children }: { tone?: Tone | "ink"; c
       <style>{`.montage-deck .sl-col { padding: 1.667cqw 2.917cqw !important; }`}</style>
       <Typo />
       {night ? (
-        // Сетка ночного фона — готовая картинка (линии #FBF3E4 с прозрачностью 0,5 × 0,07, docs/perf/make-grid-png.mjs), а не слой-маска из SVG:
+        // Сетка ночного фона: готовая картинка (линии #FBF3E4 с прозрачностью 0,5 × 0,07, docs/perf/make-grid-png.mjs), а не слой-маска из SVG:
         // тот же рисунок, но слой с векторной маской на каждом кадре стоил около половины затрат GPU-процесса.
         <div
           className="absolute inset-0"

@@ -5,7 +5,7 @@ import { useCallback, type ComponentProps, type MutableRefObject, type Ref } fro
 /**
  * Освобождает видео при уходе со слайда. Снятый с страницы <video> сам по себе только ставится на паузу: декодер, буфер и сетевое
  * соединение держатся, пока не пройдёт сборка мусора (замер docs/reports/deck_perf_1009.md: 17 роликов обложки висели отсоединёнными).
- * Здесь: пауза, снять src, load() — браузер сразу бросает загрузку и декодер.
+ * Здесь: пауза, снять src, load(): браузер сразу бросает загрузку и декодер.
  * Освобождаем с задержкой в один тик и только если элемент уже вне документа: в dev-режиме React на секунду «размонтирует» и
  * снова монтирует тот же узел (StrictMode), тогда видео освобождать нельзя.
  */
@@ -26,7 +26,7 @@ function assign<T>(ref: Ref<T> | undefined, value: T | null) {
   else (ref as MutableRefObject<T | null>).current = value;
 }
 
-/** Обычный <video> с освобождением при снятии со страницы. videoRef — внешний ref, если нужен (пауза и запуск по клику). */
+/** Обычный <video> с освобождением при снятии со страницы. videoRef: внешний ref, если нужен (пауза и запуск по клику). */
 export function SlideVideo({ videoRef, ...props }: ComponentProps<"video"> & { videoRef?: Ref<HTMLVideoElement> }) {
   const set = useCallback(
     (el: HTMLVideoElement | null) => {
