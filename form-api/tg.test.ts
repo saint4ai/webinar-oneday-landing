@@ -777,7 +777,12 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0910a$/);
   const photos = sr.messages.filter((m) => m.media?.type === "photo");
   assert.ok(photos.length >= 15, "карточки есть почти у всех сообщений");
-  for (const m of photos) assert.match(m.media!.url, /^https:\/\/onai\.academy\/workshop-montazh\/assets\/tg\/[a-z0-9-]+\.jpg\?v=0910a$/, m.id);
+  // карточка 14:00 перерисована 09.10 (окно CapCut перечёркнуто), ей новая версия адреса 1009c; остальные 0910a
+  for (const m of photos) {
+    const ver = m.id === "warm-1400" ? "1009c" : "0910a";
+    assert.match(m.media!.url, new RegExp("^https://onai\\.academy/workshop-montazh/assets/tg/[a-z0-9-]+\\.jpg\\?v=" + ver + "$"), m.id);
+  }
+  assert.equal(byId.get("warm-1400")!.media!.url, "https://onai.academy/workshop-montazh/assets/tg/warm-edits.jpg?v=1009c");
   // видео: прежний рилс 119K с прежними обложкой и размерами, рилс без лица в 16:00, остальные с размерами вертикального экрана
   assert.deepEqual(byId.get("warm-1200")!.media, {
     type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/reel-119k.mp4", poster: "https://onai.academy/workshop-montazh/assets/tg/reel-119k.jpg", width: 720, height: 1280, duration: 68,
@@ -786,8 +791,9 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
     type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.mp4?v=0910a", poster: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.jpg?v=0910a", width: 720, height: 1280, duration: 51,
   });
   assert.equal(byId.get("video-1730")!.media?.type, "video");
-  // личное видео Александра 15:00 ещё не снято: сообщение выключено, пока файл не появится (включить: enabled или /on personal-1500)
-  assert.equal(byId.get("personal-1500")!.enabled, false);
+  // личное видео Александра 15:00 снято 09.10 (монтаж по рилсу «Одно слово в ссылке GitHub»): сообщение включено, видео 50 с
+  assert.notEqual(byId.get("personal-1500")!.enabled, false);
+  assert.match(String(byId.get("personal-1500")!.media?.url), /personal-1500\.mp4\?v=0909p$/);
   assert.equal(byId.get("personal-1500")!.media?.type, "video");
   // ни метки места под видео, ни пометок в квадратных скобках в начале текста для людей нет
   for (const m of sr.messages) assert.equal(/^\[/.test(m.text), false, m.id + ": метка [Видео ...] не идёт в подпись");
@@ -853,6 +859,45 @@ test("tg-series.json: кнопки оплаты ведут прямо на бр�
   ]);
   // бонусы по слову ВАЙБ тем, кто смотрел по другой ссылке
   assert.deepEqual(flat("bonus-miss-2115").map((b) => b.text), ["Забрать в Telegram", "Забрать в WhatsApp"]);
+});
+
+test("tg-series.json: рилс 12:00 со ссылкой на пост, 14:00 про CapCut, чужих ссылок на рилсы нет (09.10)", () => {
+  const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
+  const sr = validateSeries(raw);
+  const byId = new Map(sr.messages.map((m) => [m.id, m]));
+  const REEL = "https://www.instagram.com/p/Dc8YwYCt_E_/";
+  // 12:00: счётчик 121 тысяча, прежнее видео, одна кнопка в своём ряду на пост рилса
+  const w = byId.get("warm-1200")!;
+  assert.ok(w.text.startsWith("Этот рилс набрал 121 тысячу просмотров. Монтировал его не человек, а ИИ-агент.\n\n"));
+  assert.equal(/119 тысяч/.test(JSON.stringify(raw)), false, "старой цифры 119 тысяч нет");
+  assert.equal(w.media?.type, "video");
+  assert.deepEqual(w.buttons, [[{ text: "Смотреть рилс в Instagram", url: REEL }]]);
+  assert.equal(buildKeyboard(w.buttons!, ctxFor(sr))!.flat().length, 1);
+  // 14:00: CapCut не открывал, карточка с новой версией адреса
+  const e = byId.get("warm-1400")!;
+  assert.ok(e.text.startsWith("Я не открывал CapCut, чтобы смонтировать свои рилсы. Просто правил словами. Вот как это выглядит у меня.\n\n"));
+  assert.ok(e.text.includes("«меня вообще не видно… подними меня выше»"));
+  assert.equal(e.media?.url, "https://onai.academy/workshop-montazh/assets/tg/warm-edits.jpg?v=1009c");
+  // ссылки на Instagram только из таблицы docs/mailings/reels-links-0910.md; в Telegram это кнопки, в тексте голых ссылок нет
+  const known = new Set([REEL, "https://www.instagram.com/saint4ai/"]);
+  const links = [...JSON.stringify([raw.welcome, raw.messages]).matchAll(/https:\/\/(?:www\.)?instagram\.com\/[^"\\\s]*/g)].map((x) => x[0]);
+  assert.ok(links.includes(REEL) && links.includes("https://www.instagram.com/saint4ai/"), "в серии есть ссылка на рилс и на профиль");
+  for (const u of links) assert.ok(known.has(u), "ссылка на Instagram не из таблицы: " + u);
+  for (const m of sr.messages) assert.equal(/instagram\.com/.test(m.text), false, m.id + ": ссылка на Instagram идёт кнопкой, не текстом");
+  // источник рассылок совпадает с лентой бота: те же тексты в Telegram, в WhatsApp тот же текст плюс строка со ссылкой на рилс
+  const chain = JSON.parse(readFileSync(join(REPO, "docs", "mailings", "chain-v2.json"), "utf8"));
+  const tg = new Map<string, any>(chain.telegram.map((m: any) => [m.id, m]));
+  const wa = new Map<string, any>(chain.whatsapp.map((m: any) => [m.feed, m]));
+  assert.equal(tg.get("warm-1200").text, w.text);
+  assert.equal(tg.get("warm-1400").text, e.text);
+  assert.deepEqual(tg.get("warm-1200").tgButtons, w.buttons);
+  assert.equal(wa.get("edits-1400").text, e.text);
+  const waReel: string = wa.get("reel-1200").text;
+  const [first, ...rest] = w.text.split("\n\n");
+  assert.equal(waReel, [first, "Рилс в Instagram: " + REEL, ...rest].join("\n\n"));
+  for (const t of [waReel, wa.get("edits-1400").text, tg.get("warm-1200").text, tg.get("warm-1400").text]) {
+    assert.equal(/—|Аян/.test(t), false);
+  }
 });
 
 test("tg-series.json: файлы медиа включённых сообщений лежат в репозитории (карточки, которые ещё рисуются, перечислены)", () => {

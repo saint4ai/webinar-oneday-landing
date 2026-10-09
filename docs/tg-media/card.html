@@ -45,12 +45,67 @@ html,body{width:1080px;height:1350px}
 .light .obj{filter:drop-shadow(0 12px 16px rgba(70,40,15,.38))}
 .light .logo{content:url("../../workshop-montazh/assets/logos/onai-logo-brown.svg")}
 
-/* warm-edits: крупный пузырь чата */
-.edits .bubble{position:absolute;left:80px;top:440px;width:840px;padding:54px 58px 58px;border-radius:64px 64px 64px 18px;
+/* warm-edits: окно CapCut, нарисованное векторно по смыслу, красный крест поверх и пузырь чата «правил словами» */
+.edits .win{position:absolute;left:110px;top:372px;width:860px;height:600px;border-radius:32px;overflow:hidden;transform:rotate(-3deg);
+  background:#121214;border:2px solid rgba(255,255,255,.14);box-shadow:0 46px 80px rgba(0,0,0,.62),0 0 0 1px rgba(0,0,0,.5)}
+.edits .win::after{content:"";position:absolute;left:0;right:0;top:72px;bottom:0;background:rgba(20,16,14,.3);pointer-events:none}
+.edits .win .bar{position:absolute;left:0;top:0;right:0;height:72px;display:flex;align-items:center;gap:18px;padding:0 26px;background:#1b1b20;border-bottom:2px solid rgba(255,255,255,.07)}
+.edits .win .bar img{display:block;width:46px;height:46px;border-radius:12px;flex:none}
+.edits .win .bar .nm{font-weight:800;font-size:34px;line-height:1;letter-spacing:.01em;color:#fff}
+.edits .win .bar .sp{flex:1}
+.edits .win .bar .ex{width:132px;height:42px;border-radius:12px;background:#FBF3E4}
+.edits .win .bar .wd{display:flex;gap:10px;margin-left:8px}
+.edits .win .bar .wd i{display:block;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.28)}
+.edits .win .pn{position:absolute;top:72px;height:318px;background:#19191d}
+.edits .win .media{left:0;width:236px;border-right:2px solid rgba(0,0,0,.5)}
+.edits .win .media .tabs{position:absolute;left:16px;top:16px;display:flex;gap:12px}
+.edits .win .media .tabs i{display:block;width:34px;height:30px;border-radius:9px;background:rgba(255,255,255,.14)}
+.edits .win .media .tabs i:first-child{background:#E3C07B}
+.edits .win .media .grid{position:absolute;left:16px;right:16px;top:62px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.edits .win .th{display:block;position:relative;height:74px;border-radius:10px;overflow:hidden}
+.edits .win .th::after{content:"";position:absolute;right:6px;bottom:6px;width:28px;height:11px;border-radius:5px;background:rgba(0,0,0,.55)}
+.edits .win .th .hd{position:absolute;left:50%;bottom:26px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:rgba(251,243,228,.6)}
+.edits .win .th .sh{position:absolute;left:50%;bottom:-20px;width:64px;height:50px;margin-left:-32px;border-radius:50% 50% 0 0;background:rgba(251,243,228,.42)}
+.edits .win .th .sun{position:absolute;right:14px;top:12px;width:20px;height:20px;border-radius:50%;background:rgba(251,243,228,.7)}
+.edits .win .th .hill{position:absolute;left:-12px;right:-12px;bottom:-26px;height:56px;border-radius:50% 50% 0 0;background:rgba(20,16,14,.5)}
+.edits .win .prev{left:236px;width:388px;background:#0d0d10}
+.edits .win .frm{position:absolute;left:50%;top:14px;width:162px;height:290px;margin-left:-81px;border-radius:16px;overflow:hidden;
+  background:linear-gradient(172deg,#4a3420 0%,#1c1511 62%,#14100E 100%);border:2px solid rgba(255,255,255,.2);box-shadow:0 14px 30px rgba(0,0,0,.6)}
+.edits .win .frm i{position:absolute;display:block}
+.edits .win .frm .fc{left:14px;right:14px;top:18px;height:84px;border-radius:12px;background:linear-gradient(150deg,#F5DDA2,#C9A05A)}
+.edits .win .frm .c1{left:16px;right:16px;top:134px;height:17px;border-radius:9px;background:#FBF3E4}
+.edits .win .frm .c2{left:36px;right:36px;top:160px;height:17px;border-radius:9px;background:#FBF3E4}
+.edits .win .frm .fw{left:50%;bottom:16px;width:66px;height:66px;margin-left:-33px;border-radius:50%;border:4px solid #E3C07B;background:#2b2019;overflow:hidden}
+.edits .win .frm .fw::before{content:"";position:absolute;left:50%;top:10px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:#E3C07B}
+.edits .win .frm .fw::after{content:"";position:absolute;left:50%;top:38px;width:46px;height:40px;margin-left:-23px;border-radius:50% 50% 0 0;background:#E3C07B}
+.edits .win .insp{left:624px;width:236px;border-left:2px solid rgba(0,0,0,.5)}
+.edits .win .sl{position:absolute;left:20px;right:20px;height:44px}
+.edits .win .sl b{position:absolute;left:0;top:0;width:104px;height:11px;border-radius:6px;background:rgba(255,255,255,.3)}
+.edits .win .sl u{position:absolute;left:0;right:0;top:26px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);text-decoration:none}
+.edits .win .sl u::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--v);border-radius:3px;background:#E3C07B}
+.edits .win .sl u::after{content:"";position:absolute;left:var(--v);top:-7px;width:19px;height:19px;margin-left:-9px;border-radius:50%;background:#FBF3E4;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.edits .win .tl{position:absolute;left:0;right:0;top:390px;bottom:0;background:#121214;border-top:2px solid rgba(255,255,255,.08)}
+.edits .win .tl .tb{position:absolute;left:16px;top:8px;display:flex;gap:14px}
+.edits .win .tl .tb i{display:block;width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.3)}
+.edits .win .tl .zm{position:absolute;right:20px;top:18px;width:120px;height:4px;border-radius:2px;background:rgba(255,255,255,.2)}
+.edits .win .tl .zm::after{content:"";position:absolute;left:62%;top:-7px;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.55)}
+.edits .win .tl .rl{position:absolute;left:60px;right:0;top:38px;height:18px;border-bottom:2px solid rgba(255,255,255,.1);
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.3) 0 2px,transparent 2px 40px) left bottom/100% 9px no-repeat}
+.edits .win .tl .lane{position:absolute;left:60px;right:0;height:26px}
+.edits .win .tl .gi{position:absolute;left:18px;width:24px;height:20px;border-radius:7px;background:rgba(255,255,255,.18)}
+.edits .win .tl .cl{position:absolute;top:0;height:26px;border-radius:8px;overflow:hidden}
+.edits .win .tl .cl.tx{background:linear-gradient(180deg,#F0D49A,#D3A85F)}
+.edits .win .tl .cl.tx::after{content:"";position:absolute;left:12px;right:46%;top:10px;height:6px;border-radius:3px;background:rgba(42,33,28,.55)}
+.edits .win .tl .cl.vd::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.34) 0 2px,transparent 2px 46px)}
+.edits .win .tl .au{position:absolute;left:0;right:0;top:0;height:26px;border-radius:8px;background:rgba(227,192,123,.14)}
+.edits .win .tl .au svg{position:absolute;left:0;top:0;width:100%;height:26px}
+.edits .win .tl .ph{position:absolute;left:432px;top:36px;bottom:0;width:4px;margin-left:-2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.edits .win .tl .ph::before{content:"";position:absolute;left:50%;top:-4px;width:20px;height:22px;margin-left:-10px;border-radius:6px 6px 10px 10px;background:#fff}
+.edits .no{position:absolute;left:0;top:0;width:1080px;height:1350px;pointer-events:none;filter:drop-shadow(0 16px 22px rgba(0,0,0,.55))}
+.edits .bubble{position:absolute;left:80px;top:940px;width:860px;padding:44px 54px 50px;border-radius:60px 60px 60px 18px;
   background:linear-gradient(160deg,#F5DDA2 0%,#E3C07B 55%,#D3A85F 100%);color:#2A211C;
-  font-weight:800;font-size:70px;line-height:1.14;letter-spacing:-.01em;
+  font-weight:800;font-size:60px;line-height:1.14;letter-spacing:-.01em;
   box-shadow:0 34px 60px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.55)}
-.edits .bubble b{display:block;margin-bottom:18px;font-weight:800;font-size:30px;letter-spacing:.14em;color:rgba(42,33,28,.62)}
 .edits .bubble .tail{position:absolute;right:92px;bottom:-40px;width:64px;height:60px;
   background:#D3A85F;clip-path:polygon(0 0,100% 0,18% 100%)}
 
@@ -217,13 +272,56 @@ const topic = (n, label, h, objHtml, gx, digitCss, size) => ({
     <div class="digit" style="${digitCss || ""}">${n}</div>${objHtml}${LOGO}`
 });
 
+// warm-edits: окно видеоредактора CapCut, нарисованное по смыслу (не скриншот): значок, медиа, кадр, настройки, таймлайн из четырёх дорожек
+function capcutWindow() {
+  const th = (a, b, kind) => `<i class="th" style="background:linear-gradient(155deg,${a},${b})">${
+    kind === "p" ? '<s class="hd"></s><s class="sh"></s>' : '<s class="sun"></s><s class="hill"></s>'}</i>`;
+  const thumbs = [
+    th("#8a6a3e", "#2a1d12", "p"), th("#d6b06a", "#5a4020", "h"),
+    th("#46555d", "#171c1f", "p"), th("#a8582e", "#2b1710", "p"),
+    th("#e3c07b", "#7b5a2a", "h"), th("#62564c", "#1d1916", "p"),
+  ].join("");
+  const sliders = [["62%", 22], ["38%", 80], ["78%", 138], ["50%", 196], ["70%", 254]]
+    .map(([v, y]) => `<div class="sl" style="top:${y}px;--v:${v}"><b></b><u></u></div>`).join("");
+  // волна звука: детерминированные столбики
+  let bars = "";
+  for (let i = 0; i < 100; i++) {
+    const h = 5 + Math.abs(Math.sin(i * 0.61) * Math.cos(i * 0.17)) * 17 + (i % 7 === 3 ? 3 : 0);
+    bars += `<rect x="${(6 + i * 7.9).toFixed(1)}" y="${(13 - h / 2).toFixed(1)}" width="4.4" height="${h.toFixed(1)}" rx="2.2" fill="#F0D49A" fill-opacity=".8"/>`;
+  }
+  const clip = (cls, l, w, bg) => `<i class="cl ${cls}" style="left:${l}px;width:${w}px;${bg ? "background:" + bg : ""}"></i>`;
+  const lane = (y, inner) => `<div class="gi" style="top:${y + 3}px"></div><div class="lane" style="top:${y}px">${inner}</div>`;
+  return `<div class="win">
+    <div class="bar"><img src="obj/capcut-icon.svg" alt=""><span class="nm">CapCut</span><span class="sp"></span><span class="ex"></span><span class="wd"><i></i><i></i><i></i></span></div>
+    <div class="pn media"><div class="tabs"><i></i><i></i><i></i><i></i></div><div class="grid">${thumbs}</div></div>
+    <div class="pn prev"><div class="frm"><i class="fc"></i><i class="c1"></i><i class="c2"></i><i class="fw"></i></div></div>
+    <div class="pn insp">${sliders}</div>
+    <div class="tl">
+      <div class="tb"><i></i><i></i><i></i><i></i><i></i></div><div class="zm"></div>
+      <div class="rl"></div>
+      ${lane(58, clip("tx", 36, 196) + clip("tx", 256, 168) + clip("tx", 470, 178) + clip("tx", 676, 110))}
+      ${lane(90, clip("vd", 0, 200, "linear-gradient(90deg,#8a6a3e,#4a3420)") + clip("vd", 204, 214, "linear-gradient(90deg,#46555d,#232b30)") + clip("vd", 422, 150, "linear-gradient(90deg,#a8582e,#5a2f18)") + clip("vd", 576, 224, "linear-gradient(90deg,#d6b06a,#7b5a2a)"))}
+      ${lane(122, clip("vd", 150, 190, "linear-gradient(90deg,#FBF3E4,#D9C39A)") + clip("vd", 440, 170, "linear-gradient(90deg,#F0D49A,#C9A05A)"))}
+      ${lane(154, `<div class="au"><svg viewBox="0 0 800 26" preserveAspectRatio="none">${bars}</svg></div>`)}
+      <div class="ph"></div>
+    </div>
+  </div>`;
+}
+// красный крест поверх окна: толстые диагонали со скруглёнными концами, красный как точка LIVE
+const redCross = () => `<svg class="no" viewBox="0 0 1080 1350" xmlns="http://www.w3.org/2000/svg" fill="none" stroke-linecap="round">
+    <path d="M250 472 L830 872 M830 472 L250 872" stroke="#8E2412" stroke-width="52"/>
+    <path d="M250 472 L830 872 M830 472 L250 872" stroke="#E5472C" stroke-width="40"/>
+    <path d="M250 472 L830 872 M830 472 L250 872" stroke="#FF8A6B" stroke-opacity=".55" stroke-width="7" transform="translate(-4 -6)"/>
+  </svg>`;
+
 const cards = {
   // ---------- готовые карточки, правки 09.10.2026 ----------
   "warm-edits": {
+    // 14:00: окно CapCut перечёркнуто красным крестом, снизу золотой пузырь «правил словами» (09.10.2026, адрес ?v=1009c)
     cls: "edits", gx: "82%", gy: "12%",
-    html: `${lab("ПРАВИШЬ МОНТАЖ СЛОВАМИ")}${head("Монтажку<br>не открывал", 88)}
-      ${glow(560, 700, 640, 640, .45)}
-      ${stand("X:lg-i-botchat-x3.png", { cx: 790, foot: 1242, vw: 370 })}
+    html: `${lab("ПРАВИШЬ МОНТАЖ СЛОВАМИ")}${head("CapCut<br>не открывал", 88)}
+      ${glow(200, 400, 700, 700, .4)}
+      ${capcutWindow()}${redCross()}
       <div class="bubble">лицо в окошке внизу, субтитры крупнее<div class="tail"></div></div>${LOGO}`
   },
   "warm-cases": {
