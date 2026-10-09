@@ -430,7 +430,11 @@ test("ссылка весь период набора; прогрев тольк
   assert.equal(g.status, 200, g.text);
   assert.deepEqual(g.json.items.map((x: any) => [x.name, x.role, x.size]), [["Воркшоп Вайб-продакшен (общий чат)", "admin", 487], ["Архив эфиров", "owner", 52]]);
   assert.equal(g.text.includes("77015556677"), false, "участников наружу не отдаём");
-  // офферы после эфира
+  // офферы после эфира: ссылки и тренинг уходят в своё время (оффер следом, а не одной пачкой с ними)
+  at(12, 20, 15, 5);
+  await waTick();
+  at(12, 20, 58, 5);
+  await waTick();
   at(12, 21, 20, 5);
   evo.calls = [];
   await waTick();

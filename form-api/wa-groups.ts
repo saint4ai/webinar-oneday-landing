@@ -3,7 +3,8 @@
  *
  * Что делает модуль (подробно в docs/plans/wa-communities-plan.md и docs/tasks/wa_groups.md):
  *  - в 20:00 накануне эфира D создаёт сообщество эфира (запасной тип: обычная группа), сразу ставит настройки:
- *    писать только админам, добавлять участников только админам, вступление по заявке; берёт ссылку-приглашение,
+ *    писать только админам, добавлять участников только админам, вступление по заявке, менять название, описание и аватарку
+ *    только админам (шаг lock, у уже созданных сообществ без него выполняется сам на ближайшем проходе); берёт ссылку-приглашение,
  *    ставит аватарку, шлёт приветствие во вкладку объявлений;
  *  - ссылка на сайте (/api/whatsapp-link) ведёт в сообщество того дня, на который сейчас записывает бот
  *    (assignStreamDay): переключение в 20:40, на границе окна записи на идущий эфир;
@@ -17,6 +18,10 @@
  *    вручную (/wa_send) её можно отправить ещё раз;
  *  - ночь по Алматы: по расписанию шлётся только то, что запланировано с 09:00 до 23:45; создание по догонялке и приветствие только с 09:00
  *    до 23:00 (ночное откладывается до 09:00); тревога о потере подключения с 23:00 до 09:00 не шлётся, утром одна сводная;
+ *  - очередь отправки (docs/tasks/wa_send_pacing.md): сообщения серии в одно сообщество уходят по одному с промежутком pacing.minGapMinutes
+ *    (по умолчанию 4 минуты от реальной отправки, восстанавливается из журнала); отставшие сообщения идут по очереди, окно досылки до 45 минут
+ *    от планового времени, дольше пропуск с записью skip и тревогой; эфирная ссылка в очереди идёт первой, более ранние дневные пропускаются;
+ *    /wa_send вручную промежутком не ограничен;
  *  - заявки: перед каждым пакетом считается заполнение (замер плюс одобренные после него), у лимита не одобряем и сразу открываем следующее;
  *  - ИИ-ассистент в личке номера (wa-assistant.ts, docs/tasks/wa_assistant.md): по умолчанию выключен, включается в пульте или /wa_ai on;
  *    вебхук Evolution и ответы идут через ту же очередь запросов, паузу модуля и проверку подключения;
@@ -93,7 +98,11 @@ export type WaSeries = {
   overflowAt: { community: number; group: number };
   memberCheckMinutes: number;
   captionLimit: number;
-  pacing: { betweenSendsMs: Range; betweenStepsMs: Range };
+  /**
+   * betweenSendsMs: пауза между отправками в разные сообщества; betweenStepsMs: между шагами одного сообщения;
+   * minGapMinutes: минимальный промежуток между сообщениями серии в одно сообщество (по умолчанию 4, см. очередь отправки).
+   */
+  pacing: { betweenSendsMs: Range; betweenStepsMs: Range; minGapMinutes?: number };
   retry: { backoffSec: number[]; pauseAfter: number };
   /**
    * servingSec: интервал опроса заявок у сообщества, на которое сейчас ведёт ссылка; otherSec: у остальных.
@@ -148,6 +157,9 @@ export function validateWaSeries(raw: unknown): WaSeries {
   if (!isObj(pc)) throw new Error("wa-series: нет pacing");
   range(pc.betweenSendsMs, "pacing.betweenSendsMs");
   range(pc.betweenStepsMs, "pacing.betweenStepsMs");
+  if (pc.minGapMinutes !== undefined && (typeof pc.minGapMinutes !== "number" || !Number.isFinite(pc.minGapMinutes) || pc.minGapMinutes < 0 || pc.minGapMinutes > 30)) {
+    throw new Error("wa-series: pacing.minGapMinutes число от 0 до 30");
+  }
   const rt = raw.retry;
   if (!isObj(rt) || !Array.isArray(rt.backoffSec) || !rt.backoffSec.length || typeof rt.pauseAfter !== "number" || rt.pauseAfter < 1) throw new Error("wa-series: retry { backoffSec: [..], pauseAfter }");
   const jp = raw.joinPolling;
@@ -192,7 +204,7 @@ export function validateWaSeries(raw: unknown): WaSeries {
 
 // ───────────────────────── состояние ─────────────────────────
 
-export type Step = "announce" | "addMode" | "approval" | "link" | "avatar" | "welcome";
+export type Step = "announce" | "addMode" | "approval" | "lock" | "link" | "avatar" | "welcome";
 
 export type Target = {
   /** `${день}#${номер}`; номер 2 и дальше у сообществ-переполнений. */
@@ -211,6 +223,8 @@ export type Target = {
   done: Partial<Record<Step, boolean>>;
   tries: Partial<Record<Step, number>>;
   avatarAt: number;
+  /** Когда последний раз пробовали шаг lock (повтор не чаще раза в 5 минут, как у аватарки). */
+  lockAt?: number;
   members?: number;
   membersAt?: number;
   /** Откуда сообщество: ежедневный режим (по умолчанию) или живой эфир. Живой эфир ссылкой в ежедневном режиме не раздаётся. */
@@ -322,6 +336,15 @@ type Rt = {
   approvedSince: Map<string, number>;
   /** Сообщения, пропущенные из-за ночного времени: пишем в журнал по одному разу. */
   nightSkipped: Set<string>;
+  /**
+   * Очередь отправки (docs/tasks/wa_send_pacing.md). lastSeries: цель (сообщество) -> когда реально ушла основная часть последнего
+   * сообщения серии (из журнала при рестарте). qmark: решение по опоздавшему сообщению при первом взгляде, ключ «сообщение|день|цель»:
+   * queued (идёт в очереди, окно досылки продлено) или lost (одиночное опоздание сильнее grace, не досылается). skipLog: «причина|ключ»
+   * пропусков из-за отставания и эфирной ссылки, чтобы запись и тревога были один раз.
+   */
+  lastSeries: Map<string, number>;
+  qmark: Map<string, "queued" | "lost">;
+  skipLog: Set<string>;
   /** С какого момента нет подключения к WhatsApp (0, если оно есть): для утренней сводной тревоги. */
   downSince: number;
   /** Заявки, по которым уже писали строку «request»: ключ «сообщество|jid». */
@@ -477,6 +500,9 @@ export function initWaGroups(opts: InitOpts = {}): void {
     unknown: new Set(),
     approvedSince: new Map(),
     nightSkipped: new Set(),
+    lastSeries: new Map(),
+    qmark: new Map(),
+    skipLog: new Set(),
     downSince: 0,
     seenReq: new Set(),
     approved: new Set(),
@@ -505,6 +531,7 @@ export function initWaGroups(opts: InitOpts = {}): void {
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
   for (const row of readJsonl<any>(fJournal(r))) {
+    restoreQueueRow(r, row);
     if (row?.ev !== "send" || !row.msg || !row.day || !row.target) continue;
     const key = sentKey(row.msg, row.part || "main", row.day, row.target);
     // Неясный исход (unknown) тоже считается отправленным: после рестарта автоматически не повторяем. Более поздняя удачная отправка (вручную) его снимает.
@@ -1228,7 +1255,7 @@ const welcomeText = (r: Rt, t: Target, now: number) => retime(r, t.start, r.cfg.
  * Критичные шаги (настройки, ссылка, приветствие) при неудаче считаются ошибкой подряд, аватарка нет: она косметика.
  */
 async function setupSteps(r: Rt, t: Target): Promise<boolean> {
-  const order: Step[] = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "link", "avatar", "welcome"];
+  const order: Step[] = t.kind === "community" ? ["announce", "addMode", "approval", "lock", "link", "avatar", "welcome"] : ["announce", "lock", "link", "avatar", "welcome"];
   let first = true;
   for (const s of order) {
     if (t.done[s]) continue;
@@ -1236,6 +1263,8 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
+    // lock (менять название, описание и аватарку может только админ): косметика безопасности, как аватарка не ломает остальные шаги и не делает цель неготовой.
+    if (s === "lock" && ((t.tries.lock || 0) >= 3 || now - (t.lockAt || 0) < 5 * MIN)) continue;
     // Приветствие ночью не шлём: оно уйдёт на ближайшем тике после 09:00 по Алматы.
     if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
@@ -1251,6 +1280,16 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
     } else if (s === "approval") {
       const x = await evo.communityJoinApproval(t.jid, "on");
       err = x.ok ? "" : x.error;
+    } else if (s === "lock") {
+      t.lockAt = now;
+      // Сообщество: само сообщество и его вкладка объявлений, обычная группа: она сама. Повтор безвреден, поэтому при сбое второго вызова шаг повторяется целиком.
+      const a = t.kind === "community" ? await evo.communitySetting(t.jid, "locked") : await evo.groupSetting(t.jid, "locked");
+      let b: typeof a | null = null;
+      if (t.kind === "community" && t.sendJid && t.sendJid !== t.jid) {
+        await pause(r, r.cfg.pacing.betweenStepsMs);
+        b = await evo.groupSetting(t.sendJid, "locked");
+      }
+      err = !a.ok ? a.error : b && !b.ok ? b.error : "";
     } else if (s === "link") {
       const x = t.kind === "community" ? await evo.communityInvite(t.jid) : await evo.groupInvite(t.jid);
       if (!x.ok) err = x.error;
@@ -1274,13 +1313,18 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
       t.done[s] = true;
       save(r);
       journal(r, { ev: "step", target: t.id, step: s });
-      if (s !== "avatar") noteOk(r);
+      if (s !== "avatar" && s !== "lock") noteOk(r);
       continue;
     }
     save(r);
     if (s === "avatar") {
       console.warn("[wa] аватарка %s не поставилась (%d из 3): %s", t.id, t.tries.avatar, err);
       if ((t.tries.avatar || 0) >= 3) await alarm(r, `Не удалось поставить аватарку сообществу «${t.name}»: ${err}. Сообщество работает без неё. Проверь, что wa-avatar.jpg выложен на сайт.`);
+      continue;
+    }
+    if (s === "lock") {
+      console.warn("[wa] закрытие правок %s не сделано (%d из 3): %s", t.id, t.tries.lock, err);
+      if ((t.tries.lock || 0) >= 3) await alarm(r, `Не удалось закрыть «${t.name}» от правок участниками (название, описание, аватарка): ${err}. Сообщество работает, проверь его настройки в WhatsApp вручную.`);
       continue;
     }
     await noteFail(r, `${t.id}: шаг ${s}`, err);
@@ -1324,6 +1368,9 @@ async function sendPart(r: Rt, t: Target, msgId: string, part: string, run: () =
   if (r.sent.has(key) && !(manual && r.unknown.has(key))) return { ok: true };
   const x = await run();
   const unknown = !x.ok && unclearSend(x);
+  // Промежуток между сообщениями серии считается от реальной отправки основной части (и неясной: она могла уйти). Опрос, отдельный
+  // текст и приветствие в счёт не идут. Ручная отправка тоже настоящая: после неё плановое сообщение выдерживает промежуток.
+  if ((x.ok || unknown) && part === "main" && msgId !== "welcome") r.lastSeries.set(t.id, r.deps.now());
   journal(r, {
     ev: "send",
     msg: msgId,
@@ -1409,39 +1456,190 @@ function noteNightSkip(r: Rt, t: Target, msg: WaMsg, plan: number) {
   console.warn("[wa] «%s» в %s пропущено: плановое время %s вне окна 09:00 до 23:45", msg.id, t.id, hhmmOf(plan));
 }
 
-/** Сообщения, которые сейчас в окне отправки: [плановое время дня эфира, плюс grace], не раньше создания цели. */
-export function dueSends(r: Rt, now: number): Due[] {
-  const out: Due[] = [];
+// ───────────────────────── очередь отправки ─────────────────────────
+// docs/tasks/wa_send_pacing.md. Сообщения серии в одно сообщество уходят по одному, не чаще раза в minGapMinutes (по умолчанию 4):
+// если модуль отстал (рестарт, номер был отключён, ошибки, пауза) и созрело несколько сообщений, они не летят пачкой, а идут по очереди.
+// Очередь живёт между тиками: за один тик в сообщество уходит одно сообщение, следующее на тике после промежутка (тик раз в 30 секунд).
+// Между разными сообществами промежуток считается отдельно, паузы между ними прежние (betweenSendsMs).
+
+/** Эфирные ссылки: такое сообщение в очереди идёт первым, а более ранние неушедшие сообщения дня до него пропускаются. */
+export const LIVE_LINK_IDS: ReadonlySet<string> = new Set(["t-minus-10", "live-now", "live-10", "last-link", "replay-link"]);
+/** Позже этого после планового времени сообщение не досылается никогда: пропуск с записью в журнал и тревогой владельцам. */
+export const MAX_LATE_MIN = 45;
+export const DEFAULT_MIN_GAP_MIN = 4;
+
+const minGapMs = (r: Rt) => (r.cfg.pacing.minGapMinutes ?? DEFAULT_MIN_GAP_MIN) * MIN;
+const qkey = (m: WaMsg, t: Target) => `${m.id}|${t.day}|${t.id}`;
+
+type QItem = Due & { key: string; late: number; cont: boolean; idx: number };
+export type QueueReason = "behind" | "gap" | "order";
+export type Waiting = Due & { at: number; reason: QueueReason };
+export type QueuePlan = {
+  /** Уйдут на этом тике: у сообщества одно сообщение (или дослать части уже начатого), в порядке планового времени. */
+  go: Due[];
+  /** Ждут своей очереди (созрели, но уйдут позже), в порядке ожидаемой отправки. at: когда ожидаем. */
+  wait: Waiting[];
+  /** Просрочены больше чем на MAX_LATE_MIN (predicted: до их очереди дело дойдёт позже срока): пропускаются. */
+  lag: Array<Due & { key: string; late: number; predicted: boolean }>;
+  /** Вытеснены эфирной ссылкой, которая в очереди. */
+  live: Array<Due & { key: string; by: string }>;
+  /** Плановое время вне окна 09:00 до 23:45. */
+  night: Due[];
+  /** Одиночное опоздание сильнее grace: не досылается (как раньше). */
+  lost: Array<Due & { key: string }>;
+  /** Кого записать в журнал как queued (один раз на сообщение). */
+  queued: Array<Due & { key: string; reason: QueueReason; at: number; late: number }>;
+};
+
+/**
+ * Разложить созревшие сообщения по очереди. Ничего не пишет и не меняет (пульт и /wa тоже ей пользуются), записи делает applyQueue.
+ *
+ * Окно досылки: сообщение, опоздавшее не больше чем на graceMinutes, уходит как раньше. Опоздавшее сильнее, но не больше чем на
+ * MAX_LATE_MIN, уходит, только если оно в очереди: при первом взгляде созрело несколько сообщений сразу (или оно уже помечено queued).
+ * Ждущее в очереди окно не теряет, потолок один: 45 минут от планового времени. Одиночное опоздание сильнее grace пропадает без следа, как раньше
+ * (иначе устаревшее сообщение воскресало бы, когда подойдёт следующее).
+ */
+function planQueue(r: Rt, now: number): QueuePlan {
+  const q: QueuePlan = { go: [], wait: [], lag: [], live: [], night: [], lost: [], queued: [] };
+  const gap = minGapMs(r);
+  const grace = r.cfg.graceMinutes * MIN;
+  const maxLate = MAX_LATE_MIN * MIN;
   for (const t of r.state.targets) {
     if (!isReady(t)) continue;
-    for (const msg of r.cfg.messages) {
+    const items: QItem[] = [];
+    for (let idx = 0; idx < r.cfg.messages.length; idx++) {
+      const msg = r.cfg.messages[idx];
       if (msg.enabled === false) continue;
       // Конец рассылки у каждого сообщения свой: «+1 день» может уйти в сообщество вчерашнего эфира, пока не кончился следующий день.
       if (now >= sendUntilOf(r, t.day, msg)) continue;
       // Сообщения «+1 день» написаны под ежедневный эфир с повтором в 20:00; в сообщество разового живого эфира они не идут.
       if (msg.dayOffset && t.source === "event") continue;
       const plan = planOf(r, t, msg);
-      if (now < plan || now > plan + r.cfg.graceMinutes * MIN) continue;
+      if (now < plan) continue;
       // Прошлые сообщения новому сообществу не досылаем.
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
+      const key = qkey(msg, t);
+      // Уже пропущенное (отставание, эфирная ссылка) или признанное потерянным второй раз не разбираем.
+      if (r.skipLog.has(`lag|${key}`) || r.skipLog.has(`live|${key}`) || r.qmark.get(key) === "lost") continue;
+      const late = now - plan;
       // Ночью (плановое время раньше 09:00 или позже 23:45 по Алматы) не шлём: пропуск остаётся в журнале, тревоги нет.
       if (!sendableTime(plan)) {
-        noteNightSkip(r, t, msg, plan);
+        if (late <= grace) q.night.push({ t, msg, plan });
         continue;
       }
-      out.push({ t, msg, plan });
+      if (late > maxLate) {
+        q.lag.push({ t, msg, plan, key, late, predicted: false });
+        continue;
+      }
+      const cont = partsOf(r, msg).some((p) => r.sent.has(sentKey(msg.id, p, t.day, t.id)));
+      items.push({ t, msg, plan, key, late, cont, idx });
+    }
+    items.sort((a, b) => a.plan - b.plan || a.idx - b.idx);
+    // Эфирная ссылка в очереди идёт первой, а всё более раннее по плану и неушедшее пропускается: устаревший дневной прогрев в эфирное окно
+    // не шлём. Если в очереди несколько ссылок, первой идёт самая поздняя (свежая): «через 10 минут начинаем» через двадцать минут не нужно.
+    let li = -1;
+    items.forEach((x, i) => {
+      if (LIVE_LINK_IDS.has(x.msg.id)) li = i;
+    });
+    if (li > 0) for (const x of items.slice(0, li)) q.live.push({ t, msg: x.msg, plan: x.plan, key: x.key, by: items[li].msg.id });
+    const queue = li > 0 ? items.slice(li) : items;
+    const pile = queue.length;
+    const eligible: QItem[] = [];
+    for (const x of queue) {
+      if (x.late <= grace || r.qmark.get(x.key) === "queued" || pile >= 2) eligible.push(x);
+      else q.lost.push({ t, msg: x.msg, plan: x.plan, key: x.key });
+    }
+    // Дослать опрос или текст уже начатого сообщения можно сразу: промежуток действует на сообщения, не на их части.
+    const cont = eligible.filter((x) => x.cont);
+    const rest = eligible.filter((x) => !x.cont);
+    for (const x of cont) q.go.push({ t, msg: x.msg, plan: x.plan });
+    const last = r.lastSeries.get(t.id);
+    // s: когда по порядку можно отправить следующее сообщение этого сообщества.
+    let s = last === undefined ? now : Math.max(now, last + gap);
+    let firstRest = true;
+    for (const x of rest) {
+      // Очередь дойдёт до него позже срока: пропускаем сразу, вместе с остальными просроченными, а не тянем в очереди.
+      if (s > x.plan + maxLate) {
+        q.lag.push({ t, msg: x.msg, plan: x.plan, key: x.key, late: s - x.plan, predicted: true });
+        continue;
+      }
+      if (s <= now && !cont.length) {
+        q.go.push({ t, msg: x.msg, plan: x.plan });
+        if (x.late > grace) q.queued.push({ t, msg: x.msg, plan: x.plan, key: x.key, reason: "behind", at: now, late: x.late });
+        s = now + gap;
+      } else {
+        const reason: QueueReason = firstRest && !cont.length ? "gap" : "order";
+        const at = Math.max(s, now);
+        q.wait.push({ t, msg: x.msg, plan: x.plan, at, reason });
+        q.queued.push({ t, msg: x.msg, plan: x.plan, key: x.key, reason, at, late: x.late });
+        s = at + gap;
+      }
+      firstRest = false;
     }
   }
-  return out.sort((a, b) => a.plan - b.plan || a.t.day.localeCompare(b.t.day) || a.t.seq - b.t.seq);
+  q.go.sort((a, b) => a.plan - b.plan || a.t.day.localeCompare(b.t.day) || a.t.seq - b.t.seq);
+  q.wait.sort((a, b) => a.at - b.at || a.plan - b.plan);
+  return q;
+}
+
+/** Сообщения, которые уйдут на этом тике (у сообщества одно за раз, с учётом промежутка и очереди). Ничего не пишет. */
+export function dueSends(r: Rt, now: number): Due[] {
+  return planQueue(r, now).go;
+}
+
+/** Из журнала при рестарте: когда ушло последнее сообщение серии (промежуток), что стояло в очереди и что уже пропущено. */
+function restoreQueueRow(r: Rt, row: any) {
+  if (!row || typeof row !== "object" || !row.msg || !row.day || !row.target) return;
+  const key = `${row.msg}|${row.day}|${row.target}`;
+  if (row.ev === "send") {
+    // Только основная часть настоящего сообщения серии: опрос, отдельный текст и приветствие в счёт не идут.
+    if ((row.ok || row.unknown === true) && (row.part || "main") === "main" && row.msg !== "welcome") {
+      const ms = Date.parse(String(row.ts || ""));
+      if (Number.isFinite(ms) && ms > (r.lastSeries.get(row.target) ?? 0)) r.lastSeries.set(row.target, ms);
+    }
+  } else if (row.ev === "queued") r.qmark.set(key, "queued");
+  else if (row.ev === "skip" && (row.reason === "lag" || row.reason === "live")) r.skipLog.add(`${row.reason}|${key}`);
+}
+
+/** Записать решения очереди: ночные пропуски, пропуск из-за отставания (журнал и одна тревога), эфирная ссылка, queued. */
+async function applyQueue(r: Rt, q: QueuePlan) {
+  for (const d of q.night) noteNightSkip(r, d.t, d.msg, d.plan);
+  for (const d of q.lost) r.qmark.set(d.key, "lost");
+  for (const d of q.live) {
+    r.skipLog.add(`live|${d.key}`);
+    journal(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "live", plan: hhmmOf(d.plan), by: d.by });
+    console.warn("[wa] «%s» в %s пропущено: в очереди эфирная ссылка «%s»", d.msg.id, d.t.id, d.by);
+  }
+  for (const d of q.queued) {
+    if (r.qmark.get(d.key) === "queued") continue;
+    r.qmark.set(d.key, "queued");
+    journal(r, { ev: "queued", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: d.reason, plan: hhmmOf(d.plan), at: hhmmOf(d.at), lateMin: Math.round(d.late / MIN) });
+  }
+  if (!q.lag.length) return;
+  const byTarget = new Map<string, { name: string; ids: string[] }>();
+  for (const d of q.lag) {
+    r.skipLog.add(`lag|${d.key}`);
+    journal(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "lag", plan: hhmmOf(d.plan), lateMin: Math.round(d.late / MIN), ...(d.predicted ? { predicted: true } : {}) });
+    const g = byTarget.get(d.t.id) ?? { name: d.t.name, ids: [] };
+    g.ids.push(d.msg.id);
+    byTarget.set(d.t.id, g);
+  }
+  // Длинный список в Telegram не нужен: первые шесть, остальные числом (все id есть в журнале).
+  const idsText = (ids: string[]) => (ids.length > 6 ? `${ids.slice(0, 6).join(", ")} и ещё ${ids.length - 6}` : ids.join(", "));
+  const list = [...byTarget.values()].map((g) => `${idsText(g.ids)} в «${g.name}»`).join("; ");
+  // Одна тревога на всю пачку пропусков этого тика.
+  await alarm(r, `Пропущено из-за отставания: ${list}. Сообщения просрочены больше чем на ${MAX_LATE_MIN} минут, слать их уже поздно.`);
 }
 
 async function runSends(r: Rt, now: number): Promise<number> {
+  const q = planQueue(r, now);
+  await applyQueue(r, q);
   let sent = 0;
   let first = true;
-  for (const d of dueSends(r, now)) {
+  for (const d of q.go) {
     if (r.state.paused || r.deps.now() < r.state.retryAt) break;
-    // Между отправками пауза 4 до 9 секунд со случайным разбросом.
+    // Между отправками в разные сообщества пауза 4 до 9 секунд со случайным разбросом.
     if (!first) await pause(r, r.cfg.pacing.betweenSendsMs);
     first = false;
     if (!(await sendMessageTo(r, d.t, d.msg, false))) break;
@@ -1565,7 +1763,7 @@ export async function waTick(): Promise<TickInfo> {
       for (const t of r.state.targets) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (r.deps.now() >= closeAtOf(r, t.day)) continue;
-        const incomplete = !isReady(t) || (!t.done.welcome && (t.tries.welcome || 0) < 3) || (!t.done.avatar && (t.tries.avatar || 0) < 3);
+        const incomplete = !isReady(t) || (!t.done.welcome && (t.tries.welcome || 0) < 3) || (!t.done.avatar && (t.tries.avatar || 0) < 3) || (!t.done.lock && (t.tries.lock || 0) < 3);
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" as const };
@@ -1779,13 +1977,21 @@ const inText = (ms: number) => {
   return `через ${Math.floor(m / 60)} ч ${m % 60} мин`;
 };
 
-export type NextMsg = { plan: number; id: string; topic: string; day: string };
+/** due и queued есть, когда сообщение стоит в очереди: due это ожидаемый момент отправки, queued сколько сообщений ждут (вместе с этим). */
+export type NextMsg = { plan: number; id: string; topic: string; day: string; due?: number; queued?: number };
 
 /**
  * Ближайшее сообщение расписания по сообществам, которые есть или будут. Ежедневный режим: ближайшие дни эфира, где уже есть
  * сообщество или создание включено. Живой эфир: только день эфира, со сдвигом по времени старта.
  */
 function nextMessage(r: Rt, now: number): NextMsg | null {
+  // Очередь отправки: если какое-то созревшее сообщение ждёт промежутка или своей очереди, ближайшее это оно («следующее через N мин, в очереди K»).
+  const qp = planQueue(r, now);
+  if (qp.wait.length) {
+    const all = [...qp.go.map((d) => ({ ...d, at: now })), ...qp.wait].sort((a, b) => a.at - b.at || a.plan - b.plan);
+    const h = all[0];
+    return { plan: h.plan, id: h.msg.id, topic: h.msg.topic || h.msg.id, day: h.t.day, due: h.at, queued: all.length };
+  }
   let best: NextMsg | null = null;
   const consider = (day: string, start?: string, event = false) => {
     for (const m of r.cfg.messages) {
@@ -1813,9 +2019,12 @@ function nextMessage(r: Rt, now: number): NextMsg | null {
   return best;
 }
 
+/** «через N мин» и, если сообщение в очереди, «, в очереди K». */
+const nextInText = (b: NextMsg, now: number) => inText((b.due ?? b.plan) - now) + (b.queued ? `, в очереди ${b.queued}` : "");
+
 function nextMessageText(r: Rt, now: number): string {
   const b = nextMessage(r, now);
-  return b ? `${hhmmOf(b.plan)} ${b.id} (эфир ${ddmm(b.day)}), ${inText(b.plan - now)}` : "нет";
+  return b ? `${hhmmOf(b.plan)} ${b.id} (эфир ${ddmm(b.day)}), ${nextInText(b, now)}` : "нет";
 }
 
 function targetLine(r: Rt, label: string, day: string, now: number): string {
@@ -2736,7 +2945,7 @@ function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
 
 export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
 
-const JOURNAL_EVENTS = new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
+const JOURNAL_EVENTS = new Set(["create", "send", "skip", "queued", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
 const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 const clip = (s: unknown, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -2771,7 +2980,15 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
           break;
         }
         case "skip":
-          text = `Пропущено «${topicOf(x.msg)}» в ${nameOfTarget(x.target)}: плановое время ${x.plan} вне окна от 09:00 до 23:45`;
+          if (x.reason === "lag") {
+            kind = "error";
+            text = `Пропущено «${topicOf(x.msg)}» в ${nameOfTarget(x.target)}: отставание от графика, просрочено больше чем на ${MAX_LATE_MIN} минут (плановое время ${x.plan})`;
+          } else if (x.reason === "live") {
+            text = `Пропущено «${topicOf(x.msg)}» в ${nameOfTarget(x.target)}: в очереди ссылка на эфир «${topicOf(x.by)}», она идёт первой (плановое время ${x.plan})`;
+          } else text = `Пропущено «${topicOf(x.msg)}» в ${nameOfTarget(x.target)}: плановое время ${x.plan} вне окна от 09:00 до 23:45`;
+          break;
+        case "queued":
+          text = `В очереди «${topicOf(x.msg)}» в ${nameOfTarget(x.target)}: ${x.reason === "gap" ? `ждёт промежутка после предыдущего сообщения` : x.reason === "order" ? "впереди другие сообщения" : `опоздало на ${x.lateMin} мин, идёт по очереди`}, уйдёт около ${x.at}`;
           break;
         case "fail":
           kind = "error";
@@ -3037,7 +3254,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
     },
     current,
     next,
-    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm(nm.day), inText: inText(nm.plan - now) } : null,
+    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm(nm.day), inText: nextInText(nm, now), queued: nm.queued ?? 0 } : null,
     sendTo: targets.map((t) => t.name),
     series,
     assistant: aiPanel(now),

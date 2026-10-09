@@ -9521,6 +9521,9 @@ function validateWaSeries(raw) {
   if (!isObj2(pc)) throw new Error("wa-series: \u043D\u0435\u0442 pacing");
   range(pc.betweenSendsMs, "pacing.betweenSendsMs");
   range(pc.betweenStepsMs, "pacing.betweenStepsMs");
+  if (pc.minGapMinutes !== void 0 && (typeof pc.minGapMinutes !== "number" || !Number.isFinite(pc.minGapMinutes) || pc.minGapMinutes < 0 || pc.minGapMinutes > 30)) {
+    throw new Error("wa-series: pacing.minGapMinutes \u0447\u0438\u0441\u043B\u043E \u043E\u0442 0 \u0434\u043E 30");
+  }
   const rt2 = raw.retry;
   if (!isObj2(rt2) || !Array.isArray(rt2.backoffSec) || !rt2.backoffSec.length || typeof rt2.pauseAfter !== "number" || rt2.pauseAfter < 1) throw new Error("wa-series: retry { backoffSec: [..], pauseAfter }");
   const jp = raw.joinPolling;
@@ -9696,6 +9699,9 @@ function initWaGroups(opts = {}) {
     unknown: /* @__PURE__ */ new Set(),
     approvedSince: /* @__PURE__ */ new Map(),
     nightSkipped: /* @__PURE__ */ new Set(),
+    lastSeries: /* @__PURE__ */ new Map(),
+    qmark: /* @__PURE__ */ new Map(),
+    skipLog: /* @__PURE__ */ new Set(),
     downSince: 0,
     seenReq: /* @__PURE__ */ new Set(),
     approved: /* @__PURE__ */ new Set(),
@@ -9724,6 +9730,7 @@ function initWaGroups(opts = {}) {
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
   for (const row of readJsonl2(fJournal(r))) {
+    restoreQueueRow(r, row);
     if (row?.ev !== "send" || !row.msg || !row.day || !row.target) continue;
     const key = sentKey(row.msg, row.part || "main", row.day, row.target);
     if (row.ok) {
@@ -10246,7 +10253,7 @@ async function createTarget(r, day, seq, now, opts = {}) {
 }
 var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm4(t.day)));
 async function setupSteps(r, t) {
-  const order = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "link", "avatar", "welcome"];
+  const order = t.kind === "community" ? ["announce", "addMode", "approval", "lock", "link", "avatar", "welcome"] : ["announce", "lock", "link", "avatar", "welcome"];
   let first = true;
   for (const s of order) {
     if (t.done[s]) continue;
@@ -10254,6 +10261,7 @@ async function setupSteps(r, t) {
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN3)) continue;
+    if (s === "lock" && ((t.tries.lock || 0) >= 3 || now - (t.lockAt || 0) < 5 * MIN3)) continue;
     if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
@@ -10268,6 +10276,15 @@ async function setupSteps(r, t) {
     } else if (s === "approval") {
       const x = await communityJoinApproval(t.jid, "on");
       err = x.ok ? "" : x.error;
+    } else if (s === "lock") {
+      t.lockAt = now;
+      const a = t.kind === "community" ? await communitySetting(t.jid, "locked") : await groupSetting(t.jid, "locked");
+      let b = null;
+      if (t.kind === "community" && t.sendJid && t.sendJid !== t.jid) {
+        await pause(r, r.cfg.pacing.betweenStepsMs);
+        b = await groupSetting(t.sendJid, "locked");
+      }
+      err = !a.ok ? a.error : b && !b.ok ? b.error : "";
     } else if (s === "link") {
       const x = t.kind === "community" ? await communityInvite(t.jid) : await groupInvite(t.jid);
       if (!x.ok) err = x.error;
@@ -10291,13 +10308,18 @@ async function setupSteps(r, t) {
       t.done[s] = true;
       save(r);
       journal(r, { ev: "step", target: t.id, step: s });
-      if (s !== "avatar") noteOk(r);
+      if (s !== "avatar" && s !== "lock") noteOk(r);
       continue;
     }
     save(r);
     if (s === "avatar") {
       console.warn("[wa] \u0430\u0432\u0430\u0442\u0430\u0440\u043A\u0430 %s \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B\u0430\u0441\u044C (%d \u0438\u0437 3): %s", t.id, t.tries.avatar, err);
       if ((t.tries.avatar || 0) >= 3) await alarm(r, `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0430\u0432\u0430\u0442\u0430\u0440\u043A\u0443 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0443 \xAB${t.name}\xBB: ${err}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E wa-avatar.jpg \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
+      continue;
+    }
+    if (s === "lock") {
+      console.warn("[wa] \u0437\u0430\u043A\u0440\u044B\u0442\u0438\u0435 \u043F\u0440\u0430\u0432\u043E\u043A %s \u043D\u0435 \u0441\u0434\u0435\u043B\u0430\u043D\u043E (%d \u0438\u0437 3): %s", t.id, t.tries.lock, err);
+      if ((t.tries.lock || 0) >= 3) await alarm(r, `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043A\u0440\u044B\u0442\u044C \xAB${t.name}\xBB \u043E\u0442 \u043F\u0440\u0430\u0432\u043E\u043A \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0430\u043C\u0438 (\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435, \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435, \u0430\u0432\u0430\u0442\u0430\u0440\u043A\u0430): ${err}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0432 WhatsApp \u0432\u0440\u0443\u0447\u043D\u0443\u044E.`);
       continue;
     }
     await noteFail(r, `${t.id}: \u0448\u0430\u0433 ${s}`, err);
@@ -10321,6 +10343,7 @@ async function sendPart(r, t, msgId, part, run, manual, extra = {}) {
   if (r.sent.has(key) && !(manual && r.unknown.has(key))) return { ok: true };
   const x = await run();
   const unknown = !x.ok && unclearSend(x);
+  if ((x.ok || unknown) && part === "main" && msgId !== "welcome") r.lastSeries.set(t.id, r.deps.now());
   journal(r, {
     ev: "send",
     msg: msgId,
@@ -10395,31 +10418,127 @@ function noteNightSkip(r, t, msg, plan) {
   journal(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
   console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F %s \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 09:00 \u0434\u043E 23:45", msg.id, t.id, hhmmOf(plan));
 }
-function dueSends(r, now) {
-  const out = [];
+var LIVE_LINK_IDS = /* @__PURE__ */ new Set(["t-minus-10", "live-now", "live-10", "last-link", "replay-link"]);
+var MAX_LATE_MIN = 45;
+var DEFAULT_MIN_GAP_MIN = 4;
+var minGapMs = (r) => (r.cfg.pacing.minGapMinutes ?? DEFAULT_MIN_GAP_MIN) * MIN3;
+var qkey = (m, t) => `${m.id}|${t.day}|${t.id}`;
+function planQueue(r, now) {
+  const q2 = { go: [], wait: [], lag: [], live: [], night: [], lost: [], queued: [] };
+  const gap = minGapMs(r);
+  const grace = r.cfg.graceMinutes * MIN3;
+  const maxLate = MAX_LATE_MIN * MIN3;
   for (const t of r.state.targets) {
     if (!isReady(t)) continue;
-    for (const msg of r.cfg.messages) {
+    const items = [];
+    for (let idx = 0; idx < r.cfg.messages.length; idx++) {
+      const msg = r.cfg.messages[idx];
       if (msg.enabled === false) continue;
       if (now >= sendUntilOf(r, t.day, msg)) continue;
       if (msg.dayOffset && t.source === "event") continue;
       const plan = planOf(r, t, msg);
-      if (now < plan || now > plan + r.cfg.graceMinutes * MIN3) continue;
+      if (now < plan) continue;
       if (plan < t.createdAt) continue;
       if (isDone(r, msg, t)) continue;
+      const key = qkey(msg, t);
+      if (r.skipLog.has(`lag|${key}`) || r.skipLog.has(`live|${key}`) || r.qmark.get(key) === "lost") continue;
+      const late = now - plan;
       if (!sendableTime(plan)) {
-        noteNightSkip(r, t, msg, plan);
+        if (late <= grace) q2.night.push({ t, msg, plan });
         continue;
       }
-      out.push({ t, msg, plan });
+      if (late > maxLate) {
+        q2.lag.push({ t, msg, plan, key, late, predicted: false });
+        continue;
+      }
+      const cont2 = partsOf(r, msg).some((p) => r.sent.has(sentKey(msg.id, p, t.day, t.id)));
+      items.push({ t, msg, plan, key, late, cont: cont2, idx });
+    }
+    items.sort((a, b) => a.plan - b.plan || a.idx - b.idx);
+    let li = -1;
+    items.forEach((x, i) => {
+      if (LIVE_LINK_IDS.has(x.msg.id)) li = i;
+    });
+    if (li > 0) for (const x of items.slice(0, li)) q2.live.push({ t, msg: x.msg, plan: x.plan, key: x.key, by: items[li].msg.id });
+    const queue = li > 0 ? items.slice(li) : items;
+    const pile = queue.length;
+    const eligible = [];
+    for (const x of queue) {
+      if (x.late <= grace || r.qmark.get(x.key) === "queued" || pile >= 2) eligible.push(x);
+      else q2.lost.push({ t, msg: x.msg, plan: x.plan, key: x.key });
+    }
+    const cont = eligible.filter((x) => x.cont);
+    const rest = eligible.filter((x) => !x.cont);
+    for (const x of cont) q2.go.push({ t, msg: x.msg, plan: x.plan });
+    const last = r.lastSeries.get(t.id);
+    let s = last === void 0 ? now : Math.max(now, last + gap);
+    let firstRest = true;
+    for (const x of rest) {
+      if (s > x.plan + maxLate) {
+        q2.lag.push({ t, msg: x.msg, plan: x.plan, key: x.key, late: s - x.plan, predicted: true });
+        continue;
+      }
+      if (s <= now && !cont.length) {
+        q2.go.push({ t, msg: x.msg, plan: x.plan });
+        if (x.late > grace) q2.queued.push({ t, msg: x.msg, plan: x.plan, key: x.key, reason: "behind", at: now, late: x.late });
+        s = now + gap;
+      } else {
+        const reason = firstRest && !cont.length ? "gap" : "order";
+        const at = Math.max(s, now);
+        q2.wait.push({ t, msg: x.msg, plan: x.plan, at, reason });
+        q2.queued.push({ t, msg: x.msg, plan: x.plan, key: x.key, reason, at, late: x.late });
+        s = at + gap;
+      }
+      firstRest = false;
     }
   }
-  return out.sort((a, b) => a.plan - b.plan || a.t.day.localeCompare(b.t.day) || a.t.seq - b.t.seq);
+  q2.go.sort((a, b) => a.plan - b.plan || a.t.day.localeCompare(b.t.day) || a.t.seq - b.t.seq);
+  q2.wait.sort((a, b) => a.at - b.at || a.plan - b.plan);
+  return q2;
+}
+function restoreQueueRow(r, row) {
+  if (!row || typeof row !== "object" || !row.msg || !row.day || !row.target) return;
+  const key = `${row.msg}|${row.day}|${row.target}`;
+  if (row.ev === "send") {
+    if ((row.ok || row.unknown === true) && (row.part || "main") === "main" && row.msg !== "welcome") {
+      const ms = Date.parse(String(row.ts || ""));
+      if (Number.isFinite(ms) && ms > (r.lastSeries.get(row.target) ?? 0)) r.lastSeries.set(row.target, ms);
+    }
+  } else if (row.ev === "queued") r.qmark.set(key, "queued");
+  else if (row.ev === "skip" && (row.reason === "lag" || row.reason === "live")) r.skipLog.add(`${row.reason}|${key}`);
+}
+async function applyQueue(r, q2) {
+  for (const d of q2.night) noteNightSkip(r, d.t, d.msg, d.plan);
+  for (const d of q2.lost) r.qmark.set(d.key, "lost");
+  for (const d of q2.live) {
+    r.skipLog.add(`live|${d.key}`);
+    journal(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "live", plan: hhmmOf(d.plan), by: d.by });
+    console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u044D\u0444\u0438\u0440\u043D\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430 \xAB%s\xBB", d.msg.id, d.t.id, d.by);
+  }
+  for (const d of q2.queued) {
+    if (r.qmark.get(d.key) === "queued") continue;
+    r.qmark.set(d.key, "queued");
+    journal(r, { ev: "queued", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: d.reason, plan: hhmmOf(d.plan), at: hhmmOf(d.at), lateMin: Math.round(d.late / MIN3) });
+  }
+  if (!q2.lag.length) return;
+  const byTarget = /* @__PURE__ */ new Map();
+  for (const d of q2.lag) {
+    r.skipLog.add(`lag|${d.key}`);
+    journal(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "lag", plan: hhmmOf(d.plan), lateMin: Math.round(d.late / MIN3), ...d.predicted ? { predicted: true } : {} });
+    const g = byTarget.get(d.t.id) ?? { name: d.t.name, ids: [] };
+    g.ids.push(d.msg.id);
+    byTarget.set(d.t.id, g);
+  }
+  const idsText = (ids) => ids.length > 6 ? `${ids.slice(0, 6).join(", ")} \u0438 \u0435\u0449\u0451 ${ids.length - 6}` : ids.join(", ");
+  const list = [...byTarget.values()].map((g) => `${idsText(g.ids)} \u0432 \xAB${g.name}\xBB`).join("; ");
+  await alarm(r, `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \u0438\u0437-\u0437\u0430 \u043E\u0442\u0441\u0442\u0430\u0432\u0430\u043D\u0438\u044F: ${list}. \u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u044B \u0431\u043E\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u043D\u0430 ${MAX_LATE_MIN} \u043C\u0438\u043D\u0443\u0442, \u0441\u043B\u0430\u0442\u044C \u0438\u0445 \u0443\u0436\u0435 \u043F\u043E\u0437\u0434\u043D\u043E.`);
 }
 async function runSends(r, now) {
+  const q2 = planQueue(r, now);
+  await applyQueue(r, q2);
   let sent = 0;
   let first = true;
-  for (const d of dueSends(r, now)) {
+  for (const d of q2.go) {
     if (r.state.paused || r.deps.now() < r.state.retryAt) break;
     if (!first) await pause(r, r.cfg.pacing.betweenSendsMs);
     first = false;
@@ -10520,7 +10639,7 @@ async function waTick() {
       for (const t of r.state.targets) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (r.deps.now() >= closeAtOf(r, t.day)) continue;
-        const incomplete = !isReady(t) || !t.done.welcome && (t.tries.welcome || 0) < 3 || !t.done.avatar && (t.tries.avatar || 0) < 3;
+        const incomplete = !isReady(t) || !t.done.welcome && (t.tries.welcome || 0) < 3 || !t.done.avatar && (t.tries.avatar || 0) < 3 || !t.done.lock && (t.tries.lock || 0) < 3;
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" };
@@ -10704,6 +10823,12 @@ var inText = (ms) => {
   return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
 };
 function nextMessage(r, now) {
+  const qp = planQueue(r, now);
+  if (qp.wait.length) {
+    const all = [...qp.go.map((d) => ({ ...d, at: now })), ...qp.wait].sort((a, b) => a.at - b.at || a.plan - b.plan);
+    const h = all[0];
+    return { plan: h.plan, id: h.msg.id, topic: h.msg.topic || h.msg.id, day: h.t.day, due: h.at, queued: all.length };
+  }
   let best = null;
   const consider = (day, start, event = false) => {
     for (const m of r.cfg.messages) {
@@ -10729,9 +10854,10 @@ function nextMessage(r, now) {
   }
   return best;
 }
+var nextInText = (b, now) => inText((b.due ?? b.plan) - now) + (b.queued ? `, \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 ${b.queued}` : "");
 function nextMessageText(r, now) {
   const b = nextMessage(r, now);
-  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm4(b.day)}), ${inText(b.plan - now)}` : "\u043D\u0435\u0442";
+  return b ? `${hhmmOf(b.plan)} ${b.id} (\u044D\u0444\u0438\u0440 ${ddmm4(b.day)}), ${nextInText(b, now)}` : "\u043D\u0435\u0442";
 }
 function targetLine(r, label, day, now) {
   const ts = [...targetsOf(r, day)].reverse().filter((t) => r.state.mode === "event" || t.source !== "event");
@@ -11438,7 +11564,7 @@ function readJsonlTail(file, maxBytes = 256 * 1024) {
     return [];
   }
 }
-var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
+var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "queued", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
 var stampOf = (ms) => `${ddmm4(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 var clip = (s, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -11464,7 +11590,15 @@ function journalView(r, limit = 20) {
         break;
       }
       case "skip":
-        text2 = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan} \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 \u043E\u0442 09:00 \u0434\u043E 23:45`;
+        if (x.reason === "lag") {
+          kind = "error";
+          text2 = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u043E\u0442\u0441\u0442\u0430\u0432\u0430\u043D\u0438\u0435 \u043E\u0442 \u0433\u0440\u0430\u0444\u0438\u043A\u0430, \u043F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043E \u0431\u043E\u043B\u044C\u0448\u0435 \u0447\u0435\u043C \u043D\u0430 ${MAX_LATE_MIN} \u043C\u0438\u043D\u0443\u0442 (\u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan})`;
+        } else if (x.reason === "live") {
+          text2 = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u044D\u0444\u0438\u0440 \xAB${topicOf(x.by)}\xBB, \u043E\u043D\u0430 \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0432\u043E\u0439 (\u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan})`;
+        } else text2 = `\u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F ${x.plan} \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 \u043E\u0442 09:00 \u0434\u043E 23:45`;
+        break;
+      case "queued":
+        text2 = `\u0412 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \xAB${topicOf(x.msg)}\xBB \u0432 ${nameOfTarget(x.target)}: ${x.reason === "gap" ? `\u0436\u0434\u0451\u0442 \u043F\u0440\u043E\u043C\u0435\u0436\u0443\u0442\u043A\u0430 \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F` : x.reason === "order" ? "\u0432\u043F\u0435\u0440\u0435\u0434\u0438 \u0434\u0440\u0443\u0433\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F" : `\u043E\u043F\u043E\u0437\u0434\u0430\u043B\u043E \u043D\u0430 ${x.lateMin} \u043C\u0438\u043D, \u0438\u0434\u0451\u0442 \u043F\u043E \u043E\u0447\u0435\u0440\u0435\u0434\u0438`}, \u0443\u0439\u0434\u0451\u0442 \u043E\u043A\u043E\u043B\u043E ${x.at}`;
         break;
       case "fail":
         kind = "error";
@@ -11698,7 +11832,7 @@ function waPanel(nowArg) {
     },
     current,
     next,
-    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm4(nm.day), inText: inText(nm.plan - now) } : null,
+    nextMessage: nm ? { id: nm.id, topic: nm.topic, at: hhmmOf(nm.plan), dayLabel: ddmm4(nm.day), inText: nextInText(nm, now), queued: nm.queued ?? 0 } : null,
     sendTo: targets.map((t) => t.name),
     series: series2,
     assistant: aiPanel(now),
