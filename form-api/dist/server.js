@@ -34,9 +34,9 @@ __export(server_exports, {
 });
 module.exports = __toCommonJS(server_exports);
 var import_node_http = require("node:http");
-var import_node_crypto7 = require("node:crypto");
-var import_node_fs11 = require("node:fs");
-var import_node_path11 = require("node:path");
+var import_node_crypto8 = require("node:crypto");
+var import_node_fs12 = require("node:fs");
+var import_node_path12 = require("node:path");
 
 // lib/meta-capi.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -544,8 +544,8 @@ function isValidWhatsAppLink(raw) {
     return false;
   }
   if (u.protocol !== "https:") return false;
-  const host = u.hostname.toLowerCase();
-  return host === "chat.whatsapp.com" || host === "wa.me";
+  const host2 = u.hostname.toLowerCase();
+  return host2 === "chat.whatsapp.com" || host2 === "wa.me";
 }
 function readWhatsAppLink() {
   try {
@@ -597,9 +597,9 @@ function writeWhatsAppLink(link, by) {
 }
 
 // form-api/tg-workshop.ts
-var import_node_crypto3 = require("node:crypto");
-var import_node_fs5 = require("node:fs");
-var import_node_path5 = require("node:path");
+var import_node_crypto5 = require("node:crypto");
+var import_node_fs7 = require("node:fs");
+var import_node_path7 = require("node:path");
 
 // form-api/tg-store.ts
 var import_node_fs3 = require("node:fs");
@@ -734,16 +734,16 @@ var TgStore = class _TgStore {
     for (const c of ty.rows) if (c && c.day && (c.ch === "tg" || c.ch === "wa" || c.ch === "wa-template")) this.countTy(c.ch, c.eid || "", c.day);
     try {
       if ((0, import_node_fs3.existsSync)(this.fState)) {
-        const st = JSON.parse((0, import_node_fs3.readFileSync)(this.fState, "utf8"));
+        const st2 = JSON.parse((0, import_node_fs3.readFileSync)(this.fState, "utf8"));
         const obj = (x) => x && typeof x === "object" && !Array.isArray(x) ? x : {};
         this.state = {
-          seriesEnabled: st.seriesEnabled === true,
-          media: obj(st.media),
-          overrides: obj(st.overrides),
-          bizon: typeof st.bizon === "string" ? st.bizon : "",
-          reported: Array.isArray(st.reported) ? st.reported.filter((x) => typeof x === "string") : [],
-          adminReported: Array.isArray(st.adminReported) ? st.adminReported.filter((x) => typeof x === "string") : [],
-          adminSince: typeof st.adminSince === "number" ? st.adminSince : 0
+          seriesEnabled: st2.seriesEnabled === true,
+          media: obj(st2.media),
+          overrides: obj(st2.overrides),
+          bizon: typeof st2.bizon === "string" ? st2.bizon : "",
+          reported: Array.isArray(st2.reported) ? st2.reported.filter((x) => typeof x === "string") : [],
+          adminReported: Array.isArray(st2.adminReported) ? st2.adminReported.filter((x) => typeof x === "string") : [],
+          adminSince: typeof st2.adminSince === "number" ? st2.adminSince : 0
         };
       }
     } catch {
@@ -1105,19 +1105,19 @@ function hhmmOf(ms) {
 var MSG_LIMIT = 4e3;
 var caches = /* @__PURE__ */ new Map();
 function readJsonlCached(file) {
-  let st;
+  let st2;
   try {
-    st = (0, import_node_fs4.statSync)(file);
+    st2 = (0, import_node_fs4.statSync)(file);
   } catch (e) {
     caches.delete(file);
     const code = e.code;
     return code === "ENOENT" ? { rows: [], missing: true } : { rows: [], error: String(e.message || e) };
   }
   let c = caches.get(file);
-  if (c && c.size === st.size && c.mtime === st.mtimeMs) return { rows: c.rows };
-  if (!c || st.size < c.offset) c = { size: 0, mtime: 0, offset: 0, rows: [] };
+  if (c && c.size === st2.size && c.mtime === st2.mtimeMs) return { rows: c.rows };
+  if (!c || st2.size < c.offset) c = { size: 0, mtime: 0, offset: 0, rows: [] };
   try {
-    const len = st.size - c.offset;
+    const len = st2.size - c.offset;
     if (len > 0) {
       const buf = Buffer.alloc(len);
       const fd = (0, import_node_fs4.openSync)(file, "r");
@@ -1140,8 +1140,8 @@ function readJsonlCached(file) {
         c.offset += nl + 1;
       }
     }
-    c.size = st.size;
-    c.mtime = st.mtimeMs;
+    c.size = st2.size;
+    c.mtime = st2.mtimeMs;
     caches.set(file, c);
     return { rows: c.rows };
   } catch (e) {
@@ -1665,14 +1665,1563 @@ function dailyKeyboard(day) {
   return [[{ text: "\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435", callback_data: `adm:p:${day}` }, { text: "\u041E\u0448\u0438\u0431\u043A\u0438", callback_data: `adm:e:${day}` }]];
 }
 
-// form-api/tg-workshop.ts
+// form-api/wa-bridge.ts
+var import_node_fs6 = require("node:fs");
+var import_node_crypto4 = require("node:crypto");
+var import_node_path6 = require("node:path");
+
+// form-api/wa-evolution.ts
 var env = (k) => (process.env[k] || "").trim();
-var botToken = () => env("TG_WORKSHOP_BOT_TOKEN");
-var webhookSecret = () => env("TG_WORKSHOP_WEBHOOK_SECRET");
-var goSecret = () => env("TG_GO_SECRET");
-var ownerIds = () => env("TG_LINK_OWNER_IDS").split(",").map((s) => s.trim()).filter(Boolean);
-var botOff = () => env("TG_BOT").toLowerCase() === "off";
-var apiBase = () => env("TG_API_BASE").replace(/\/+$/, "") || "https://api.telegram.org";
+var evoUrl = () => (env("EVOLUTION_URL") || "http://127.0.0.1:8080").replace(/\/+$/, "");
+var evoKey = () => env("EVOLUTION_API_KEY");
+var evoInstance = () => env("EVOLUTION_INSTANCE") || "workshop";
+var TIMEOUT_MS = 2e4;
+var MEDIA_TIMEOUT_MS = 9e4;
+var CREATE_TIMEOUT_MS = 9e4;
+var CONNECT_FAIL_CODES = /* @__PURE__ */ new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH", "UND_ERR_CONNECT_TIMEOUT"]);
+var scrub = (s) => {
+  const k = evoKey();
+  return k ? s.split(k).join("***") : s;
+};
+function errorText(data, fallback) {
+  const m = data?.response?.message ?? data?.message ?? data?.error;
+  const text2 = Array.isArray(m) ? m.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join("; ") : typeof m === "string" ? m : m ? JSON.stringify(m) : "";
+  return scrub((text2 || fallback).slice(0, 300));
+}
+async function evoCall(method, path, body, timeoutMs3 = TIMEOUT_MS) {
+  const key = evoKey();
+  if (!key) return { ok: false, status: 0, error: "no_api_key" };
+  try {
+    const res = await fetch(`${evoUrl()}${path}`, {
+      method,
+      headers: { apikey: key, ...body !== void 0 ? { "Content-Type": "application/json" } : {} },
+      ...body !== void 0 ? { body: JSON.stringify(body) } : {},
+      signal: AbortSignal.timeout(timeoutMs3)
+    });
+    const text2 = await res.text();
+    let data = null;
+    try {
+      data = text2 ? JSON.parse(text2) : null;
+    } catch {
+      data = null;
+    }
+    if (res.ok) return { ok: true, status: res.status, data };
+    return { ok: false, status: res.status, error: `${res.status} ${errorText(data, res.statusText || text2.slice(0, 100))}`, data };
+  } catch (e) {
+    const err = e;
+    const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
+    return {
+      ok: false,
+      status: 0,
+      error: timeout ? "timeout" : scrub(String(err?.cause?.code || err?.message || err)),
+      ...timeout ? { timeout: true } : {},
+      ...!timeout && err?.cause?.code && CONNECT_FAIL_CODES.has(err.cause.code) ? { connectFail: true } : {}
+    };
+  }
+}
+var I = () => encodeURIComponent(evoInstance());
+var q = (jid) => `?communityJid=${encodeURIComponent(jid)}`;
+async function connectionState() {
+  const r = await evoCall("GET", `/instance/connectionState/${I()}`);
+  if (r.ok) return { ok: true, status: r.status, data: { state: String(r.data?.instance?.state ?? "unknown") } };
+  if (r.status === 404) return { ok: true, status: 404, data: { state: "absent" } };
+  return r;
+}
+async function fetchInstance() {
+  const r = await evoCall("GET", `/instance/fetchInstances?instanceName=${I()}`);
+  if (!r.ok) {
+    if (r.status === 404) return { ok: true, status: 404, data: emptyInstance() };
+    return r;
+  }
+  const row = Array.isArray(r.data) ? r.data[0] : r.data;
+  if (!row || typeof row !== "object") return { ok: true, status: r.status, data: emptyInstance() };
+  const obj = row.disconnectionObject;
+  const code = Number(row.disconnectionReasonCode);
+  return {
+    ok: true,
+    status: r.status,
+    data: {
+      found: true,
+      ownerJid: String(row.ownerJid || ""),
+      profileName: String(row.profileName || ""),
+      number: String(row.number || ""),
+      connectionStatus: String(row.connectionStatus || ""),
+      disconnectionReasonCode: row.disconnectionReasonCode === null || row.disconnectionReasonCode === void 0 || !Number.isFinite(code) ? null : code,
+      disconnectionObject: obj === null || obj === void 0 ? "" : (typeof obj === "string" ? obj : JSON.stringify(obj)).slice(0, 4e3),
+      disconnectionAt: String(row.disconnectionAt || "")
+    }
+  };
+}
+var emptyInstance = () => ({ found: false, ownerJid: "", profileName: "", number: "", connectionStatus: "", disconnectionReasonCode: null, disconnectionObject: "", disconnectionAt: "" });
+function createInstance(number) {
+  return evoCall("POST", "/instance/create", {
+    instanceName: evoInstance(),
+    integration: "WHATSAPP-BAILEYS",
+    qrcode: true,
+    ...number ? { number } : {},
+    rejectCall: false,
+    groupsIgnore: false,
+    alwaysOnline: false,
+    readMessages: false,
+    readStatus: false,
+    syncFullHistory: false
+  }, 3e4);
+}
+function connectInstance(number) {
+  return evoCall("GET", `/instance/connect/${I()}${number ? `?number=${encodeURIComponent(number)}` : ""}`, void 0, 3e4);
+}
+var logoutInstance = () => evoCall("DELETE", `/instance/logout/${I()}`, void 0, 3e4);
+var GROUPS_TIMEOUT_MS = 6e4;
+async function fetchAllGroups(withParticipants) {
+  const r = await evoCall("GET", `/group/fetchAllGroups/${I()}?getParticipants=${withParticipants ? "true" : "false"}`, void 0, GROUPS_TIMEOUT_MS);
+  if (!r.ok) return r;
+  if (!Array.isArray(r.data)) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 fetchAllGroups \u043D\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430", data: r.data };
+  return { ok: true, status: r.status, data: r.data };
+}
+async function communityCreate(p) {
+  const r = await evoCall("POST", `/community/create/${I()}`, p, CREATE_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const communityJid = String(r.data?.communityJid || "");
+  const announcementJid = String(r.data?.announcementJid || "");
+  if (!communityJid.endsWith("@g.us") || !announcementJid.endsWith("@g.us")) {
+    return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 create \u043D\u0435\u0442 communityJid \u0438\u043B\u0438 announcementJid", data: r.data };
+  }
+  return { ok: true, status: r.status, data: { communityJid, announcementJid } };
+}
+var communityInfo = (jid) => evoCall("GET", `/community/info/${I()}${q(jid)}`);
+async function communityInvite(jid) {
+  const r = await evoCall("GET", `/community/inviteCode/${I()}${q(jid)}`);
+  if (!r.ok) return r;
+  return inviteOf(r);
+}
+var communitySetting = (jid, action) => evoCall("POST", `/community/updateSetting/${I()}${q(jid)}`, { action });
+var communityMemberAddMode = (jid, mode) => evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode });
+var communityJoinApproval = (jid, mode) => evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode });
+var communityRequests = (jid) => evoCall("GET", `/community/requests/${I()}${q(jid)}`);
+var communityDecide = (jid, participants, action) => evoCall("POST", `/community/requests/${I()}${q(jid)}`, { participants, action });
+async function groupCreate(p) {
+  const r = await evoCall("POST", `/group/create/${I()}`, { ...p, promoteParticipants: true }, CREATE_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const groupJid = String(r.data?.id || "");
+  if (!groupJid.endsWith("@g.us")) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 group/create \u043D\u0435\u0442 id \u0433\u0440\u0443\u043F\u043F\u044B", data: r.data };
+  return { ok: true, status: r.status, data: { groupJid } };
+}
+var groupSetting = (jid, action) => evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action });
+async function groupInvite(jid) {
+  const r = await evoCall("GET", `/group/inviteCode/${I()}?groupJid=${encodeURIComponent(jid)}`);
+  if (!r.ok) return r;
+  return inviteOf(r);
+}
+var groupInfo = (jid) => evoCall("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`);
+var updatePicture = (jid, imageUrl) => evoCall("POST", `/group/updateGroupPicture/${I()}`, { groupJid: jid, image: imageUrl }, MEDIA_TIMEOUT_MS);
+function inviteOf(r) {
+  const inviteCode = String(r.data?.inviteCode || "");
+  const inviteUrl = String(r.data?.inviteUrl || (inviteCode ? `https://chat.whatsapp.com/${inviteCode}` : ""));
+  if (!inviteUrl) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0438-\u043F\u0440\u0438\u0433\u043B\u0430\u0448\u0435\u043D\u0438\u044F", data: r.data };
+  return { ok: true, status: r.status, data: { inviteCode, inviteUrl } };
+}
+async function groupParticipants(jid) {
+  const r = await evoCall("GET", `/group/participants/${I()}?groupJid=${encodeURIComponent(jid)}`, void 0, GROUPS_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.participants) ? r.data.participants : null;
+  if (!list) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 participants \u043D\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430", data: r.data };
+  const members = [];
+  for (const p of list) {
+    if (!p || typeof p !== "object") continue;
+    members.push({ id: String(p.id ?? p.jid ?? ""), phoneNumber: String(p.phoneNumber ?? p.phone ?? ""), admin: String(p.admin ?? "") });
+  }
+  return { ok: true, status: r.status, data: members };
+}
+async function contactPushName(digits) {
+  const r = await evoCall("POST", `/chat/findContacts/${I()}`, { where: { remoteJid: `${digits}@s.whatsapp.net` } });
+  if (!r.ok) return r;
+  const list = Array.isArray(r.data) ? r.data : [];
+  const hit = list.find((c) => c && typeof c.pushName === "string" && c.pushName.trim());
+  return { ok: true, status: r.status, data: hit ? String(hit.pushName).trim() : "" };
+}
+function sentOf(r) {
+  if (!r.ok) return r;
+  return { ok: true, status: r.status, data: { messageId: String(r.data?.key?.id || "") } };
+}
+async function sendText(jid, text2, opts = {}) {
+  const delay = opts.delay && opts.delay > 0 ? Math.round(opts.delay) : 0;
+  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text: text2, linkPreview: false, ...delay ? { delay } : {} }, delay ? TIMEOUT_MS + delay : TIMEOUT_MS));
+}
+function setWebhook(p) {
+  return evoCall("POST", `/webhook/set/${I()}`, {
+    webhook: {
+      enabled: p.enabled,
+      url: p.url,
+      events: p.enabled ? p.events ?? ["MESSAGES_UPSERT"] : [],
+      byEvents: false,
+      base64: false,
+      ...p.enabled && p.headers ? { headers: p.headers } : {}
+    }
+  });
+}
+async function mediaBase64(key, message) {
+  const r = await evoCall("POST", `/chat/getBase64FromMediaMessage/${I()}`, { message: { key, message }, convertToMp4: false }, MEDIA_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const base64 = (typeof r.data?.base64 === "string" ? r.data.base64 : "").replace(/^data:[^,]*,/, "");
+  if (!base64) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u0435\u0442 base64" };
+  return { ok: true, status: r.status, data: { base64, mimetype: String(r.data?.mimetype || "") } };
+}
+async function sendMedia(jid, p) {
+  const mimetype = p.mediatype === "video" ? "video/mp4" : /\.png$/i.test(p.url) ? "image/png" : "image/jpeg";
+  return sentOf(
+    await evoCall("POST", `/message/sendMedia/${I()}`, { number: jid, mediatype: p.mediatype, mimetype, media: p.url, ...p.caption ? { caption: p.caption } : {} }, MEDIA_TIMEOUT_MS)
+  );
+}
+async function sendPoll(jid, p) {
+  return sentOf(await evoCall("POST", `/message/sendPoll/${I()}`, { number: jid, name: p.name, selectableCount: p.selectableCount, values: p.values }));
+}
+
+// form-api/wa-assistant.ts
+var import_node_fs5 = require("node:fs");
+var import_node_crypto3 = require("node:crypto");
+var import_node_path5 = require("node:path");
+var env2 = (k) => (process.env[k] || "").trim();
+var MIN = 6e4;
+var HOUR = 36e5;
+var DAY = 24 * HOUR;
+var HISTORY = 16;
+var LIMIT_PERSON = 30;
+var LIMIT_TOTAL = 400;
+var SILENCE_MS = 12 * HOUR;
+var quietMs = () => {
+  const n = Number(env2("WA_AI_QUIET_MS"));
+  return Number.isFinite(n) && n >= 0 && env2("WA_AI_QUIET_MS") !== "" ? n : 8e3;
+};
+var timeoutMs = () => {
+  const n = Number(env2("WA_AI_TIMEOUT_MS"));
+  return Number.isFinite(n) && n > 0 ? n : 3e4;
+};
+var STALE_MS = 15 * MIN;
+var PAUSE_MS = [2e3, 5e3];
+var MAX_TEXT = 1500;
+var FILE_TAIL_BYTES = 3 * 1024 * 1024;
+var FILE_COMPACT_BYTES = 6 * 1024 * 1024;
+var MODEL = () => env2("WA_AI_MODEL") || "gpt-5.6-luna";
+var openaiBase = () => (env2("OPENAI_BASE_URL") || "https://api.openai.com/v1").replace(/\/+$/, "");
+var apiKey = () => env2("OPENAI_API_KEY");
+var promptDir = () => env2("WA_AI_DIR") || (0, import_node_path5.join)(__dirname, "wa-assistant");
+var hookUrl = () => env2("WA_HOOK_URL") || `http://127.0.0.1:${env2("PORT") || "4010"}/api/wa-hook`;
+var SAFE_FALLBACK = "\u041F\u043E\u0434\u0441\u043A\u0430\u0436\u0435\u0442 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 \u0448\u043A\u043E\u043B\u044B: https://onai.academy/workshop-montazh/chat";
+var MEDIA_PHRASE = "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435, \u043F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430, \u0442\u0435\u043A\u0441\u0442\u043E\u043C.";
+var fail = (code, message) => ({ ok: false, code, message });
+var bridge = null;
+function aiBridgeLink(link) {
+  bridge = link;
+}
+var bridgeWantsHook = () => {
+  try {
+    return !!bridge?.wantsHook();
+  } catch {
+    return false;
+  }
+};
+var aiHost = () => A?.host ?? null;
+var ALLOWED_LINKS = ["onai.academy/workshop-montazh", "wa.me/77085834575", "t.me/futleid", "t.me/workshop_aiprod_bot"];
+var ALLOWED_HANDLES = /* @__PURE__ */ new Set(["@futleid", "@workshop_aiprod_bot", "@saint4ai"]);
+var AYANA_RE = /wa\.me\/77085834575|t\.me\/futleid|@futleid/i;
+var URL_RE = /(?:https?:\/\/|www\.)[^\s<>"'«»]+/giu;
+var BARE_RE = /(?<![\p{L}\p{N}_@./-])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?![\p{L}\p{N}-])(?:[/?#][^\s<>"'«»]*)?/giu;
+var TIME_RE = /(?<!\d)\d{1,2}[:.]\d{2}(?!\d)/g;
+function allowedLink(candidate) {
+  let s = candidate.trim().replace(/[.,;:!?)\]}»"'…]+$/u, "").toLowerCase();
+  if (s.startsWith("http://")) return false;
+  s = s.replace(/^https:\/\//, "").replace(/^www\./, "");
+  if (/^[a-z][a-z0-9+.-]*:\/\//.test(s)) return false;
+  return ALLOWED_LINKS.some((p) => s === p || s.startsWith(`${p}/`) || s.startsWith(`${p}?`) || s.startsWith(`${p}#`));
+}
+var PRICE_WORD = new RegExp("(?<![\\p{L}])(?:\u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\\p{L}*|\u0441\u0442\u043E\u0438\u0442|\u0441\u0442\u043E\u044F\u0442|\u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\\p{L}*|\u0446\u0435\u043D(?:\u0430|\u044B|\u0443|\u0435|\u043E\u0439)(?![\\p{L}])|\u043F\u0440\u0435\u0434\u043E\u043F\u043B\u0430\u0442\\p{L}*|\u0431\u0440\u043E\u043D\u044C|\u0431\u0440\u043E\u043D\u0438|\u0441\u043A\u0438\u0434\u043A\\p{L}*|\u043E\u0431\u043E\u0439\u0434\\p{L}*|\u0437\u0430\u043F\u043B\u0430\u0442\\p{L}*)", "giu");
+var CURRENCY_AFTER = new RegExp("\\d\\s*(?:[.,]\\d+\\s*)?(?:\u20B8|\\$|\u20AC|\u20BD|\u0442\u0435\u043D\u0433\u0435|\u0442\u0433(?![\\p{L}])|usd|kzt|rub|\u0440\u0443\u0431|\u0434\u043E\u043B\u043B\u0430\u0440|\u0435\u0432\u0440\u043E|\u0441\u043E\u043C(?![\\p{L}])|\u0441\u0443\u043C(?![\\p{L}])|\u0442\u044B\u0441\\p{L}*|\u043C\u043B\u043D|\u043C\u0438\u043B\u043B\u0438\u043E\u043D\\p{L}*|[k\u043A](?![\\p{L}]))", "iu");
+var CURRENCY_BEFORE = /(?:₸|\$|€|₽)\s*\d/u;
+var BIG_NUMBER = /\d{1,3}(?:[\u00a0\u202f ]\d{3})+|\d{5,}/u;
+var FORBIDDEN = /the\s*one\s*system|onesystem|erickson|эриксон|жумабае|аян[аеуыо]/iu;
+var REASON_TEXT = {
+  price: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0446\u0435\u043D\u0430, \u0441\u0443\u043C\u043C\u0430, \u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\u0430 \u0438\u043B\u0438 \u0443\u0441\u043B\u043E\u0432\u0438\u044F \u043E\u043F\u043B\u0430\u0442\u044B \u0441 \u0446\u0438\u0444\u0440\u0430\u043C\u0438",
+  link: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \u0430\u0434\u0440\u0435\u0441 \u043D\u0435 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445",
+  forbidden: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0443\u043F\u043E\u043C\u044F\u043D\u0443\u0442\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u044B \u0448\u043A\u043E\u043B\u044B \u0438\u043B\u0438 \u043A\u0435\u0439\u0441\u044B",
+  phone: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0438\u043B\u0438 \u0434\u043B\u0438\u043D\u043D\u043E\u0435 \u0447\u0438\u0441\u043B\u043E",
+  handle: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0438\u043C\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F \u043D\u0435 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445",
+  long: "\u043E\u0442\u0432\u0435\u0442 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u043B\u0438\u043D\u043D\u044B\u0439",
+  empty: "\u043E\u0442\u0432\u0435\u0442 \u043F\u0443\u0441\u0442\u043E\u0439"
+};
+var MAX_REPLY = 600;
+function checkReply(text2) {
+  const out = /* @__PURE__ */ new Set();
+  if (!text2.trim()) return ["empty"];
+  if (text2.length > MAX_REPLY) out.add("long");
+  if (FORBIDDEN.test(text2)) out.add("forbidden");
+  let rest = text2;
+  const judge = (m) => {
+    if (!allowedLink(m)) out.add("link");
+    return " ";
+  };
+  rest = rest.replace(URL_RE, judge).replace(BARE_RE, judge);
+  if (/(?<![\p{L}])(?:mailto|tel|sms|javascript|data|ftp|file):/iu.test(rest) || /(?<!\d)\d{1,3}(?:\.\d{1,3}){3}(?!\d)/.test(rest)) out.add("link");
+  for (const h of rest.match(/@[A-Za-z0-9_]{3,}/g) || []) if (!ALLOWED_HANDLES.has(h.toLowerCase())) out.add("handle");
+  const plain2 = rest.replace(TIME_RE, " ");
+  for (const m of plain2.match(/\+?\d[\d\s().-]{7,}\d/g) || []) if (m.replace(/\D/g, "").length >= 9) out.add("phone");
+  if (CURRENCY_AFTER.test(plain2) || CURRENCY_BEFORE.test(plain2) || BIG_NUMBER.test(plain2)) out.add("price");
+  for (const m of plain2.matchAll(PRICE_WORD)) {
+    const i = m.index ?? 0;
+    if (/\d/.test(plain2.slice(Math.max(0, i - 30), i + m[0].length + 30))) {
+      out.add("price");
+      break;
+    }
+  }
+  return [...out];
+}
+var EMOJI = new RegExp("\\p{Extended_Pictographic}(?:\uFE0F|\u200D\\p{Extended_Pictographic})*", "gu");
+function cleanReply(raw) {
+  let mark = false;
+  let summary = "";
+  const take = (_m, inner) => {
+    const x = /^\s*(?:МЕНЕДЖЕР|АЯНА|ПЕРЕДАНО МЕНЕДЖЕРУ|ПЕРЕДАНО АЯНЕ)\s*:?\s*([\s\S]*)$/iu.exec(inner);
+    if (x) {
+      mark = true;
+      summary = x[1].trim();
+    }
+    return "";
+  };
+  let t = raw.replace(/\[\[([^\]]*)\]\]/g, take).replace(/\[\s*(МЕНЕДЖЕР|АЯНА|ПЕРЕДАНО МЕНЕДЖЕРУ|ПЕРЕДАНО АЯНЕ)\s*:([^\]]*)\]/giu, (_m, _a, s) => {
+    mark = true;
+    summary = summary || s.trim();
+    return "";
+  });
+  t = t.replace(/\s+[\u2014\u2013]\s+/g, ", ").replace(/[\u2014\u2013]/g, "-").replace(/\*\*([^*\n]+)\*\*/g, "$1").replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, "$1$2").replace(/__([^_\n]+)__/g, "$1").replace(/`+/g, "").replace(/^\s{0,3}#{1,6}\s+/gm, "").replace(/^\s*>\s?/gm, "");
+  let seen = 0;
+  t = t.replace(EMOJI, (m) => ++seen === 1 ? m : "");
+  t = t.replace(/[ \t]+\n/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  return { text: t, mark, summary };
+}
+function personJid(remoteJid) {
+  const m = /^(\d{5,20})(?::\d+)?@(s\.whatsapp\.net|lid)$/.exec(String(remoteJid || ""));
+  return m ? `${m[1]}@${m[2]}` : null;
+}
+function unwrap(m) {
+  let cur = m;
+  for (let i = 0; i < 4 && cur && typeof cur === "object"; i++) {
+    const inner = cur.ephemeralMessage?.message ?? cur.viewOnceMessage?.message ?? cur.viewOnceMessageV2?.message ?? cur.documentWithCaptionMessage?.message ?? cur.editedMessage?.message;
+    if (!inner) break;
+    cur = inner;
+  }
+  return cur;
+}
+function seconds(ts) {
+  let n = 0;
+  if (typeof ts === "number") n = ts;
+  else if (typeof ts === "string") n = Number(ts);
+  else if (ts && typeof ts === "object") n = Number(ts.low ?? ts.toString?.());
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return n > 1e12 ? n / 1e3 : n;
+}
+function classifyIncoming(d) {
+  const key = d?.key;
+  if (!key || typeof key !== "object" || key.fromMe === true) return null;
+  const jid = personJid(key.remoteJid);
+  if (!jid) return null;
+  const m = unwrap(d.message);
+  if (!m || typeof m !== "object") return null;
+  const mid = typeof key.id === "string" ? key.id.slice(0, 80) : "";
+  const ts = seconds(d.messageTimestamp) * 1e3;
+  const clip3 = (s) => s.replace(/\u0000/g, "").trim().slice(0, MAX_TEXT);
+  const plain2 = typeof m.conversation === "string" ? m.conversation : typeof m.extendedTextMessage?.text === "string" ? m.extendedTextMessage.text : typeof m.buttonsResponseMessage?.selectedDisplayText === "string" ? m.buttonsResponseMessage.selectedDisplayText : typeof m.templateButtonReplyMessage?.selectedDisplayText === "string" ? m.templateButtonReplyMessage.selectedDisplayText : typeof m.listResponseMessage?.title === "string" ? m.listResponseMessage.title : "";
+  if (plain2) return clip3(plain2) ? { jid, mid, kind: "text", text: clip3(plain2), ts } : null;
+  const media = [
+    ["audioMessage", "[\u0433\u043E\u043B\u043E\u0441\u043E\u0432\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435]"],
+    ["ptvMessage", "[\u0432\u0438\u0434\u0435\u043E]"],
+    ["imageMessage", "[\u0444\u043E\u0442\u043E]"],
+    ["videoMessage", "[\u0432\u0438\u0434\u0435\u043E]"],
+    ["documentMessage", "[\u0444\u0430\u0439\u043B]"]
+  ];
+  for (const [k, label] of media) {
+    if (!m[k] || typeof m[k] !== "object") continue;
+    const caption = typeof m[k].caption === "string" ? clip3(m[k].caption) : "";
+    return caption ? { jid, mid, kind: "text", text: caption, ts } : { jid, mid, kind: "media", text: label, ts };
+  }
+  return null;
+}
+var A = null;
+var maskJid = (jid) => {
+  const d = jid.replace(/[:@].*$/, "").replace(/\D/g, "");
+  const tag = jid.endsWith("@lid") ? " (lid)" : "";
+  return (d.length >= 9 ? `${d.slice(0, 4)}***${d.slice(-4)}` : d ? "***" : "") + tag;
+};
+var idOf = (jid) => (0, import_node_crypto3.createHash)("sha256").update(`wa-ai|${jid}`).digest("hex").slice(0, 12);
+var clipText = (s, n) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
+};
+var scrub2 = (s) => {
+  let out = s;
+  for (const k of [apiKey(), evoKey(), A?.host.state().secret || "", env2("WA_HOOK_SECRET")]) if (k) out = out.split(k).join("***");
+  return out;
+};
+var log = (msg, ...args) => console.log(`[wa-ai] ${msg}`, ...args);
+function statsOf(a, day) {
+  let s = a.stats.get(day);
+  if (!s) {
+    s = { replies: 0, handoffs: 0, rejected: 0, fallbacks: 0, errors: 0, dialogs: /* @__PURE__ */ new Set(), per: /* @__PURE__ */ new Map() };
+    a.stats.set(day, s);
+    for (const k of [...a.stats.keys()].sort().slice(0, -3)) a.stats.delete(k);
+  }
+  return s;
+}
+function convoOf(a, jid) {
+  let c = a.convos.get(jid);
+  if (!c) {
+    c = { jid, rows: [], silencedUntil: 0, lastAt: 0 };
+    a.convos.set(jid, c);
+  }
+  return c;
+}
+function rememberMid(a, mid) {
+  if (!mid) return;
+  a.seen.add(mid);
+  if (a.seen.size > 5e3) a.seen.delete(a.seen.values().next().value);
+}
+function append(a, row) {
+  try {
+    (0, import_node_fs5.appendFileSync)(a.file, JSON.stringify(row) + "\n", "utf8");
+  } catch (e) {
+    console.error("[wa-ai] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C wa-assistant.jsonl:", e.message);
+  }
+}
+function readTail(file, maxBytes) {
+  try {
+    const size = (0, import_node_fs5.statSync)(file).size;
+    const start = Math.max(0, size - maxBytes);
+    const buf = Buffer.alloc(size - start);
+    const fd = (0, import_node_fs5.openSync)(file, "r");
+    try {
+      (0, import_node_fs5.readSync)(fd, buf, 0, buf.length, start);
+    } finally {
+      (0, import_node_fs5.closeSync)(fd);
+    }
+    let text2 = buf.toString("utf8");
+    if (start > 0) text2 = text2.slice(text2.indexOf("\n") + 1);
+    const out = [];
+    for (const line of text2.split("\n")) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        out.push(JSON.parse(s));
+      } catch {
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+function apply(a, row) {
+  const ts = typeof row?.ts === "number" ? row.ts : Date.parse(String(row?.ts || ""));
+  const jid = typeof row?.jid === "string" ? row.jid : "";
+  if (!Number.isFinite(ts) || !jid) return;
+  const day = dayKeyOf(ts);
+  if (row.role === "user" || row.role === "assistant") {
+    const c = convoOf(a, jid);
+    c.rows.push({ ts, jid, role: row.role, text: String(row.text || ""), ...row.mid ? { mid: String(row.mid) } : {}, ...row.via ? { via: String(row.via) } : {} });
+    if (c.rows.length > HISTORY) c.rows.splice(0, c.rows.length - HISTORY);
+    c.lastAt = Math.max(c.lastAt, ts);
+    const s = statsOf(a, day);
+    if (row.role === "user") {
+      s.dialogs.add(jid);
+      if (row.mid) rememberMid(a, String(row.mid));
+    } else {
+      s.replies++;
+      s.per.set(jid, (s.per.get(jid) || 0) + 1);
+    }
+  } else if (row.ev === "handoff") {
+    statsOf(a, day).handoffs++;
+    const c = convoOf(a, jid);
+    c.silencedUntil = Math.max(c.silencedUntil, ts + SILENCE_MS);
+  } else if (row.ev === "reject") statsOf(a, day).rejected++;
+  else if (row.ev === "fallback") statsOf(a, day).fallbacks++;
+  else if (row.ev === "error") statsOf(a, day).errors++;
+}
+function aiInit(host2) {
+  aiReset();
+  (0, import_node_fs5.mkdirSync)(host2.dir, { recursive: true });
+  const a = {
+    host: host2,
+    file: (0, import_node_path5.join)(host2.dir, "wa-assistant.jsonl"),
+    convos: /* @__PURE__ */ new Map(),
+    pending: /* @__PURE__ */ new Map(),
+    inflight: /* @__PURE__ */ new Set(),
+    running: /* @__PURE__ */ new Set(),
+    seen: /* @__PURE__ */ new Set(),
+    stats: /* @__PURE__ */ new Map(),
+    alarmAt: /* @__PURE__ */ new Map(),
+    lastHookAt: 0,
+    hookTryAt: 0,
+    hookAssertAt: 0,
+    hookFails: 0,
+    toggling: false,
+    testAt: [],
+    skipNoteAt: 0
+  };
+  try {
+    if ((0, import_node_fs5.existsSync)(a.file) && (0, import_node_fs5.statSync)(a.file).size > FILE_COMPACT_BYTES) {
+      const keep = readTail(a.file, 2 * 1024 * 1024);
+      const tmp = `${a.file}.tmp.${process.pid}`;
+      (0, import_node_fs5.writeFileSync)(tmp, keep.map((r) => JSON.stringify(r)).join("\n") + "\n", "utf8");
+      (0, import_node_fs5.renameSync)(tmp, a.file);
+    }
+  } catch (e) {
+    console.error("[wa-ai] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u0436\u0430\u0442\u044C wa-assistant.jsonl:", e.message);
+  }
+  const from = host2.now() - 30 * DAY;
+  for (const row of readTail(a.file, FILE_TAIL_BYTES)) if ((typeof row?.ts === "number" ? row.ts : Date.parse(String(row?.ts || ""))) >= from) apply(a, row);
+  A = a;
+}
+function aiReset() {
+  if (A) {
+    for (const p of A.pending.values()) if (p.timer) clearTimeout(p.timer);
+  }
+  A = null;
+}
+var cache = null;
+function loadSystem() {
+  const dir = promptDir();
+  try {
+    const f1 = (0, import_node_path5.join)(dir, "prompt.md");
+    const f2 = (0, import_node_path5.join)(dir, "knowledge.md");
+    const key = `${dir}|${(0, import_node_fs5.statSync)(f1).mtimeMs}|${(0, import_node_fs5.statSync)(f2).mtimeMs}`;
+    if (cache?.key === key) return { ok: true, system: cache.system };
+    const prompt = (0, import_node_fs5.readFileSync)(f1, "utf8").trim();
+    const knowledge = (0, import_node_fs5.readFileSync)(f2, "utf8").trim();
+    if (!prompt || !knowledge) return { ok: false, error: "prompt.md \u0438\u043B\u0438 knowledge.md \u043F\u0443\u0441\u0442\u043E\u0439" };
+    cache = { key, system: `${prompt}
+
+# \u0411\u0430\u0437\u0430 \u0437\u043D\u0430\u043D\u0438\u0439
+
+${knowledge}` };
+    return { ok: true, system: cache.system };
+  } catch {
+    return { ok: false, error: `\u043D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 prompt.md \u0438 knowledge.md \u0432 ${dir}` };
+  }
+}
+function prerequisites() {
+  if (!apiKey()) return { ok: false, reason: "\u041D\u0435\u0442 \u043A\u043B\u044E\u0447\u0430 OPENAI_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
+  const f = loadSystem();
+  if (!f.ok) return { ok: false, reason: `\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442: ${f.error}.` };
+  if (!evoKey()) return { ok: false, reason: "\u041D\u0435\u0442 EVOLUTION_API_KEY: \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
+  return { ok: true };
+}
+async function callModel(messages) {
+  const key = apiKey();
+  if (!key) return { ok: false, error: "\u043D\u0435\u0442 \u043A\u043B\u044E\u0447\u0430 OPENAI_API_KEY" };
+  try {
+    const res = await fetch(`${openaiBase()}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: MODEL(), messages, reasoning_effort: "low", max_completion_tokens: 1200 }),
+      signal: AbortSignal.timeout(timeoutMs())
+    });
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch {
+      data = null;
+    }
+    if (!res.ok) return { ok: false, error: scrub2(`${res.status} ${clipText(data?.error?.message || res.statusText || raw, 120)}`) };
+    const choice = data?.choices?.[0];
+    const text2 = choice?.message?.content;
+    if (choice?.finish_reason === "length") return { ok: false, error: "\u043E\u0442\u0432\u0435\u0442 \u043E\u0431\u043E\u0440\u0432\u0430\u043B\u0441\u044F \u043F\u043E \u0434\u043B\u0438\u043D\u0435" };
+    if (typeof text2 !== "string" || !text2.trim()) return { ok: false, error: choice?.message?.refusal ? "\u043C\u043E\u0434\u0435\u043B\u044C \u043E\u0442\u043A\u0430\u0437\u0430\u043B\u0430\u0441\u044C \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C" : "\u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438" };
+    return { ok: true, text: text2 };
+  } catch (e) {
+    const err = e;
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, error: "\u0442\u0430\u0439\u043C\u0430\u0443\u0442" };
+    return { ok: false, error: scrub2(String(err?.cause?.code || err?.message || err)).slice(0, 120) };
+  }
+}
+var reviewNote = (reasons) => `\u0421\u043B\u0443\u0436\u0435\u0431\u043D\u043E\u0435 \u0437\u0430\u043C\u0435\u0447\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438: \u0442\u0432\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D, \u043F\u043E\u0442\u043E\u043C\u0443 \u0447\u0442\u043E ${reasons.map((r) => REASON_TEXT[r]).join("; ")}. \u041D\u0430\u043F\u0438\u0448\u0438 \u043D\u043E\u0432\u044B\u0439 \u043E\u0442\u0432\u0435\u0442: \u0434\u043E 350 \u0437\u043D\u0430\u043A\u043E\u0432, \u0431\u0435\u0437 \u0446\u0435\u043D \u0438 \u043B\u044E\u0431\u044B\u0445 \u0446\u0438\u0444\u0440 \u043E\u043F\u043B\u0430\u0442\u044B, \u0431\u0435\u0437 \u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\u0438 \u0438 \u043F\u0440\u0435\u0434\u043E\u043F\u043B\u0430\u0442\u044B, \u0431\u0435\u0437 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432 \u0438 \u043A\u0435\u0439\u0441\u043E\u0432, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u043E\u0432 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u0432, \u0442\u043E\u043B\u044C\u043A\u043E \u0441\u0441\u044B\u043B\u043A\u0438 \u0438 \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u044B \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445, \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u0438\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u0435\u043D \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440, \u0434\u0430\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0430 \u0448\u043A\u043E\u043B\u044B. \u0412\u044B\u0434\u0430\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u0435\u043A\u0441\u0442 \u043E\u0442\u0432\u0435\u0442\u0430.`;
+async function makeReply(messages) {
+  const rejected = [];
+  const first = await callModel(messages);
+  if (!first.ok) return { ok: false, error: first.error, rejected };
+  let c = cleanReply(first.text);
+  let reasons = checkReply(c.text);
+  const accept = (x) => ({ ok: true, text: x.text, via: "model", handoff: x.mark || AYANA_RE.test(x.text), summary: x.summary, rejected });
+  if (!reasons.length) return accept(c);
+  rejected.push(reasons);
+  const second = await callModel([...messages, { role: "assistant", content: first.text }, { role: "system", content: reviewNote(reasons) }]);
+  if (!second.ok) return { ok: false, error: second.error, rejected };
+  c = cleanReply(second.text);
+  reasons = checkReply(c.text);
+  if (!reasons.length) return accept(c);
+  rejected.push(reasons);
+  return { ok: true, text: SAFE_FALLBACK, via: "fallback", handoff: false, summary: "", rejected };
+}
+function buildMessages(system, conv, now) {
+  const out = [{ role: "system", content: `${system}
+
+\u0421\u0435\u0439\u0447\u0430\u0441 ${hhmmOf(now)} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.` }];
+  for (const r of conv.rows.slice(-HISTORY)) {
+    const last = out[out.length - 1];
+    if (last.role === r.role) last.content += `
+${r.text}`;
+    else out.push({ role: r.role, content: r.text });
+  }
+  return out;
+}
+async function alarmOnce(a, key, windowMs, text2) {
+  const now = a.host.now();
+  if (now - (a.alarmAt.get(key) || 0) < windowMs) return;
+  a.alarmAt.set(key, now);
+  try {
+    await a.host.alarm(text2);
+  } catch {
+  }
+}
+function schedule(a, jid) {
+  const p = a.pending.get(jid);
+  if (!p) return;
+  if (p.timer) clearTimeout(p.timer);
+  const cap = Number(env2("WA_AI_MAX_WAIT_MS")) || Math.max(6e4, quietMs());
+  const wait2 = Math.min(quietMs(), Math.max(0, p.firstAt + cap - Date.now()));
+  p.timer = setTimeout(() => runBatch(a, jid), wait2);
+  p.timer.unref?.();
+}
+function runBatch(a, jid) {
+  const p = a.pending.get(jid);
+  if (!p) return Promise.resolve();
+  if (p.timer) {
+    clearTimeout(p.timer);
+    p.timer = null;
+  }
+  if (a.inflight.has(jid)) {
+    p.firstAt = Date.now();
+    schedule(a, jid);
+    return Promise.resolve();
+  }
+  a.pending.delete(jid);
+  a.inflight.add(jid);
+  const job = answer(a, jid, p).catch((e) => console.error("[wa-ai] \u043E\u0442\u0432\u0435\u0442 \u0443\u043F\u0430\u043B:", scrub2(String(e?.message || e)).slice(0, 200))).finally(() => {
+    a.inflight.delete(jid);
+    a.running.delete(job);
+  });
+  a.running.add(job);
+  return job;
+}
+function ingest(a, inc3) {
+  const now = a.host.now();
+  const st2 = a.host.state();
+  if (!st2.enabled) return;
+  if (inc3.ts && now - inc3.ts > STALE_MS) return;
+  if (a.host.ignoreDigits().includes(inc3.jid.replace(/@.*$/, ""))) return;
+  if (inc3.mid) {
+    if (a.seen.has(inc3.mid)) return;
+    rememberMid(a, inc3.mid);
+  }
+  const row = { ts: now, jid: inc3.jid, role: "user", text: inc3.text, ...inc3.mid ? { mid: inc3.mid } : {} };
+  append(a, row);
+  apply(a, row);
+  const conv = convoOf(a, inc3.jid);
+  if (conv.silencedUntil > now) return;
+  let p = a.pending.get(inc3.jid);
+  if (!p) {
+    p = { texts: [], timer: null, firstAt: Date.now() };
+    a.pending.set(inc3.jid, p);
+  }
+  if (inc3.kind === "text") p.texts.push(inc3.text);
+  schedule(a, inc3.jid);
+}
+async function answer(a, jid, p) {
+  const h = a.host;
+  const now0 = h.now();
+  if (!h.state().enabled) return;
+  const can = h.canSend();
+  if (!can.ok) {
+    if (now0 - a.skipNoteAt > HOUR) {
+      a.skipNoteAt = now0;
+      h.journal({ ev: "ai_skip", who: maskJid(jid), why: can.why });
+    }
+    return;
+  }
+  const conv = convoOf(a, jid);
+  if (conv.silencedUntil > now0) return;
+  const day = dayKeyOf(now0);
+  const s = statsOf(a, day);
+  if (s.replies >= LIMIT_TOTAL) {
+    await alarmOnce(a, `total:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u0443\u0436\u0435 ${LIMIT_TOTAL} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0441 \u043D\u043E\u043C\u0435\u0440\u0430, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B. \u0414\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043B\u044E\u0434\u044F\u043C \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
+    return;
+  }
+  if ((s.per.get(jid) || 0) >= LIMIT_PERSON) {
+    await alarmOnce(a, `person:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0447\u0435\u043B\u043E\u0432\u0435\u043A ${maskJid(jid)} \u043F\u043E\u043B\u0443\u0447\u0438\u043B ${LIMIT_PERSON} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438. \u0415\u043C\u0443 \u0434\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
+    return;
+  }
+  let text2 = MEDIA_PHRASE;
+  let via = "media";
+  let handoff = false;
+  let summary = "";
+  if (!p.texts.length) {
+    const lastBot = [...conv.rows].reverse().find((r) => r.role === "assistant");
+    if (lastBot?.text === MEDIA_PHRASE) return;
+  } else {
+    const sys = loadSystem();
+    if (!sys.ok) {
+      await alarmOnce(a, "files", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0435\u0442\u0438\u0442\u044C: ${sys.error}.`);
+      return;
+    }
+    const made = await makeReply(buildMessages(sys.system, conv, now0));
+    for (const reasons of made.rejected) {
+      append(a, { ts: h.now(), jid, ev: "reject", reasons });
+      statsOf(a, day).rejected++;
+    }
+    if (!made.ok) {
+      append(a, { ts: h.now(), jid, ev: "error", error: clipText(made.error, 120) });
+      statsOf(a, day).errors++;
+      log("\u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (%s): %s", maskJid(jid), made.error);
+      await alarmOnce(a, "openai", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (${made.error}). \u0427\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
+      return;
+    }
+    text2 = made.text;
+    via = made.via;
+    handoff = made.handoff;
+    summary = made.summary;
+    if (made.via === "fallback") {
+      append(a, { ts: h.now(), jid, ev: "fallback" });
+      statsOf(a, day).fallbacks++;
+    }
+  }
+  if (!h.state().enabled || convoOf(a, jid).silencedUntil > h.now()) return;
+  const can2 = h.canSend();
+  if (!can2.ok) return;
+  const delay = PAUSE_MS[0] + Math.round(h.rand() * (PAUSE_MS[1] - PAUSE_MS[0]));
+  const sent = await h.exclusive(() => sendText(jid, text2, { delay }));
+  if (!sent.ok) {
+    append(a, { ts: h.now(), jid, ev: "error", error: clipText(sent.error, 120) });
+    statsOf(a, day).errors++;
+    log("\u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u043E\u0441\u044C (%s): %s", maskJid(jid), sent.error);
+    await alarmOnce(a, "send", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 ${maskJid(jid)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clipText(sent.error, 100)}). \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
+    return;
+  }
+  const ts = h.now();
+  const row = { ts, jid, role: "assistant", text: text2, via };
+  append(a, row);
+  apply(a, row);
+  log("\u043E\u0442\u0432\u0435\u0442 \u0443\u0448\u0451\u043B: %s, %s", maskJid(jid), via);
+  if (handoff) {
+    const last = [...conv.rows].reverse().find((r) => r.role === "user")?.text || "";
+    const why = clipText(stripLinks(summary) || stripLinks(last), 200);
+    append(a, { ts, jid, ev: "handoff", summary: why });
+    apply(a, { ts, jid, ev: "handoff" });
+    h.journal({ ev: "ai_handoff", who: maskJid(jid), why: clipText(why, 120) });
+    try {
+      await h.notify(
+        `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp \u043F\u0435\u0440\u0435\u0434\u0430\u043B \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443: +${jid.replace(/[:@].*$/, "")}${jid.endsWith("@lid") ? " (\u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0439 ID WhatsApp, \u043D\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D)" : ""}.
+\u0421\u0443\u0442\u044C: ${why || "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430"}.
+\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432.`
+      );
+    } catch {
+    }
+  }
+}
+function stripLinks(s) {
+  return s.replace(URL_RE, "[\u0441\u0441\u044B\u043B\u043A\u0430]").replace(BARE_RE, "[\u0430\u0434\u0440\u0435\u0441]");
+}
+var LOCAL_ADDR = /* @__PURE__ */ new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+var PROXY_HEADERS = ["x-forwarded-for", "x-real-ip", "forwarded", "x-forwarded-host", "x-forwarded-proto"];
+var hashOf = (s) => (0, import_node_crypto3.createHash)("sha256").update(s).digest();
+function hookSecret() {
+  return env2("WA_HOOK_SECRET") || A?.host.state().secret || "";
+}
+function hookAuth(req) {
+  if (!LOCAL_ADDR.has(req.socket.remoteAddress || "") || PROXY_HEADERS.some((h) => req.headers[h] !== void 0)) return 403;
+  const secret2 = hookSecret();
+  const got = req.headers["x-wa-hook-secret"];
+  const provided = Array.isArray(got) ? got[0] : got;
+  if (!secret2 || !provided || !(0, import_node_crypto3.timingSafeEqual)(hashOf(secret2), hashOf(provided))) return 401;
+  return 0;
+}
+function readLimited(req, max) {
+  return new Promise((resolve) => {
+    let size = 0;
+    let over = false;
+    const chunks = [];
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > max) over = true;
+      else chunks.push(c);
+    });
+    req.on("end", () => resolve(over ? null : Buffer.concat(chunks).toString("utf8")));
+    req.on("error", () => resolve(null));
+  });
+}
+function ingestPayload(a, body) {
+  const ev = String(body?.event || "").toLowerCase().replace(/_/g, ".");
+  if (ev !== "messages.upsert") return;
+  if (body?.instance && String(body.instance) !== evoInstance()) return;
+  const list = Array.isArray(body?.data) ? body.data : body?.data ? [body.data] : [];
+  for (const d of list) {
+    const inc3 = classifyIncoming(d);
+    if (inc3) ingest(a, inc3);
+  }
+}
+async function handleWaHook(req, res) {
+  const send2 = (status, body) => {
+    const payload = JSON.stringify(body);
+    res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
+    res.end(payload);
+  };
+  const bad = hookAuth(req);
+  if (bad) {
+    req.resume();
+    return send2(bad, { ok: false });
+  }
+  const raw = await readLimited(req, 512 * 1024);
+  const a = A;
+  if (a) a.lastHookAt = a.host.now();
+  send2(200, { ok: true });
+  if (raw !== null && bridge) {
+    try {
+      bridge.tap(JSON.parse(raw));
+    } catch (e) {
+      console.error("[wa-ai] \u043C\u043E\u0441\u0442 \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A:", scrub2(String(e?.message || e)).slice(0, 120));
+    }
+  }
+  if (!a || raw === null || !a.host.state().enabled) return;
+  try {
+    ingestPayload(a, JSON.parse(raw));
+  } catch (e) {
+    console.error("[wa-ai] \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B \u0432\u0435\u0431\u0445\u0443\u043A:", scrub2(String(e?.message || e)).slice(0, 120));
+  }
+}
+var hookArgs = (on) => ({ url: hookUrl(), enabled: on, events: ["MESSAGES_UPSERT"], headers: { "X-Wa-Hook-Secret": hookSecret() } });
+function ensureSecret(a) {
+  const cur = a.host.state().secret;
+  if (cur || env2("WA_HOOK_SECRET")) return cur;
+  const secret2 = (0, import_node_crypto3.randomBytes)(24).toString("hex");
+  a.host.patch({ secret: secret2 });
+  return secret2;
+}
+async function aiTick(now) {
+  const a = A;
+  if (!a) return;
+  const st2 = a.host.state();
+  const want = st2.enabled && prerequisites().ok || bridgeWantsHook();
+  if (want === st2.hookOn && !(want && now - a.hookAssertAt >= 6 * HOUR)) return;
+  if (now - a.hookTryAt < MIN) return;
+  a.hookTryAt = now;
+  if (want) ensureSecret(a);
+  const r = await setWebhook(hookArgs(want));
+  if (r.ok) {
+    a.hookFails = 0;
+    a.hookAssertAt = now;
+    if (want !== st2.hookOn) {
+      a.host.patch({ hookOn: want });
+      a.host.journal({ ev: want ? st2.enabled ? "ai_on" : "bridge_hook_on" : "ai_off", by: "tick" });
+    }
+    return;
+  }
+  a.hookFails++;
+  log("\u0432\u0435\u0431\u0445\u0443\u043A Evolution \u043D\u0435 %s: %s", want ? "\u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B\u0441\u044F" : "\u0441\u043D\u044F\u043B\u0441\u044F", r.error);
+  if (a.hookFails >= 3) await alarmOnce(a, "hook", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0432\u0435\u0431\u0445\u0443\u043A Evolution ${want ? "\u043D\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F" : "\u043D\u0435 \u0441\u043D\u0438\u043C\u0430\u0435\u0442\u0441\u044F"} (${clipText(r.error, 100)}). \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E Evolution \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442.`);
+}
+var ddmm2 = (ms) => {
+  const d = dayKeyOf(ms);
+  return `${d.slice(8, 10)}.${d.slice(5, 7)}`;
+};
+var agoText = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1e3));
+  return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
+};
+function aiPanel(nowArg) {
+  const a = A;
+  if (!a) return { available: false };
+  const now = nowArg ?? a.host.now();
+  const st2 = a.host.state();
+  const s = statsOf(a, dayKeyOf(now));
+  const pre = prerequisites();
+  let reason = "";
+  if (!pre.ok) reason = pre.reason;
+  else if (st2.enabled) {
+    const can = a.host.canSend();
+    if (!can.ok) reason = `\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${can.why}.`;
+    else if (!st2.hookOn) reason = "\u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D, \u043F\u043E\u0432\u0442\u043E\u0440\u044E \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0443\u044E \u043C\u0438\u043D\u0443\u0442\u0443.";
+    else if (!a.lastHookAt) reason = "\u0412\u0435\u0431\u0445\u0443\u043A \u0441\u0442\u043E\u0438\u0442, \u043D\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u043E\u0442 Evolution \u0441 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0431\u044B\u043B\u043E.";
+  }
+  const dialogs = [...a.convos.values()].filter((c) => c.rows.length).sort((x, y) => y.lastAt - x.lastAt).slice(0, 20).map((c) => {
+    const lastUser = [...c.rows].reverse().find((r) => r.role === "user");
+    const lastBot = [...c.rows].reverse().find((r) => r.role === "assistant");
+    return {
+      id: idOf(c.jid),
+      who: maskJid(c.jid),
+      at: `${ddmm2(c.lastAt)} ${hhmmOf(c.lastAt)}`,
+      last: clipText(lastUser?.text, 140),
+      reply: clipText(lastBot?.text, 200),
+      answered: !!lastBot && (!lastUser || lastBot.ts >= lastUser.ts),
+      handoff: c.silencedUntil > now
+    };
+  });
+  return {
+    available: true,
+    enabled: st2.enabled,
+    hookOn: st2.hookOn,
+    canEnable: pre.ok,
+    reason,
+    model: MODEL(),
+    counters: { dialogs: s.dialogs.size, replies: s.replies, handoffs: s.handoffs, rejected: s.rejected },
+    limits: { person: LIMIT_PERSON, total: LIMIT_TOTAL },
+    lastHook: a.lastHookAt ? agoText(now - a.lastHookAt) : "",
+    dialogs
+  };
+}
+function aiNumber(id) {
+  const a = A;
+  if (!a) return fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D.");
+  const c = typeof id === "string" ? [...a.convos.values()].find((x) => idOf(x.jid) === id) : void 0;
+  if (!c) return fail("not_found", "\u0414\u0438\u0430\u043B\u043E\u0433 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D.");
+  const digits = c.jid.replace(/[:@].*$/, "");
+  return { ok: true, message: c.jid.endsWith("@lid") ? "\u042D\u0442\u043E \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0439 ID WhatsApp, \u0430 \u043D\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D." : "\u041D\u043E\u043C\u0435\u0440 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430.", number: c.jid.endsWith("@lid") ? `${digits} (lid)` : `+${digits}` };
+}
+var MODULE_OFF = fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
+async function aiSetEnabled(on) {
+  const a = A;
+  if (!a) return MODULE_OFF;
+  if (typeof on !== "boolean") return fail("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
+  if (a.toggling) return fail("busy", "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0435\u0449\u0451 \u0438\u0434\u0451\u0442, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434.");
+  a.toggling = true;
+  try {
+    const st2 = a.host.state();
+    if (on) {
+      if (st2.enabled && st2.hookOn) return { ok: true, code: "same", message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
+      const pre = prerequisites();
+      if (!pre.ok) return fail("no_key", `${pre.reason} \u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
+      ensureSecret(a);
+      const r = await a.host.exclusive(() => setWebhook(hookArgs(true)));
+      if (!r.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A \u0432 Evolution: ${clipText(r.error, 120)}. \u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
+      a.host.patch({ enabled: true, hookOn: true });
+      a.hookAssertAt = a.host.now();
+      a.hookFails = 0;
+      a.host.journal({ ev: "ai_on", by: "panel" });
+      log("\u0432\u043A\u043B\u044E\u0447\u0451\u043D");
+      return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D. \u041E\u043D \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u0435\u043C, \u043A\u0442\u043E \u043D\u0430\u043F\u0438\u0441\u0430\u043B \u043D\u043E\u043C\u0435\u0440\u0443 \u0432 \u043B\u0438\u0447\u043A\u0443. \u041F\u0435\u0440\u0432\u044B\u043C \u043D\u0438\u043A\u043E\u043C\u0443 \u043D\u0435 \u043F\u0438\u0448\u0435\u0442." };
+    }
+    if (!st2.enabled && (!st2.hookOn || bridgeWantsHook())) return { ok: true, code: "same", message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D." };
+    a.host.patch({ enabled: false });
+    for (const p of a.pending.values()) if (p.timer) clearTimeout(p.timer);
+    a.pending.clear();
+    a.host.journal({ ev: "ai_off", by: "panel" });
+    log("\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D");
+    if (st2.hookOn && bridgeWantsHook()) return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F: \u043E\u043D \u043D\u0443\u0436\u0435\u043D \u043C\u043E\u0441\u0442\u0443 \u0432 \u0431\u043E\u0442\u0430." };
+    if (st2.hookOn) {
+      a.hookTryAt = a.host.now();
+      const r = await a.host.exclusive(() => setWebhook(hookArgs(false)));
+      if (r.ok) a.host.patch({ hookOn: false });
+      else return { ok: true, code: "hook_pending", message: `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0441\u043D\u044F\u0442\u044C \u043D\u0435 \u0432\u044B\u0448\u043B\u043E (${clipText(r.error, 100)}), \u043F\u043E\u0432\u0442\u043E\u0440\u044E \u0441\u0430\u043C \u0432 \u0442\u0435\u0447\u0435\u043D\u0438\u0435 \u043C\u0438\u043D\u0443\u0442\u044B.` };
+    }
+    return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0441\u043D\u044F\u0442, \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043A OpenAI \u043D\u0435\u0442." };
+  } finally {
+    a.toggling = false;
+  }
+}
+async function aiTest(question) {
+  const a = A;
+  if (!a) return MODULE_OFF;
+  const q2 = typeof question === "string" ? question.replace(/\u0000/g, "").trim().slice(0, 1e3) : "";
+  if (!q2) return fail("bad_request", "\u041D\u0430\u043F\u0438\u0448\u0438 \u0432\u043E\u043F\u0440\u043E\u0441, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0442\u043E\u0438\u0442 \u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435?");
+  const pre = prerequisites();
+  if (!pre.ok) return fail("no_key", pre.reason);
+  const now = a.host.now();
+  a.testAt = a.testAt.filter((t) => now - t < HOUR);
+  if (a.testAt.length && now - a.testAt[a.testAt.length - 1] < 3e3) return fail("rate", "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0447\u0430\u0441\u0442\u043E, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043F\u0430\u0440\u0443 \u0441\u0435\u043A\u0443\u043D\u0434.");
+  if (a.testAt.length >= 20) return fail("rate", "\u041F\u0440\u043E\u0432\u0435\u0440\u043E\u043A \u0437\u0430 \u0447\u0430\u0441 \u0443\u0436\u0435 20. \u041F\u043E\u0434\u043E\u0436\u0434\u0438, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0442\u0440\u0430\u0442\u0438\u0442\u044C \u0434\u0435\u043D\u044C\u0433\u0438 \u043D\u0430 \u043C\u043E\u0434\u0435\u043B\u044C.");
+  a.testAt.push(now);
+  const sys = loadSystem();
+  if (!sys.ok) return fail("no_key", `\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442: ${sys.error}.`);
+  const made = await makeReply([
+    { role: "system", content: `${sys.system}
+
+\u0421\u0435\u0439\u0447\u0430\u0441 ${hhmmOf(now)} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.` },
+    { role: "user", content: q2 }
+  ]);
+  if (!made.ok) return fail("model", `\u041C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430: ${made.error}.`);
+  const reasons = made.rejected.flat().map((r) => REASON_TEXT[r]);
+  return {
+    ok: true,
+    message: made.via === "fallback" ? "\u041E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u043F\u0440\u043E\u0448\u0451\u043B \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0434\u0432\u0430\u0436\u0434\u044B, \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u0443\u0448\u043B\u0430 \u0431\u044B \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u0437\u0430\u0433\u043E\u0442\u043E\u0432\u043A\u0430." : "\u041E\u0442\u0432\u0435\u0442 \u043F\u0440\u043E\u0448\u0451\u043B \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443.",
+    reply: made.text,
+    verdict: made.via === "fallback" ? "fallback" : "ok",
+    reasons: [...new Set(reasons)],
+    handoff: made.handoff
+  };
+}
+async function aiCommand(cmd, args) {
+  if (!A) return MODULE_OFF.message;
+  if (cmd === "wa_ai_test") {
+    const r = await aiTest(args);
+    if (!r.ok) return r.message;
+    return `\u041E\u0442\u0432\u0435\u0442 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 (\u0432 WhatsApp \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u043B\u0441\u044F):
+${r.reply}
+
+${r.message}${r.reasons?.length ? `
+\u041E\u0442\u043A\u043B\u043E\u043D\u044F\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439: ${r.reasons.join("; ")}.` : ""}${r.handoff ? "\n\u041F\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443: \u0434\u0430." : ""}`;
+  }
+  const arg = args.trim().toLowerCase();
+  if (arg === "on" || arg === "off") return (await aiSetEnabled(arg === "on")).message;
+  const p = aiPanel();
+  const c = p.counters;
+  return [
+    `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: ${p.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0451\u043D" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D"}${p.reason ? `. ${p.reason}` : ""}`,
+    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F: \u0434\u0438\u0430\u043B\u043E\u0433\u043E\u0432 ${c.dialogs}, \u043E\u0442\u0432\u0435\u0442\u043E\u0432 ${c.replies}, \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443 ${c.handoffs}, \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439 ${c.rejected}.`,
+    "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_ai on, \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_ai off, \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u043E\u0442\u0432\u0435\u0442 \u0431\u0435\u0437 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438: /wa_ai_test \u0432\u043E\u043F\u0440\u043E\u0441"
+  ].join("\n");
+}
+
+// form-api/wa-bridge.ts
+var env3 = (k) => (process.env[k] || "").trim();
+var MIN2 = 6e4;
+var HOUR2 = 36e5;
+var DAY2 = 24 * HOUR2;
+var SENT_KEEP_MS = 7 * DAY2;
+var JOURNAL_KEEP_MS = 14 * DAY2;
+var JOURNAL_COMPACT_BYTES = 4 * 1024 * 1024;
+var JOURNAL_TAIL_BYTES = 2 * 1024 * 1024;
+var AUDIO_MAX_BYTES = 10 * 1024 * 1024;
+var IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+var TEXT_MAX = 16e3;
+var SEND_TEXT_MAX = 4e3;
+var SEND_BODY_MAX = 64 * 1024;
+var bridgeOn = () => env3("WA_BRIDGE").toLowerCase() === "on";
+var secret = () => env3("WA_BRIDGE_SECRET");
+var botUrl = () => env3("WA_BRIDGE_URL") || "https://ig.onai.academy/wa/inbound";
+var allowIps = () => (env3("WA_BRIDGE_ALLOW_IP") || "188.137.233.28").split(",").map((s) => s.trim()).filter(Boolean);
+var bridgeActive = () => bridgeOn() && !!secret();
+var imagesOn = () => env3("WA_BRIDGE_IMAGES").toLowerCase() === "on";
+var timeoutMs2 = () => {
+  const n = Number(env3("WA_BRIDGE_TIMEOUT_MS"));
+  return Number.isFinite(n) && n > 0 ? n : 1e4;
+};
+var retryDelays = () => {
+  const raw = env3("WA_BRIDGE_RETRY_MS");
+  if (!raw) return [1e3, 3e3];
+  const out = raw.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n >= 0);
+  return out.length ? out : [1e3, 3e3];
+};
+var mediaRetryMs = () => {
+  const n = Number(env3("WA_BRIDGE_MEDIA_RETRY_MS"));
+  return Number.isFinite(n) && n >= 0 && env3("WA_BRIDGE_MEDIA_RETRY_MS") !== "" ? n : 2e3;
+};
+function sign(raw) {
+  return (0, import_node_crypto4.createHmac)("sha256", secret()).update(raw).digest("hex");
+}
+function signatureOk(raw, header2) {
+  const key = secret();
+  if (!key || !header2 || !/^[0-9a-f]{64}$/i.test(header2)) return false;
+  const expect = (0, import_node_crypto4.createHmac)("sha256", key).update(raw).digest();
+  return (0, import_node_crypto4.timingSafeEqual)(Buffer.from(header2, "hex"), expect);
+}
+var S = null;
+var host = () => aiHost();
+var nowMs = () => host()?.now() ?? Date.now();
+var dataDir = () => host()?.dir || env3("DATA_DIR") || (0, import_node_path6.join)(__dirname, "data");
+var fSent = (dir) => (0, import_node_path6.join)(dir, "wa-bridge-sent.jsonl");
+var fJournal = (dir) => (0, import_node_path6.join)(dir, "wa-bridge.jsonl");
+var iso = (ms) => new Date(ms).toISOString();
+var log2 = (msg, ...args) => console.log(`[wa-bridge] ${msg}`, ...args);
+function scrub3(s) {
+  let out = s;
+  for (const k of [secret(), evoKey()]) if (k) out = out.split(k).join("***");
+  return out;
+}
+var clip = (s, n) => {
+  const t = String(s ?? "").replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
+};
+function readTail2(file, maxBytes) {
+  try {
+    const size = (0, import_node_fs6.statSync)(file).size;
+    const start = Math.max(0, size - maxBytes);
+    const buf = Buffer.alloc(size - start);
+    const fd = (0, import_node_fs6.openSync)(file, "r");
+    try {
+      (0, import_node_fs6.readSync)(fd, buf, 0, buf.length, start);
+    } finally {
+      (0, import_node_fs6.closeSync)(fd);
+    }
+    let text2 = buf.toString("utf8");
+    if (start > 0) text2 = text2.slice(text2.indexOf("\n") + 1);
+    const out = [];
+    for (const line of text2.split("\n")) {
+      const s = line.trim();
+      if (!s) continue;
+      try {
+        out.push(JSON.parse(s));
+      } catch {
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+function writeAtomic(file, rows) {
+  const tmp = `${file}.tmp.${process.pid}`;
+  (0, import_node_fs6.writeFileSync)(tmp, rows.map((r) => JSON.stringify(r)).join("\n") + (rows.length ? "\n" : ""), "utf8");
+  (0, import_node_fs6.renameSync)(tmp, file);
+}
+function append2(file, row) {
+  try {
+    (0, import_node_fs6.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
+  } catch (e) {
+    console.error("[wa-bridge] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C %s:", file, e.message);
+  }
+}
+var kindOfRow = (r) => {
+  if (r?.ev === "fwd") return r.ok ? "fwd_ok" : r.code === 404 ? "fwd_off" : "fwd_err";
+  if (r?.ev === "send") return r.ok ? r.dup ? "snd_dup" : "snd_ok" : "snd_err";
+  return null;
+};
+function st() {
+  const dir = dataDir();
+  if (S && S.dir === dir) return S;
+  (0, import_node_fs6.mkdirSync)(dir, { recursive: true });
+  const now = nowMs();
+  const s = { dir, sent: /* @__PURE__ */ new Map(), inflight: /* @__PURE__ */ new Map(), chains: /* @__PURE__ */ new Map(), seen: /* @__PURE__ */ new Set(), events: [], alarmAt: /* @__PURE__ */ new Map(), denyAt: /* @__PURE__ */ new Map(), lastFwd: null, lastIn: 0, appends: 0 };
+  try {
+    const rows = [];
+    if ((0, import_node_fs6.existsSync)(fSent(dir))) {
+      for (const line of (0, import_node_fs6.readFileSync)(fSent(dir), "utf8").split("\n")) {
+        try {
+          if (line.trim()) rows.push(JSON.parse(line));
+        } catch {
+        }
+      }
+    }
+    for (const r of rows) if (typeof r?.key === "string" && typeof r?.ts === "number" && now - r.ts < SENT_KEEP_MS) s.sent.set(r.key, { ts: r.ts, id: String(r.id || "") });
+    if (rows.length !== s.sent.size) writeAtomic(fSent(dir), [...s.sent].map(([key, v]) => ({ ts: v.ts, key, id: v.id })));
+  } catch (e) {
+    console.error("[wa-bridge] \u043D\u0435 \u0441\u043C\u043E\u0433 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C wa-bridge-sent.jsonl:", e.message);
+  }
+  try {
+    if ((0, import_node_fs6.existsSync)(fJournal(dir)) && (0, import_node_fs6.statSync)(fJournal(dir)).size > JOURNAL_COMPACT_BYTES) compactJournal(dir, now);
+    for (const r of readTail2(fJournal(dir), JOURNAL_TAIL_BYTES)) {
+      const t = Date.parse(String(r?.ts || ""));
+      const k = kindOfRow(r);
+      if (!Number.isFinite(t) || !k) continue;
+      if (now - t < DAY2) {
+        s.events.push({ t, k });
+        if (r.ev === "fwd" && r.nonum) s.events.push({ t, k: "fwd_nonum" });
+      }
+      if (r.ev === "fwd") s.lastFwd = { t, code: Number(r.code) || 0, text: "" };
+      if (r.ev === "send") s.lastIn = Math.max(s.lastIn, t);
+    }
+  } catch (e) {
+    console.error("[wa-bridge] \u043D\u0435 \u0441\u043C\u043E\u0433 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C wa-bridge.jsonl:", e.message);
+  }
+  S = s;
+  return s;
+}
+function compactJournal(dir, now) {
+  const keep = readTail2(fJournal(dir), JOURNAL_TAIL_BYTES).filter((r) => now - Date.parse(String(r?.ts || "")) < JOURNAL_KEEP_MS);
+  writeAtomic(fJournal(dir), keep);
+}
+function journal(s, row) {
+  append2(fJournal(s.dir), { ts: iso(nowMs()), ...row });
+  if (++s.appends % 500 === 0) {
+    try {
+      if ((0, import_node_fs6.statSync)(fJournal(s.dir)).size > JOURNAL_COMPACT_BYTES) compactJournal(s.dir, nowMs());
+    } catch {
+    }
+  }
+}
+function noteEvent(s, k) {
+  const t = nowMs();
+  s.events.push({ t, k });
+  if (s.events.length > 2e4 || s.events.length && t - s.events[0].t > DAY2 + HOUR2) s.events = s.events.filter((e) => t - e.t < DAY2);
+}
+async function alarmOnce2(s, key, text2) {
+  const t = nowMs();
+  if (t - (s.alarmAt.get(key) || 0) < HOUR2) return;
+  s.alarmAt.set(key, t);
+  const h = host();
+  try {
+    if (h) await h.alarm(text2);
+    else console.warn("[wa-bridge] \u0442\u0440\u0435\u0432\u043E\u0433\u0430: %s", text2);
+  } catch {
+  }
+}
+var PERSON = /^(\d{5,20})(?::\d+)?@(s\.whatsapp\.net|lid)$/;
+var PHONE = /^(\d{10,15})(?::\d+)?(?:@s\.whatsapp\.net)?$/;
+var WRAPPERS = ["ephemeralMessage", "viewOnceMessage", "viewOnceMessageV2", "viewOnceMessageV2Extension", "documentWithCaptionMessage"];
+var MEDIA_NODES = [
+  ["audioMessage", "audio"],
+  ["imageMessage", "image"],
+  ["videoMessage", "video"],
+  ["ptvMessage", "video"],
+  ["documentMessage", "document"]
+];
+function unwrap2(m) {
+  let cur = m;
+  for (let i = 0; i < 4 && cur && typeof cur === "object"; i++) {
+    let inner = null;
+    for (const w of WRAPPERS) if (cur[w]?.message) inner = cur[w].message;
+    if (!inner) break;
+    cur = inner;
+  }
+  return cur;
+}
+function secondsOf(ts) {
+  let n = 0;
+  if (typeof ts === "number") n = ts;
+  else if (typeof ts === "string") n = Number(ts);
+  else if (ts && typeof ts === "object") n = Number(ts.low ?? ts.toString?.());
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.floor(n > 1e12 ? n / 1e3 : n);
+}
+var numOf = (x) => {
+  const n = typeof x === "object" && x ? Number(x.low ?? x.toString?.()) : Number(x);
+  return Number.isFinite(n) ? n : 0;
+};
+function cleanMime(x, fallback) {
+  const s = String(x || "").split(";")[0].trim().toLowerCase();
+  return /^[a-z]+\/[a-z0-9.+-]+$/.test(s) ? s : fallback;
+}
+function phoneOf(jid, key, d) {
+  const own = jid.endsWith("@s.whatsapp.net") ? PHONE.exec(jid) : null;
+  if (own) return own[1];
+  if (jid.endsWith("@s.whatsapp.net")) return "";
+  for (const c of [key?.remoteJidAlt, key?.senderPn, d?.senderPn, d?.remoteJidAlt]) {
+    const x = PHONE.exec(String(c || ""));
+    if (x) return x[1];
+  }
+  return "";
+}
+function toInbound(d) {
+  const key = d?.key;
+  if (!key || typeof key !== "object") return null;
+  const person = PERSON.exec(String(key.remoteJid || ""));
+  if (!person) return null;
+  const jid = `${person[1]}@${person[2]}`;
+  const m = unwrap2(d.message);
+  if (!m || typeof m !== "object") return null;
+  const clipText3 = (s) => s.replace(/\u0000/g, "").trim().slice(0, TEXT_MAX);
+  let text2 = "";
+  for (const v of [m.conversation, m.extendedTextMessage?.text, m.buttonsResponseMessage?.selectedDisplayText, m.templateButtonReplyMessage?.selectedDisplayText, m.listResponseMessage?.title]) {
+    if (typeof v === "string" && v.trim()) {
+      text2 = clipText3(v);
+      break;
+    }
+  }
+  let media = null;
+  let node = null;
+  if (!text2) {
+    for (const [field, type] of MEDIA_NODES) {
+      if (!m[field] || typeof m[field] !== "object") continue;
+      node = m[field];
+      media = { type };
+      text2 = typeof node.caption === "string" ? clipText3(node.caption) : "";
+      break;
+    }
+  } else {
+    for (const [field, type] of MEDIA_NODES) if (m[field] && typeof m[field] === "object") node = m[field], media = { type };
+  }
+  if (!text2 && !media) return null;
+  const fromMe = key.fromMe === true;
+  const ts = secondsOf(d.messageTimestamp) || Math.floor(nowMs() / 1e3);
+  const id = typeof key.id === "string" && key.id ? key.id.slice(0, 100) : (0, import_node_crypto4.createHash)("sha1").update(`${jid}|${ts}|${text2}`).digest("hex");
+  const name = !fromMe && typeof d.pushName === "string" ? d.pushName.replace(/\u0000/g, "").trim().slice(0, 100) : "";
+  return { source: "wa-bridge", jid, number: phoneOf(jid, key, d), name, id, ts, fromMe, text: text2, media, _node: node, _raw: d };
+}
+var wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function attachFile(m, s) {
+  const media = m.media;
+  const node = m._node;
+  if (!media || !node) return;
+  if (media.type === "audio") {
+    media.mime = cleanMime(node.mimetype, "audio/ogg");
+    const sec = numOf(node.seconds);
+    if (sec > 0) media.seconds = Math.round(sec);
+  } else if (media.type === "image") {
+    if (!imagesOn()) return;
+    media.mime = cleanMime(node.mimetype, "image/jpeg");
+  } else return;
+  const limit = media.type === "audio" ? AUDIO_MAX_BYTES : IMAGE_MAX_BYTES;
+  const declared = numOf(node.fileLength);
+  if (declared > limit) {
+    journal(s, { ev: "media", id: m.id, type: media.type, ok: false, error: "\u0431\u043E\u043B\u044C\u0448\u0435 \u043B\u0438\u043C\u0438\u0442\u0430" });
+    return;
+  }
+  let err = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt) await wait(mediaRetryMs());
+    const r = await mediaBase64(m._raw.key, m._raw.message);
+    if (r.ok) {
+      const size = Math.floor(r.data.base64.length * 3 / 4);
+      if (size > limit) {
+        journal(s, { ev: "media", id: m.id, type: media.type, ok: false, error: "\u0431\u043E\u043B\u044C\u0448\u0435 \u043B\u0438\u043C\u0438\u0442\u0430" });
+        return;
+      }
+      media.base64 = r.data.base64;
+      media.mime = cleanMime(r.data.mimetype, media.mime || "");
+      return;
+    }
+    err = r.error;
+  }
+  journal(s, { ev: "media", id: m.id, type: media.type, ok: false, error: clip(scrub3(err), 120) });
+}
+async function postBot(raw) {
+  try {
+    const res = await fetch(botUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Wa-Signature": sign(raw) },
+      body: raw,
+      signal: AbortSignal.timeout(timeoutMs2())
+    });
+    const text2 = clip(await res.text(), 120);
+    return { status: res.status, text: text2 };
+  } catch (e) {
+    const err = e;
+    const why = err?.name === "TimeoutError" || err?.name === "AbortError" ? "timeout" : String(err?.cause?.code || err?.message || err);
+    return { status: 0, text: "", error: clip(scrub3(why), 80) };
+  }
+}
+async function forward(m) {
+  const s = st();
+  await attachFile(m, s);
+  const { _node, _raw, ...body } = m;
+  void _node;
+  void _raw;
+  const raw = JSON.stringify(body);
+  const t0 = Date.now();
+  const delays = retryDelays();
+  let res = { status: 0, text: "" };
+  let tries = 0;
+  for (; ; ) {
+    tries++;
+    res = await postBot(raw);
+    if (!(res.status === 0 || res.status >= 500) || tries > delays.length) break;
+    await wait(delays[tries - 1]);
+  }
+  const ms = Date.now() - t0;
+  const ok = res.status === 200;
+  const off = res.status === 404;
+  const nonum = !m.number;
+  journal(s, { ev: "fwd", id: m.id, ok, code: res.status, ms, tries, fromMe: m.fromMe, ...m.media ? { media: m.media.type, b64: !!m.media.base64 } : {}, ...nonum ? { nonum: true } : {}, ...res.error ? { err: res.error } : {}, ...off ? { off: true } : {} });
+  noteEvent(s, ok ? "fwd_ok" : off ? "fwd_off" : "fwd_err");
+  if (nonum) noteEvent(s, "fwd_nonum");
+  s.lastFwd = { t: nowMs(), code: res.status, text: res.error || res.text };
+  if (ok || off) return;
+  log2("\u043D\u0435 \u043F\u0435\u0440\u0435\u0441\u043B\u0430\u043D\u043E (%s): %s", maskJid(m.jid), res.status ? `\u043A\u043E\u0434 ${res.status}` : res.error);
+  const why = res.status === 403 ? "\u0431\u043E\u0442 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043F\u043E\u0434\u043F\u0438\u0441\u044C (403), \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 WA_BRIDGE_SECRET \u0441 \u043E\u0431\u0435\u0438\u0445 \u0441\u0442\u043E\u0440\u043E\u043D" : res.status ? `\u0431\u043E\u0442 \u043E\u0442\u0432\u0435\u0442\u0438\u043B \u043A\u043E\u0434\u043E\u043C ${res.status}` : `\u0431\u043E\u0442 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 (${res.error || "\u0441\u0435\u0442\u044C"})`;
+  await alarmOnce2(s, "fwd", `\u041C\u043E\u0441\u0442 WhatsApp \u0432 \u0431\u043E\u0442\u0430: \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u0441\u043B\u0430\u043D\u043E, ${why}. \u041F\u043E\u043F\u044B\u0442\u043E\u043A ${tries}. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
+}
+function enqueue(m) {
+  const s = st();
+  const prev = s.chains.get(m.jid) ?? Promise.resolve();
+  const next = prev.then(() => forward(m)).catch((e) => console.error("[wa-bridge] \u043F\u0435\u0440\u0435\u0441\u044B\u043B\u043A\u0430 \u0443\u043F\u0430\u043B\u0430:", scrub3(String(e?.message || e)).slice(0, 160))).finally(() => {
+    if (s.chains.get(m.jid) === next) s.chains.delete(m.jid);
+  });
+  s.chains.set(m.jid, next);
+}
+function bridgeTap(body) {
+  if (!bridgeActive()) return;
+  try {
+    const ev = String(body?.event || "").toLowerCase().replace(/_/g, ".");
+    if (ev !== "messages.upsert") return;
+    if (body?.instance && String(body.instance) !== evoInstance()) return;
+    const list = Array.isArray(body?.data) ? body.data : body?.data ? [body.data] : [];
+    const s = st();
+    for (const d of list) {
+      const m = toInbound(d);
+      if (!m) continue;
+      const dedupe = `${m.jid}|${m.id}`;
+      if (s.seen.has(dedupe)) continue;
+      s.seen.add(dedupe);
+      if (s.seen.size > 5e3) s.seen.delete(s.seen.values().next().value);
+      enqueue(m);
+    }
+  } catch (e) {
+    console.error("[wa-bridge] \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B \u0432\u0435\u0431\u0445\u0443\u043A:", scrub3(String(e?.message || e)).slice(0, 160));
+  }
+}
+var LOCAL = /* @__PURE__ */ new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+var normIp = (ip) => ip.trim().replace(/^::ffff:/i, "");
+function clientIp(req) {
+  const sock = req.socket.remoteAddress || "";
+  if (!LOCAL.has(sock)) return normIp(sock);
+  const one = (h) => (Array.isArray(h) ? h[0] : h) || "";
+  const real = one(req.headers["x-real-ip"]).trim();
+  if (real) return normIp(real);
+  const xff = one(req.headers["x-forwarded-for"]).split(",").map((x) => x.trim()).filter(Boolean);
+  if (xff.length) return normIp(xff[xff.length - 1]);
+  return normIp(sock);
+}
+function readBytes(req, max) {
+  return new Promise((resolve) => {
+    let size = 0;
+    let over = false;
+    const chunks = [];
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > max) over = true;
+      else chunks.push(c);
+    });
+    req.on("end", () => resolve(over ? null : Buffer.concat(chunks)));
+    req.on("error", () => resolve(null));
+  });
+}
+function deny(s, why, ip) {
+  const t = nowMs();
+  if (t - (s.denyAt.get(why) || 0) < MIN2) return;
+  s.denyAt.set(why, t);
+  journal(s, { ev: "deny", why, ip: clip(ip, 45) });
+}
+async function sendReply(s, number, text2) {
+  const h = host();
+  const can = h?.canSend();
+  if (can && !can.ok) return { ok: false, error: can.why };
+  const run = () => sendText(`${number}@s.whatsapp.net`, text2);
+  const r = await (h ? h.exclusive(run) : run());
+  if (!r.ok) return { ok: false, error: clip(scrub3(r.error), 160) };
+  return { ok: true, id: r.data.messageId };
+}
+function pruneSent(s) {
+  const t = nowMs();
+  for (const [k, v] of s.sent) if (t - v.ts >= SENT_KEEP_MS) s.sent.delete(k);
+  try {
+    writeAtomic(fSent(s.dir), [...s.sent].map(([key, v]) => ({ ts: v.ts, key, id: v.id })));
+  } catch (e) {
+    console.error("[wa-bridge] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u0436\u0430\u0442\u044C wa-bridge-sent.jsonl:", e.message);
+  }
+}
+async function handleWaSend(req, res) {
+  const reply2 = (status, body) => {
+    const payload = JSON.stringify(body);
+    res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
+    res.end(payload);
+  };
+  if (!bridgeActive()) {
+    req.resume();
+    return reply2(404, { ok: false, error: "off" });
+  }
+  const s = st();
+  const ip = clientIp(req);
+  if (!allowIps().includes(ip)) {
+    req.resume();
+    deny(s, "ip", ip);
+    return reply2(403, { ok: false, error: "forbidden" });
+  }
+  const bytes = await readBytes(req, SEND_BODY_MAX);
+  if (bytes === null) return reply2(413, { ok: false, error: "too_large" });
+  const sigHeader = req.headers["x-wa-signature"];
+  if (!signatureOk(bytes, Array.isArray(sigHeader) ? sigHeader[0] : sigHeader)) {
+    deny(s, "sig", ip);
+    return reply2(403, { ok: false, error: "forbidden" });
+  }
+  s.lastIn = nowMs();
+  let b = null;
+  try {
+    b = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    b = null;
+  }
+  const number = typeof b?.number === "string" ? b.number : "";
+  const text2 = typeof b?.text === "string" ? b.text : "";
+  const key = typeof b?.key === "string" ? b.key : "";
+  if (!/^\d{10,15}$/.test(number)) return reply2(400, { ok: false, error: "bad_number" });
+  if (!text2.trim() || text2.length > SEND_TEXT_MAX) return reply2(400, { ok: false, error: "bad_text" });
+  if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(key)) return reply2(400, { ok: false, error: "bad_key" });
+  const t0 = Date.now();
+  for (let guard = 0; guard < 5; guard++) {
+    if (s.sent.has(key)) {
+      journal(s, { ev: "send", key, ok: true, dup: true });
+      noteEvent(s, "snd_dup");
+      return reply2(200, { ok: true, dup: true });
+    }
+    const running2 = s.inflight.get(key);
+    if (running2) {
+      await running2.catch(() => void 0);
+      continue;
+    }
+    const job = sendReply(s, number, text2);
+    s.inflight.set(key, job);
+    let r;
+    try {
+      r = await job;
+    } catch (e) {
+      r = { ok: false, error: clip(scrub3(String(e?.message || e)), 160) };
+    } finally {
+      s.inflight.delete(key);
+    }
+    const ms = Date.now() - t0;
+    if (r.ok) {
+      const ts = nowMs();
+      s.sent.set(key, { ts, id: r.id });
+      append2(fSent(s.dir), { ts, key, id: r.id });
+      if (s.sent.size % 200 === 0) pruneSent(s);
+      journal(s, { ev: "send", key, ok: true, id: r.id, ms });
+      noteEvent(s, "snd_ok");
+      log2("\u043E\u0442\u0432\u0435\u0442 \u0443\u0448\u0451\u043B: %s", maskJid(`${number}@s.whatsapp.net`));
+      return reply2(200, { ok: true, id: r.id });
+    }
+    journal(s, { ev: "send", key, ok: false, error: r.error, ms });
+    noteEvent(s, "snd_err");
+    log2("\u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s", maskJid(`${number}@s.whatsapp.net`), r.error);
+    await alarmOnce2(s, "send", `\u041C\u043E\u0441\u0442 WhatsApp \u0432 \u0431\u043E\u0442\u0430: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clip(r.error, 100)}). \u0411\u043E\u0442 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u0441\u0430\u043C. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
+    return reply2(502, { ok: false, error: r.error });
+  }
+  return reply2(502, { ok: false, error: "busy" });
+}
+var agoText2 = (ms) => {
+  const sec = Math.max(0, Math.round(ms / 1e3));
+  return sec < 90 ? `${sec} \u0441 \u043D\u0430\u0437\u0430\u0434` : sec < 5400 ? `${Math.round(sec / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(sec / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
+};
+function bridgeStatusText() {
+  const on = bridgeOn();
+  const hasSecret = !!secret();
+  if (!on) return "\u041C\u043E\u0441\u0442 WhatsApp \u0432 \u0431\u043E\u0442\u0430: \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D (WA_BRIDGE \u043D\u0435 on). \u0412\u043A\u043B\u044E\u0447\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u043A\u043E\u043C form-api.";
+  const head = hasSecret ? "\u0432\u043A\u043B\u044E\u0447\u0451\u043D" : "\u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0432 .env, \u043D\u043E \u043D\u0435\u0442 WA_BRIDGE_SECRET: \u043F\u0435\u0440\u0435\u0441\u044B\u043B\u043A\u0430 \u0438 \u043E\u0442\u0432\u0435\u0442\u044B \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442";
+  if (!hasSecret) return `\u041C\u043E\u0441\u0442 WhatsApp \u0432 \u0431\u043E\u0442\u0430: ${head}.`;
+  const s = st();
+  const t = nowMs();
+  const count = (k) => s.events.filter((e) => e.k === k && t - e.t < DAY2).length;
+  let hostName = "";
+  try {
+    hostName = new URL(botUrl()).host;
+  } catch {
+    hostName = "\u0430\u0434\u0440\u0435\u0441 \u0431\u043E\u0442\u0430 \u0437\u0430\u0434\u0430\u043D \u043D\u0435\u0432\u0435\u0440\u043D\u043E";
+  }
+  const hook = host()?.state().hookOn;
+  return [
+    `\u041C\u043E\u0441\u0442 WhatsApp \u0432 \u0431\u043E\u0442\u0430: ${head}.`,
+    `\u0411\u043E\u0442: ${hostName}`,
+    `\u0417\u0430 \u0441\u0443\u0442\u043A\u0438 \u0432 \u0431\u043E\u0442\u0430: \u043F\u0435\u0440\u0435\u0441\u043B\u0430\u043D\u043E ${count("fwd_ok")}, \u043E\u0448\u0438\u0431\u043E\u043A ${count("fwd_err")}, \u0431\u043E\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u043B \u043A\u0430\u043D\u0430\u043B (404) ${count("fwd_off")}, \u0431\u0435\u0437 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 (lid) ${count("fwd_nonum")}.`,
+    `\u0417\u0430 \u0441\u0443\u0442\u043A\u0438 \u043E\u0442 \u0431\u043E\u0442\u0430: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${count("snd_ok")}, \u043F\u043E\u0432\u0442\u043E\u0440\u043E\u0432 ${count("snd_dup")}, \u043E\u0448\u0438\u0431\u043E\u043A ${count("snd_err")}.`,
+    `\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0439 \u043E\u0442\u0432\u0435\u0442 \u0431\u043E\u0442\u0430: ${s.lastFwd ? `${s.lastFwd.code || "\u043D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438"}${s.lastFwd.text ? ` ${s.lastFwd.text}` : ""}, ${agoText2(t - s.lastFwd.t)}` : "\u0435\u0449\u0451 \u043D\u0435 \u0431\u044B\u043B\u043E"}.`,
+    `\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0439 \u0437\u0430\u043F\u0440\u043E\u0441 \u043E\u0442 \u0431\u043E\u0442\u0430: ${s.lastIn ? agoText2(t - s.lastIn) : "\u0435\u0449\u0451 \u043D\u0435 \u0431\u044B\u043B\u043E"}.`,
+    `\u0412\u0435\u0431\u0445\u0443\u043A Evolution: ${hook === void 0 ? "\u043C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D" : hook ? "\u0441\u0442\u043E\u0438\u0442" : "\u043D\u0435 \u0441\u0442\u043E\u0438\u0442"}.`
+  ].join("\n");
+}
+function startWaBridge() {
+  aiBridgeLink({ tap: bridgeTap, wantsHook: bridgeActive });
+  if (!bridgeOn()) return;
+  if (!secret()) console.error("[wa-bridge] WA_BRIDGE=on, \u043D\u043E \u043D\u0435\u0442 WA_BRIDGE_SECRET: \u043C\u043E\u0441\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442");
+  else log2("\u0432\u043A\u043B\u044E\u0447\u0451\u043D, \u0431\u043E\u0442 %s", (() => {
+    try {
+      return new URL(botUrl()).host;
+    } catch {
+      return "?";
+    }
+  })());
+}
+
+// form-api/tg-workshop.ts
+var env4 = (k) => (process.env[k] || "").trim();
+var botToken = () => env4("TG_WORKSHOP_BOT_TOKEN");
+var webhookSecret = () => env4("TG_WORKSHOP_WEBHOOK_SECRET");
+var goSecret = () => env4("TG_GO_SECRET");
+var ownerIds = () => env4("TG_LINK_OWNER_IDS").split(",").map((s) => s.trim()).filter(Boolean);
+var botOff = () => env4("TG_BOT").toLowerCase() === "off";
+var apiBase = () => env4("TG_API_BASE").replace(/\/+$/, "") || "https://api.telegram.org";
 function isOwner(userId) {
   const ids = ownerIds();
   return userId !== void 0 && ids.length > 0 && ids.includes(String(userId));
@@ -1684,8 +3233,8 @@ function adminAppIds() {
 function isAdminAppUser(userId) {
   return userId !== void 0 && adminAppIds().includes(String(userId));
 }
-var adminAppUrl = () => env("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
-var privacyUrl = () => env("PRIVACY_URL") || "https://onai.academy/workshop-montazh/privacy";
+var adminAppUrl = () => env4("ADMIN_APP_URL") || "https://onai.academy/workshop/api/admin-app";
+var privacyUrl = () => env4("PRIVACY_URL") || "https://onai.academy/workshop-montazh/privacy";
 var GO_BASE = "https://onai.academy/workshop/api/go";
 var MAX_UPDATE_BODY = 64 * 1024;
 var API_TIMEOUT_MS = 1e4;
@@ -1875,10 +3424,10 @@ function activeSeries() {
   return applyOverrides(getSeries(), getStore().state.overrides);
 }
 function seriesPath(explicit) {
-  return explicit || env("TG_SERIES_FILE") || (0, import_node_path5.join)(__dirname, "tg-series.json");
+  return explicit || env4("TG_SERIES_FILE") || (0, import_node_path7.join)(__dirname, "tg-series.json");
 }
 function reloadSeries(explicit) {
-  const loaded = validateSeries(JSON.parse((0, import_node_fs5.readFileSync)(seriesPath(explicit), "utf8")));
+  const loaded = validateSeries(JSON.parse((0, import_node_fs7.readFileSync)(seriesPath(explicit), "utf8")));
   series = loaded;
   botError = "";
   setUtcOffsetMinutes(loaded.utcOffsetMinutes ?? 300);
@@ -1887,7 +3436,7 @@ function reloadSeries(explicit) {
 function initTgWorkshop(opts = {}) {
   series = null;
   botError = "";
-  store = new TgStore(opts.dir || env("DATA_DIR") || (0, import_node_path5.join)(__dirname, "data"));
+  store = new TgStore(opts.dir || env4("DATA_DIR") || (0, import_node_path7.join)(__dirname, "data"));
   if (botOff()) {
     botError = "off";
     console.log("[tg] TG_BOT=off: \u0431\u043E\u0442 \u0438 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B");
@@ -1911,24 +3460,24 @@ function tgHealth() {
     ...botError ? { error: botError } : {}
   };
 }
-var CONNECT_FAIL_CODES = /* @__PURE__ */ new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH", "UND_ERR_CONNECT_TIMEOUT"]);
-var scrub = (s) => {
+var CONNECT_FAIL_CODES2 = /* @__PURE__ */ new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH", "UND_ERR_CONNECT_TIMEOUT"]);
+var scrub4 = (s) => {
   const t = botToken();
   return t ? s.split(t).join("***") : s;
 };
 var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function botCall(method, params, timeoutMs2 = API_TIMEOUT_MS) {
+async function botCall(method, params, timeoutMs3 = API_TIMEOUT_MS) {
   const token = botToken();
   if (!token) return { ok: false, code: 0, description: "no_token" };
   try {
     const init = params instanceof FormData ? { method: "POST", body: params } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) };
-    const res = await fetch(`${apiBase()}/bot${token}/${method}`, { ...init, signal: AbortSignal.timeout(timeoutMs2) });
+    const res = await fetch(`${apiBase()}/bot${token}/${method}`, { ...init, signal: AbortSignal.timeout(timeoutMs3) });
     const data = await res.json().catch(() => null);
     if (data?.ok) return { ok: true, result: data.result };
     return {
       ok: false,
       code: data?.error_code ?? res.status,
-      description: scrub(String(data?.description ?? res.statusText)),
+      description: scrub4(String(data?.description ?? res.statusText)),
       retryAfter: data?.parameters?.retry_after
     };
   } catch (e) {
@@ -1937,8 +3486,8 @@ async function botCall(method, params, timeoutMs2 = API_TIMEOUT_MS) {
     return {
       ok: false,
       code: 0,
-      description: timeout ? "timeout" : scrub(String(err?.message || err)),
-      ...!timeout && err?.cause?.code && CONNECT_FAIL_CODES.has(err.cause.code) ? { connectFail: true } : {}
+      description: timeout ? "timeout" : scrub4(String(err?.message || err)),
+      ...!timeout && err?.cause?.code && CONNECT_FAIL_CODES2.has(err.cause.code) ? { connectFail: true } : {}
     };
   }
 }
@@ -1959,9 +3508,9 @@ async function pump() {
   pumping = true;
   try {
     while (waitHi.length || waitLo.length) {
-      const wait = Math.max(lastCallAt + MIN_GAP_MS, pausedUntil) - Date.now();
-      if (wait > 0) {
-        await sleep(wait);
+      const wait2 = Math.max(lastCallAt + MIN_GAP_MS, pausedUntil) - Date.now();
+      if (wait2 > 0) {
+        await sleep(wait2);
         continue;
       }
       const next = waitHi.shift() ?? waitLo.shift();
@@ -1994,7 +3543,7 @@ async function botSend(method, params, prio = "hi", opts = {}) {
   }
   return r;
 }
-var mediaTimeout = () => Number(env("TG_MEDIA_TIMEOUT_MS")) || 6e4;
+var mediaTimeout = () => Number(env4("TG_MEDIA_TIMEOUT_MS")) || 6e4;
 var toSend = (r) => r.ok ? { ok: true } : { ok: false, code: r.code, error: `${r.code} ${r.description}` };
 function isGone(r) {
   return !r.ok && (r.code === 403 || r.code === 400 && /chat not found/i.test(r.error || ""));
@@ -2058,29 +3607,29 @@ function buildKeyboard(rows, ctx) {
   }
   return out.length ? out : void 0;
 }
-var signGo = (payload, secret) => (0, import_node_crypto3.createHmac)("sha256", secret).update(payload).digest("base64url").slice(0, 12);
-function makeGoToken(chatId, day, secret = goSecret()) {
-  if (!secret) return "";
+var signGo = (payload, secret2) => (0, import_node_crypto5.createHmac)("sha256", secret2).update(payload).digest("base64url").slice(0, 12);
+function makeGoToken(chatId, day, secret2 = goSecret()) {
+  if (!secret2) return "";
   const payload = `${chatId}:${day}`;
-  return `${Buffer.from(payload).toString("base64url")}.${signGo(payload, secret)}`;
+  return `${Buffer.from(payload).toString("base64url")}.${signGo(payload, secret2)}`;
 }
-function verifyGoToken(token, secret = goSecret()) {
-  if (!secret || typeof token !== "string" || token.length > 200) return null;
+function verifyGoToken(token, secret2 = goSecret()) {
+  if (!secret2 || typeof token !== "string" || token.length > 200) return null;
   const dot = token.indexOf(".");
   if (dot < 1) return null;
   const payload = Buffer.from(token.slice(0, dot), "base64url").toString("utf8");
   const m = /^(-?\d{1,15}):(\d{4}-\d{2}-\d{2})$/.exec(payload);
   if (!m || !isDayKey(m[2])) return null;
   const given = Buffer.from(token.slice(dot + 1));
-  const want = Buffer.from(signGo(payload, secret));
-  if (given.length !== want.length || !(0, import_node_crypto3.timingSafeEqual)(given, want)) return null;
+  const want = Buffer.from(signGo(payload, secret2));
+  if (given.length !== want.length || !(0, import_node_crypto5.timingSafeEqual)(given, want)) return null;
   return { chatId: Number(m[1]), day: m[2] };
 }
 function largest(sizes) {
   if (!Array.isArray(sizes) || !sizes.length) return void 0;
   return sizes.reduce((a, b) => (b.width ?? 0) * (b.height ?? 0) >= (a.width ?? 0) * (a.height ?? 0) ? b : a).file_id;
 }
-async function sendText(chatId, html, markup, silent, prio = "hi") {
+async function sendText2(chatId, html, markup, silent, prio = "hi") {
   return toSend(
     await botSend(
       "sendMessage",
@@ -2097,14 +3646,14 @@ async function sendText(chatId, html, markup, silent, prio = "hi") {
     )
   );
 }
-async function sendMedia(chatId, media, caption, markup, silent, prio) {
-  const st = getStore();
+async function sendMedia2(chatId, media, caption, markup, silent, prio) {
+  const st2 = getStore();
   const isVideo = media.type === "video";
   const isDoc = media.type === "document";
   const method = isVideo ? "sendVideo" : isDoc ? "sendDocument" : "sendPhoto";
   const field = isVideo ? "video" : isDoc ? "document" : "photo";
-  const cachedRef = st.getMedia(media.url);
-  const cachedCover = isVideo && media.poster ? st.getMedia(media.poster) : void 0;
+  const cachedRef = st2.getMedia(media.url);
+  const cachedCover = isVideo && media.poster ? st2.getMedia(media.poster) : void 0;
   const attempts = [[cachedRef ?? media.url, cachedCover ?? media.poster]];
   if (cachedRef || cachedCover) attempts.push([media.url, media.poster]);
   if (isVideo && media.poster) attempts.push([media.url, void 0]);
@@ -2133,11 +3682,11 @@ async function sendMedia(chatId, media, caption, markup, silent, prio) {
   if (r.ok) {
     if (used[0] === media.url) {
       const id = isVideo ? r.result?.video?.file_id : isDoc ? r.result?.document?.file_id : largest(r.result?.photo);
-      if (id) st.setMedia(media.url, id);
+      if (id) st2.setMedia(media.url, id);
     }
     if (isVideo && media.poster && used[1] === media.poster) {
       const cover = largest(r.result?.video?.cover);
-      if (cover) st.setMedia(media.poster, cover);
+      if (cover) st2.setMedia(media.poster, cover);
     }
   }
   return toSend(r);
@@ -2172,7 +3721,7 @@ async function notifyOwnersHtml(text2, markup) {
   let delivered = 0;
   for (const id of ownerIds()) {
     const n = Number(id);
-    if (Number.isFinite(n) && (await sendText(n, text2, markup)).ok) delivered++;
+    if (Number.isFinite(n) && (await sendText2(n, text2, markup)).ok) delivered++;
   }
   return delivered;
 }
@@ -2191,21 +3740,21 @@ async function sendContent(c, ctx, opts = {}) {
   const prio = opts.prio ?? "hi";
   const html = expandText(c.text, ctx);
   const kb = buildKeyboard(c.buttons, ctx);
-  if (!c.media) return sendText(ctx.chatId, html, kb, c.silent, prio);
+  if (!c.media) return sendText2(ctx.chatId, html, kb, c.silent, prio);
   const short = visibleLength(html) <= 1024;
-  const m = await sendMedia(ctx.chatId, c.media, short ? html : void 0, short ? kb : void 0, c.silent, prio);
-  if (m.ok) return short ? m : sendText(ctx.chatId, html, kb, c.silent, prio);
+  const m = await sendMedia2(ctx.chatId, c.media, short ? html : void 0, short ? kb : void 0, c.silent, prio);
+  if (m.ok) return short ? m : sendText2(ctx.chatId, html, kb, c.silent, prio);
   if (isGone(m)) return m;
   console.warn("[tg] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", c.media.url, m.error);
   noteRuntime("mediaFallback", { info: c.media.url });
   void warnMedia(c.media, m.error);
-  return sendText(ctx.chatId, html, kb, c.silent, prio);
+  return sendText2(ctx.chatId, html, kb, c.silent, prio);
 }
 function noteSendResult(chatId, r, now) {
   if (!isGone(r)) return;
-  const st = getStore();
-  const s = st.subs.get(chatId);
-  if (s && !s.blocked) st.recordEvent({ type: "blocked", chat_id: chatId, ts: new Date(now).toISOString() });
+  const st2 = getStore();
+  const s = st2.subs.get(chatId);
+  if (s && !s.blocked) st2.recordEvent({ type: "blocked", chat_id: chatId, ts: new Date(now).toISOString() });
 }
 function displayDay(sub, now, cfg) {
   return sub && now < streamEnd(sub.streamDay, cfg) ? sub.streamDay : assignStreamDay(now, cfg);
@@ -2229,7 +3778,7 @@ async function sendGreeting(sub, now) {
     noteSendResult(sub.chatId, r2, now);
   }
 }
-var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test", "wa_dozhim", "wa_dozhim_test"]);
+var OWNER_CMDS = /* @__PURE__ */ new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test", "wa_dozhim", "wa_dozhim_test", "wa_bridge"]);
 var waHook = null;
 var waReport = null;
 function registerWa(h) {
@@ -2260,6 +3809,7 @@ var HELP_TEXT = [
   "/wa_ai_test <\u0432\u043E\u043F\u0440\u043E\u0441>: \u043E\u0442\u0432\u0435\u0442 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 \u0431\u0435\u0437 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u0432 WhatsApp",
   "/wa_dozhim on|off: \u0434\u043E\u0436\u0438\u043C \xAB\u043D\u0435 \u0432\u0441\u0442\u0443\u043F\u0438\u043B\xBB \u0447\u0435\u0440\u0435\u0437 WABA (\u0431\u0435\u0437 \u0430\u0440\u0433\u0443\u043C\u0435\u043D\u0442\u0430: \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435)",
   "/wa_dozhim_test <\u043D\u043E\u043C\u0435\u0440>: \u0442\u0435\u0441\u0442 \u0448\u0430\u0431\u043B\u043E\u043D\u0430 \u0434\u043E\u0436\u0438\u043C\u0430 \u043D\u0430 \u043D\u043E\u043C\u0435\u0440",
+  "/wa_bridge: \u043C\u043E\u0441\u0442 WhatsApp \u0432 \u0431\u043E\u0442\u0430 (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435)",
   "",
   "\u041C\u0435\u0442\u043A\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430: \u0434\u043E\u0431\u0430\u0432\u044C ?start=2gis \u043A \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u0431\u043E\u0442\u0430 (t.me/workshop_aiprod_bot?start=2gis), \u0432 \u043E\u0442\u0447\u0451\u0442\u0430\u0445 \u043E\u043D\u0430 \u043F\u043E\u043A\u0430\u0436\u0435\u0442\u0441\u044F \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A."
 ].join("\n");
@@ -2309,7 +3859,7 @@ async function processUpdate(u, now = Date.now()) {
       else if (u.callback_query) await onCallback(u.callback_query, now);
       else if (u.my_chat_member) onMemberUpdate(u.my_chat_member, now);
     } catch (e) {
-      console.error("[tg] \u043E\u0448\u0438\u0431\u043A\u0430 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0438 \u0430\u043F\u0434\u0435\u0439\u0442\u0430:", scrub(String(e?.stack || e)));
+      console.error("[tg] \u043E\u0448\u0438\u0431\u043A\u0430 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0438 \u0430\u043F\u0434\u0435\u0439\u0442\u0430:", scrub4(String(e?.stack || e)));
     }
   });
 }
@@ -2336,13 +3886,13 @@ async function onMessage(m, now) {
   await onOther(m, now);
 }
 async function onStart(m, payload, now) {
-  const st = getStore();
+  const st2 = getStore();
   const sr = getSeries();
   const cfg = timeCfg(sr);
   const from = m.from;
-  const prev = st.subs.get(m.chat.id);
+  const prev = st2.subs.get(m.chat.id);
   const day = prev && now < streamEnd(prev.streamDay, cfg) ? prev.streamDay : assignStreamDay(now, cfg);
-  st.recordEvent({
+  st2.recordEvent({
     type: "start",
     chat_id: m.chat.id,
     user_id: from.id,
@@ -2353,13 +3903,13 @@ async function onStart(m, payload, now) {
     streamDay: day,
     ts: new Date(now).toISOString()
   });
-  await sendGreeting(st.subs.get(m.chat.id), now);
+  await sendGreeting(st2.subs.get(m.chat.id), now);
 }
 async function onStop(m, now) {
-  const st = getStore();
+  const st2 = getStore();
   const sr = getSeries();
-  const sub = st.subs.get(m.chat.id);
-  if (sub) st.recordEvent({ type: "stop", chat_id: m.chat.id, ts: new Date(now).toISOString() });
+  const sub = st2.subs.get(m.chat.id);
+  if (sub) st2.recordEvent({ type: "stop", chat_id: m.chat.id, ts: new Date(now).toISOString() });
   const ctx = { series: sr, now, chatId: m.chat.id, firstName: sub?.firstName, day: displayDay(sub, now, timeCfg(sr)) };
   noteSendResult(m.chat.id, await sendContent({ text: sr.welcome.stop }, ctx), now);
 }
@@ -2370,10 +3920,10 @@ async function onOther(m, now) {
   if (lastOther.size > 5e3) {
     for (const [k, t] of lastOther) if (now - t >= OTHER_THROTTLE_MS) lastOther.delete(k);
   }
-  const st = getStore();
+  const st2 = getStore();
   const sr = getSeries();
   const cfg = timeCfg(sr);
-  const sub = st.subs.get(m.chat.id);
+  const sub = st2.subs.get(m.chat.id);
   const firstName = sub?.firstName || m.from?.first_name;
   const live = liveDayNow(now, cfg);
   const ctx = { series: sr, now, chatId: m.chat.id, firstName, day: live ?? displayDay(sub, now, cfg) };
@@ -2381,11 +3931,11 @@ async function onOther(m, now) {
   noteSendResult(m.chat.id, await sendContent(content, ctx), now);
 }
 async function onCallback(cq, now) {
-  const st = getStore();
+  const st2 = getStore();
   const sr = getSeries();
   const cfg = timeCfg(sr);
   const chatId = cq.message?.chat?.id ?? cq.from.id;
-  const sub = st.subs.get(chatId);
+  const sub = st2.subs.get(chatId);
   const ts = new Date(now).toISOString();
   await botSend("answerCallbackQuery", { callback_query_id: cq.id });
   if (cq.data?.startsWith("adm:")) {
@@ -2394,14 +3944,14 @@ async function onCallback(cq, now) {
   }
   if (cq.data === "paid") {
     if (!sub || sub.paid) return;
-    st.recordEvent({ type: "paid", chat_id: chatId, by: "self", ts });
+    st2.recordEvent({ type: "paid", chat_id: chatId, by: "self", ts });
     const ctx = { series: sr, now, chatId, firstName: sub.firstName, day: displayDay(sub, now, cfg) };
     noteSendResult(chatId, await sendContent({ text: sr.welcome.paidAck }, ctx), now);
     return;
   }
   if (cq.data === "rejoin") {
     const day = assignStreamDay(now, cfg);
-    if (sub) st.recordEvent({ type: "rejoin", chat_id: chatId, streamDay: day, ts });
+    if (sub) st2.recordEvent({ type: "rejoin", chat_id: chatId, streamDay: day, ts });
     const ctx = { series: sr, now, chatId, firstName: sub?.firstName, day };
     const content = isLive(day, now, cfg) ? liveContent(sr) : { text: sr.welcome.rejoinAck ?? DEFAULT_REJOIN_ACK };
     noteSendResult(chatId, await sendContent(content, ctx), now);
@@ -2418,8 +3968,8 @@ async function onCallback(cq, now) {
 function adminCtx(now) {
   return { store: getStore(), cfg: timeCfg(getSeries()), now, version: adminVersion() };
 }
-function adminHomeText(st, sr, now) {
-  return `${buildStatsText(st, sr, now)}
+function adminHomeText(st2, sr, now) {
+  return `${buildStatsText(st2, sr, now)}
 
 \u0412\u044B\u0431\u0435\u0440\u0438 \u043F\u0435\u0440\u0438\u043E\u0434 \u0434\u043B\u044F \u043E\u0442\u0447\u0451\u0442\u0430:`;
 }
@@ -2466,13 +4016,13 @@ async function onAdminCallback(cq, now) {
 }
 function onMemberUpdate(u, now) {
   if (u.chat?.type !== "private") return;
-  const st = getStore();
-  const sub = st.subs.get(u.chat.id);
+  const st2 = getStore();
+  const sub = st2.subs.get(u.chat.id);
   if (!sub) return;
   const status = u.new_chat_member?.status;
   const ts = new Date(now).toISOString();
-  if (status === "kicked" && !sub.blocked) st.recordEvent({ type: "blocked", chat_id: u.chat.id, ts });
-  else if (status === "member" && sub.blocked) st.recordEvent({ type: "unblocked", chat_id: u.chat.id, ts });
+  if (status === "kicked" && !sub.blocked) st2.recordEvent({ type: "blocked", chat_id: u.chat.id, ts });
+  else if (status === "member" && sub.blocked) st2.recordEvent({ type: "unblocked", chat_id: u.chat.id, ts });
 }
 var AUD_LABEL = {
   all: "\u0432\u0441\u0435",
@@ -2483,16 +4033,16 @@ var AUD_LABEL = {
 };
 var payloadGroup = (payload) => payload.split("_")[0] || "\u0431\u0435\u0437 \u043C\u0435\u0442\u043A\u0438";
 var pct2 = (part, whole) => whole > 0 ? Math.round(part * 100 / whole) : 0;
-function buildDayTable(st, sr, now) {
+function buildDayTable(st2, sr, now) {
   const today = dayKeyOf(now);
-  const days = new Set(st.regDayKeys());
+  const days = new Set(st2.regDayKeys());
   if (isStreamDay(today, timeCfg(sr))) days.add(today);
   return [...days].sort().reverse().slice(0, 7).map((d) => {
-    const m = st.dayMetrics(d);
+    const m = st2.dayMetrics(d);
     return `${d}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \xAB\u042F \u0443\u0436\u0435 \u043E\u043F\u043B\u0430\u0442\u0438\u043B(\u0430)\xBB ${m.paid}`;
   });
 }
-function buildStatsText(st, sr, now) {
+function buildStatsText(st2, sr, now) {
   const today = dayKeyOf(now);
   const tomorrow = addDays(today, 1);
   let active = 0;
@@ -2500,8 +4050,8 @@ function buildStatsText(st, sr, now) {
   let forTomorrow = 0;
   let paid = 0;
   const byPayload = /* @__PURE__ */ new Map();
-  for (const s of st.subs.values()) {
-    if (st.isActive(s)) {
+  for (const s of st2.subs.values()) {
+    if (st2.isActive(s)) {
       active++;
       if (s.streamDay === today) forToday++;
       if (s.streamDay === tomorrow) forTomorrow++;
@@ -2511,16 +4061,16 @@ function buildStatsText(st, sr, now) {
     byPayload.set(key, (byPayload.get(key) || 0) + 1);
   }
   const tags = [...byPayload.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([k, n]) => `${k}: ${n}`).join(", ");
-  const started = st.startedOn(today, dayKeyOf);
-  const table = buildDayTable(st, sr, now);
+  const started = st2.startedOn(today, dayKeyOf);
+  const table = buildDayTable(st2, sr, now);
   return [
-    `\u0421\u0435\u0440\u0438\u044F: ${st.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"} (\u0432\u0435\u0440\u0441\u0438\u044F ${sr.version})`,
-    `\u041F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u043E\u0432 \u0432\u0441\u0435\u0433\u043E: ${st.subs.size}`,
+    `\u0421\u0435\u0440\u0438\u044F: ${st2.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"} (\u0432\u0435\u0440\u0441\u0438\u044F ${sr.version})`,
+    `\u041F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u043E\u0432 \u0432\u0441\u0435\u0433\u043E: ${st2.subs.size}`,
     `\u0410\u043A\u0442\u0438\u0432\u043D\u044B\u0445 (\u043D\u0435 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438, \u043D\u0435 \u043E\u0442\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C): ${active}`,
     `\u041D\u0430 \u044D\u0444\u0438\u0440 \u0441\u0435\u0433\u043E\u0434\u043D\u044F (${today}): ${forToday}`,
     `\u041D\u0430 \u044D\u0444\u0438\u0440 \u0437\u0430\u0432\u0442\u0440\u0430 (${tomorrow}): ${forTomorrow}`,
     `\u041E\u043F\u043B\u0430\u0442\u0438\u043B\u0438 (\u0432\u0441\u0435\u0433\u043E): ${paid}`,
-    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435 \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram: ${st.tyCount(today, "tg")}, WhatsApp: ${st.tyCount(today, "wa")}`,
+    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0435 \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram: ${st2.tyCount(today, "tg")}, WhatsApp: ${st2.tyCount(today, "wa")}`,
     `\u0421\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0430\u0436\u0430\u043B\u0438 \xAB\u0417\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C\xBB \u0432 \u0431\u043E\u0442\u0435: ${started.total} (\u0441\u043E \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB: ${started.fromPrefix})`,
     `\u041F\u043E \u043C\u0435\u0442\u043A\u0430\u043C: ${tags || "\u043F\u043E\u043A\u0430 \u043F\u0443\u0441\u0442\u043E"}`,
     "",
@@ -2528,9 +4078,9 @@ function buildStatsText(st, sr, now) {
     ...table.length ? table : ["\u043F\u043E\u043A\u0430 \u043F\u0443\u0441\u0442\u043E"]
   ].join("\n");
 }
-function dayReportText(st, day) {
-  const m = st.dayMetrics(day);
-  const base = `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st.tyCount(day, "tg")}, WhatsApp ${st.tyCount(day, "wa")}.`;
+function dayReportText(st2, day) {
+  const m = st2.dayMetrics(day);
+  const base = `\u042D\u0444\u0438\u0440 ${dateLabel(day)}: \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0438\u0441\u044C \u0432 \u0431\u043E\u0442\u0430 ${m.registered}, \u043F\u0435\u0440\u0435\u0448\u043B\u0438 \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435 ${m.clicked} (${pct2(m.clicked, m.registered)}%), \u0441\u043E \xAB\u0421\u043F\u0430\u0441\u0438\u0431\u043E\xBB \u043D\u0430\u0436\u0430\u043B\u0438 Telegram ${st2.tyCount(day, "tg")}, WhatsApp ${st2.tyCount(day, "wa")}.`;
   let wa = "";
   try {
     wa = waReport ? waReport(day) : "";
@@ -2540,14 +4090,14 @@ function dayReportText(st, day) {
   return wa ? `${base}
 ${wa}` : base;
 }
-function buildSeriesText(st, sr, now) {
+function buildSeriesText(st2, sr, now) {
   const today = dayKeyOf(now);
   const rows = sr.messages.map((m) => ({ m, day: addDays(today, -(m.dayOffset ?? 0)) })).sort((a, b) => atTime(today, a.m.at) - atTime(today, b.m.at));
   const lines = rows.map(({ m, day }) => {
     let eligible = 0;
-    for (const s of st.subs.values()) if (s.streamDay === day && st.isActive(s) && st.audienceOk(m.audience, s, day)) eligible++;
-    const sent = st.sentCount(m.id, day);
-    const ov = st.state.overrides[m.id];
+    for (const s of st2.subs.values()) if (s.streamDay === day && st2.isActive(s) && st2.audienceOk(m.audience, s, day)) eligible++;
+    const sent = st2.sentCount(m.id, day);
+    const ov = st2.state.overrides[m.id];
     const inJson = series?.messages.find((x) => x.id === m.id)?.at;
     const marks = [
       m.enabled === false ? "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E" : "",
@@ -2557,7 +4107,7 @@ function buildSeriesText(st, sr, now) {
     return `${m.at} ${m.id} (${AUD_LABEL[m.audience]})${marks.length ? ` [${marks.join("; ")}]` : ""}: \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E ${sent} \u0438\u0437 ${Math.max(sent, eligible)}`;
   });
   const head = [
-    `\u0421\u0435\u0440\u0438\u044F: ${st.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"}, \u0432\u0435\u0440\u0441\u0438\u044F ${sr.version}`,
+    `\u0421\u0435\u0440\u0438\u044F: ${st2.state.seriesEnabled ? "\u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430"}, \u0432\u0435\u0440\u0441\u0438\u044F ${sr.version}`,
     isStreamDay(today, timeCfg(sr)) ? `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F (${today}):` : `\u0421\u0435\u0433\u043E\u0434\u043D\u044F (${today}) \u044D\u0444\u0438\u0440\u0430 \u043D\u0435\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0438\u0436\u0435 \u0434\u043B\u044F \u0441\u043F\u0440\u0430\u0432\u043A\u0438:`
   ];
   return [...head, ...lines].join("\n");
@@ -2581,13 +4131,13 @@ function bizonValid(raw) {
   }
 }
 async function ownerCommand(cmd, args, m, now) {
-  const st = getStore();
+  const st2 = getStore();
   const chatId = m.chat.id;
   const sr = () => activeSeries();
   switch (cmd) {
     case "stats":
     case "admin":
-      await plain(chatId, adminHomeText(st, sr(), now), menuKeyboard());
+      await plain(chatId, adminHomeText(st2, sr(), now), menuKeyboard());
       return;
     case "app":
       if (!isAdminAppUser(m.from?.id)) {
@@ -2597,14 +4147,14 @@ async function ownerCommand(cmd, args, m, now) {
       await plain(chatId, "\u0410\u0434\u043C\u0438\u043D\u043A\u0430 \u0432\u043E\u0440\u043A\u0448\u043E\u043F\u0430. \u041E\u0442\u043A\u0440\u043E\u0435\u0442\u0441\u044F \u0432\u043D\u0443\u0442\u0440\u0438 Telegram, \u0432\u0445\u043E\u0434 \u043F\u043E \u043F\u0430\u0440\u043E\u043B\u044E.", [[{ text: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0430\u0434\u043C\u0438\u043D\u043A\u0443", web_app: { url: adminAppUrl() } }]]);
       return;
     case "series":
-      await plain(chatId, buildSeriesText(st, sr(), now));
+      await plain(chatId, buildSeriesText(st2, sr(), now));
       return;
     case "series_on":
-      st.setSeriesEnabled(true);
+      st2.setSeriesEnabled(true);
       await plain(chatId, `\u0421\u0435\u0440\u0438\u044F \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430. \u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0443\u0445\u043E\u0434\u044F\u0442 \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E.${payWarning(sr())}`);
       return;
     case "series_off":
-      st.setSeriesEnabled(false);
+      st2.setSeriesEnabled(false);
       await plain(chatId, "\u0421\u0435\u0440\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430. \u041F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043A\u0430\u043A \u0440\u0430\u043D\u044C\u0448\u0435.");
       return;
     case "reload":
@@ -2627,7 +4177,7 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
         return;
       }
       if (time === "reset") {
-        st.setOverride(id, { at: null });
+        st2.setOverride(id, { at: null });
         await plain(chatId, `\u0412\u0440\u0435\u043C\u044F \xAB${id}\xBB \u0432\u0435\u0440\u043D\u0443\u043B \u043A\u0430\u043A \u0432 json: ${msg.at}.`);
         return;
       }
@@ -2639,7 +4189,7 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
         await plain(chatId, "\u0412\u0440\u0435\u043C\u044F \u0432\u0438\u0434\u0430 HH:MM \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 20:55.");
         return;
       }
-      st.setOverride(id, { at: hhmm });
+      st2.setOverride(id, { at: hhmm });
       await plain(chatId, `\u0412\u0440\u0435\u043C\u044F \xAB${id}\xBB \u0442\u0435\u043F\u0435\u0440\u044C ${hhmm} (\u0432 json ${msg.at}).`);
       return;
     }
@@ -2651,7 +4201,7 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
         await plain(chatId, `\u0424\u043E\u0440\u043C\u0430\u0442: /${cmd} <id>. \u0421\u043F\u0438\u0441\u043E\u043A id: /series`);
         return;
       }
-      st.setOverride(id, { enabled: cmd === "on" });
+      st2.setOverride(id, { enabled: cmd === "on" });
       await plain(chatId, cmd === "on" ? `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \xAB${id}\xBB \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E.` : `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \xAB${id}\xBB \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E.`);
       return;
     }
@@ -2666,7 +4216,7 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
         await plain(chatId, "\u041D\u0443\u0436\u043D\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u0432\u0438\u0434\u0430 https://...bizon365.ru/... \u0414\u0440\u0443\u0433\u0438\u0435 \u0430\u0434\u0440\u0435\u0441\u0430 \u043D\u0435 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E.");
         return;
       }
-      st.setBizon(url);
+      st2.setBizon(url);
       await plain(chatId, `\u0421\u0441\u044B\u043B\u043A\u0430 \u044D\u0444\u0438\u0440\u0430 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0430: ${url}
 \u041F\u0435\u0440\u0435\u0445\u043E\u0434\u044B \u0438\u0437 \u0431\u043E\u0442\u0430 \u0432\u0435\u0434\u0443\u0442 \u043D\u0430 \u043D\u0435\u0451 \u0441\u0440\u0430\u0437\u0443, \u0441 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u043A\u043B\u0438\u043A\u0430.`);
       return;
@@ -2676,12 +4226,12 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
         await plain(chatId, "\u0423\u043A\u0430\u0436\u0438 chat_id \u0438\u043B\u0438 @username: /paid 123456789");
         return;
       }
-      const s = st.find(args);
+      const s = st2.find(args);
       if (!s) {
         await plain(chatId, `\u041D\u0435 \u043D\u0430\u0448\u0451\u043B \u043F\u043E\u0434\u043F\u0438\u0441\u0447\u0438\u043A\u0430: ${args}`);
         return;
       }
-      if (!s.paid) st.recordEvent({ type: "paid", chat_id: s.chatId, by: "owner", ts: new Date(now).toISOString() });
+      if (!s.paid) st2.recordEvent({ type: "paid", chat_id: s.chatId, by: "owner", ts: new Date(now).toISOString() });
       await plain(chatId, `\u041E\u0442\u043C\u0435\u0447\u0435\u043D \u043E\u043F\u043B\u0430\u0442\u0438\u0432\u0448\u0438\u043C: ${s.firstName || "\u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438"} (${s.username ? "@" + s.username + ", " : ""}${s.chatId}).`);
       return;
     }
@@ -2723,7 +4273,7 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
       try {
         reply2 = await waHook(cmd, args, now);
       } catch (e) {
-        reply2 = { text: `\u041E\u0448\u0438\u0431\u043A\u0430 \u043A\u043E\u043C\u0430\u043D\u0434\u044B: ${scrub(String(e?.message || e))}` };
+        reply2 = { text: `\u041E\u0448\u0438\u0431\u043A\u0430 \u043A\u043E\u043C\u0430\u043D\u0434\u044B: ${scrub4(String(e?.message || e))}` };
       }
       if (reply2.photo) {
         const r = await sendPhotoBytes(chatId, reply2.photo.data, reply2.photo.caption);
@@ -2734,8 +4284,11 @@ ${r.warnings.slice(0, 8).join("\n")}` : "";
       await plain(chatId, reply2.text);
       return;
     }
+    case "wa_bridge":
+      await plain(chatId, bridgeStatusText());
+      return;
     case "preview":
-      void runPreview(m, now).catch((e) => console.error("[tg] preview:", scrub(String(e))));
+      void runPreview(m, now).catch((e) => console.error("[tg] preview:", scrub4(String(e))));
       return;
   }
 }
@@ -2771,7 +4324,7 @@ function reply(res, status, body) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
   res.end(payload);
 }
-function readLimited(req, max) {
+function readLimited2(req, max) {
   return new Promise((resolve) => {
     let size = 0;
     let over = false;
@@ -2791,11 +4344,11 @@ function readLimited(req, max) {
   });
 }
 function secretOk(provided) {
-  const secret = webhookSecret();
-  if (!secret || !provided) return false;
+  const secret2 = webhookSecret();
+  if (!secret2 || !provided) return false;
   const a = Buffer.from(provided);
-  const b = Buffer.from(secret);
-  return a.length === b.length && (0, import_node_crypto3.timingSafeEqual)(a, b);
+  const b = Buffer.from(secret2);
+  return a.length === b.length && (0, import_node_crypto5.timingSafeEqual)(a, b);
 }
 async function handleTgWorkshop(req, res) {
   const h = req.headers["x-telegram-bot-api-secret-token"];
@@ -2803,7 +4356,7 @@ async function handleTgWorkshop(req, res) {
     runtime.webhookRejected++;
     return reply(res, 401, { ok: false });
   }
-  const raw = await readLimited(req, MAX_UPDATE_BODY);
+  const raw = await readLimited2(req, MAX_UPDATE_BODY);
   reply(res, 200, { ok: true });
   if (raw === null || !botEnabled()) return;
   let update = null;
@@ -2813,7 +4366,7 @@ async function handleTgWorkshop(req, res) {
     update = null;
   }
   if (!update || typeof update !== "object") return;
-  void processUpdate(update).catch((e) => console.error("[tg] webhook:", scrub(String(e))));
+  void processUpdate(update).catch((e) => console.error("[tg] webhook:", scrub4(String(e))));
 }
 function currentBizon() {
   return store?.state.bizon || series?.links.bizon || DEFAULT_BIZON;
@@ -2857,7 +4410,7 @@ function parseTyBody(raw) {
   return { ch, eid: /^[A-Za-z0-9-]{1,64}$/.test(eid) ? eid : "", ...src === "pp" || src === "ty" ? { src } : {} };
 }
 async function handleTyClick(req, res) {
-  const raw = await readLimited(req, 2048);
+  const raw = await readLimited2(req, 2048);
   res.writeHead(204, { "Cache-Control": "no-store" });
   res.end();
   if (raw === null || !store) return;
@@ -2876,8 +4429,8 @@ function calendarDay(now = Date.now()) {
 }
 
 // form-api/tg-scheduler.ts
-var import_node_fs6 = require("node:fs");
-var import_node_path6 = require("node:path");
+var import_node_fs8 = require("node:fs");
+var import_node_path8 = require("node:path");
 var TICK_MS = 3e4;
 var LOCK_STALE_MS = 3 * TICK_MS;
 var REPORT_DELAY_MS = 5 * 6e4;
@@ -2906,18 +4459,18 @@ function dueMessages(sr, now) {
   }
   return out.sort((a, b) => a.plan - b.plan);
 }
-function pickRecipients(st, msg, day, opts = {}) {
+function pickRecipients(st2, msg, day, opts = {}) {
   const out = [];
-  for (const s of st.subs.values()) {
-    if (s.streamDay !== day || !st.isActive(s)) continue;
+  for (const s of st2.subs.values()) {
+    if (s.streamDay !== day || !st2.isActive(s)) continue;
     if (opts.plan !== void 0 && !(s.registeredAt < opts.plan)) continue;
-    if (st.hasSent(msg.id, day, s.chatId)) continue;
-    if (!st.audienceOk(msg.audience, s, day)) continue;
+    if (st2.hasSent(msg.id, day, s.chatId)) continue;
+    if (!st2.audienceOk(msg.audience, s, day)) continue;
     out.push(s);
   }
   return out.sort((a, b) => a.chatId - b.chatId);
 }
-var lockPath = (st) => (0, import_node_path6.join)(st.dir, "scheduler.lock");
+var lockPath = (st2) => (0, import_node_path8.join)(st2.dir, "scheduler.lock");
 function pidAlive(pid) {
   try {
     process.kill(pid, 0);
@@ -2927,11 +4480,11 @@ function pidAlive(pid) {
   }
 }
 var lockedOutLogged = false;
-function holdLock(st) {
-  const f = lockPath(st);
+function holdLock(st2) {
+  const f = lockPath(st2);
   try {
-    if ((0, import_node_fs6.existsSync)(f)) {
-      const cur = JSON.parse((0, import_node_fs6.readFileSync)(f, "utf8"));
+    if ((0, import_node_fs8.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs8.readFileSync)(f, "utf8"));
       if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS && pidAlive(cur.pid)) {
         if (!lockedOutLogged) console.warn("[tg-sched] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0448\u043B\u0451\u0442", cur.pid);
         lockedOutLogged = true;
@@ -2939,17 +4492,17 @@ function holdLock(st) {
       }
     }
     lockedOutLogged = false;
-    (0, import_node_fs6.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    (0, import_node_fs8.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
     return true;
   } catch (e) {
     console.error("[tg-sched] lock-\u0444\u0430\u0439\u043B \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
     return true;
   }
 }
-function releaseLock(st) {
+function releaseLock(st2) {
   try {
-    const f = lockPath(st);
-    if ((0, import_node_fs6.existsSync)(f) && JSON.parse((0, import_node_fs6.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs6.unlinkSync)(f);
+    const f = lockPath(st2);
+    if ((0, import_node_fs8.existsSync)(f) && JSON.parse((0, import_node_fs8.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs8.unlinkSync)(f);
   } catch {
   }
 }
@@ -2963,7 +4516,7 @@ var defaultDeps = {
   now: () => Date.now()
 };
 var inflight = /* @__PURE__ */ new Set();
-async function deliver(st, msg, day, rcpts, opts = {}, deps = defaultDeps) {
+async function deliver(st2, msg, day, rcpts, opts = {}, deps = defaultDeps) {
   const stats = { ok: 0, failed: 0, blocked: 0, netFail: 0, skippedLate: 0 };
   for (let i = 0; i < rcpts.length; i++) {
     const s = rcpts[i];
@@ -2974,7 +4527,7 @@ async function deliver(st, msg, day, rcpts, opts = {}, deps = defaultDeps) {
       break;
     }
     const key = `${msg.id}|${day}|${s.chatId}`;
-    if (inflight.has(key) || st.hasSent(msg.id, day, s.chatId)) continue;
+    if (inflight.has(key) || st2.hasSent(msg.id, day, s.chatId)) continue;
     inflight.add(key);
     try {
       let r;
@@ -2983,7 +4536,7 @@ async function deliver(st, msg, day, rcpts, opts = {}, deps = defaultDeps) {
       } catch (e) {
         r = { ok: false, code: 0, error: `exception ${e?.message || e}` };
       }
-      st.recordSent({ msg: msg.id, day, chat_id: s.chatId, ts: new Date(deps.now()).toISOString(), ok: r.ok, ...r.ok ? {} : { err: r.error } });
+      st2.recordSent({ msg: msg.id, day, chat_id: s.chatId, ts: new Date(deps.now()).toISOString(), ok: r.ok, ...r.ok ? {} : { err: r.error } });
       if (r.ok) stats.ok++;
       else {
         stats.failed++;
@@ -3002,14 +4555,14 @@ var running = false;
 var lateLogged = /* @__PURE__ */ new Set();
 var errStreak = 0;
 var errAlerted = false;
-function logLate(st, sr, now) {
+function logLate(st2, sr, now) {
   for (const day of candidateDays(sr, now)) {
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
       const plan = planTime(day, msg);
       const key = `${msg.id}|${day}`;
       if (now <= plan + sr.graceMinutes * 6e4 || lateLogged.has(key)) continue;
-      const n = pickRecipients(st, msg, day, { plan }).length;
+      const n = pickRecipients(st2, msg, day, { plan }).length;
       if (n > 0) {
         lateLogged.add(key);
         console.warn("[tg-sched] skip late msg=%s day=%s: \u043E\u043A\u043D\u043E \u0437\u0430\u043A\u0440\u044B\u043B\u043E\u0441\u044C, \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 %d", msg.id, day, n);
@@ -3033,39 +4586,39 @@ function noteTickResult(ok, why) {
   }
 }
 async function dailyReport(now = Date.now()) {
-  const st = getStore();
+  const st2 = getStore();
   const cfg = timeCfg(activeSeries());
   const today = dayKeyOf(now);
   for (const day of [addDays(today, -1), today]) {
-    if (!isStreamDay(day, cfg) || st.isReported(day)) continue;
+    if (!isStreamDay(day, cfg) || st2.isReported(day)) continue;
     const at = streamEnd(day, cfg) + REPORT_DELAY_MS;
     if (now < at || now > at + REPORT_WINDOW_MS) continue;
     if (!ownerIds().length) return false;
-    if (await notifyOwners(dayReportText(st, day)) > 0) {
-      st.markReported(day);
+    if (await notifyOwners(dayReportText(st2, day)) > 0) {
+      st2.markReported(day);
       return true;
     }
   }
   return false;
 }
 async function adminDaily(now = Date.now()) {
-  const st = getStore();
+  const st2 = getStore();
   const sr = activeSeries();
-  if (!st.state.adminSince) {
-    st.setAdminSince(now);
+  if (!st2.state.adminSince) {
+    st2.setAdminSince(now);
     return false;
   }
   const at = sr.adminDailyReportAt || "09:00";
   const today = dayKeyOf(now);
   for (const occ of [addDays(today, -1), today]) {
     const t = atTime(occ, at);
-    if (t < st.state.adminSince || now < t || now >= t + 24 * 36e5) continue;
+    if (t < st2.state.adminSince || now < t || now >= t + 24 * 36e5) continue;
     const day = addDays(occ, -1);
-    if (st.isAdminReported(day)) continue;
+    if (st2.isAdminReported(day)) continue;
     if (!ownerIds().length) return false;
     const text2 = renderDailyReport(adminCtx(now), day);
     if (await notifyOwnersHtml(text2, dailyKeyboard(day)) > 0) {
-      st.markAdminReported(day);
+      st2.markAdminReported(day);
       return true;
     }
   }
@@ -3076,8 +4629,8 @@ async function tick(now = Date.now(), deps = defaultDeps) {
   running = true;
   try {
     if (!botEnabled() || !botConfigured()) return 0;
-    const st = getStore();
-    if (!holdLock(st)) return 0;
+    const st2 = getStore();
+    if (!holdLock(st2)) return 0;
     try {
       await dailyReport(now);
     } catch (e) {
@@ -3089,18 +4642,18 @@ async function tick(now = Date.now(), deps = defaultDeps) {
       console.error("[tg-sched] \u0430\u0434\u043C\u0438\u043D-\u043E\u0442\u0447\u0451\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B:", e?.message || e);
     }
     const full = activeSeries();
-    const sr = st.state.seriesEnabled ? full : { ...full, messages: full.messages.filter((m) => m.essential) };
+    const sr = st2.state.seriesEnabled ? full : { ...full, messages: full.messages.filter((m) => m.essential) };
     if (!sr.messages.length) return 0;
-    logLate(st, sr, now);
+    logLate(st2, sr, now);
     let sent = 0;
     let worked = false;
     let netDown = "";
     for (const d of dueMessages(sr, now)) {
-      const rcpts = pickRecipients(st, d.msg, d.day, { plan: d.plan });
+      const rcpts = pickRecipients(st2, d.msg, d.day, { plan: d.plan });
       if (!rcpts.length) continue;
       worked = true;
       console.log("[tg-sched] msg=%s day=%s \u043F\u043E\u043B\u0443\u0447\u0430\u0442\u0435\u043B\u0435\u0439=%d", d.msg.id, d.day, rcpts.length);
-      const r = await deliver(st, d.msg, d.day, rcpts, { deadline: d.plan + sr.graceMinutes * 6e4 }, deps);
+      const r = await deliver(st2, d.msg, d.day, rcpts, { deadline: d.plan + sr.graceMinutes * 6e4 }, deps);
       sent += r.ok;
       console.log("[tg-sched] msg=%s day=%s \u0443\u0448\u043B\u043E=%d \u043E\u0448\u0438\u0431\u043E\u043A=%d \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438=%d", d.msg.id, d.day, r.ok, r.failed, r.blocked);
       if (r.ok === 0 && r.failed > 0 && r.netFail === r.failed) netDown = "Telegram \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u0438\u043B\u0438 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u043E\u0448\u0438\u0431\u043A\u0430\u043C\u0438 5xx";
@@ -3115,22 +4668,22 @@ async function tick(now = Date.now(), deps = defaultDeps) {
   }
 }
 function firePlan(id, now = Date.now()) {
-  const st = getStore();
+  const st2 = getStore();
   const msg = activeSeries().messages.find((m) => m.id === id);
   if (!msg) return { ok: false, error: `\u041D\u0435\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \xAB${id}\xBB. \u0421\u043F\u0438\u0441\u043E\u043A: /series` };
-  if (!st.state.seriesEnabled) return { ok: false, error: "\u0421\u0435\u0440\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430, \u043C\u0430\u0441\u0441\u043E\u0432\u0430\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u0437\u0430\u043A\u0440\u044B\u0442\u0430. \u0412\u043A\u043B\u044E\u0447\u0438 \u043A\u043E\u043C\u0430\u043D\u0434\u043E\u0439 /series_on." };
+  if (!st2.state.seriesEnabled) return { ok: false, error: "\u0421\u0435\u0440\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430, \u043C\u0430\u0441\u0441\u043E\u0432\u0430\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u0437\u0430\u043A\u0440\u044B\u0442\u0430. \u0412\u043A\u043B\u044E\u0447\u0438 \u043A\u043E\u043C\u0430\u043D\u0434\u043E\u0439 /series_on." };
   if (msg.enabled === false) return { ok: false, error: `\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \xAB${id}\xBB \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E (enabled: false \u0432 json \u0438\u043B\u0438 /off). \u0412\u043A\u043B\u044E\u0447\u0438: /on ${id}` };
   const day = addDays(dayKeyOf(now), -(msg.dayOffset ?? 0));
-  const count = pickRecipients(st, msg, day).length;
+  const count = pickRecipients(st2, msg, day).length;
   if (!count) return { ok: false, error: `\u041D\u0435\u043A\u043E\u043C\u0443 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0442\u044C: \u0432\u0441\u0435, \u043A\u043E\u043C\u0443 \xAB${id}\xBB \u043F\u043E\u043B\u043E\u0436\u0435\u043D\u043E \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F, \u0443\u0436\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u0438 \u0435\u0433\u043E, \u0438\u043B\u0438 \u0442\u0430\u043A\u0438\u0445 \u043D\u0435\u0442.` };
   return { ok: true, day, msg, count };
 }
 async function fireNow(id, now = Date.now(), deps = defaultDeps) {
   const p = firePlan(id, now);
   if (!p.ok) return p.error;
-  const st = getStore();
-  const rcpts = pickRecipients(st, p.msg, p.day);
-  const r = await deliver(st, p.msg, p.day, rcpts, {}, deps);
+  const st2 = getStore();
+  const rcpts = pickRecipients(st2, p.msg, p.day);
+  const r = await deliver(st2, p.msg, p.day, rcpts, {}, deps);
   return `\xAB${id}\xBB \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E: ${r.ok}, \u043E\u0448\u0438\u0431\u043E\u043A: ${r.failed} (\u0438\u0437 \u043D\u0438\u0445 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0431\u043E\u0442\u0430: ${r.blocked}), \u043F\u043E\u043B\u0443\u0447\u0430\u0442\u0435\u043B\u0435\u0439 \u0431\u044B\u043B\u043E: ${rcpts.length}.`;
 }
 function startScheduler() {
@@ -3140,24 +4693,24 @@ function startScheduler() {
     return () => {
     };
   }
-  const st = getStore();
+  const st2 = getStore();
   const timer = setInterval(() => void tick(), TICK_MS);
   const first = setTimeout(() => void tick(), 3e3);
-  const onExit = () => releaseLock(st);
+  const onExit = () => releaseLock(st2);
   process.on("exit", onExit);
   console.log("[tg-sched] \u0437\u0430\u043F\u0443\u0449\u0435\u043D, \u0442\u0438\u043A %d \u0441", TICK_MS / 1e3);
   return () => {
     clearInterval(timer);
     clearTimeout(first);
     process.off("exit", onExit);
-    releaseLock(st);
+    releaseLock(st2);
   };
 }
 
 // form-api/tg-miniapp.ts
-var import_node_crypto4 = require("node:crypto");
-var import_node_fs7 = require("node:fs");
-var import_node_path7 = require("node:path");
+var import_node_crypto6 = require("node:crypto");
+var import_node_fs9 = require("node:fs");
+var import_node_path9 = require("node:path");
 
 // form-api/tg-webapp-sdk.ts
 var TG_WEBAPP_SDK = `// WebView
@@ -6652,10 +8205,10 @@ var TG_WEBAPP_SDK = `// WebView
 `;
 
 // form-api/tg-miniapp.ts
-var env2 = (k) => (process.env[k] || "").trim();
+var env5 = (k) => (process.env[k] || "").trim();
 var MIN_SECRET = 16;
-var appPin = () => env2("ADMIN_APP_PIN");
-var appSecret = () => env2("ADMIN_APP_SECRET");
+var appPin = () => env5("ADMIN_APP_PIN");
+var appSecret = () => env5("ADMIN_APP_SECRET");
 function appConfigured() {
   return !!botToken() && !!appPin() && appSecret().length >= MIN_SECRET && adminAppIds().length > 0;
 }
@@ -6666,7 +8219,7 @@ var LOGIN_WINDOW_MS = 10 * 6e4;
 var MAX_LOGIN_BODY = 4096;
 var PAGE_SIZE = 50;
 var PAGE_MAX = 100;
-function verifyInitData(initData, token, nowMs, maxAgeSec = INIT_MAX_AGE_SEC) {
+function verifyInitData(initData, token, nowMs2, maxAgeSec = INIT_MAX_AGE_SEC) {
   if (!token || typeof initData !== "string" || !initData || initData.length > 8192) return { ok: false, reason: "format" };
   let params;
   try {
@@ -6680,13 +8233,13 @@ function verifyInitData(initData, token, nowMs, maxAgeSec = INIT_MAX_AGE_SEC) {
   for (const [k, v] of params) if (k !== "hash") pairs.push([k, v]);
   pairs.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
   const dataCheck = pairs.map(([k, v]) => `${k}=${v}`).join("\n");
-  const secretKey = (0, import_node_crypto4.createHmac)("sha256", "WebAppData").update(token).digest();
-  const want = (0, import_node_crypto4.createHmac)("sha256", secretKey).update(dataCheck).digest();
+  const secretKey = (0, import_node_crypto6.createHmac)("sha256", "WebAppData").update(token).digest();
+  const want = (0, import_node_crypto6.createHmac)("sha256", secretKey).update(dataCheck).digest();
   const given = Buffer.from(hash, "hex");
-  if (given.length !== want.length || !(0, import_node_crypto4.timingSafeEqual)(given, want)) return { ok: false, reason: "hash" };
+  if (given.length !== want.length || !(0, import_node_crypto6.timingSafeEqual)(given, want)) return { ok: false, reason: "hash" };
   const authDate = Number(params.get("auth_date"));
   if (!Number.isInteger(authDate) || authDate <= 0) return { ok: false, reason: "format" };
-  const ageSec = nowMs / 1e3 - authDate;
+  const ageSec = nowMs2 / 1e3 - authDate;
   if (ageSec > maxAgeSec || ageSec < -300) return { ok: false, reason: "expired" };
   let userId = 0;
   try {
@@ -6697,29 +8250,29 @@ function verifyInitData(initData, token, nowMs, maxAgeSec = INIT_MAX_AGE_SEC) {
   if (!userId) return { ok: false, reason: "user" };
   return { ok: true, userId, authDate };
 }
-var signSessionPart = (payload, secret) => (0, import_node_crypto4.createHmac)("sha256", secret).update(`admin-app-session:${payload}`).digest("base64url");
-function signSession(userId, nowMs, secret, ttlMs = SESSION_TTL_MS) {
-  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowMs + ttlMs })).toString("base64url");
-  return `${payload}.${signSessionPart(payload, secret)}`;
+var signSessionPart = (payload, secret2) => (0, import_node_crypto6.createHmac)("sha256", secret2).update(`admin-app-session:${payload}`).digest("base64url");
+function signSession(userId, nowMs2, secret2, ttlMs = SESSION_TTL_MS) {
+  const payload = Buffer.from(JSON.stringify({ u: userId, e: nowMs2 + ttlMs })).toString("base64url");
+  return `${payload}.${signSessionPart(payload, secret2)}`;
 }
-function verifySession(token, userId, nowMs, secret) {
-  if (!secret || typeof token !== "string" || token.length > 400) return false;
+function verifySession(token, userId, nowMs2, secret2) {
+  if (!secret2 || typeof token !== "string" || token.length > 400) return false;
   const dot = token.indexOf(".");
   if (dot < 1) return false;
   const payload = token.slice(0, dot);
   const given = Buffer.from(token.slice(dot + 1));
-  const want = Buffer.from(signSessionPart(payload, secret));
-  if (given.length !== want.length || !(0, import_node_crypto4.timingSafeEqual)(given, want)) return false;
+  const want = Buffer.from(signSessionPart(payload, secret2));
+  if (given.length !== want.length || !(0, import_node_crypto6.timingSafeEqual)(given, want)) return false;
   try {
     const o = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    return o.u === userId && typeof o.e === "number" && o.e > nowMs;
+    return o.u === userId && typeof o.e === "number" && o.e > nowMs2;
   } catch {
     return false;
   }
 }
 function pinMatches(given, pin) {
   if (!pin || typeof given !== "string" || given.length > 64) return false;
-  return (0, import_node_crypto4.timingSafeEqual)((0, import_node_crypto4.createHash)("sha256").update(given.trim()).digest(), (0, import_node_crypto4.createHash)("sha256").update(pin).digest());
+  return (0, import_node_crypto6.timingSafeEqual)((0, import_node_crypto6.createHash)("sha256").update(given.trim()).digest(), (0, import_node_crypto6.createHash)("sha256").update(pin).digest());
 }
 var loginFails = /* @__PURE__ */ new Map();
 function recentFails(userId, now) {
@@ -7052,12 +8605,12 @@ function send(res, status, body, extra = {}) {
   });
   res.end(payload);
 }
-var FORBIDDEN = { ok: false, error: "forbidden" };
+var FORBIDDEN2 = { ok: false, error: "forbidden" };
 function header(req, name) {
   const v = req.headers[name];
   return (Array.isArray(v) ? v[0] : v) || "";
 }
-function readLimited2(req, max) {
+function readLimited3(req, max) {
   return new Promise((resolve) => {
     let size = 0;
     let over = false;
@@ -7079,11 +8632,11 @@ function readLimited2(req, max) {
 function gateInit(initData) {
   if (!appConfigured()) return { ok: false, status: 503, body: { ok: false, error: "not_configured" } };
   const v = verifyInitData(initData, botToken(), Date.now());
-  if (!v.ok || !isAdminAppUser(v.userId)) return { ok: false, status: 403, body: FORBIDDEN };
+  if (!v.ok || !isAdminAppUser(v.userId)) return { ok: false, status: 403, body: FORBIDDEN2 };
   return { ok: true, userId: v.userId };
 }
 async function handleAdminLogin(req, res) {
-  const raw = await readLimited2(req, MAX_LOGIN_BODY);
+  const raw = await readLimited3(req, MAX_LOGIN_BODY);
   let body = {};
   try {
     if (raw) body = JSON.parse(raw);
@@ -7094,10 +8647,10 @@ async function handleAdminLogin(req, res) {
   const gate = gateInit(initData);
   if (!gate.ok) return send(res, gate.status, gate.body);
   const now = Date.now();
-  const wait = loginLockedFor(gate.userId, now);
-  if (wait > 0) {
+  const wait2 = loginLockedFor(gate.userId, now);
+  if (wait2 > 0) {
     console.warn("[admin-app] \u0432\u0445\u043E\u0434 \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D: \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u043C\u043D\u043E\u0433\u043E \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0445 \u043F\u0430\u0440\u043E\u043B\u0435\u0439");
-    return send(res, 429, { ok: false, error: "too_many", retryAfter: wait }, { "Retry-After": String(wait) });
+    return send(res, 429, { ok: false, error: "too_many", retryAfter: wait2 }, { "Retry-After": String(wait2) });
   }
   if (!pinMatches(body.pin, appPin())) {
     const left = noteLoginFail(gate.userId, now);
@@ -7145,7 +8698,7 @@ function gateAdminSession(req) {
   return gate;
 }
 var adminJson = send;
-var adminReadBody = readLimited2;
+var adminReadBody = readLimited3;
 function handleAdminData(req, res, path) {
   const gate = gateAdminSession(req);
   if (!gate.ok) return send(res, gate.status, gate.body);
@@ -7168,10 +8721,10 @@ function handleAdminData(req, res, path) {
   }
 }
 function readPage() {
-  const candidates = [env2("ADMIN_APP_HTML"), (0, import_node_path7.join)(__dirname, "admin-app.html"), (0, import_node_path7.join)(__dirname, "..", "admin-app.html")].filter(Boolean);
+  const candidates = [env5("ADMIN_APP_HTML"), (0, import_node_path9.join)(__dirname, "admin-app.html"), (0, import_node_path9.join)(__dirname, "..", "admin-app.html")].filter(Boolean);
   for (const f of candidates) {
     try {
-      return (0, import_node_fs7.readFileSync)(f, "utf8");
+      return (0, import_node_fs9.readFileSync)(f, "utf8");
     } catch {
     }
   }
@@ -7189,7 +8742,7 @@ function handleTgSdk(req, res) {
 function handleAdminApp(req, res) {
   const html = readPage();
   if (html === null) return send(res, 404, { ok: false, error: "not_found" });
-  const nonce = (0, import_node_crypto4.randomBytes)(16).toString("base64");
+  const nonce = (0, import_node_crypto6.randomBytes)(16).toString("base64");
   const body = html.split("__NONCE__").join(nonce);
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
@@ -7214,1008 +8767,29 @@ function handleAdminApp(req, res) {
 }
 
 // form-api/wa-groups.ts
-var import_node_fs10 = require("node:fs");
-var import_node_path10 = require("node:path");
-
-// form-api/wa-evolution.ts
-var env3 = (k) => (process.env[k] || "").trim();
-var evoUrl = () => (env3("EVOLUTION_URL") || "http://127.0.0.1:8080").replace(/\/+$/, "");
-var evoKey = () => env3("EVOLUTION_API_KEY");
-var evoInstance = () => env3("EVOLUTION_INSTANCE") || "workshop";
-var TIMEOUT_MS = 2e4;
-var MEDIA_TIMEOUT_MS = 9e4;
-var CREATE_TIMEOUT_MS = 9e4;
-var CONNECT_FAIL_CODES2 = /* @__PURE__ */ new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH", "UND_ERR_CONNECT_TIMEOUT"]);
-var scrub2 = (s) => {
-  const k = evoKey();
-  return k ? s.split(k).join("***") : s;
-};
-function errorText(data, fallback) {
-  const m = data?.response?.message ?? data?.message ?? data?.error;
-  const text2 = Array.isArray(m) ? m.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join("; ") : typeof m === "string" ? m : m ? JSON.stringify(m) : "";
-  return scrub2((text2 || fallback).slice(0, 300));
-}
-async function evoCall(method, path, body, timeoutMs2 = TIMEOUT_MS) {
-  const key = evoKey();
-  if (!key) return { ok: false, status: 0, error: "no_api_key" };
-  try {
-    const res = await fetch(`${evoUrl()}${path}`, {
-      method,
-      headers: { apikey: key, ...body !== void 0 ? { "Content-Type": "application/json" } : {} },
-      ...body !== void 0 ? { body: JSON.stringify(body) } : {},
-      signal: AbortSignal.timeout(timeoutMs2)
-    });
-    const text2 = await res.text();
-    let data = null;
-    try {
-      data = text2 ? JSON.parse(text2) : null;
-    } catch {
-      data = null;
-    }
-    if (res.ok) return { ok: true, status: res.status, data };
-    return { ok: false, status: res.status, error: `${res.status} ${errorText(data, res.statusText || text2.slice(0, 100))}`, data };
-  } catch (e) {
-    const err = e;
-    const timeout = err?.name === "TimeoutError" || err?.name === "AbortError";
-    return {
-      ok: false,
-      status: 0,
-      error: timeout ? "timeout" : scrub2(String(err?.cause?.code || err?.message || err)),
-      ...timeout ? { timeout: true } : {},
-      ...!timeout && err?.cause?.code && CONNECT_FAIL_CODES2.has(err.cause.code) ? { connectFail: true } : {}
-    };
-  }
-}
-var I = () => encodeURIComponent(evoInstance());
-var q = (jid) => `?communityJid=${encodeURIComponent(jid)}`;
-async function connectionState() {
-  const r = await evoCall("GET", `/instance/connectionState/${I()}`);
-  if (r.ok) return { ok: true, status: r.status, data: { state: String(r.data?.instance?.state ?? "unknown") } };
-  if (r.status === 404) return { ok: true, status: 404, data: { state: "absent" } };
-  return r;
-}
-async function fetchInstance() {
-  const r = await evoCall("GET", `/instance/fetchInstances?instanceName=${I()}`);
-  if (!r.ok) {
-    if (r.status === 404) return { ok: true, status: 404, data: emptyInstance() };
-    return r;
-  }
-  const row = Array.isArray(r.data) ? r.data[0] : r.data;
-  if (!row || typeof row !== "object") return { ok: true, status: r.status, data: emptyInstance() };
-  const obj = row.disconnectionObject;
-  const code = Number(row.disconnectionReasonCode);
-  return {
-    ok: true,
-    status: r.status,
-    data: {
-      found: true,
-      ownerJid: String(row.ownerJid || ""),
-      profileName: String(row.profileName || ""),
-      number: String(row.number || ""),
-      connectionStatus: String(row.connectionStatus || ""),
-      disconnectionReasonCode: row.disconnectionReasonCode === null || row.disconnectionReasonCode === void 0 || !Number.isFinite(code) ? null : code,
-      disconnectionObject: obj === null || obj === void 0 ? "" : (typeof obj === "string" ? obj : JSON.stringify(obj)).slice(0, 4e3),
-      disconnectionAt: String(row.disconnectionAt || "")
-    }
-  };
-}
-var emptyInstance = () => ({ found: false, ownerJid: "", profileName: "", number: "", connectionStatus: "", disconnectionReasonCode: null, disconnectionObject: "", disconnectionAt: "" });
-function createInstance(number) {
-  return evoCall("POST", "/instance/create", {
-    instanceName: evoInstance(),
-    integration: "WHATSAPP-BAILEYS",
-    qrcode: true,
-    ...number ? { number } : {},
-    rejectCall: false,
-    groupsIgnore: false,
-    alwaysOnline: false,
-    readMessages: false,
-    readStatus: false,
-    syncFullHistory: false
-  }, 3e4);
-}
-function connectInstance(number) {
-  return evoCall("GET", `/instance/connect/${I()}${number ? `?number=${encodeURIComponent(number)}` : ""}`, void 0, 3e4);
-}
-var logoutInstance = () => evoCall("DELETE", `/instance/logout/${I()}`, void 0, 3e4);
-var GROUPS_TIMEOUT_MS = 6e4;
-async function fetchAllGroups(withParticipants) {
-  const r = await evoCall("GET", `/group/fetchAllGroups/${I()}?getParticipants=${withParticipants ? "true" : "false"}`, void 0, GROUPS_TIMEOUT_MS);
-  if (!r.ok) return r;
-  if (!Array.isArray(r.data)) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 fetchAllGroups \u043D\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430", data: r.data };
-  return { ok: true, status: r.status, data: r.data };
-}
-async function communityCreate(p) {
-  const r = await evoCall("POST", `/community/create/${I()}`, p, CREATE_TIMEOUT_MS);
-  if (!r.ok) return r;
-  const communityJid = String(r.data?.communityJid || "");
-  const announcementJid = String(r.data?.announcementJid || "");
-  if (!communityJid.endsWith("@g.us") || !announcementJid.endsWith("@g.us")) {
-    return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 create \u043D\u0435\u0442 communityJid \u0438\u043B\u0438 announcementJid", data: r.data };
-  }
-  return { ok: true, status: r.status, data: { communityJid, announcementJid } };
-}
-var communityInfo = (jid) => evoCall("GET", `/community/info/${I()}${q(jid)}`);
-async function communityInvite(jid) {
-  const r = await evoCall("GET", `/community/inviteCode/${I()}${q(jid)}`);
-  if (!r.ok) return r;
-  return inviteOf(r);
-}
-var communitySetting = (jid, action) => evoCall("POST", `/community/updateSetting/${I()}${q(jid)}`, { action });
-var communityMemberAddMode = (jid, mode) => evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode });
-var communityJoinApproval = (jid, mode) => evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode });
-var communityRequests = (jid) => evoCall("GET", `/community/requests/${I()}${q(jid)}`);
-var communityDecide = (jid, participants, action) => evoCall("POST", `/community/requests/${I()}${q(jid)}`, { participants, action });
-async function groupCreate(p) {
-  const r = await evoCall("POST", `/group/create/${I()}`, { ...p, promoteParticipants: true }, CREATE_TIMEOUT_MS);
-  if (!r.ok) return r;
-  const groupJid = String(r.data?.id || "");
-  if (!groupJid.endsWith("@g.us")) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 group/create \u043D\u0435\u0442 id \u0433\u0440\u0443\u043F\u043F\u044B", data: r.data };
-  return { ok: true, status: r.status, data: { groupJid } };
-}
-var groupSetting = (jid, action) => evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action });
-async function groupInvite(jid) {
-  const r = await evoCall("GET", `/group/inviteCode/${I()}?groupJid=${encodeURIComponent(jid)}`);
-  if (!r.ok) return r;
-  return inviteOf(r);
-}
-var groupInfo = (jid) => evoCall("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`);
-var updatePicture = (jid, imageUrl) => evoCall("POST", `/group/updateGroupPicture/${I()}`, { groupJid: jid, image: imageUrl }, MEDIA_TIMEOUT_MS);
-function inviteOf(r) {
-  const inviteCode = String(r.data?.inviteCode || "");
-  const inviteUrl = String(r.data?.inviteUrl || (inviteCode ? `https://chat.whatsapp.com/${inviteCode}` : ""));
-  if (!inviteUrl) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0438-\u043F\u0440\u0438\u0433\u043B\u0430\u0448\u0435\u043D\u0438\u044F", data: r.data };
-  return { ok: true, status: r.status, data: { inviteCode, inviteUrl } };
-}
-async function groupParticipants(jid) {
-  const r = await evoCall("GET", `/group/participants/${I()}?groupJid=${encodeURIComponent(jid)}`, void 0, GROUPS_TIMEOUT_MS);
-  if (!r.ok) return r;
-  const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.participants) ? r.data.participants : null;
-  if (!list) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 participants \u043D\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430", data: r.data };
-  const members = [];
-  for (const p of list) {
-    if (!p || typeof p !== "object") continue;
-    members.push({ id: String(p.id ?? p.jid ?? ""), phoneNumber: String(p.phoneNumber ?? p.phone ?? ""), admin: String(p.admin ?? "") });
-  }
-  return { ok: true, status: r.status, data: members };
-}
-async function contactPushName(digits) {
-  const r = await evoCall("POST", `/chat/findContacts/${I()}`, { where: { remoteJid: `${digits}@s.whatsapp.net` } });
-  if (!r.ok) return r;
-  const list = Array.isArray(r.data) ? r.data : [];
-  const hit = list.find((c) => c && typeof c.pushName === "string" && c.pushName.trim());
-  return { ok: true, status: r.status, data: hit ? String(hit.pushName).trim() : "" };
-}
-function sentOf(r) {
-  if (!r.ok) return r;
-  return { ok: true, status: r.status, data: { messageId: String(r.data?.key?.id || "") } };
-}
-async function sendText2(jid, text2, opts = {}) {
-  const delay = opts.delay && opts.delay > 0 ? Math.round(opts.delay) : 0;
-  return sentOf(await evoCall("POST", `/message/sendText/${I()}`, { number: jid, text: text2, linkPreview: false, ...delay ? { delay } : {} }, delay ? TIMEOUT_MS + delay : TIMEOUT_MS));
-}
-function setWebhook(p) {
-  return evoCall("POST", `/webhook/set/${I()}`, {
-    webhook: {
-      enabled: p.enabled,
-      url: p.url,
-      events: p.enabled ? p.events ?? ["MESSAGES_UPSERT"] : [],
-      byEvents: false,
-      base64: false,
-      ...p.enabled && p.headers ? { headers: p.headers } : {}
-    }
-  });
-}
-async function sendMedia2(jid, p) {
-  const mimetype = p.mediatype === "video" ? "video/mp4" : /\.png$/i.test(p.url) ? "image/png" : "image/jpeg";
-  return sentOf(
-    await evoCall("POST", `/message/sendMedia/${I()}`, { number: jid, mediatype: p.mediatype, mimetype, media: p.url, ...p.caption ? { caption: p.caption } : {} }, MEDIA_TIMEOUT_MS)
-  );
-}
-async function sendPoll(jid, p) {
-  return sentOf(await evoCall("POST", `/message/sendPoll/${I()}`, { number: jid, name: p.name, selectableCount: p.selectableCount, values: p.values }));
-}
-
-// form-api/wa-assistant.ts
-var import_node_fs8 = require("node:fs");
-var import_node_crypto5 = require("node:crypto");
-var import_node_path8 = require("node:path");
-var env4 = (k) => (process.env[k] || "").trim();
-var MIN = 6e4;
-var HOUR = 36e5;
-var DAY = 24 * HOUR;
-var HISTORY = 16;
-var LIMIT_PERSON = 30;
-var LIMIT_TOTAL = 400;
-var SILENCE_MS = 12 * HOUR;
-var quietMs = () => {
-  const n = Number(env4("WA_AI_QUIET_MS"));
-  return Number.isFinite(n) && n >= 0 && env4("WA_AI_QUIET_MS") !== "" ? n : 8e3;
-};
-var timeoutMs = () => {
-  const n = Number(env4("WA_AI_TIMEOUT_MS"));
-  return Number.isFinite(n) && n > 0 ? n : 3e4;
-};
-var STALE_MS = 15 * MIN;
-var PAUSE_MS = [2e3, 5e3];
-var MAX_TEXT = 1500;
-var FILE_TAIL_BYTES = 3 * 1024 * 1024;
-var FILE_COMPACT_BYTES = 6 * 1024 * 1024;
-var MODEL = () => env4("WA_AI_MODEL") || "gpt-5.6-luna";
-var openaiBase = () => (env4("OPENAI_BASE_URL") || "https://api.openai.com/v1").replace(/\/+$/, "");
-var apiKey = () => env4("OPENAI_API_KEY");
-var promptDir = () => env4("WA_AI_DIR") || (0, import_node_path8.join)(__dirname, "wa-assistant");
-var hookUrl = () => env4("WA_HOOK_URL") || `http://127.0.0.1:${env4("PORT") || "4010"}/api/wa-hook`;
-var SAFE_FALLBACK = "\u041F\u043E\u0434\u0441\u043A\u0430\u0436\u0435\u0442 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 \u0448\u043A\u043E\u043B\u044B: https://onai.academy/workshop-montazh/chat";
-var MEDIA_PHRASE = "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435, \u043F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430, \u0442\u0435\u043A\u0441\u0442\u043E\u043C.";
-var fail = (code, message) => ({ ok: false, code, message });
-var ALLOWED_LINKS = ["onai.academy/workshop-montazh", "wa.me/77085834575", "t.me/futleid", "t.me/workshop_aiprod_bot"];
-var ALLOWED_HANDLES = /* @__PURE__ */ new Set(["@futleid", "@workshop_aiprod_bot", "@saint4ai"]);
-var AYANA_RE = /wa\.me\/77085834575|t\.me\/futleid|@futleid/i;
-var URL_RE = /(?:https?:\/\/|www\.)[^\s<>"'«»]+/giu;
-var BARE_RE = /(?<![\p{L}\p{N}_@./-])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?![\p{L}\p{N}-])(?:[/?#][^\s<>"'«»]*)?/giu;
-var TIME_RE = /(?<!\d)\d{1,2}[:.]\d{2}(?!\d)/g;
-function allowedLink(candidate) {
-  let s = candidate.trim().replace(/[.,;:!?)\]}»"'…]+$/u, "").toLowerCase();
-  if (s.startsWith("http://")) return false;
-  s = s.replace(/^https:\/\//, "").replace(/^www\./, "");
-  if (/^[a-z][a-z0-9+.-]*:\/\//.test(s)) return false;
-  return ALLOWED_LINKS.some((p) => s === p || s.startsWith(`${p}/`) || s.startsWith(`${p}?`) || s.startsWith(`${p}#`));
-}
-var PRICE_WORD = new RegExp("(?<![\\p{L}])(?:\u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\\p{L}*|\u0441\u0442\u043E\u0438\u0442|\u0441\u0442\u043E\u044F\u0442|\u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\\p{L}*|\u0446\u0435\u043D(?:\u0430|\u044B|\u0443|\u0435|\u043E\u0439)(?![\\p{L}])|\u043F\u0440\u0435\u0434\u043E\u043F\u043B\u0430\u0442\\p{L}*|\u0431\u0440\u043E\u043D\u044C|\u0431\u0440\u043E\u043D\u0438|\u0441\u043A\u0438\u0434\u043A\\p{L}*|\u043E\u0431\u043E\u0439\u0434\\p{L}*|\u0437\u0430\u043F\u043B\u0430\u0442\\p{L}*)", "giu");
-var CURRENCY_AFTER = new RegExp("\\d\\s*(?:[.,]\\d+\\s*)?(?:\u20B8|\\$|\u20AC|\u20BD|\u0442\u0435\u043D\u0433\u0435|\u0442\u0433(?![\\p{L}])|usd|kzt|rub|\u0440\u0443\u0431|\u0434\u043E\u043B\u043B\u0430\u0440|\u0435\u0432\u0440\u043E|\u0441\u043E\u043C(?![\\p{L}])|\u0441\u0443\u043C(?![\\p{L}])|\u0442\u044B\u0441\\p{L}*|\u043C\u043B\u043D|\u043C\u0438\u043B\u043B\u0438\u043E\u043D\\p{L}*|[k\u043A](?![\\p{L}]))", "iu");
-var CURRENCY_BEFORE = /(?:₸|\$|€|₽)\s*\d/u;
-var BIG_NUMBER = /\d{1,3}(?:[\u00a0\u202f ]\d{3})+|\d{5,}/u;
-var FORBIDDEN2 = /the\s*one\s*system|onesystem|erickson|эриксон|жумабае|аян[аеуыо]/iu;
-var REASON_TEXT = {
-  price: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0446\u0435\u043D\u0430, \u0441\u0443\u043C\u043C\u0430, \u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\u0430 \u0438\u043B\u0438 \u0443\u0441\u043B\u043E\u0432\u0438\u044F \u043E\u043F\u043B\u0430\u0442\u044B \u0441 \u0446\u0438\u0444\u0440\u0430\u043C\u0438",
-  link: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u043B\u0438 \u0430\u0434\u0440\u0435\u0441 \u043D\u0435 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445",
-  forbidden: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0443\u043F\u043E\u043C\u044F\u043D\u0443\u0442\u044B \u043A\u043B\u0438\u0435\u043D\u0442\u044B \u0448\u043A\u043E\u043B\u044B \u0438\u043B\u0438 \u043A\u0435\u0439\u0441\u044B",
-  phone: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u043D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0438\u043B\u0438 \u0434\u043B\u0438\u043D\u043D\u043E\u0435 \u0447\u0438\u0441\u043B\u043E",
-  handle: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 \u0438\u043C\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F \u043D\u0435 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445",
-  long: "\u043E\u0442\u0432\u0435\u0442 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0434\u043B\u0438\u043D\u043D\u044B\u0439",
-  empty: "\u043E\u0442\u0432\u0435\u0442 \u043F\u0443\u0441\u0442\u043E\u0439"
-};
-var MAX_REPLY = 600;
-function checkReply(text2) {
-  const out = /* @__PURE__ */ new Set();
-  if (!text2.trim()) return ["empty"];
-  if (text2.length > MAX_REPLY) out.add("long");
-  if (FORBIDDEN2.test(text2)) out.add("forbidden");
-  let rest = text2;
-  const judge = (m) => {
-    if (!allowedLink(m)) out.add("link");
-    return " ";
-  };
-  rest = rest.replace(URL_RE, judge).replace(BARE_RE, judge);
-  if (/(?<![\p{L}])(?:mailto|tel|sms|javascript|data|ftp|file):/iu.test(rest) || /(?<!\d)\d{1,3}(?:\.\d{1,3}){3}(?!\d)/.test(rest)) out.add("link");
-  for (const h of rest.match(/@[A-Za-z0-9_]{3,}/g) || []) if (!ALLOWED_HANDLES.has(h.toLowerCase())) out.add("handle");
-  const plain2 = rest.replace(TIME_RE, " ");
-  for (const m of plain2.match(/\+?\d[\d\s().-]{7,}\d/g) || []) if (m.replace(/\D/g, "").length >= 9) out.add("phone");
-  if (CURRENCY_AFTER.test(plain2) || CURRENCY_BEFORE.test(plain2) || BIG_NUMBER.test(plain2)) out.add("price");
-  for (const m of plain2.matchAll(PRICE_WORD)) {
-    const i = m.index ?? 0;
-    if (/\d/.test(plain2.slice(Math.max(0, i - 30), i + m[0].length + 30))) {
-      out.add("price");
-      break;
-    }
-  }
-  return [...out];
-}
-var EMOJI = new RegExp("\\p{Extended_Pictographic}(?:\uFE0F|\u200D\\p{Extended_Pictographic})*", "gu");
-function cleanReply(raw) {
-  let mark = false;
-  let summary = "";
-  const take = (_m, inner) => {
-    const x = /^\s*(?:МЕНЕДЖЕР|АЯНА|ПЕРЕДАНО МЕНЕДЖЕРУ|ПЕРЕДАНО АЯНЕ)\s*:?\s*([\s\S]*)$/iu.exec(inner);
-    if (x) {
-      mark = true;
-      summary = x[1].trim();
-    }
-    return "";
-  };
-  let t = raw.replace(/\[\[([^\]]*)\]\]/g, take).replace(/\[\s*(МЕНЕДЖЕР|АЯНА|ПЕРЕДАНО МЕНЕДЖЕРУ|ПЕРЕДАНО АЯНЕ)\s*:([^\]]*)\]/giu, (_m, _a, s) => {
-    mark = true;
-    summary = summary || s.trim();
-    return "";
-  });
-  t = t.replace(/\s+[\u2014\u2013]\s+/g, ", ").replace(/[\u2014\u2013]/g, "-").replace(/\*\*([^*\n]+)\*\*/g, "$1").replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g, "$1$2").replace(/__([^_\n]+)__/g, "$1").replace(/`+/g, "").replace(/^\s{0,3}#{1,6}\s+/gm, "").replace(/^\s*>\s?/gm, "");
-  let seen = 0;
-  t = t.replace(EMOJI, (m) => ++seen === 1 ? m : "");
-  t = t.replace(/[ \t]+\n/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
-  return { text: t, mark, summary };
-}
-function personJid(remoteJid) {
-  const m = /^(\d{5,20})(?::\d+)?@(s\.whatsapp\.net|lid)$/.exec(String(remoteJid || ""));
-  return m ? `${m[1]}@${m[2]}` : null;
-}
-function unwrap(m) {
-  let cur = m;
-  for (let i = 0; i < 4 && cur && typeof cur === "object"; i++) {
-    const inner = cur.ephemeralMessage?.message ?? cur.viewOnceMessage?.message ?? cur.viewOnceMessageV2?.message ?? cur.documentWithCaptionMessage?.message ?? cur.editedMessage?.message;
-    if (!inner) break;
-    cur = inner;
-  }
-  return cur;
-}
-function seconds(ts) {
-  let n = 0;
-  if (typeof ts === "number") n = ts;
-  else if (typeof ts === "string") n = Number(ts);
-  else if (ts && typeof ts === "object") n = Number(ts.low ?? ts.toString?.());
-  if (!Number.isFinite(n) || n <= 0) return 0;
-  return n > 1e12 ? n / 1e3 : n;
-}
-function classifyIncoming(d) {
-  const key = d?.key;
-  if (!key || typeof key !== "object" || key.fromMe === true) return null;
-  const jid = personJid(key.remoteJid);
-  if (!jid) return null;
-  const m = unwrap(d.message);
-  if (!m || typeof m !== "object") return null;
-  const mid = typeof key.id === "string" ? key.id.slice(0, 80) : "";
-  const ts = seconds(d.messageTimestamp) * 1e3;
-  const clip2 = (s) => s.replace(/\u0000/g, "").trim().slice(0, MAX_TEXT);
-  const plain2 = typeof m.conversation === "string" ? m.conversation : typeof m.extendedTextMessage?.text === "string" ? m.extendedTextMessage.text : typeof m.buttonsResponseMessage?.selectedDisplayText === "string" ? m.buttonsResponseMessage.selectedDisplayText : typeof m.templateButtonReplyMessage?.selectedDisplayText === "string" ? m.templateButtonReplyMessage.selectedDisplayText : typeof m.listResponseMessage?.title === "string" ? m.listResponseMessage.title : "";
-  if (plain2) return clip2(plain2) ? { jid, mid, kind: "text", text: clip2(plain2), ts } : null;
-  const media = [
-    ["audioMessage", "[\u0433\u043E\u043B\u043E\u0441\u043E\u0432\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435]"],
-    ["ptvMessage", "[\u0432\u0438\u0434\u0435\u043E]"],
-    ["imageMessage", "[\u0444\u043E\u0442\u043E]"],
-    ["videoMessage", "[\u0432\u0438\u0434\u0435\u043E]"],
-    ["documentMessage", "[\u0444\u0430\u0439\u043B]"]
-  ];
-  for (const [k, label] of media) {
-    if (!m[k] || typeof m[k] !== "object") continue;
-    const caption = typeof m[k].caption === "string" ? clip2(m[k].caption) : "";
-    return caption ? { jid, mid, kind: "text", text: caption, ts } : { jid, mid, kind: "media", text: label, ts };
-  }
-  return null;
-}
-var A = null;
-var maskJid = (jid) => {
-  const d = jid.replace(/[:@].*$/, "").replace(/\D/g, "");
-  const tag = jid.endsWith("@lid") ? " (lid)" : "";
-  return (d.length >= 9 ? `${d.slice(0, 4)}***${d.slice(-4)}` : d ? "***" : "") + tag;
-};
-var idOf = (jid) => (0, import_node_crypto5.createHash)("sha256").update(`wa-ai|${jid}`).digest("hex").slice(0, 12);
-var clipText = (s, n) => {
-  const t = String(s ?? "").replace(/\s+/g, " ").trim();
-  return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
-};
-var scrub3 = (s) => {
-  let out = s;
-  for (const k of [apiKey(), evoKey(), A?.host.state().secret || "", env4("WA_HOOK_SECRET")]) if (k) out = out.split(k).join("***");
-  return out;
-};
-var log = (msg, ...args) => console.log(`[wa-ai] ${msg}`, ...args);
-function statsOf(a, day) {
-  let s = a.stats.get(day);
-  if (!s) {
-    s = { replies: 0, handoffs: 0, rejected: 0, fallbacks: 0, errors: 0, dialogs: /* @__PURE__ */ new Set(), per: /* @__PURE__ */ new Map() };
-    a.stats.set(day, s);
-    for (const k of [...a.stats.keys()].sort().slice(0, -3)) a.stats.delete(k);
-  }
-  return s;
-}
-function convoOf(a, jid) {
-  let c = a.convos.get(jid);
-  if (!c) {
-    c = { jid, rows: [], silencedUntil: 0, lastAt: 0 };
-    a.convos.set(jid, c);
-  }
-  return c;
-}
-function rememberMid(a, mid) {
-  if (!mid) return;
-  a.seen.add(mid);
-  if (a.seen.size > 5e3) a.seen.delete(a.seen.values().next().value);
-}
-function append(a, row) {
-  try {
-    (0, import_node_fs8.appendFileSync)(a.file, JSON.stringify(row) + "\n", "utf8");
-  } catch (e) {
-    console.error("[wa-ai] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C wa-assistant.jsonl:", e.message);
-  }
-}
-function readTail(file, maxBytes) {
-  try {
-    const size = (0, import_node_fs8.statSync)(file).size;
-    const start = Math.max(0, size - maxBytes);
-    const buf = Buffer.alloc(size - start);
-    const fd = (0, import_node_fs8.openSync)(file, "r");
-    try {
-      (0, import_node_fs8.readSync)(fd, buf, 0, buf.length, start);
-    } finally {
-      (0, import_node_fs8.closeSync)(fd);
-    }
-    let text2 = buf.toString("utf8");
-    if (start > 0) text2 = text2.slice(text2.indexOf("\n") + 1);
-    const out = [];
-    for (const line of text2.split("\n")) {
-      const s = line.trim();
-      if (!s) continue;
-      try {
-        out.push(JSON.parse(s));
-      } catch {
-      }
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
-function apply(a, row) {
-  const ts = typeof row?.ts === "number" ? row.ts : Date.parse(String(row?.ts || ""));
-  const jid = typeof row?.jid === "string" ? row.jid : "";
-  if (!Number.isFinite(ts) || !jid) return;
-  const day = dayKeyOf(ts);
-  if (row.role === "user" || row.role === "assistant") {
-    const c = convoOf(a, jid);
-    c.rows.push({ ts, jid, role: row.role, text: String(row.text || ""), ...row.mid ? { mid: String(row.mid) } : {}, ...row.via ? { via: String(row.via) } : {} });
-    if (c.rows.length > HISTORY) c.rows.splice(0, c.rows.length - HISTORY);
-    c.lastAt = Math.max(c.lastAt, ts);
-    const s = statsOf(a, day);
-    if (row.role === "user") {
-      s.dialogs.add(jid);
-      if (row.mid) rememberMid(a, String(row.mid));
-    } else {
-      s.replies++;
-      s.per.set(jid, (s.per.get(jid) || 0) + 1);
-    }
-  } else if (row.ev === "handoff") {
-    statsOf(a, day).handoffs++;
-    const c = convoOf(a, jid);
-    c.silencedUntil = Math.max(c.silencedUntil, ts + SILENCE_MS);
-  } else if (row.ev === "reject") statsOf(a, day).rejected++;
-  else if (row.ev === "fallback") statsOf(a, day).fallbacks++;
-  else if (row.ev === "error") statsOf(a, day).errors++;
-}
-function aiInit(host) {
-  aiReset();
-  (0, import_node_fs8.mkdirSync)(host.dir, { recursive: true });
-  const a = {
-    host,
-    file: (0, import_node_path8.join)(host.dir, "wa-assistant.jsonl"),
-    convos: /* @__PURE__ */ new Map(),
-    pending: /* @__PURE__ */ new Map(),
-    inflight: /* @__PURE__ */ new Set(),
-    running: /* @__PURE__ */ new Set(),
-    seen: /* @__PURE__ */ new Set(),
-    stats: /* @__PURE__ */ new Map(),
-    alarmAt: /* @__PURE__ */ new Map(),
-    lastHookAt: 0,
-    hookTryAt: 0,
-    hookAssertAt: 0,
-    hookFails: 0,
-    toggling: false,
-    testAt: [],
-    skipNoteAt: 0
-  };
-  try {
-    if ((0, import_node_fs8.existsSync)(a.file) && (0, import_node_fs8.statSync)(a.file).size > FILE_COMPACT_BYTES) {
-      const keep = readTail(a.file, 2 * 1024 * 1024);
-      const tmp = `${a.file}.tmp.${process.pid}`;
-      (0, import_node_fs8.writeFileSync)(tmp, keep.map((r) => JSON.stringify(r)).join("\n") + "\n", "utf8");
-      (0, import_node_fs8.renameSync)(tmp, a.file);
-    }
-  } catch (e) {
-    console.error("[wa-ai] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u0436\u0430\u0442\u044C wa-assistant.jsonl:", e.message);
-  }
-  const from = host.now() - 30 * DAY;
-  for (const row of readTail(a.file, FILE_TAIL_BYTES)) if ((typeof row?.ts === "number" ? row.ts : Date.parse(String(row?.ts || ""))) >= from) apply(a, row);
-  A = a;
-}
-function aiReset() {
-  if (A) {
-    for (const p of A.pending.values()) if (p.timer) clearTimeout(p.timer);
-  }
-  A = null;
-}
-var cache = null;
-function loadSystem() {
-  const dir = promptDir();
-  try {
-    const f1 = (0, import_node_path8.join)(dir, "prompt.md");
-    const f2 = (0, import_node_path8.join)(dir, "knowledge.md");
-    const key = `${dir}|${(0, import_node_fs8.statSync)(f1).mtimeMs}|${(0, import_node_fs8.statSync)(f2).mtimeMs}`;
-    if (cache?.key === key) return { ok: true, system: cache.system };
-    const prompt = (0, import_node_fs8.readFileSync)(f1, "utf8").trim();
-    const knowledge = (0, import_node_fs8.readFileSync)(f2, "utf8").trim();
-    if (!prompt || !knowledge) return { ok: false, error: "prompt.md \u0438\u043B\u0438 knowledge.md \u043F\u0443\u0441\u0442\u043E\u0439" };
-    cache = { key, system: `${prompt}
-
-# \u0411\u0430\u0437\u0430 \u0437\u043D\u0430\u043D\u0438\u0439
-
-${knowledge}` };
-    return { ok: true, system: cache.system };
-  } catch {
-    return { ok: false, error: `\u043D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 prompt.md \u0438 knowledge.md \u0432 ${dir}` };
-  }
-}
-function prerequisites() {
-  if (!apiKey()) return { ok: false, reason: "\u041D\u0435\u0442 \u043A\u043B\u044E\u0447\u0430 OPENAI_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
-  const f = loadSystem();
-  if (!f.ok) return { ok: false, reason: `\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442: ${f.error}.` };
-  if (!evoKey()) return { ok: false, reason: "\u041D\u0435\u0442 EVOLUTION_API_KEY: \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
-  return { ok: true };
-}
-async function callModel(messages) {
-  const key = apiKey();
-  if (!key) return { ok: false, error: "\u043D\u0435\u0442 \u043A\u043B\u044E\u0447\u0430 OPENAI_API_KEY" };
-  try {
-    const res = await fetch(`${openaiBase()}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: MODEL(), messages, reasoning_effort: "low", max_completion_tokens: 1200 }),
-      signal: AbortSignal.timeout(timeoutMs())
-    });
-    const raw = await res.text();
-    let data = null;
-    try {
-      data = raw ? JSON.parse(raw) : null;
-    } catch {
-      data = null;
-    }
-    if (!res.ok) return { ok: false, error: scrub3(`${res.status} ${clipText(data?.error?.message || res.statusText || raw, 120)}`) };
-    const choice = data?.choices?.[0];
-    const text2 = choice?.message?.content;
-    if (choice?.finish_reason === "length") return { ok: false, error: "\u043E\u0442\u0432\u0435\u0442 \u043E\u0431\u043E\u0440\u0432\u0430\u043B\u0441\u044F \u043F\u043E \u0434\u043B\u0438\u043D\u0435" };
-    if (typeof text2 !== "string" || !text2.trim()) return { ok: false, error: choice?.message?.refusal ? "\u043C\u043E\u0434\u0435\u043B\u044C \u043E\u0442\u043A\u0430\u0437\u0430\u043B\u0430\u0441\u044C \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C" : "\u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438" };
-    return { ok: true, text: text2 };
-  } catch (e) {
-    const err = e;
-    if (err?.name === "TimeoutError" || err?.name === "AbortError") return { ok: false, error: "\u0442\u0430\u0439\u043C\u0430\u0443\u0442" };
-    return { ok: false, error: scrub3(String(err?.cause?.code || err?.message || err)).slice(0, 120) };
-  }
-}
-var reviewNote = (reasons) => `\u0421\u043B\u0443\u0436\u0435\u0431\u043D\u043E\u0435 \u0437\u0430\u043C\u0435\u0447\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0438: \u0442\u0432\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D, \u043F\u043E\u0442\u043E\u043C\u0443 \u0447\u0442\u043E ${reasons.map((r) => REASON_TEXT[r]).join("; ")}. \u041D\u0430\u043F\u0438\u0448\u0438 \u043D\u043E\u0432\u044B\u0439 \u043E\u0442\u0432\u0435\u0442: \u0434\u043E 350 \u0437\u043D\u0430\u043A\u043E\u0432, \u0431\u0435\u0437 \u0446\u0435\u043D \u0438 \u043B\u044E\u0431\u044B\u0445 \u0446\u0438\u0444\u0440 \u043E\u043F\u043B\u0430\u0442\u044B, \u0431\u0435\u0437 \u0440\u0430\u0441\u0441\u0440\u043E\u0447\u043A\u0438 \u0438 \u043F\u0440\u0435\u0434\u043E\u043F\u043B\u0430\u0442\u044B, \u0431\u0435\u0437 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432 \u0438 \u043A\u0435\u0439\u0441\u043E\u0432, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u043E\u0432 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u0432, \u0442\u043E\u043B\u044C\u043A\u043E \u0441\u0441\u044B\u043B\u043A\u0438 \u0438 \u043A\u043E\u043D\u0442\u0430\u043A\u0442\u044B \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u044B\u0445, \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u0438\u0437 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430. \u0415\u0441\u043B\u0438 \u043D\u0443\u0436\u0435\u043D \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440, \u0434\u0430\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0430 \u0448\u043A\u043E\u043B\u044B. \u0412\u044B\u0434\u0430\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u0435\u043A\u0441\u0442 \u043E\u0442\u0432\u0435\u0442\u0430.`;
-async function makeReply(messages) {
-  const rejected = [];
-  const first = await callModel(messages);
-  if (!first.ok) return { ok: false, error: first.error, rejected };
-  let c = cleanReply(first.text);
-  let reasons = checkReply(c.text);
-  const accept = (x) => ({ ok: true, text: x.text, via: "model", handoff: x.mark || AYANA_RE.test(x.text), summary: x.summary, rejected });
-  if (!reasons.length) return accept(c);
-  rejected.push(reasons);
-  const second = await callModel([...messages, { role: "assistant", content: first.text }, { role: "system", content: reviewNote(reasons) }]);
-  if (!second.ok) return { ok: false, error: second.error, rejected };
-  c = cleanReply(second.text);
-  reasons = checkReply(c.text);
-  if (!reasons.length) return accept(c);
-  rejected.push(reasons);
-  return { ok: true, text: SAFE_FALLBACK, via: "fallback", handoff: false, summary: "", rejected };
-}
-function buildMessages(system, conv, now) {
-  const out = [{ role: "system", content: `${system}
-
-\u0421\u0435\u0439\u0447\u0430\u0441 ${hhmmOf(now)} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.` }];
-  for (const r of conv.rows.slice(-HISTORY)) {
-    const last = out[out.length - 1];
-    if (last.role === r.role) last.content += `
-${r.text}`;
-    else out.push({ role: r.role, content: r.text });
-  }
-  return out;
-}
-async function alarmOnce(a, key, windowMs, text2) {
-  const now = a.host.now();
-  if (now - (a.alarmAt.get(key) || 0) < windowMs) return;
-  a.alarmAt.set(key, now);
-  try {
-    await a.host.alarm(text2);
-  } catch {
-  }
-}
-function schedule(a, jid) {
-  const p = a.pending.get(jid);
-  if (!p) return;
-  if (p.timer) clearTimeout(p.timer);
-  const cap = Number(env4("WA_AI_MAX_WAIT_MS")) || Math.max(6e4, quietMs());
-  const wait = Math.min(quietMs(), Math.max(0, p.firstAt + cap - Date.now()));
-  p.timer = setTimeout(() => runBatch(a, jid), wait);
-  p.timer.unref?.();
-}
-function runBatch(a, jid) {
-  const p = a.pending.get(jid);
-  if (!p) return Promise.resolve();
-  if (p.timer) {
-    clearTimeout(p.timer);
-    p.timer = null;
-  }
-  if (a.inflight.has(jid)) {
-    p.firstAt = Date.now();
-    schedule(a, jid);
-    return Promise.resolve();
-  }
-  a.pending.delete(jid);
-  a.inflight.add(jid);
-  const job = answer(a, jid, p).catch((e) => console.error("[wa-ai] \u043E\u0442\u0432\u0435\u0442 \u0443\u043F\u0430\u043B:", scrub3(String(e?.message || e)).slice(0, 200))).finally(() => {
-    a.inflight.delete(jid);
-    a.running.delete(job);
-  });
-  a.running.add(job);
-  return job;
-}
-function ingest(a, inc3) {
-  const now = a.host.now();
-  const st = a.host.state();
-  if (!st.enabled) return;
-  if (inc3.ts && now - inc3.ts > STALE_MS) return;
-  if (a.host.ignoreDigits().includes(inc3.jid.replace(/@.*$/, ""))) return;
-  if (inc3.mid) {
-    if (a.seen.has(inc3.mid)) return;
-    rememberMid(a, inc3.mid);
-  }
-  const row = { ts: now, jid: inc3.jid, role: "user", text: inc3.text, ...inc3.mid ? { mid: inc3.mid } : {} };
-  append(a, row);
-  apply(a, row);
-  const conv = convoOf(a, inc3.jid);
-  if (conv.silencedUntil > now) return;
-  let p = a.pending.get(inc3.jid);
-  if (!p) {
-    p = { texts: [], timer: null, firstAt: Date.now() };
-    a.pending.set(inc3.jid, p);
-  }
-  if (inc3.kind === "text") p.texts.push(inc3.text);
-  schedule(a, inc3.jid);
-}
-async function answer(a, jid, p) {
-  const h = a.host;
-  const now0 = h.now();
-  if (!h.state().enabled) return;
-  const can = h.canSend();
-  if (!can.ok) {
-    if (now0 - a.skipNoteAt > HOUR) {
-      a.skipNoteAt = now0;
-      h.journal({ ev: "ai_skip", who: maskJid(jid), why: can.why });
-    }
-    return;
-  }
-  const conv = convoOf(a, jid);
-  if (conv.silencedUntil > now0) return;
-  const day = dayKeyOf(now0);
-  const s = statsOf(a, day);
-  if (s.replies >= LIMIT_TOTAL) {
-    await alarmOnce(a, `total:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u0443\u0436\u0435 ${LIMIT_TOTAL} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0441 \u043D\u043E\u043C\u0435\u0440\u0430, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B. \u0414\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043B\u044E\u0434\u044F\u043C \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
-    return;
-  }
-  if ((s.per.get(jid) || 0) >= LIMIT_PERSON) {
-    await alarmOnce(a, `person:${day}`, DAY, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0447\u0435\u043B\u043E\u0432\u0435\u043A ${maskJid(jid)} \u043F\u043E\u043B\u0443\u0447\u0438\u043B ${LIMIT_PERSON} \u043E\u0442\u0432\u0435\u0442\u043E\u0432 \u0437\u0430 \u0441\u0443\u0442\u043A\u0438. \u0415\u043C\u0443 \u0434\u043E \u0437\u0430\u0432\u0442\u0440\u0430 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u044E.`);
-    return;
-  }
-  let text2 = MEDIA_PHRASE;
-  let via = "media";
-  let handoff = false;
-  let summary = "";
-  if (!p.texts.length) {
-    const lastBot = [...conv.rows].reverse().find((r) => r.role === "assistant");
-    if (lastBot?.text === MEDIA_PHRASE) return;
-  } else {
-    const sys = loadSystem();
-    if (!sys.ok) {
-      await alarmOnce(a, "files", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u0432\u0435\u0442\u0438\u0442\u044C: ${sys.error}.`);
-      return;
-    }
-    const made = await makeReply(buildMessages(sys.system, conv, now0));
-    for (const reasons of made.rejected) {
-      append(a, { ts: h.now(), jid, ev: "reject", reasons });
-      statsOf(a, day).rejected++;
-    }
-    if (!made.ok) {
-      append(a, { ts: h.now(), jid, ev: "error", error: clipText(made.error, 120) });
-      statsOf(a, day).errors++;
-      log("\u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (%s): %s", maskJid(jid), made.error);
-      await alarmOnce(a, "openai", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430 (${made.error}). \u0427\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E. \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
-      return;
-    }
-    text2 = made.text;
-    via = made.via;
-    handoff = made.handoff;
-    summary = made.summary;
-    if (made.via === "fallback") {
-      append(a, { ts: h.now(), jid, ev: "fallback" });
-      statsOf(a, day).fallbacks++;
-    }
-  }
-  if (!h.state().enabled || convoOf(a, jid).silencedUntil > h.now()) return;
-  const can2 = h.canSend();
-  if (!can2.ok) return;
-  const delay = PAUSE_MS[0] + Math.round(h.rand() * (PAUSE_MS[1] - PAUSE_MS[0]));
-  const sent = await h.exclusive(() => sendText2(jid, text2, { delay }));
-  if (!sent.ok) {
-    append(a, { ts: h.now(), jid, ev: "error", error: clipText(sent.error, 120) });
-    statsOf(a, day).errors++;
-    log("\u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u043E\u0441\u044C (%s): %s", maskJid(jid), sent.error);
-    await alarmOnce(a, "send", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 ${maskJid(jid)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clipText(sent.error, 100)}). \u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u0442\u0440\u0435\u0432\u043E\u0433\u0430 \u043E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0440\u0430\u043D\u044C\u0448\u0435 \u0447\u0435\u043C \u0447\u0435\u0440\u0435\u0437 \u0447\u0430\u0441.`);
-    return;
-  }
-  const ts = h.now();
-  const row = { ts, jid, role: "assistant", text: text2, via };
-  append(a, row);
-  apply(a, row);
-  log("\u043E\u0442\u0432\u0435\u0442 \u0443\u0448\u0451\u043B: %s, %s", maskJid(jid), via);
-  if (handoff) {
-    const last = [...conv.rows].reverse().find((r) => r.role === "user")?.text || "";
-    const why = clipText(stripLinks(summary) || stripLinks(last), 200);
-    append(a, { ts, jid, ev: "handoff", summary: why });
-    apply(a, { ts, jid, ev: "handoff" });
-    h.journal({ ev: "ai_handoff", who: maskJid(jid), why: clipText(why, 120) });
-    try {
-      await h.notify(
-        `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp \u043F\u0435\u0440\u0435\u0434\u0430\u043B \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443: +${jid.replace(/[:@].*$/, "")}${jid.endsWith("@lid") ? " (\u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0439 ID WhatsApp, \u043D\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D)" : ""}.
-\u0421\u0443\u0442\u044C: ${why || "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430"}.
-\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432.`
-      );
-    } catch {
-    }
-  }
-}
-function stripLinks(s) {
-  return s.replace(URL_RE, "[\u0441\u0441\u044B\u043B\u043A\u0430]").replace(BARE_RE, "[\u0430\u0434\u0440\u0435\u0441]");
-}
-var LOCAL_ADDR = /* @__PURE__ */ new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
-var PROXY_HEADERS = ["x-forwarded-for", "x-real-ip", "forwarded", "x-forwarded-host", "x-forwarded-proto"];
-var hashOf = (s) => (0, import_node_crypto5.createHash)("sha256").update(s).digest();
-function hookSecret() {
-  return env4("WA_HOOK_SECRET") || A?.host.state().secret || "";
-}
-function hookAuth(req) {
-  if (!LOCAL_ADDR.has(req.socket.remoteAddress || "") || PROXY_HEADERS.some((h) => req.headers[h] !== void 0)) return 403;
-  const secret = hookSecret();
-  const got = req.headers["x-wa-hook-secret"];
-  const provided = Array.isArray(got) ? got[0] : got;
-  if (!secret || !provided || !(0, import_node_crypto5.timingSafeEqual)(hashOf(secret), hashOf(provided))) return 401;
-  return 0;
-}
-function readLimited3(req, max) {
-  return new Promise((resolve) => {
-    let size = 0;
-    let over = false;
-    const chunks = [];
-    req.on("data", (c) => {
-      size += c.length;
-      if (size > max) over = true;
-      else chunks.push(c);
-    });
-    req.on("end", () => resolve(over ? null : Buffer.concat(chunks).toString("utf8")));
-    req.on("error", () => resolve(null));
-  });
-}
-function ingestPayload(a, body) {
-  const ev = String(body?.event || "").toLowerCase().replace(/_/g, ".");
-  if (ev !== "messages.upsert") return;
-  if (body?.instance && String(body.instance) !== evoInstance()) return;
-  const list = Array.isArray(body?.data) ? body.data : body?.data ? [body.data] : [];
-  for (const d of list) {
-    const inc3 = classifyIncoming(d);
-    if (inc3) ingest(a, inc3);
-  }
-}
-async function handleWaHook(req, res) {
-  const send2 = (status, body) => {
-    const payload = JSON.stringify(body);
-    res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
-    res.end(payload);
-  };
-  const bad = hookAuth(req);
-  if (bad) {
-    req.resume();
-    return send2(bad, { ok: false });
-  }
-  const raw = await readLimited3(req, 512 * 1024);
-  const a = A;
-  if (a) a.lastHookAt = a.host.now();
-  send2(200, { ok: true });
-  if (!a || raw === null || !a.host.state().enabled) return;
-  try {
-    ingestPayload(a, JSON.parse(raw));
-  } catch (e) {
-    console.error("[wa-ai] \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043B \u0432\u0435\u0431\u0445\u0443\u043A:", scrub3(String(e?.message || e)).slice(0, 120));
-  }
-}
-var hookArgs = (on) => ({ url: hookUrl(), enabled: on, events: ["MESSAGES_UPSERT"], headers: { "X-Wa-Hook-Secret": hookSecret() } });
-function ensureSecret(a) {
-  const cur = a.host.state().secret;
-  if (cur || env4("WA_HOOK_SECRET")) return cur;
-  const secret = (0, import_node_crypto5.randomBytes)(24).toString("hex");
-  a.host.patch({ secret });
-  return secret;
-}
-async function aiTick(now) {
-  const a = A;
-  if (!a) return;
-  const st = a.host.state();
-  const want = st.enabled && prerequisites().ok;
-  if (want === st.hookOn && !(want && now - a.hookAssertAt >= 6 * HOUR)) return;
-  if (now - a.hookTryAt < MIN) return;
-  a.hookTryAt = now;
-  if (want) ensureSecret(a);
-  const r = await setWebhook(hookArgs(want));
-  if (r.ok) {
-    a.hookFails = 0;
-    a.hookAssertAt = now;
-    if (want !== st.hookOn) {
-      a.host.patch({ hookOn: want });
-      a.host.journal({ ev: want ? "ai_on" : "ai_off", by: "tick" });
-    }
-    return;
-  }
-  a.hookFails++;
-  log("\u0432\u0435\u0431\u0445\u0443\u043A Evolution \u043D\u0435 %s: %s", want ? "\u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B\u0441\u044F" : "\u0441\u043D\u044F\u043B\u0441\u044F", r.error);
-  if (a.hookFails >= 3) await alarmOnce(a, "hook", HOUR, `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: \u0432\u0435\u0431\u0445\u0443\u043A Evolution ${want ? "\u043D\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F" : "\u043D\u0435 \u0441\u043D\u0438\u043C\u0430\u0435\u0442\u0441\u044F"} (${clipText(r.error, 100)}). \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E Evolution \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442.`);
-}
-var ddmm2 = (ms) => {
-  const d = dayKeyOf(ms);
-  return `${d.slice(8, 10)}.${d.slice(5, 7)}`;
-};
-var agoText = (ms) => {
-  const s = Math.max(0, Math.round(ms / 1e3));
-  return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
-};
-function aiPanel(nowArg) {
-  const a = A;
-  if (!a) return { available: false };
-  const now = nowArg ?? a.host.now();
-  const st = a.host.state();
-  const s = statsOf(a, dayKeyOf(now));
-  const pre = prerequisites();
-  let reason = "";
-  if (!pre.ok) reason = pre.reason;
-  else if (st.enabled) {
-    const can = a.host.canSend();
-    if (!can.ok) reason = `\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${can.why}.`;
-    else if (!st.hookOn) reason = "\u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D, \u043F\u043E\u0432\u0442\u043E\u0440\u044E \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0443\u044E \u043C\u0438\u043D\u0443\u0442\u0443.";
-    else if (!a.lastHookAt) reason = "\u0412\u0435\u0431\u0445\u0443\u043A \u0441\u0442\u043E\u0438\u0442, \u043D\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u043E\u0442 Evolution \u0441 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430 \u0435\u0449\u0451 \u043D\u0435 \u0431\u044B\u043B\u043E.";
-  }
-  const dialogs = [...a.convos.values()].filter((c) => c.rows.length).sort((x, y) => y.lastAt - x.lastAt).slice(0, 20).map((c) => {
-    const lastUser = [...c.rows].reverse().find((r) => r.role === "user");
-    const lastBot = [...c.rows].reverse().find((r) => r.role === "assistant");
-    return {
-      id: idOf(c.jid),
-      who: maskJid(c.jid),
-      at: `${ddmm2(c.lastAt)} ${hhmmOf(c.lastAt)}`,
-      last: clipText(lastUser?.text, 140),
-      reply: clipText(lastBot?.text, 200),
-      answered: !!lastBot && (!lastUser || lastBot.ts >= lastUser.ts),
-      handoff: c.silencedUntil > now
-    };
-  });
-  return {
-    available: true,
-    enabled: st.enabled,
-    hookOn: st.hookOn,
-    canEnable: pre.ok,
-    reason,
-    model: MODEL(),
-    counters: { dialogs: s.dialogs.size, replies: s.replies, handoffs: s.handoffs, rejected: s.rejected },
-    limits: { person: LIMIT_PERSON, total: LIMIT_TOTAL },
-    lastHook: a.lastHookAt ? agoText(now - a.lastHookAt) : "",
-    dialogs
-  };
-}
-function aiNumber(id) {
-  const a = A;
-  if (!a) return fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D.");
-  const c = typeof id === "string" ? [...a.convos.values()].find((x) => idOf(x.jid) === id) : void 0;
-  if (!c) return fail("not_found", "\u0414\u0438\u0430\u043B\u043E\u0433 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D.");
-  const digits = c.jid.replace(/[:@].*$/, "");
-  return { ok: true, message: c.jid.endsWith("@lid") ? "\u042D\u0442\u043E \u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0439 ID WhatsApp, \u0430 \u043D\u0435 \u0442\u0435\u043B\u0435\u0444\u043E\u043D." : "\u041D\u043E\u043C\u0435\u0440 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430.", number: c.jid.endsWith("@lid") ? `${digits} (lid)` : `+${digits}` };
-}
-var MODULE_OFF = fail("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
-async function aiSetEnabled(on) {
-  const a = A;
-  if (!a) return MODULE_OFF;
-  if (typeof on !== "boolean") return fail("bad_request", "\u041D\u0443\u0436\u043D\u043E true \u0438\u043B\u0438 false.");
-  if (a.toggling) return fail("busy", "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0435\u0449\u0451 \u0438\u0434\u0451\u0442, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434.");
-  a.toggling = true;
-  try {
-    const st = a.host.state();
-    if (on) {
-      if (st.enabled && st.hookOn) return { ok: true, code: "same", message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
-      const pre = prerequisites();
-      if (!pre.ok) return fail("no_key", `${pre.reason} \u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
-      ensureSecret(a);
-      const r = await a.host.exclusive(() => setWebhook(hookArgs(true)));
-      if (!r.ok) return fail("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A \u0432 Evolution: ${clipText(r.error, 120)}. \u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
-      a.host.patch({ enabled: true, hookOn: true });
-      a.hookAssertAt = a.host.now();
-      a.hookFails = 0;
-      a.host.journal({ ev: "ai_on", by: "panel" });
-      log("\u0432\u043A\u043B\u044E\u0447\u0451\u043D");
-      return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D. \u041E\u043D \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u0435\u043C, \u043A\u0442\u043E \u043D\u0430\u043F\u0438\u0441\u0430\u043B \u043D\u043E\u043C\u0435\u0440\u0443 \u0432 \u043B\u0438\u0447\u043A\u0443. \u041F\u0435\u0440\u0432\u044B\u043C \u043D\u0438\u043A\u043E\u043C\u0443 \u043D\u0435 \u043F\u0438\u0448\u0435\u0442." };
-    }
-    if (!st.enabled && !st.hookOn) return { ok: true, code: "same", message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D." };
-    a.host.patch({ enabled: false });
-    for (const p of a.pending.values()) if (p.timer) clearTimeout(p.timer);
-    a.pending.clear();
-    a.host.journal({ ev: "ai_off", by: "panel" });
-    log("\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D");
-    if (st.hookOn) {
-      a.hookTryAt = a.host.now();
-      const r = await a.host.exclusive(() => setWebhook(hookArgs(false)));
-      if (r.ok) a.host.patch({ hookOn: false });
-      else return { ok: true, code: "hook_pending", message: `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438 \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0441\u043D\u044F\u0442\u044C \u043D\u0435 \u0432\u044B\u0448\u043B\u043E (${clipText(r.error, 100)}), \u043F\u043E\u0432\u0442\u043E\u0440\u044E \u0441\u0430\u043C \u0432 \u0442\u0435\u0447\u0435\u043D\u0438\u0435 \u043C\u0438\u043D\u0443\u0442\u044B.` };
-    }
-    return { ok: true, message: "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D. \u0412\u0435\u0431\u0445\u0443\u043A \u0432 Evolution \u0441\u043D\u044F\u0442, \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043A OpenAI \u043D\u0435\u0442." };
-  } finally {
-    a.toggling = false;
-  }
-}
-async function aiTest(question) {
-  const a = A;
-  if (!a) return MODULE_OFF;
-  const q2 = typeof question === "string" ? question.replace(/\u0000/g, "").trim().slice(0, 1e3) : "";
-  if (!q2) return fail("bad_request", "\u041D\u0430\u043F\u0438\u0448\u0438 \u0432\u043E\u043F\u0440\u043E\u0441, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0442\u043E\u0438\u0442 \u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435?");
-  const pre = prerequisites();
-  if (!pre.ok) return fail("no_key", pre.reason);
-  const now = a.host.now();
-  a.testAt = a.testAt.filter((t) => now - t < HOUR);
-  if (a.testAt.length && now - a.testAt[a.testAt.length - 1] < 3e3) return fail("rate", "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0447\u0430\u0441\u0442\u043E, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043F\u0430\u0440\u0443 \u0441\u0435\u043A\u0443\u043D\u0434.");
-  if (a.testAt.length >= 20) return fail("rate", "\u041F\u0440\u043E\u0432\u0435\u0440\u043E\u043A \u0437\u0430 \u0447\u0430\u0441 \u0443\u0436\u0435 20. \u041F\u043E\u0434\u043E\u0436\u0434\u0438, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0442\u0440\u0430\u0442\u0438\u0442\u044C \u0434\u0435\u043D\u044C\u0433\u0438 \u043D\u0430 \u043C\u043E\u0434\u0435\u043B\u044C.");
-  a.testAt.push(now);
-  const sys = loadSystem();
-  if (!sys.ok) return fail("no_key", `\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442: ${sys.error}.`);
-  const made = await makeReply([
-    { role: "system", content: `${sys.system}
-
-\u0421\u0435\u0439\u0447\u0430\u0441 ${hhmmOf(now)} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.` },
-    { role: "user", content: q2 }
-  ]);
-  if (!made.ok) return fail("model", `\u041C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B\u0430: ${made.error}.`);
-  const reasons = made.rejected.flat().map((r) => REASON_TEXT[r]);
-  return {
-    ok: true,
-    message: made.via === "fallback" ? "\u041E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u043F\u0440\u043E\u0448\u0451\u043B \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443 \u0434\u0432\u0430\u0436\u0434\u044B, \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 \u0443\u0448\u043B\u0430 \u0431\u044B \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u0430\u044F \u0437\u0430\u0433\u043E\u0442\u043E\u0432\u043A\u0430." : "\u041E\u0442\u0432\u0435\u0442 \u043F\u0440\u043E\u0448\u0451\u043B \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443.",
-    reply: made.text,
-    verdict: made.via === "fallback" ? "fallback" : "ok",
-    reasons: [...new Set(reasons)],
-    handoff: made.handoff
-  };
-}
-async function aiCommand(cmd, args) {
-  if (!A) return MODULE_OFF.message;
-  if (cmd === "wa_ai_test") {
-    const r = await aiTest(args);
-    if (!r.ok) return r.message;
-    return `\u041E\u0442\u0432\u0435\u0442 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442\u0430 (\u0432 WhatsApp \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u043B\u0441\u044F):
-${r.reply}
-
-${r.message}${r.reasons?.length ? `
-\u041E\u0442\u043A\u043B\u043E\u043D\u044F\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439: ${r.reasons.join("; ")}.` : ""}${r.handoff ? "\n\u041F\u0435\u0440\u0435\u0434\u0430\u0447\u0430 \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443: \u0434\u0430." : ""}`;
-  }
-  const arg = args.trim().toLowerCase();
-  if (arg === "on" || arg === "off") return (await aiSetEnabled(arg === "on")).message;
-  const p = aiPanel();
-  const c = p.counters;
-  return [
-    `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 WhatsApp: ${p.enabled ? "\u0432\u043A\u043B\u044E\u0447\u0451\u043D" : "\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D"}${p.reason ? `. ${p.reason}` : ""}`,
-    `\u0421\u0435\u0433\u043E\u0434\u043D\u044F: \u0434\u0438\u0430\u043B\u043E\u0433\u043E\u0432 ${c.dialogs}, \u043E\u0442\u0432\u0435\u0442\u043E\u0432 ${c.replies}, \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u043E \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443 ${c.handoffs}, \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439 ${c.rejected}.`,
-    "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_ai on, \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /wa_ai off, \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u043E\u0442\u0432\u0435\u0442 \u0431\u0435\u0437 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438: /wa_ai_test \u0432\u043E\u043F\u0440\u043E\u0441"
-  ].join("\n");
-}
+var import_node_fs11 = require("node:fs");
+var import_node_path11 = require("node:path");
 
 // form-api/wa-dozhim.ts
-var import_node_fs9 = require("node:fs");
-var import_node_crypto6 = require("node:crypto");
-var import_node_path9 = require("node:path");
+var import_node_fs10 = require("node:fs");
+var import_node_crypto7 = require("node:crypto");
+var import_node_path10 = require("node:path");
 
 // form-api/wazzup.ts
-var env5 = (k) => (process.env[k] || "").trim();
-var wzKey = () => env5("WAZZUP_API_KEY");
-var wzChannel = () => env5("WAZZUP_CHANNEL_ID");
-var wzBase = () => (env5("WAZZUP_API_URL") || "https://api.wazzup24.com").replace(/\/+$/, "");
+var env6 = (k) => (process.env[k] || "").trim();
+var wzKey = () => env6("WAZZUP_API_KEY");
+var wzChannel = () => env6("WAZZUP_CHANNEL_ID");
+var wzBase = () => (env6("WAZZUP_API_URL") || "https://api.wazzup24.com").replace(/\/+$/, "");
 var TIMEOUT_MS2 = 2e4;
-var scrub4 = (s) => {
+var scrub5 = (s) => {
   const k = wzKey();
   return k ? s.split(k).join("***") : s;
 };
 function errorText2(data, fallback) {
   const parts = [data?.error, data?.code, data?.description, data?.message].map((x) => typeof x === "string" ? x : x && typeof x === "object" ? JSON.stringify(x) : "").filter(Boolean);
-  return scrub4((parts.join(" ") || fallback).replace(/\s+/g, " ").trim().slice(0, 240));
+  return scrub5((parts.join(" ") || fallback).replace(/\s+/g, " ").trim().slice(0, 240));
 }
-async function wzCall(method, path, body, timeoutMs2 = TIMEOUT_MS2) {
+async function wzCall(method, path, body, timeoutMs3 = TIMEOUT_MS2) {
   const key = wzKey();
   if (!key) return { ok: false, status: 0, error: "no_api_key", retryable: false };
   try {
@@ -8223,7 +8797,7 @@ async function wzCall(method, path, body, timeoutMs2 = TIMEOUT_MS2) {
       method,
       headers: { Authorization: `Bearer ${key}`, ...body !== void 0 ? { "Content-Type": "application/json" } : {} },
       ...body !== void 0 ? { body: JSON.stringify(body) } : {},
-      signal: AbortSignal.timeout(timeoutMs2)
+      signal: AbortSignal.timeout(timeoutMs3)
     });
     const text2 = await res.text();
     let data = null;
@@ -8240,7 +8814,7 @@ async function wzCall(method, path, body, timeoutMs2 = TIMEOUT_MS2) {
     return {
       ok: false,
       status: 0,
-      error: timeout ? "timeout" : scrub4(String(err?.cause?.code || err?.message || err)).slice(0, 160),
+      error: timeout ? "timeout" : scrub5(String(err?.cause?.code || err?.message || err)).slice(0, 160),
       retryable: true,
       ...timeout ? { timeout: true } : {}
     };
@@ -8320,27 +8894,27 @@ async function wzGetHooks() {
 var wzSetHooks = (body) => wzCall("PATCH", "/v3/webhooks", body, 3e4);
 
 // form-api/wa-dozhim.ts
-var env6 = (k) => (process.env[k] || "").trim();
-var MIN2 = 6e4;
-var HOUR2 = 36e5;
-var MAX_LEAD_AGE = 48 * HOUR2;
-var DAY2 = 24 * HOUR2;
-var MEASURE_MAX_AGE = 10 * MIN2;
-var MEASURE_BUSY_AGE = 5 * MIN2;
+var env7 = (k) => (process.env[k] || "").trim();
+var MIN3 = 6e4;
+var HOUR3 = 36e5;
+var MAX_LEAD_AGE = 48 * HOUR3;
+var DAY3 = 24 * HOUR3;
+var MEASURE_MAX_AGE = 10 * MIN3;
+var MEASURE_BUSY_AGE = 5 * MIN3;
 var PER_TICK = 25;
 var PACE_MS = [1500, 3500];
-var RETRY_AFTER = 5 * MIN2;
+var RETRY_AFTER = 5 * MIN3;
 var MAX_ATTEMPTS = 3;
-var REPLY_WINDOW = 48 * HOUR2;
+var REPLY_WINDOW = 48 * HOUR3;
 var HALT_AFTER = 3;
-var HALT_MS = HOUR2;
-var MEASURE_RETRY = 2 * MIN2;
+var HALT_MS = HOUR3;
+var MEASURE_RETRY = 2 * MIN3;
 var FILE_TAIL_BYTES2 = 3 * 1024 * 1024;
 var FILE_COMPACT_BYTES2 = 6 * 1024 * 1024;
 var ROWS_KEEP = 6e3;
 var SIGNUP_URL = "https://onai.academy/workshop-montazh/";
 var HOOK_PATH_DEFAULT = "https://onai.academy/workshop/api/wazzup-hook";
-var hookBase = () => env6("WAZZUP_HOOK_URL") || HOOK_PATH_DEFAULT;
+var hookBase = () => env7("WAZZUP_HOOK_URL") || HOOK_PATH_DEFAULT;
 var LINK_TEXT = (url) => `\u0412\u043E\u0442 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u044D\u0444\u0438\u0440 \u043F\u0440\u0438\u0434\u0451\u0442 \u0442\u0443\u0434\u0430 \u0432 19:50: ${url}`;
 var DECLINE_TEXT = `\u0425\u043E\u0440\u043E\u0448\u043E. \u0415\u0441\u043B\u0438 \u043F\u0435\u0440\u0435\u0434\u0443\u043C\u0430\u0435\u0442\u0435, \u0437\u0430\u043F\u0438\u0441\u044C \u043D\u0430 \u043B\u044E\u0431\u043E\u0439 \u0434\u0435\u043D\u044C: ${SIGNUP_URL}`;
 var fail2 = (code, message) => ({ ok: false, code, message });
@@ -8391,29 +8965,29 @@ function cleanMap(x) {
   return out;
 }
 function normalizeDz(raw) {
-  const st = freshDz();
-  if (!raw || typeof raw !== "object") return st;
+  const st2 = freshDz();
+  if (!raw || typeof raw !== "object") return st2;
   const r = raw;
-  st.enabled = r.enabled === true;
-  st.hookOn = r.hookOn === true;
-  st.secret = typeof r.secret === "string" ? r.secret : "";
-  st.templateId = typeof r.templateId === "string" ? r.templateId : "";
-  st.templateName = typeof r.templateName === "string" ? r.templateName.slice(0, 120) : "";
-  st.vars = Number.isInteger(r.vars) && r.vars >= 0 && r.vars <= 10 ? r.vars : 0;
-  if (Number.isFinite(r.delayMin) && r.delayMin >= 0 && r.delayMin <= 1440) st.delayMin = Math.round(r.delayMin);
+  st2.enabled = r.enabled === true;
+  st2.hookOn = r.hookOn === true;
+  st2.secret = typeof r.secret === "string" ? r.secret : "";
+  st2.templateId = typeof r.templateId === "string" ? r.templateId : "";
+  st2.templateName = typeof r.templateName === "string" ? r.templateName.slice(0, 120) : "";
+  st2.vars = Number.isInteger(r.vars) && r.vars >= 0 && r.vars <= 10 ? r.vars : 0;
+  if (Number.isFinite(r.delayMin) && r.delayMin >= 0 && r.delayMin <= 1440) st2.delayMin = Math.round(r.delayMin);
   if (validHHMM(r.from) && validHHMM(r.to) && minsOf(r.from) < minsOf(r.to)) {
-    st.from = padHHMM(r.from);
-    st.to = padHHMM(r.to);
+    st2.from = padHHMM(r.from);
+    st2.to = padHHMM(r.to);
   }
-  if (validHHMM(r.cutoff)) st.cutoff = padHHMM(r.cutoff);
-  if (Number.isFinite(r.dailyLimit) && r.dailyLimit >= 1 && r.dailyLimit <= 250) st.dailyLimit = Math.round(r.dailyLimit);
+  if (validHHMM(r.cutoff)) st2.cutoff = padHHMM(r.cutoff);
+  if (Number.isFinite(r.dailyLimit) && r.dailyLimit >= 1 && r.dailyLimit <= 250) st2.dailyLimit = Math.round(r.dailyLimit);
   if (r.maps && typeof r.maps === "object" && !Array.isArray(r.maps)) {
     for (const [k, v] of Object.entries(r.maps)) {
       const m = cleanMap(v);
-      if (m && k.length <= 80) st.maps[k] = m;
+      if (m && k.length <= 80) st2.maps[k] = m;
     }
   }
-  return st;
+  return st2;
 }
 function normalizePhone(raw) {
   let d = String(raw ?? "").replace(/\D/g, "");
@@ -8475,35 +9049,35 @@ function isDecline(raw) {
 }
 var digitsOf = (x) => typeof x === "string" ? x.replace(/[:@].*$/, "").replace(/\D/g, "") : "";
 var A2 = null;
-var log2 = (msg, ...args) => console.log(`[wa-dozhim] ${msg}`, ...args);
+var log3 = (msg, ...args) => console.log(`[wa-dozhim] ${msg}`, ...args);
 var clipText2 = (s, n) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
   return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
 };
-var scrub5 = (s) => {
+var scrub6 = (s) => {
   let out = s;
-  for (const k of [wzKey(), evoKey(), A2?.host.state().secret || "", env6("WAZZUP_HOOK_SECRET")]) if (k) out = out.split(k).join("***");
+  for (const k of [wzKey(), evoKey(), A2?.host.state().secret || "", env7("WAZZUP_HOOK_SECRET")]) if (k) out = out.split(k).join("***");
   return out;
 };
 function appendRow(a, row) {
   try {
-    (0, import_node_fs9.appendFileSync)(a.file, JSON.stringify(row) + "\n", "utf8");
+    (0, import_node_fs10.appendFileSync)(a.file, JSON.stringify(row) + "\n", "utf8");
   } catch (e) {
     console.error("[wa-dozhim] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C wa-dozhim.jsonl:", e.message);
   }
   a.rows.push(row);
   if (a.rows.length > ROWS_KEEP) a.rows.splice(0, a.rows.length - ROWS_KEEP);
 }
-function readTail2(file, maxBytes) {
+function readTail3(file, maxBytes) {
   try {
-    const size = (0, import_node_fs9.statSync)(file).size;
+    const size = (0, import_node_fs10.statSync)(file).size;
     const start = Math.max(0, size - maxBytes);
     const buf = Buffer.alloc(size - start);
-    const fd = (0, import_node_fs9.openSync)(file, "r");
+    const fd = (0, import_node_fs10.openSync)(file, "r");
     try {
-      (0, import_node_fs9.readSync)(fd, buf, 0, buf.length, start);
+      (0, import_node_fs10.readSync)(fd, buf, 0, buf.length, start);
     } finally {
-      (0, import_node_fs9.closeSync)(fd);
+      (0, import_node_fs10.closeSync)(fd);
     }
     let t = buf.toString("utf8");
     if (start > 0) t = t.slice(t.indexOf("\n") + 1);
@@ -8569,31 +9143,31 @@ function persistMembers(a) {
     const targets = {};
     for (const [id, m] of a.members) targets[id] = { day: m.day, at: m.at, total: m.total, unresolved: m.unresolved, numbers: [...m.numbers] };
     const tmp = `${a.membersFile}.tmp.${process.pid}`;
-    (0, import_node_fs9.writeFileSync)(tmp, JSON.stringify({ v: 1, targets }) + "\n", "utf8");
-    (0, import_node_fs9.renameSync)(tmp, a.membersFile);
+    (0, import_node_fs10.writeFileSync)(tmp, JSON.stringify({ v: 1, targets }) + "\n", "utf8");
+    (0, import_node_fs10.renameSync)(tmp, a.membersFile);
   } catch (e) {
     console.error("[wa-dozhim] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C wa-members.json:", e.message);
   }
 }
 function loadMembers(a) {
   try {
-    if (!(0, import_node_fs9.existsSync)(a.membersFile)) return;
-    const raw = JSON.parse((0, import_node_fs9.readFileSync)(a.membersFile, "utf8"));
+    if (!(0, import_node_fs10.existsSync)(a.membersFile)) return;
+    const raw = JSON.parse((0, import_node_fs10.readFileSync)(a.membersFile, "utf8"));
     for (const [id, m] of Object.entries(raw?.targets || {})) {
       if (!m || !Array.isArray(m.numbers) || typeof m.at !== "number") continue;
       a.members.set(id, { day: String(m.day || ""), at: m.at, total: Number(m.total) || m.numbers.length, unresolved: Number(m.unresolved) || 0, numbers: new Set(m.numbers.map(String)) });
     }
   } catch {
-    log2("wa-members.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0431\u0435\u0437 \u0437\u0430\u043C\u0435\u0440\u0430");
+    log3("wa-members.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0431\u0435\u0437 \u0437\u0430\u043C\u0435\u0440\u0430");
   }
 }
-function dzInit(host) {
+function dzInit(host2) {
   dzReset();
-  (0, import_node_fs9.mkdirSync)(host.dir, { recursive: true });
+  (0, import_node_fs10.mkdirSync)(host2.dir, { recursive: true });
   const a = {
-    host,
-    file: (0, import_node_path9.join)(host.dir, "wa-dozhim.jsonl"),
-    membersFile: (0, import_node_path9.join)(host.dir, "wa-members.json"),
+    host: host2,
+    file: (0, import_node_path10.join)(host2.dir, "wa-dozhim.jsonl"),
+    membersFile: (0, import_node_path10.join)(host2.dir, "wa-members.json"),
     rows: [],
     members: /* @__PURE__ */ new Map(),
     sentEids: /* @__PURE__ */ new Set(),
@@ -8623,22 +9197,22 @@ function dzInit(host) {
     lastTickAt: 0
   };
   try {
-    if ((0, import_node_fs9.existsSync)(a.file) && (0, import_node_fs9.statSync)(a.file).size > FILE_COMPACT_BYTES2) {
-      const keep = readTail2(a.file, 2 * 1024 * 1024);
+    if ((0, import_node_fs10.existsSync)(a.file) && (0, import_node_fs10.statSync)(a.file).size > FILE_COMPACT_BYTES2) {
+      const keep = readTail3(a.file, 2 * 1024 * 1024);
       const tmp = `${a.file}.tmp.${process.pid}`;
-      (0, import_node_fs9.writeFileSync)(tmp, keep.map((r) => JSON.stringify(r)).join("\n") + "\n", "utf8");
-      (0, import_node_fs9.renameSync)(tmp, a.file);
+      (0, import_node_fs10.writeFileSync)(tmp, keep.map((r) => JSON.stringify(r)).join("\n") + "\n", "utf8");
+      (0, import_node_fs10.renameSync)(tmp, a.file);
     }
   } catch (e) {
     console.error("[wa-dozhim] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u0436\u0430\u0442\u044C wa-dozhim.jsonl:", e.message);
   }
-  for (const row of readTail2(a.file, FILE_TAIL_BYTES2)) {
+  for (const row of readTail3(a.file, FILE_TAIL_BYTES2)) {
     if (!row || typeof row.ev !== "string" || typeof row.ts !== "number") continue;
     a.rows.push(row);
     applyRow(a, row);
   }
   if (a.rows.length > ROWS_KEEP) a.rows.splice(0, a.rows.length - ROWS_KEEP);
-  a.sendTimes = a.sendTimes.filter((t) => host.now() - t < 2 * DAY2);
+  a.sendTimes = a.sendTimes.filter((t) => host2.now() - t < 2 * DAY3);
   loadMembers(a);
   A2 = a;
 }
@@ -8646,26 +9220,26 @@ function dzReset() {
   A2 = null;
 }
 function hookSecret2() {
-  return env6("WAZZUP_HOOK_SECRET") || A2?.host.state().secret || "";
+  return env7("WAZZUP_HOOK_SECRET") || A2?.host.state().secret || "";
 }
 function ensureSecret2(a) {
-  if (env6("WAZZUP_HOOK_SECRET")) return env6("WAZZUP_HOOK_SECRET");
+  if (env7("WAZZUP_HOOK_SECRET")) return env7("WAZZUP_HOOK_SECRET");
   const cur = a.host.state().secret;
   if (cur) return cur;
-  const secret = (0, import_node_crypto6.randomBytes)(24).toString("hex");
-  a.host.patch({ secret });
-  return secret;
+  const secret2 = (0, import_node_crypto7.randomBytes)(24).toString("hex");
+  a.host.patch({ secret: secret2 });
+  return secret2;
 }
-var hookUri = (secret) => `${hookBase()}?s=${encodeURIComponent(secret)}`;
+var hookUri = (secret2) => `${hookBase()}?s=${encodeURIComponent(secret2)}`;
 var hookShown = () => hookBase();
 function currentMap(a) {
-  const st = a.host.state();
-  return st.maps[st.templateId] ?? defaultMap(st.templateName, "", st.vars || null);
+  const st2 = a.host.state();
+  return st2.maps[st2.templateId] ?? defaultMap(st2.templateName, "", st2.vars || null);
 }
 function mapProblem(a) {
-  const st = a.host.state();
+  const st2 = a.host.state();
   const map = currentMap(a);
-  if (st.vars && map.length !== st.vars) return `\u0412 \u0448\u0430\u0431\u043B\u043E\u043D\u0435 ${st.vars} \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445, \u0430 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043E ${map.length}.`;
+  if (st2.vars && map.length !== st2.vars) return `\u0412 \u0448\u0430\u0431\u043B\u043E\u043D\u0435 ${st2.vars} \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445, \u0430 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043E ${map.length}.`;
   for (let i = 0; i < map.length; i++) if (map[i].kind === "text" && !(map[i].text || "").trim()) return `\u0417\u0430\u043F\u043E\u043B\u043D\u0438 \u0442\u0435\u043A\u0441\u0442 \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u043E\u0439 {{${i + 1}}}.`;
   return "";
 }
@@ -8673,13 +9247,13 @@ function prerequisites2(a) {
   if (!wzKey()) return { ok: false, reason: "\u041D\u0435\u0442 WAZZUP_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0434\u043E\u0436\u0438\u043C \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
   if (!wzChannel()) return { ok: false, reason: "\u041D\u0435\u0442 WAZZUP_CHANNEL_ID \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435: \u0434\u043E\u0436\u0438\u043C \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u0443\u0435\u0442." };
   if (!evoKey()) return { ok: false, reason: "\u041D\u0435\u0442 EVOLUTION_API_KEY: \u0431\u0435\u0437 \u043D\u0435\u0433\u043E \u043D\u0435 \u0432\u0438\u0434\u043D\u043E, \u043A\u0442\u043E \u0432\u0441\u0442\u0443\u043F\u0438\u043B." };
-  const st = a.host.state();
-  if (!st.templateId) return { ok: false, reason: "\u0412\u044B\u0431\u0435\u0440\u0438 \u0448\u0430\u0431\u043B\u043E\u043D \u0438\u0437 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438." };
+  const st2 = a.host.state();
+  if (!st2.templateId) return { ok: false, reason: "\u0412\u044B\u0431\u0435\u0440\u0438 \u0448\u0430\u0431\u043B\u043E\u043D \u0438\u0437 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438." };
   const bad = mapProblem(a);
   if (bad) return { ok: false, reason: bad };
   return { ok: true };
 }
-async function alarmOnce2(a, key, windowMs, textMsg) {
+async function alarmOnce3(a, key, windowMs, textMsg) {
   const now = a.host.now();
   if (now - (a.alarmAt.get(key) || 0) < windowMs) return;
   a.alarmAt.set(key, now);
@@ -8693,8 +9267,8 @@ async function measureTarget(a, t) {
   const at = a.host.now();
   if (!r.ok) {
     a.measureFails++;
-    log2("\u0437\u0430\u043C\u0435\u0440 %s \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: %s", t.id, scrub5(r.error));
-    if (a.measureFails >= 3) await alarmOnce2(a, "measure", HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0435\u0442\u0441\u044F \u0443\u0437\u043D\u0430\u0442\u044C, \u043A\u0442\u043E \u0432\u0441\u0442\u0443\u043F\u0438\u043B \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E (${clipText2(scrub5(r.error), 100)}). \u041F\u043E\u043A\u0430 \u0437\u0430\u043C\u0435\u0440\u0430 \u043D\u0435\u0442, \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F.`);
+    log3("\u0437\u0430\u043C\u0435\u0440 %s \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0435\u043D: %s", t.id, scrub6(r.error));
+    if (a.measureFails >= 3) await alarmOnce3(a, "measure", HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0435\u0442\u0441\u044F \u0443\u0437\u043D\u0430\u0442\u044C, \u043A\u0442\u043E \u0432\u0441\u0442\u0443\u043F\u0438\u043B \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E (${clipText2(scrub6(r.error), 100)}). \u041F\u043E\u043A\u0430 \u0437\u0430\u043C\u0435\u0440\u0430 \u043D\u0435\u0442, \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F.`);
     return false;
   }
   const numbers = /* @__PURE__ */ new Set();
@@ -8707,22 +9281,22 @@ async function measureTarget(a, t) {
   const total = r.data.length;
   if (total === 0 || total >= 20 && unresolved > total * 0.05) {
     a.measureFails++;
-    log2("\u0437\u0430\u043C\u0435\u0440 %s \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442: \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %d, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 %d", t.id, total, unresolved);
-    if (a.measureFails >= 3) await alarmOnce2(a, `bad:${t.id}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0437\u0430\u043C\u0435\u0440 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 ${t.day} \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442 (\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${total}, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 ${unresolved}). \u0428\u0430\u0431\u043B\u043E\u043D\u044B \u044D\u0442\u043E\u043C\u0443 \u0434\u043D\u044E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F.`);
+    log3("\u0437\u0430\u043C\u0435\u0440 %s \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442: \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %d, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 %d", t.id, total, unresolved);
+    if (a.measureFails >= 3) await alarmOnce3(a, `bad:${t.id}`, HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: \u0437\u0430\u043C\u0435\u0440 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 ${t.day} \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442 (\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${total}, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 ${unresolved}). \u0428\u0430\u0431\u043B\u043E\u043D\u044B \u044D\u0442\u043E\u043C\u0443 \u0434\u043D\u044E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F.`);
     return false;
   }
   const prev = a.members.get(t.id);
   if (prev && prev.total >= 10 && total < prev.total * 0.7) {
     a.measureFails++;
-    log2("\u0437\u0430\u043C\u0435\u0440 %s \u043F\u043E\u0434\u043E\u0437\u0440\u0438\u0442\u0435\u043B\u0435\u043D: \u0431\u044B\u043B\u043E %d, \u0441\u0442\u0430\u043B\u043E %d, \u043D\u0435 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E", t.id, prev.total, total);
-    await alarmOnce2(a, `shrink:${t.id}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0441\u043F\u0438\u0441\u043E\u043A \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 ${t.day} \u0432\u0434\u0440\u0443\u0433 \u0441\u0442\u0430\u043B \u043A\u043E\u0440\u043E\u0447\u0435 (${prev.total} -> ${total}). \u0417\u0430\u043C\u0435\u0440 \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442, \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u044D\u0442\u043E\u043C\u0443 \u0434\u043D\u044E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F, \u043F\u043E\u043A\u0430 \u0441\u043F\u0438\u0441\u043E\u043A \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F.`);
+    log3("\u0437\u0430\u043C\u0435\u0440 %s \u043F\u043E\u0434\u043E\u0437\u0440\u0438\u0442\u0435\u043B\u0435\u043D: \u0431\u044B\u043B\u043E %d, \u0441\u0442\u0430\u043B\u043E %d, \u043D\u0435 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E", t.id, prev.total, total);
+    await alarmOnce3(a, `shrink:${t.id}`, HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: \u0441\u043F\u0438\u0441\u043E\u043A \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 ${t.day} \u0432\u0434\u0440\u0443\u0433 \u0441\u0442\u0430\u043B \u043A\u043E\u0440\u043E\u0447\u0435 (${prev.total} -> ${total}). \u0417\u0430\u043C\u0435\u0440 \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442, \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u044D\u0442\u043E\u043C\u0443 \u0434\u043D\u044E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F, \u043F\u043E\u043A\u0430 \u0441\u043F\u0438\u0441\u043E\u043A \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F.`);
     return false;
   }
   a.measureFails = 0;
   a.members.set(t.id, { day: t.day, at, total, unresolved, numbers });
   a.host.noteMembers(t.id, total, at);
   persistMembers(a);
-  log2("\u0437\u0430\u043C\u0435\u0440 %s: \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %d, \u043D\u043E\u043C\u0435\u0440\u043E\u0432 %d, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 %d", t.id, total, numbers.size, unresolved);
+  log3("\u0437\u0430\u043C\u0435\u0440 %s: \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 %d, \u043D\u043E\u043C\u0435\u0440\u043E\u0432 %d, \u0431\u0435\u0437 \u043D\u043E\u043C\u0435\u0440\u0430 %d", t.id, total, numbers.size, unresolved);
   return true;
 }
 function pruneMembers(a, live) {
@@ -8759,13 +9333,13 @@ function windowStart(ms, from, to) {
   if (m >= minsOf(to)) return atTime(addDays(day, 1), from);
   return ms;
 }
-var inWindow2 = (ms, st) => {
+var inWindow2 = (ms, st2) => {
   const m = minuteOfDay(ms);
-  return m >= minsOf(st.from) && m < minsOf(st.to);
+  return m >= minsOf(st2.from) && m < minsOf(st2.to);
 };
 function evaluate(a, now) {
   const h = a.host;
-  const st = h.state();
+  const st2 = h.state();
   const out = { ready: [], waiting: 0, needMeasure: 0, foreign: 0, noTarget: [], days: [], error: "" };
   const src = h.leads();
   if (!src.leads) {
@@ -8778,7 +9352,7 @@ function evaluate(a, now) {
   const linked2 = h.linkedEids();
   const seenEid = /* @__PURE__ */ new Set();
   const seenPhoneDay = /* @__PURE__ */ new Set();
-  const cutoffMs = atTime(today, st.cutoff);
+  const cutoffMs = atTime(today, st2.cutoff);
   const curDay = h.dayOf(now);
   const nxtDay = nextStreamDay(addDays(curDay, 1), cfg);
   const shown = /* @__PURE__ */ new Map([[today, /* @__PURE__ */ new Set()], [curDay, /* @__PURE__ */ new Set()], [nxtDay, /* @__PURE__ */ new Set()]]);
@@ -8810,8 +9384,8 @@ function evaluate(a, now) {
       if (!targets.some((t) => t.day === day) && !out.noTarget.includes(day)) out.noTarget.push(day);
       continue;
     }
-    const due = windowStart(lead.ts + st.delayMin * MIN2, st.from, st.to);
-    if (now < due || !inWindow2(now, st)) continue;
+    const due = windowStart(lead.ts + st2.delayMin * MIN3, st2.from, st2.to);
+    if (now < due || !inWindow2(now, st2)) continue;
     if (day === today && now > cutoffMs) continue;
     if (a.tries.get(eid) && a.tries.get(eid).nextAt > now) continue;
     out.ready.push({ lead, digits: ph.digits, day, eid, due });
@@ -8829,7 +9403,7 @@ function evaluate(a, now) {
   }
   return out;
 }
-var sends24 = (a, now) => a.sendTimes.filter((t) => now - t < DAY2).length;
+var sends24 = (a, now) => a.sendTimes.filter((t) => now - t < DAY3).length;
 async function resolveName(a, lead, digits, useProfile) {
   const own = lead ? cleanName(lead.name) : "";
   if (own) return { name: own, from: "lead" };
@@ -8848,11 +9422,11 @@ async function resolveName(a, lead, digits, useProfile) {
   return { name: "\u0434\u0440\u0443\u0433", from: "fallback" };
 }
 async function sendTemplate(a, chat, values, crm) {
-  const st = a.host.state();
-  const r = await wzSend({ chatId: chat, templateId: st.templateId, templateValues: values, crmMessageId: crm });
+  const st2 = a.host.state();
+  const r = await wzSend({ chatId: chat, templateId: st2.templateId, templateValues: values, crmMessageId: crm });
   if (r.ok) return { ok: true, mid: r.data.messageId };
   if (isRepeatedCrmId(r)) return { ok: true, mid: "", dup: true };
-  return { ok: false, status: r.status, error: scrub5(r.error), retryable: r.retryable };
+  return { ok: false, status: r.status, error: scrub6(r.error), retryable: r.retryable };
 }
 function recordSent(a, p) {
   const now = a.host.now();
@@ -8866,7 +9440,7 @@ function recordSent(a, p) {
 }
 async function sendPick(a, pick) {
   const h = a.host;
-  const st = h.state();
+  const st2 = h.state();
   const map = currentMap(a);
   const needsName = map.some((v) => v.kind === "name");
   const nm = needsName ? await resolveName(a, pick.lead, pick.digits, true) : { name: "", from: "lead" };
@@ -8874,20 +9448,20 @@ async function sendPick(a, pick) {
   const link = h.waUrl;
   const values = buildValues(map, { name: nm.name, day: pick.day, now, link });
   if (!values) {
-    await alarmOnce2(a, "values", HOUR2, "\u0414\u043E\u0436\u0438\u043C WABA: \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0431\u0440\u0430\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u0448\u0430\u0431\u043B\u043E\u043D\u0430 (\u043F\u0443\u0441\u0442\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435). \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.");
+    await alarmOnce3(a, "values", HOUR3, "\u0414\u043E\u0436\u0438\u043C WABA: \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0431\u0440\u0430\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u0448\u0430\u0431\u043B\u043E\u043D\u0430 (\u043F\u0443\u0441\u0442\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435). \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435 \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0445 \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.");
     return false;
   }
   const res = await sendTemplate(a, pick.digits, values, `dozhim-${pick.eid}`);
   if (res.ok) {
     a.consecFail = 0;
     recordSent(a, { to: pick.digits, eid: pick.eid, day: pick.day, mid: res.mid, test: false, name: nm.name, from: nm.from, dup: res.dup });
-    log2("\u0448\u0430\u0431\u043B\u043E\u043D \u0443\u0448\u0451\u043B: %s, \u044D\u0444\u0438\u0440 %s", maskDigits(pick.digits), pick.day);
+    log3("\u0448\u0430\u0431\u043B\u043E\u043D \u0443\u0448\u0451\u043B: %s, \u044D\u0444\u0438\u0440 %s", maskDigits(pick.digits), pick.day);
     return true;
   }
   const n = (a.tries.get(pick.eid)?.n ?? 0) + 1;
   const final = !res.retryable || n >= MAX_ATTEMPTS;
-  appendRow(a, { ts: h.now(), ev: "send_fail", to: pick.digits, eid: pick.eid, day: pick.day, tpl: st.templateId, status: res.status, err: clipText2(res.error, 160), retryable: res.retryable, attempt: n, final });
-  log2("\u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s, \u043F\u043E\u043F\u044B\u0442\u043A\u0430 %d%s", maskDigits(pick.digits), res.error, n, final ? ", \u043E\u043A\u043E\u043D\u0447\u0430\u0442\u0435\u043B\u044C\u043D\u043E" : "");
+  appendRow(a, { ts: h.now(), ev: "send_fail", to: pick.digits, eid: pick.eid, day: pick.day, tpl: st2.templateId, status: res.status, err: clipText2(res.error, 160), retryable: res.retryable, attempt: n, final });
+  log3("\u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s, \u043F\u043E\u043F\u044B\u0442\u043A\u0430 %d%s", maskDigits(pick.digits), res.error, n, final ? ", \u043E\u043A\u043E\u043D\u0447\u0430\u0442\u0435\u043B\u044C\u043D\u043E" : "");
   if (!final) {
     a.tries.set(pick.eid, { n, nextAt: h.now() + RETRY_AFTER });
     a.haltUntil = Math.max(a.haltUntil || 0, h.now() + RETRY_AFTER);
@@ -8895,13 +9469,13 @@ async function sendPick(a, pick) {
   }
   a.failedEids.add(pick.eid);
   a.tries.delete(pick.eid);
-  await alarmOnce2(a, `fail:${res.status}:${clipText2(res.error, 40)}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0448\u0430\u0431\u043B\u043E\u043D ${maskDigits(pick.digits)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (${clipText2(res.error, 120)}). ${res.retryable ? "\u0422\u0440\u0438 \u043F\u043E\u043F\u044B\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u044B." : "\u041F\u043E\u0432\u0442\u043E\u0440\u0430 \u043D\u0435 \u0431\u0443\u0434\u0435\u0442."}`);
+  await alarmOnce3(a, `fail:${res.status}:${clipText2(res.error, 40)}`, HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: \u0448\u0430\u0431\u043B\u043E\u043D ${maskDigits(pick.digits)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (${clipText2(res.error, 120)}). ${res.retryable ? "\u0422\u0440\u0438 \u043F\u043E\u043F\u044B\u0442\u043A\u0438 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u044B." : "\u041F\u043E\u0432\u0442\u043E\u0440\u0430 \u043D\u0435 \u0431\u0443\u0434\u0435\u0442."}`);
   if (res.retryable) return false;
   a.consecFail++;
   if (a.consecFail >= HALT_AFTER) {
     a.haltUntil = h.now() + HALT_MS;
     a.consecFail = 0;
-    await alarmOnce2(a, "halt", HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: ${HALT_AFTER} \u043E\u0442\u043A\u0430\u0437\u0430 \u043F\u043E\u0434\u0440\u044F\u0434, \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B \u043D\u0430 \u0447\u0430\u0441, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0442\u0435\u0440\u044F\u0442\u044C \u0437\u0430\u044F\u0432\u043A\u0438. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447 Wazzup \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.`);
+    await alarmOnce3(a, "halt", HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: ${HALT_AFTER} \u043E\u0442\u043A\u0430\u0437\u0430 \u043F\u043E\u0434\u0440\u044F\u0434, \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B \u043D\u0430 \u0447\u0430\u0441, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0442\u0435\u0440\u044F\u0442\u044C \u0437\u0430\u044F\u0432\u043A\u0438. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447 Wazzup \u0432 \u043F\u0443\u043B\u044C\u0442\u0435.`);
     return false;
   }
   return true;
@@ -8914,11 +9488,11 @@ async function dzTick() {
   a.ticking = true;
   try {
     const h = a.host;
-    const st = h.state();
+    const st2 = h.state();
     a.lastTickAt = h.now();
-    if (st.hookOn || a.replies.length) await runReplies(a);
-    if (st.hookOn) await hookCheck(a);
-    if (!st.enabled) return { ...none, skipped: "off" };
+    if (st2.hookOn || a.replies.length) await runReplies(a);
+    if (st2.hookOn) await hookCheck(a);
+    if (!st2.enabled) return { ...none, skipped: "off" };
     const can = h.canRun();
     if (!can.ok) return { ...none, skipped: "no_run" };
     if (!prerequisites2(a).ok) return { ...none, skipped: "no_config" };
@@ -8949,7 +9523,7 @@ async function dzTick() {
       if (!mem) break;
       if (mem.has(pick.digits)) continue;
       if (sends24(a, now) >= h.state().dailyLimit) {
-        await alarmOnce2(a, `limit:${dayKeyOf(now)}`, DAY2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0437\u0430 \u0441\u0443\u0442\u043A\u0438 \u0443\u0436\u0435 ${h.state().dailyLimit} \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B \u043D\u043E\u043C\u0435\u0440\u0430. \u041E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438 \u043F\u043E\u0434\u043E\u0436\u0434\u0443\u0442.`);
+        await alarmOnce3(a, `limit:${dayKeyOf(now)}`, DAY3, `\u0414\u043E\u0436\u0438\u043C WABA: \u0437\u0430 \u0441\u0443\u0442\u043A\u0438 \u0443\u0436\u0435 ${h.state().dailyLimit} \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B \u043D\u043E\u043C\u0435\u0440\u0430. \u041E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438 \u043F\u043E\u0434\u043E\u0436\u0434\u0443\u0442.`);
         break;
       }
       const before = a.sentEids.has(pick.eid);
@@ -8960,13 +9534,13 @@ async function dzTick() {
     }
     return info;
   } catch (e) {
-    console.error("[wa-dozhim] \u043F\u0440\u043E\u0445\u043E\u0434 \u0443\u043F\u0430\u043B:", scrub5(String(e?.stack || e)).slice(0, 400));
+    console.error("[wa-dozhim] \u043F\u0440\u043E\u0445\u043E\u0434 \u0443\u043F\u0430\u043B:", scrub6(String(e?.stack || e)).slice(0, 400));
     return none;
   } finally {
     a.ticking = false;
   }
 }
-var hashOf2 = (s) => (0, import_node_crypto6.createHash)("sha256").update(s).digest();
+var hashOf2 = (s) => (0, import_node_crypto7.createHash)("sha256").update(s).digest();
 function readLimited4(req, max) {
   return new Promise((resolve) => {
     let size = 0;
@@ -8987,14 +9561,14 @@ async function handleWazzupHook(req, res) {
     res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Content-Length": Buffer.byteLength(payload) });
     res.end(payload);
   };
-  const secret = hookSecret2();
+  const secret2 = hookSecret2();
   let given = "";
   try {
     given = new URL(req.url || "/", "http://x").searchParams.get("s") || "";
   } catch {
     given = "";
   }
-  if (req.method !== "POST" || !secret || !given || !(0, import_node_crypto6.timingSafeEqual)(hashOf2(secret), hashOf2(given))) {
+  if (req.method !== "POST" || !secret2 || !given || !(0, import_node_crypto7.timingSafeEqual)(hashOf2(secret2), hashOf2(given))) {
     req.resume();
     return send2(req.method !== "POST" ? 405 : 403, { ok: false });
   }
@@ -9009,12 +9583,12 @@ async function handleWazzupHook(req, res) {
     return;
   }
   if (!body || typeof body !== "object" || body.test === true) return;
-  const job = ingest2(a, body).catch((e) => console.error("[wa-dozhim] \u0440\u0430\u0437\u0431\u043E\u0440 \u0432\u0435\u0431\u0445\u0443\u043A\u0430 \u0443\u043F\u0430\u043B:", scrub5(String(e?.message || e)).slice(0, 200))).finally(() => a.running.delete(job));
+  const job = ingest2(a, body).catch((e) => console.error("[wa-dozhim] \u0440\u0430\u0437\u0431\u043E\u0440 \u0432\u0435\u0431\u0445\u0443\u043A\u0430 \u0443\u043F\u0430\u043B:", scrub6(String(e?.message || e)).slice(0, 200))).finally(() => a.running.delete(job));
   a.running.add(job);
 }
 async function ingest2(a, body) {
-  const st = a.host.state();
-  if (!st.enabled && !st.hookOn) return;
+  const st2 = a.host.state();
+  if (!st2.enabled && !st2.hookOn) return;
   if (body.templateStatus !== void 0 && body.templateStatus !== null) onTemplateStatus(a, body.templateStatus);
   const msgs = Array.isArray(body.messages) ? body.messages : [];
   for (const m of msgs) await onMessage2(a, m);
@@ -9055,7 +9629,7 @@ async function onMessage2(a, m) {
   const now = h.now();
   const info = a.chats.get(chat);
   if (!info || now - info.sentAt > REPLY_WINDOW) return;
-  const mid = String(m.messageId ?? "").slice(0, 100) || (0, import_node_crypto6.createHash)("sha1").update(`${chat}|${m.dateTime ?? ""}|${m.text ?? ""}`).digest("hex");
+  const mid = String(m.messageId ?? "").slice(0, 100) || (0, import_node_crypto7.createHash)("sha1").update(`${chat}|${m.dateTime ?? ""}|${m.text ?? ""}`).digest("hex");
   if (a.seenMid.has(mid)) return;
   a.seenMid.add(mid);
   if (a.seenMid.size > 8e3) a.seenMid.delete(a.seenMid.values().next().value);
@@ -9099,16 +9673,16 @@ async function replyNow(a, rp) {
   if (r.ok || isRepeatedCrmId(r)) {
     if (rp.kind === "link") info.linkAt = now;
     appendRow(a, { ts: now, ev: rp.kind === "link" ? "link" : "decline_sent", ok: true, chat: rp.chat, day: info.day, mid: r.ok ? r.data.messageId : "" });
-    log2("%s \u0443\u0448\u043B\u043E: %s", rp.kind === "link" ? "\u0441\u0441\u044B\u043B\u043A\u0430" : "\u043E\u0442\u043A\u0430\u0437 \u043F\u0440\u0438\u043D\u044F\u0442", maskDigits(rp.chat));
+    log3("%s \u0443\u0448\u043B\u043E: %s", rp.kind === "link" ? "\u0441\u0441\u044B\u043B\u043A\u0430" : "\u043E\u0442\u043A\u0430\u0437 \u043F\u0440\u0438\u043D\u044F\u0442", maskDigits(rp.chat));
     return;
   }
-  appendRow(a, { ts: now, ev: rp.kind === "link" ? "link" : "decline_sent", ok: false, chat: rp.chat, status: r.status, err: clipText2(scrub5(r.error), 160), attempt: rp.tries + 1 });
-  log2("\u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s", maskDigits(rp.chat), scrub5(r.error));
+  appendRow(a, { ts: now, ev: rp.kind === "link" ? "link" : "decline_sent", ok: false, chat: rp.chat, status: r.status, err: clipText2(scrub6(r.error), 160), attempt: rp.tries + 1 });
+  log3("\u043E\u0442\u0432\u0435\u0442 \u043D\u0435 \u0443\u0448\u0451\u043B (%s): %s", maskDigits(rp.chat), scrub6(r.error));
   if (r.retryable && rp.tries < 2 && rp.kind === "link") {
-    a.replies.push({ ...rp, tries: rp.tries + 1, nextAt: now + MIN2 });
+    a.replies.push({ ...rp, tries: rp.tries + 1, nextAt: now + MIN3 });
     return;
   }
-  await alarmOnce2(a, `reply:${r.status}`, HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 ${maskDigits(rp.chat)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clipText2(scrub5(r.error), 120)}). \u0421\u0441\u044B\u043B\u043A\u0443 \u043E\u043D \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B.`);
+  await alarmOnce3(a, `reply:${r.status}`, HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: \u043E\u0442\u0432\u0435\u0442 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0443 ${maskDigits(rp.chat)} \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0441\u044F (${clipText2(scrub6(r.error), 120)}). \u0421\u0441\u044B\u043B\u043A\u0443 \u043E\u043D \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0438\u043B.`);
 }
 async function runReplies(a) {
   if (!a.replies.length) return;
@@ -9152,30 +9726,30 @@ async function dzHookSet(on) {
   a.hookBusy = true;
   try {
     const cur = await wzGetHooks();
-    if (!cur.ok) return fail2("wazzup", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0443\u0437\u043D\u0430\u0442\u044C, \u043A\u0430\u043A\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A \u0441\u0442\u043E\u0438\u0442 \u0432 Wazzup: ${clipText2(scrub5(cur.error), 120)}. \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043C\u0435\u043D\u044F\u043B.`);
+    if (!cur.ok) return fail2("wazzup", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0443\u0437\u043D\u0430\u0442\u044C, \u043A\u0430\u043A\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A \u0441\u0442\u043E\u0438\u0442 \u0432 Wazzup: ${clipText2(scrub6(cur.error), 120)}. \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043C\u0435\u043D\u044F\u043B.`);
     const uri = cur.data.webhooksUri.trim();
     if (on) {
       if (uri && !sameHook(uri)) {
         await a.host.alarm(`\u0414\u043E\u0436\u0438\u043C WABA: \u0432 Wazzup \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u0447\u0443\u0436\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A (${originOf(uri)}). \u0421\u0432\u043E\u0439 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u043B, \u0447\u0442\u043E\u0431\u044B \u043D\u0435 \u0441\u043B\u043E\u043C\u0430\u0442\u044C \u0447\u0443\u0436\u043E\u0435. \u0420\u0435\u0448\u0438, \u043D\u0443\u0436\u0435\u043D \u043B\u0438 \u043E\u043D, \u0438 \u0441\u043D\u0438\u043C\u0438 \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0432 Wazzup.`);
         return fail2("foreign_hook", `\u0412 Wazzup \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u0447\u0443\u0436\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A (${originOf(uri)}). \u042F \u0435\u0433\u043E \u043D\u0435 \u0442\u0440\u043E\u0433\u0430\u044E. \u0421\u0432\u043E\u0439 \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D.`);
       }
-      const secret = ensureSecret2(a);
-      const r = await wzSetHooks({ webhooksUri: hookUri(secret), subscriptions: SUBS_ON });
-      if (!r.ok) return fail2("wazzup", `Wazzup \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A: ${clipText2(scrub5(r.error), 140)}. \u041E\u043D \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u0442\u0435\u0441\u0442\u043E\u0432\u044B\u043C \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u043C: \u0430\u0434\u0440\u0435\u0441 \u0434\u043E\u043B\u0436\u0435\u043D \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C \u0441\u043D\u0430\u0440\u0443\u0436\u0438.`);
+      const secret2 = ensureSecret2(a);
+      const r = await wzSetHooks({ webhooksUri: hookUri(secret2), subscriptions: SUBS_ON });
+      if (!r.ok) return fail2("wazzup", `Wazzup \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A: ${clipText2(scrub6(r.error), 140)}. \u041E\u043D \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442 \u0430\u0434\u0440\u0435\u0441 \u0442\u0435\u0441\u0442\u043E\u0432\u044B\u043C \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u043C: \u0430\u0434\u0440\u0435\u0441 \u0434\u043E\u043B\u0436\u0435\u043D \u043E\u0442\u0432\u0435\u0447\u0430\u0442\u044C \u0441\u043D\u0430\u0440\u0443\u0436\u0438.`);
       a.host.patch({ hookOn: true });
       a.host.journal({ ev: "dz_hook", on: true });
-      log2("\u0432\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D");
+      log3("\u0432\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D");
       return { ok: true, message: `\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D (${hostShown()}). \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u0431\u0443\u0434\u0443\u0442 \u043F\u043E\u043B\u0443\u0447\u0430\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443.` };
     }
     if (uri && !sameHook(uri)) return fail2("foreign_hook", `\u0412 Wazzup \u0441\u0442\u043E\u0438\u0442 \u0447\u0443\u0436\u043E\u0439 \u0432\u0435\u0431\u0445\u0443\u043A (${originOf(uri)}), \u043D\u0435 \u043D\u0430\u0448. \u042F \u0435\u0433\u043E \u043D\u0435 \u0441\u043D\u0438\u043C\u0430\u044E.`);
     if (uri) {
       let r = await wzSetHooks({ webhooksUri: "", subscriptions: SUBS_OFF });
       if (!r.ok && r.status >= 400 && r.status < 500) r = await wzSetHooks({ webhooksUri: uri, subscriptions: SUBS_OFF });
-      if (!r.ok) return fail2("wazzup", `Wazzup \u043D\u0435 \u0441\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A: ${clipText2(scrub5(r.error), 140)}.`);
+      if (!r.ok) return fail2("wazzup", `Wazzup \u043D\u0435 \u0441\u043D\u044F\u043B \u0432\u0435\u0431\u0445\u0443\u043A: ${clipText2(scrub6(r.error), 140)}.`);
     }
     a.host.patch({ hookOn: false });
     a.host.journal({ ev: "dz_hook", on: false });
-    log2("\u0432\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442");
+    log3("\u0432\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442");
     return { ok: true, message: "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442. \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u043E\u0431\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F." };
   } finally {
     a.hookBusy = false;
@@ -9184,13 +9758,13 @@ async function dzHookSet(on) {
 var hostShown = () => hostOf2(hookShown());
 async function hookCheck(a) {
   const now = a.host.now();
-  if (now - a.hookCheckAt < 3 * HOUR2 || a.hookBusy) return;
+  if (now - a.hookCheckAt < 3 * HOUR3 || a.hookBusy) return;
   a.hookCheckAt = now;
   const cur = await wzGetHooks();
   if (!cur.ok) return;
   const uri = cur.data.webhooksUri.trim();
   if (uri && sameHook(uri) && cur.data.subscriptions.messagesAndStatuses !== false) return;
-  await alarmOnce2(a, "hookgone", 6 * HOUR2, `\u0414\u043E\u0436\u0438\u043C WABA: \u0432\u0435\u0431\u0445\u0443\u043A Wazzup ${uri ? `\u0442\u0435\u043F\u0435\u0440\u044C \u0447\u0443\u0436\u043E\u0439 (${originOf(uri)})` : "\u043F\u0440\u043E\u043F\u0430\u043B"}. \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u043F\u0440\u0438\u0445\u043E\u0434\u044F\u0442. \u041F\u043E\u0441\u0442\u0430\u0432\u044C \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E \u0432 \u043F\u0443\u043B\u044C\u0442\u0435, \u0431\u043B\u043E\u043A \xAB\u0414\u043E\u0436\u0438\u043C WABA\xBB.`);
+  await alarmOnce3(a, "hookgone", 6 * HOUR3, `\u0414\u043E\u0436\u0438\u043C WABA: \u0432\u0435\u0431\u0445\u0443\u043A Wazzup ${uri ? `\u0442\u0435\u043F\u0435\u0440\u044C \u0447\u0443\u0436\u043E\u0439 (${originOf(uri)})` : "\u043F\u0440\u043E\u043F\u0430\u043B"}. \u041E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u043F\u0440\u0438\u0445\u043E\u0434\u044F\u0442. \u041F\u043E\u0441\u0442\u0430\u0432\u044C \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E \u0432 \u043F\u0443\u043B\u044C\u0442\u0435, \u0431\u043B\u043E\u043A \xAB\u0414\u043E\u0436\u0438\u043C WABA\xBB.`);
 }
 var TPL_CACHE_MS = 6e4;
 var TPL_MIN_GAP_MS = 5e3;
@@ -9200,9 +9774,9 @@ async function loadTemplates(a, force) {
   if (!wzKey()) return { ok: false, code: "no_key", message: "\u041D\u0435\u0442 WAZZUP_API_KEY \u0432 .env \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435." };
   const r = await wzTemplates();
   if (!r.ok) {
-    const stale = a.tpl && now - a.tpl.at < 10 * MIN2;
+    const stale = a.tpl && now - a.tpl.at < 10 * MIN3;
     if (stale) return { ok: true, items: a.tpl.items, at: a.tpl.at, cached: true };
-    return { ok: false, code: "wazzup", message: `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D\u044B Wazzup: ${clipText2(scrub5(r.error), 120)}.` };
+    return { ok: false, code: "wazzup", message: `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D\u044B Wazzup: ${clipText2(scrub6(r.error), 120)}.` };
   }
   a.tpl = { at: now, callAt: now, items: r.data };
   return { ok: true, items: r.data, at: now, cached: false };
@@ -9222,8 +9796,8 @@ async function dzTemplates(force = false) {
     } else if (t.items.length) note = "\u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442.";
     else note = "\u0412 Wazzup \u043D\u0435\u0442 \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432 WABA.";
   }
-  const st = a.host.state();
-  const items = list.map((x) => ({ ...x, map: x.id === st.templateId ? currentMap(a) : st.maps[x.id] ?? defaultMap(x.name, x.title, x.vars) }));
+  const st2 = a.host.state();
+  const items = list.map((x) => ({ ...x, map: x.id === st2.templateId ? currentMap(a) : st2.maps[x.id] ?? defaultMap(x.name, x.title, x.vars) }));
   return { ok: true, message: note, items, total: t.items.length, at: t.at, cached: t.cached, note };
 }
 var MODULE_OFF2 = fail2("module_off", "\u041C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D: \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u043D\u0435\u0442 WA_GROUPS=on \u0438\u043B\u0438 \u043E\u043D \u043D\u0435 \u0441\u0442\u0430\u0440\u0442\u043E\u0432\u0430\u043B (\u0441\u043C. /api/health).");
@@ -9232,7 +9806,7 @@ async function dzSave(p) {
   if (!a) return MODULE_OFF2;
   if (!p || typeof p !== "object" || Array.isArray(p)) return fail2("bad_request", "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438.");
   const q2 = p;
-  const st = a.host.state();
+  const st2 = a.host.state();
   const next = {};
   if (q2.delayMin !== void 0) {
     const n = Number(q2.delayMin);
@@ -9240,8 +9814,8 @@ async function dzSave(p) {
     next.delayMin = n;
   }
   if (q2.from !== void 0 || q2.to !== void 0) {
-    const from = q2.from === void 0 ? st.from : q2.from;
-    const to = q2.to === void 0 ? st.to : q2.to;
+    const from = q2.from === void 0 ? st2.from : q2.from;
+    const to = q2.to === void 0 ? st2.to : q2.to;
     if (!validHHMM(from) || !validHHMM(to) || minsOf(from) >= minsOf(to)) return fail2("bad_request", "\u041E\u043A\u043D\u043E \u0447\u0430\u0441\u043E\u0432: \u0432\u0440\u0435\u043C\u044F \u0432\u0438\u0434\u0430 09:00, \u043D\u0430\u0447\u0430\u043B\u043E \u0440\u0430\u043D\u044C\u0448\u0435 \u043A\u043E\u043D\u0446\u0430.");
     next.from = padHHMM(from);
     next.to = padHHMM(to);
@@ -9255,9 +9829,9 @@ async function dzSave(p) {
     if (!Number.isInteger(n) || n < 1 || n > 250) return fail2("bad_request", "\u041B\u0438\u043C\u0438\u0442 \u0432 \u0441\u0443\u0442\u043A\u0438: \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 1 \u0434\u043E 250 (\u043F\u0440\u0435\u0434\u0435\u043B Meta 250 \u043D\u043E\u0432\u044B\u0445 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u043E\u043A).");
     next.dailyLimit = n;
   }
-  const maps = { ...st.maps };
-  const tid = typeof q2.templateId === "string" && q2.templateId ? q2.templateId : q2.map !== void 0 ? st.templateId : "";
-  if (tid && (tid !== st.templateId || q2.map !== void 0)) {
+  const maps = { ...st2.maps };
+  const tid = typeof q2.templateId === "string" && q2.templateId ? q2.templateId : q2.map !== void 0 ? st2.templateId : "";
+  if (tid && (tid !== st2.templateId || q2.map !== void 0)) {
     let t = await loadTemplates(a, false);
     if (!t.ok) return fail2(t.code, t.message);
     let tpl = t.items.find((x) => x.id === tid);
@@ -9285,7 +9859,7 @@ async function dzSave(p) {
   }
   if (!Object.keys(next).length) return { ok: true, code: "same", message: "\u041D\u0435\u0447\u0435\u0433\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C." };
   a.host.patch(next);
-  a.host.journal({ ev: "dz_save", template: next.templateName ?? st.templateName });
+  a.host.journal({ ev: "dz_save", template: next.templateName ?? st2.templateName });
   return { ok: true, message: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0434\u043E\u0436\u0438\u043C\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B." };
 }
 async function dzSetEnabled(on) {
@@ -9295,20 +9869,20 @@ async function dzSetEnabled(on) {
   if (a.toggling) return fail2("busy", "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u0435\u0449\u0451 \u0438\u0434\u0451\u0442, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434.");
   a.toggling = true;
   try {
-    const st = a.host.state();
+    const st2 = a.host.state();
     if (on) {
-      if (st.enabled) return { ok: true, code: "same", message: "\u0414\u043E\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
+      if (st2.enabled) return { ok: true, code: "same", message: "\u0414\u043E\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D." };
       const pre = prerequisites2(a);
       if (!pre.ok) return fail2("no_config", `${pre.reason} \u0414\u043E\u0436\u0438\u043C \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0451\u043D.`);
       a.host.patch({ enabled: true });
       a.host.journal({ ev: "dz_on", by: "panel" });
-      log2("\u0432\u043A\u043B\u044E\u0447\u0451\u043D");
-      return { ok: true, message: `\u0414\u043E\u0436\u0438\u043C \u0432\u043A\u043B\u044E\u0447\u0451\u043D. \u0428\u0430\u0431\u043B\u043E\u043D \xAB${st.templateName}\xBB \u0443\u0445\u043E\u0434\u0438\u0442 \u0442\u0435\u043C, \u043A\u0442\u043E \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0441\u044F \u043D\u0430 \u0432\u043E\u0440\u043A\u0448\u043E\u043F \u0441 \u043D\u043E\u043C\u0435\u0440\u043E\u043C \u041A\u0430\u0437\u0430\u0445\u0441\u0442\u0430\u043D\u0430 \u0438 \u043D\u0435 \u0432\u0441\u0442\u0443\u043F\u0438\u043B \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E: \u0447\u0435\u0440\u0435\u0437 ${st.delayMin} \u043C\u0438\u043D\u0443\u0442 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438, \u0441 ${st.from} \u0434\u043E ${st.to} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.${st.hookOn ? "" : " \u0412\u0435\u0431\u0445\u0443\u043A \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D: \u043E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0442, \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A\xBB."}` };
+      log3("\u0432\u043A\u043B\u044E\u0447\u0451\u043D");
+      return { ok: true, message: `\u0414\u043E\u0436\u0438\u043C \u0432\u043A\u043B\u044E\u0447\u0451\u043D. \u0428\u0430\u0431\u043B\u043E\u043D \xAB${st2.templateName}\xBB \u0443\u0445\u043E\u0434\u0438\u0442 \u0442\u0435\u043C, \u043A\u0442\u043E \u0437\u0430\u043F\u0438\u0441\u0430\u043B\u0441\u044F \u043D\u0430 \u0432\u043E\u0440\u043A\u0448\u043E\u043F \u0441 \u043D\u043E\u043C\u0435\u0440\u043E\u043C \u041A\u0430\u0437\u0430\u0445\u0441\u0442\u0430\u043D\u0430 \u0438 \u043D\u0435 \u0432\u0441\u0442\u0443\u043F\u0438\u043B \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E: \u0447\u0435\u0440\u0435\u0437 ${st2.delayMin} \u043C\u0438\u043D\u0443\u0442 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u044F\u0432\u043A\u0438, \u0441 ${st2.from} \u0434\u043E ${st2.to} \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B.${st2.hookOn ? "" : " \u0412\u0435\u0431\u0445\u0443\u043A \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D: \u043E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0442, \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A\xBB."}` };
     }
-    if (!st.enabled) return { ok: true, code: "same", message: "\u0414\u043E\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D." };
+    if (!st2.enabled) return { ok: true, code: "same", message: "\u0414\u043E\u0436\u0438\u043C \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D." };
     a.host.patch({ enabled: false });
     a.host.journal({ ev: "dz_off", by: "panel" });
-    log2("\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D");
+    log3("\u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D");
     return { ok: true, message: "\u0414\u043E\u0436\u0438\u043C \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D: \u043D\u043E\u0432\u044B\u0435 \u0448\u0430\u0431\u043B\u043E\u043D\u044B \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0442\u0441\u044F." };
   } finally {
     a.toggling = false;
@@ -9322,11 +9896,11 @@ async function dzTestSend(numberRaw, nowArg) {
   const pre = prerequisites2(a);
   if (!pre.ok) return fail2("no_config", pre.reason);
   const now = nowArg ?? a.host.now();
-  a.testAt = a.testAt.filter((t) => now - t < HOUR2);
+  a.testAt = a.testAt.filter((t) => now - t < HOUR3);
   if (a.testAt.length && now - a.testAt[a.testAt.length - 1] < 1e4) return fail2("rate", "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0447\u0430\u0441\u0442\u043E, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 10 \u0441\u0435\u043A\u0443\u043D\u0434.");
   if (a.testAt.length >= 10) return fail2("rate", "\u0422\u0435\u0441\u0442\u043E\u0432 \u0437\u0430 \u0447\u0430\u0441 \u0443\u0436\u0435 10. \u041F\u043E\u0434\u043E\u0436\u0434\u0438.");
-  const st = a.host.state();
-  if (sends24(a, now) >= st.dailyLimit) return fail2("limit", `\u0417\u0430 \u0441\u0443\u0442\u043A\u0438 \u0443\u0436\u0435 ${st.dailyLimit} \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B \u043D\u043E\u043C\u0435\u0440\u0430.`);
+  const st2 = a.host.state();
+  if (sends24(a, now) >= st2.dailyLimit) return fail2("limit", `\u0417\u0430 \u0441\u0443\u0442\u043A\u0438 \u0443\u0436\u0435 ${st2.dailyLimit} \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432, \u044D\u0442\u043E \u043F\u0440\u0435\u0434\u0435\u043B \u0437\u0430\u0449\u0438\u0442\u044B \u043D\u043E\u043C\u0435\u0440\u0430.`);
   a.testAt.push(now);
   const day = a.host.dayOf(now);
   const src = a.host.leads();
@@ -9337,16 +9911,16 @@ async function dzTestSend(numberRaw, nowArg) {
   const eid = `test-${now}`;
   const res = await sendTemplate(a, ph.digits, values, `dozhim-${eid}`);
   if (!res.ok) {
-    appendRow(a, { ts: a.host.now(), ev: "send_fail", to: ph.digits, eid, day, tpl: st.templateId, status: res.status, err: clipText2(res.error, 160), retryable: res.retryable, attempt: 1, final: true, test: true });
+    appendRow(a, { ts: a.host.now(), ev: "send_fail", to: ph.digits, eid, day, tpl: st2.templateId, status: res.status, err: clipText2(res.error, 160), retryable: res.retryable, attempt: 1, final: true, test: true });
     return fail2("wazzup", `Wazzup \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u0442\u0435\u0441\u0442\u043E\u0432\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${clipText2(res.error, 140)}.`);
   }
   recordSent(a, { to: ph.digits, eid, day, mid: res.mid, test: true, name: nm.name, from: nm.from, dup: res.dup });
-  log2("\u0442\u0435\u0441\u0442\u043E\u0432\u044B\u0439 \u0448\u0430\u0431\u043B\u043E\u043D \u0443\u0448\u0451\u043B: %s", maskDigits(ph.digits));
-  return { ok: true, message: `\u0422\u0435\u0441\u0442\u043E\u0432\u044B\u0439 \u0448\u0430\u0431\u043B\u043E\u043D \xAB${st.templateName}\xBB \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u043D\u0430 ${maskDigits(ph.digits)}. \u041D\u0430\u0436\u043C\u0438 \u0432 \u043D\u0451\u043C \u043A\u043D\u043E\u043F\u043A\u0443: \u043F\u0440\u0438\u0434\u0451\u0442 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${dateLabel(day)}.` };
+  log3("\u0442\u0435\u0441\u0442\u043E\u0432\u044B\u0439 \u0448\u0430\u0431\u043B\u043E\u043D \u0443\u0448\u0451\u043B: %s", maskDigits(ph.digits));
+  return { ok: true, message: `\u0422\u0435\u0441\u0442\u043E\u0432\u044B\u0439 \u0448\u0430\u0431\u043B\u043E\u043D \xAB${st2.templateName}\xBB \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u043D\u0430 ${maskDigits(ph.digits)}. \u041D\u0430\u0436\u043C\u0438 \u0432 \u043D\u0451\u043C \u043A\u043D\u043E\u043F\u043A\u0443: \u043F\u0440\u0438\u0434\u0451\u0442 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430 ${dateLabel(day)}.` };
 }
 var ddmm3 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
 var stamp2 = (ms) => `${ddmm3(dayKeyOf(ms))} ${hhmmOf(ms)}`;
-var agoText2 = (ms) => {
+var agoText3 = (ms) => {
   const s = Math.max(0, Math.round(ms / 1e3));
   return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
 };
@@ -9355,24 +9929,24 @@ function dzPanel(nowArg) {
   if (!a) return { available: false };
   const h = a.host;
   const now = nowArg ?? h.now();
-  const st = h.state();
+  const st2 = h.state();
   const pre = prerequisites2(a);
   let reason = "";
   if (!pre.ok) reason = pre.reason;
-  else if (st.enabled) {
+  else if (st2.enabled) {
     const can = h.canRun();
     if (!can.ok) reason = `\u0421\u0435\u0439\u0447\u0430\u0441 \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442: ${can.why}.`;
     else if (now < a.haltUntil) reason = "\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435 \u043F\u043E\u0441\u043B\u0435 \u043E\u0448\u0438\u0431\u043E\u043A Wazzup (\u043F\u043E\u0441\u043B\u0435 \u0441\u0431\u043E\u044F 5 \u043C\u0438\u043D\u0443\u0442, \u043F\u043E\u0441\u043B\u0435 \u0442\u0440\u0451\u0445 \u043E\u0442\u043A\u0430\u0437\u043E\u0432 \u0447\u0430\u0441). \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u043A\u0430\u043D\u0430\u043B \u0438 \u043A\u043B\u044E\u0447.";
   }
   const ev = evaluate(a, now);
   if (ev.error) reason = reason || `\u0417\u0430\u044F\u0432\u043A\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B: ${ev.error}.`;
-  if (!reason && st.enabled && ev.noTarget.length) reason = `\u041D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u0441 \u0437\u0430\u043C\u0435\u0440\u043E\u043C \u043D\u0430 ${ev.noTarget.map(ddmm3).join(", ")}: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u044D\u0442\u0438 \u0434\u043D\u0438 \u0436\u0434\u0443\u0442, \u0448\u0430\u0431\u043B\u043E\u043D \u0438\u043C \u043D\u0435 \u0443\u0439\u0434\u0451\u0442.`;
-  if (!reason && st.enabled && !st.hookOn) reason = "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D: \u043E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u043E\u0431\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F, \u0441\u0441\u044B\u043B\u043A\u0443 \u043E\u043D\u0438 \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0442. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A\xBB.";
+  if (!reason && st2.enabled && ev.noTarget.length) reason = `\u041D\u0435\u0442 \u0433\u043E\u0442\u043E\u0432\u043E\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u0441 \u0437\u0430\u043C\u0435\u0440\u043E\u043C \u043D\u0430 ${ev.noTarget.map(ddmm3).join(", ")}: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u044D\u0442\u0438 \u0434\u043D\u0438 \u0436\u0434\u0443\u0442, \u0448\u0430\u0431\u043B\u043E\u043D \u0438\u043C \u043D\u0435 \u0443\u0439\u0434\u0451\u0442.`;
+  if (!reason && st2.enabled && !st2.hookOn) reason = "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043D\u0435 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D: \u043E\u0442\u0432\u0435\u0442\u044B \u043B\u044E\u0434\u0435\u0439 \u043D\u0430 \u0448\u0430\u0431\u043B\u043E\u043D \u043D\u0435 \u043E\u0431\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F, \u0441\u0441\u044B\u043B\u043A\u0443 \u043E\u043D\u0438 \u043D\u0435 \u043F\u043E\u043B\u0443\u0447\u0430\u0442. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432\u0435\u0431\u0445\u0443\u043A\xBB.";
   const today = dayKeyOf(now);
   const todayRows = a.rows.filter((r) => dayKeyOf(r.ts) === today);
   const realSends = todayRows.filter((r) => r.ev === "send" && r.ok === true && r.test !== true);
   const toNumber = (r) => String(r.to || "");
-  const days = ev.days.map((d) => ({ day: d.day, dayLabel: ddmm3(d.day), applied: d.applied, joined: d.joined, measured: d.measuredAt ? agoText2(now - d.measuredAt) : "", unresolved: d.unresolved }));
+  const days = ev.days.map((d) => ({ day: d.day, dayLabel: ddmm3(d.day), applied: d.applied, joined: d.joined, measured: d.measuredAt ? agoText3(now - d.measuredAt) : "", unresolved: d.unresolved }));
   const targets = h.targets(now);
   let joinedAfter = 0;
   for (const r of realSends) {
@@ -9402,15 +9976,15 @@ function dzPanel(nowArg) {
   const waitingTotal = ev.waiting;
   return {
     available: true,
-    enabled: st.enabled,
+    enabled: st2.enabled,
     canEnable: pre.ok,
     reason,
     configured: { key: !!wzKey(), channel: !!wzChannel() },
-    template: { id: st.templateId, name: st.templateName, vars: st.vars },
-    settings: { delayMin: st.delayMin, from: st.from, to: st.to, cutoff: st.cutoff, dailyLimit: st.dailyLimit },
+    template: { id: st2.templateId, name: st2.templateName, vars: st2.vars },
+    settings: { delayMin: st2.delayMin, from: st2.from, to: st2.to, cutoff: st2.cutoff, dailyLimit: st2.dailyLimit },
     map,
     mapProblem: mapProblem(a),
-    webhook: { on: st.hookOn, url: hostShown(), secretInEnv: !!env6("WAZZUP_HOOK_SECRET") },
+    webhook: { on: st2.hookOn, url: hostShown(), secretInEnv: !!env7("WAZZUP_HOOK_SECRET") },
     counters: {
       candidates: realSends.length + waitingTotal,
       waiting: waitingTotal,
@@ -9422,10 +9996,10 @@ function dzPanel(nowArg) {
       declined: todayRows.filter((r) => r.ev === "decline").length,
       failed: todayRows.filter((r) => r.ev === "send_fail" && r.final === true).length
     },
-    limit: { used: sends24(a, now), max: st.dailyLimit },
+    limit: { used: sends24(a, now), max: st2.dailyLimit },
     days,
     recent,
-    lastTick: a.lastTickAt ? agoText2(now - a.lastTickAt) : "",
+    lastTick: a.lastTickAt ? agoText3(now - a.lastTickAt) : "",
     halted: now < a.haltUntil
   };
 }
@@ -9478,11 +10052,11 @@ async function dzCommand(cmd, args) {
 }
 
 // form-api/wa-groups.ts
-var env7 = (k) => (process.env[k] || "").trim();
-var waEnabled = () => env7("WA_GROUPS").toLowerCase() === "on";
-var adminNumbers = () => env7("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
-var MIN3 = 6e4;
-var HOUR3 = 36e5;
+var env8 = (k) => (process.env[k] || "").trim();
+var waEnabled = () => env8("WA_GROUPS").toLowerCase() === "on";
+var adminNumbers = () => env8("WA_ADMIN_NUMBERS").split(",").map((s) => s.replace(/\D/g, "")).filter((s) => s.length >= 10);
+var MIN4 = 6e4;
+var HOUR4 = 36e5;
 var TICK_MS2 = 3e4;
 var JOINS_TICK_MS = 5e3;
 var LOCK_STALE_MS2 = 3 * TICK_MS2;
@@ -9598,26 +10172,26 @@ var defaultDeps2 = {
 };
 var rt = null;
 var initError = "";
-var fJournal = (r) => (0, import_node_path10.join)(r.dir, "wa-journal.jsonl");
-var fJoins = (r) => (0, import_node_path10.join)(r.dir, "wa-joins.jsonl");
-var fState = (r) => (0, import_node_path10.join)(r.dir, "wa-state.json");
-var fLock = (r) => (0, import_node_path10.join)(r.dir, "wa.lock");
-var iso = (ms) => new Date(ms).toISOString();
+var fJournal2 = (r) => (0, import_node_path11.join)(r.dir, "wa-journal.jsonl");
+var fJoins = (r) => (0, import_node_path11.join)(r.dir, "wa-joins.jsonl");
+var fState = (r) => (0, import_node_path11.join)(r.dir, "wa-state.json");
+var fLock = (r) => (0, import_node_path11.join)(r.dir, "wa.lock");
+var iso2 = (ms) => new Date(ms).toISOString();
 var need = () => {
   if (!rt) throw new Error("wa-groups \u043D\u0435 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D");
   return rt;
 };
-function append2(file, row) {
+function append3(file, row) {
   try {
-    (0, import_node_fs10.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
+    (0, import_node_fs11.appendFileSync)(file, JSON.stringify(row) + "\n", "utf8");
   } catch (e) {
     console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0434\u043E\u043F\u0438\u0441\u0430\u0442\u044C %s:", file, e.message);
   }
 }
 function readJsonl2(file) {
-  if (!(0, import_node_fs10.existsSync)(file)) return [];
+  if (!(0, import_node_fs11.existsSync)(file)) return [];
   const out = [];
-  for (const line of (0, import_node_fs10.readFileSync)(file, "utf8").split("\n")) {
+  for (const line of (0, import_node_fs11.readFileSync)(file, "utf8").split("\n")) {
     const s = line.trim();
     if (!s) continue;
     try {
@@ -9630,39 +10204,39 @@ function readJsonl2(file) {
 function save(r) {
   try {
     const tmp = `${fState(r)}.tmp.${process.pid}`;
-    (0, import_node_fs10.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
-    (0, import_node_fs10.renameSync)(tmp, fState(r));
+    (0, import_node_fs11.writeFileSync)(tmp, JSON.stringify(r.state, null, 2) + "\n", "utf8");
+    (0, import_node_fs11.renameSync)(tmp, fState(r));
   } catch (e) {
     console.error("[wa] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C wa-state.json:", e.message);
   }
 }
 function loadState(r) {
-  const st = freshState();
+  const st2 = freshState();
   try {
-    if (!(0, import_node_fs10.existsSync)(fState(r))) return st;
-    const raw = JSON.parse((0, import_node_fs10.readFileSync)(fState(r), "utf8"));
+    if (!(0, import_node_fs11.existsSync)(fState(r))) return st2;
+    const raw = JSON.parse((0, import_node_fs11.readFileSync)(fState(r), "utf8"));
     const num = (x) => typeof x === "number" && Number.isFinite(x) ? x : 0;
     const str = (x) => typeof x === "string" ? x : "";
-    st.targets = Array.isArray(raw.targets) ? raw.targets.filter((t) => t && typeof t.id === "string" && typeof t.jid === "string").map((t) => ({ ...t, done: t.done || {}, tries: t.tries || {} })) : [];
-    st.paused = raw.paused === true;
-    st.pausedAt = num(raw.pausedAt);
-    st.pausedReason = str(raw.pausedReason);
-    st.failStreak = num(raw.failStreak);
-    st.retryAt = num(raw.retryAt);
-    st.creations = Array.isArray(raw.creations) ? raw.creations.filter((x) => typeof x === "number") : [];
-    st.pendingCreate = raw.pendingCreate && typeof raw.pendingCreate.day === "string" ? raw.pendingCreate : null;
-    st.lastConnAlertAt = num(raw.lastConnAlertAt);
-    st.lastQrAt = num(raw.lastQrAt);
-    st.capAlertDay = str(raw.capAlertDay);
-    st.ownerJid = str(raw.ownerJid);
-    st.ownerAt = num(raw.ownerAt);
-    st.connSince = num(raw.connSince);
-    st.mode = raw.mode === "event" ? "event" : "daily";
-    st.daily = { enabled: raw.daily?.enabled === true };
+    st2.targets = Array.isArray(raw.targets) ? raw.targets.filter((t) => t && typeof t.id === "string" && typeof t.jid === "string").map((t) => ({ ...t, done: t.done || {}, tries: t.tries || {} })) : [];
+    st2.paused = raw.paused === true;
+    st2.pausedAt = num(raw.pausedAt);
+    st2.pausedReason = str(raw.pausedReason);
+    st2.failStreak = num(raw.failStreak);
+    st2.retryAt = num(raw.retryAt);
+    st2.creations = Array.isArray(raw.creations) ? raw.creations.filter((x) => typeof x === "number") : [];
+    st2.pendingCreate = raw.pendingCreate && typeof raw.pendingCreate.day === "string" ? raw.pendingCreate : null;
+    st2.lastConnAlertAt = num(raw.lastConnAlertAt);
+    st2.lastQrAt = num(raw.lastQrAt);
+    st2.capAlertDay = str(raw.capAlertDay);
+    st2.ownerJid = str(raw.ownerJid);
+    st2.ownerAt = num(raw.ownerAt);
+    st2.connSince = num(raw.connSince);
+    st2.mode = raw.mode === "event" ? "event" : "daily";
+    st2.daily = { enabled: raw.daily?.enabled === true };
     const ev = raw.event;
     if (ev && typeof ev === "object") {
       const day = (x) => isDayKey(x) ? x : "";
-      st.event = {
+      st2.event = {
         date: day(ev.date),
         start: typeof ev.start === "string" && /^\d{1,2}:\d{2}$/.test(ev.start) ? ev.start : "",
         recruitFrom: day(ev.recruitFrom),
@@ -9670,25 +10244,25 @@ function loadState(r) {
         ...ev.done === true ? { done: true, doneAt: num(ev.doneAt) } : {}
       };
     }
-    if (st.mode === "event") st.daily.enabled = false;
+    if (st2.mode === "event") st2.daily.enabled = false;
     const as = raw.assistant;
-    if (as && typeof as === "object") st.assistant = { enabled: as.enabled === true, hookOn: as.hookOn === true, secret: typeof as.secret === "string" ? as.secret : "" };
-    st.dozhim = normalizeDz(raw.dozhim);
+    if (as && typeof as === "object") st2.assistant = { enabled: as.enabled === true, hookOn: as.hookOn === true, secret: typeof as.secret === "string" ? as.secret : "" };
+    st2.dozhim = normalizeDz(raw.dozhim);
   } catch {
     console.warn("[wa] wa-state.json \u043D\u0435\u0447\u0438\u0442\u0430\u0435\u043C, \u043D\u0430\u0447\u0438\u043D\u0430\u044E \u0441 \u043F\u0443\u0441\u0442\u043E\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F");
   }
-  return st;
+  return st2;
 }
 function seriesPath2(explicit) {
-  return explicit || env7("WA_SERIES_FILE") || (0, import_node_path10.join)(__dirname, "wa-series.json");
+  return explicit || env8("WA_SERIES_FILE") || (0, import_node_path11.join)(__dirname, "wa-series.json");
 }
 function initWaGroups(opts = {}) {
-  const cfg = validateWaSeries(JSON.parse((0, import_node_fs10.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
-  const kindEnv = env7("WA_TARGET").toLowerCase();
+  const cfg = validateWaSeries(JSON.parse((0, import_node_fs11.readFileSync)(seriesPath2(opts.seriesFile), "utf8")));
+  const kindEnv = env8("WA_TARGET").toLowerCase();
   if (kindEnv === "group" || kindEnv === "community") cfg.target = kindEnv;
   if (opts.kind) cfg.target = opts.kind;
-  const dir = opts.dir || env7("DATA_DIR") || (0, import_node_path10.join)(__dirname, "data");
-  (0, import_node_fs10.mkdirSync)(dir, { recursive: true });
+  const dir = opts.dir || env8("DATA_DIR") || (0, import_node_path11.join)(__dirname, "data");
+  (0, import_node_fs11.mkdirSync)(dir, { recursive: true });
   const r = {
     cfg,
     state: freshState(),
@@ -9729,7 +10303,7 @@ function initWaGroups(opts = {}) {
   };
   r.state = loadState(r);
   if (!r.state.event.start) r.state.event.start = cfg.streamStart;
-  for (const row of readJsonl2(fJournal(r))) {
+  for (const row of readJsonl2(fJournal2(r))) {
     restoreQueueRow(r, row);
     if (row?.ev !== "send" || !row.msg || !row.day || !row.target) continue;
     const key = sentKey(row.msg, row.part || "main", row.day, row.target);
@@ -9770,7 +10344,7 @@ function aiHostOf(r) {
     rand: () => r.deps.rand(),
     alarm: (text2) => alarm(r, text2),
     notify: (text2) => r.deps.notify(text2),
-    journal: (row) => journal(r, row),
+    journal: (row) => journal2(r, row),
     exclusive: (fn) => exclusive(r, fn),
     canSend: () => r.state.paused ? { ok: false, why: "\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435" } : r.conn.state !== "open" ? { ok: false, why: `\u043D\u043E\u043C\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state})` } : r.lockedOutLogged ? { ok: false, why: "\u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441" } : { ok: true },
     state: () => r.state.assistant,
@@ -9794,7 +10368,7 @@ function dzHostOf(r) {
     sleep: (ms) => r.deps.sleep(ms),
     alarm: (text2) => alarm(r, text2),
     notify: (text2) => r.deps.notify(text2),
-    journal: (row) => journal(r, row),
+    journal: (row) => journal2(r, row),
     exclusive: (fn) => exclusive(r, fn),
     state: () => r.state.dozhim,
     patch: (p) => {
@@ -9919,7 +10493,7 @@ function tcfg(r) {
   }
 }
 var closeAtOf = (r, day) => atTime(addDays(day, 1), r.cfg.closeAt);
-var sendUntilOf = (r, day, m) => closeAtOf(r, day) + (m.dayOffset ?? 0) * 24 * HOUR3;
+var sendUntilOf = (r, day, m) => closeAtOf(r, day) + (m.dayOffset ?? 0) * 24 * HOUR4;
 function createAtOf(r, day) {
   const c = tcfg(r);
   let p = addDays(day, -1);
@@ -9948,7 +10522,7 @@ var OFFER_ID = "offer";
 function shiftedPlan(r, t, m) {
   const base = atTime(addDays(t.day, m.dayOffset ?? 0), m.at);
   const d = startShift(r, t.start);
-  return d && !m.dayOffset && followsStart(r, m) ? base + d * MIN3 : base;
+  return d && !m.dayOffset && followsStart(r, m) ? base + d * MIN4 : base;
 }
 function planOf(r, t, m) {
   const own = shiftedPlan(r, t, m);
@@ -10028,11 +10602,11 @@ function exclusive(r, fn) {
   r.chain = next.then(() => void 0, () => void 0);
   return next;
 }
-function journal(r, row) {
-  append2(fJournal(r), { ts: iso(r.deps.now()), ...row });
+function journal2(r, row) {
+  append3(fJournal2(r), { ts: iso2(r.deps.now()), ...row });
 }
 async function alarm(r, text2) {
-  journal(r, { ev: "alarm", text: text2 });
+  journal2(r, { ev: "alarm", text: text2 });
   console.warn("[wa] \u0442\u0440\u0435\u0432\u043E\u0433\u0430: %s", text2);
   try {
     await r.deps.notify(text2);
@@ -10044,19 +10618,19 @@ function pauseModule(r, now, reason, text2) {
   r.state.pausedAt = now;
   r.state.pausedReason = reason.slice(0, 200);
   save(r);
-  journal(r, { ev: "pause", reason: r.state.pausedReason });
+  journal2(r, { ev: "pause", reason: r.state.pausedReason });
   return alarm(r, text2);
 }
-function setConn(r, st, now) {
+function setConn(r, st2, now) {
   const prev = r.conn.state;
-  r.conn = { state: st, at: now };
-  if (st === "open") {
+  r.conn = { state: st2, at: now };
+  if (st2 === "open") {
     r.pairCache = null;
     if (!r.state.connSince || prev === "close" || prev === "connecting" || prev === "absent") {
       r.state.connSince = now;
       save(r);
     }
-  } else if (st !== "unreachable" && r.state.connSince) {
+  } else if (st2 !== "unreachable" && r.state.connSince) {
     r.state.connSince = 0;
     save(r);
   }
@@ -10072,7 +10646,7 @@ async function noteFail(r, what, err) {
   const now = r.deps.now();
   r.state.failStreak++;
   console.warn("[wa] \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s: %s", r.state.failStreak, what, err);
-  journal(r, { ev: "fail", n: r.state.failStreak, what, err });
+  journal2(r, { ev: "fail", n: r.state.failStreak, what, err });
   if (r.state.failStreak >= r.cfg.retry.pauseAfter) {
     await pauseModule(r, now, `${what}: ${err}`, `WhatsApp-\u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435: ${r.state.failStreak} \u043E\u0448\u0438\u0431\u043A\u0438 \u043F\u043E\u0434\u0440\u044F\u0434. \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${what}: ${err}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C /wa, \u043F\u043E\u0442\u043E\u043C /wa_resume.`);
     return;
@@ -10093,8 +10667,8 @@ function pidAlive2(pid) {
 function holdLock2(r) {
   const f = fLock(r);
   try {
-    if ((0, import_node_fs10.existsSync)(f)) {
-      const cur = JSON.parse((0, import_node_fs10.readFileSync)(f, "utf8"));
+    if ((0, import_node_fs11.existsSync)(f)) {
+      const cur = JSON.parse((0, import_node_fs11.readFileSync)(f, "utf8"));
       if (cur.pid && cur.pid !== process.pid && Date.now() - (cur.ts || 0) < LOCK_STALE_MS2 && pidAlive2(cur.pid)) {
         if (!r.lockedOutLogged) console.warn("[wa] \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u0434\u0440\u0443\u0433\u043E\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 (pid %d), \u044D\u0442\u043E\u0442 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442", cur.pid);
         r.lockedOutLogged = true;
@@ -10102,7 +10676,7 @@ function holdLock2(r) {
       }
     }
     r.lockedOutLogged = false;
-    (0, import_node_fs10.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
+    (0, import_node_fs11.writeFileSync)(f, JSON.stringify({ pid: process.pid, ts: Date.now() }), "utf8");
     return true;
   } catch (e) {
     console.error("[wa] \u0437\u0430\u043C\u043E\u043A \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:", e.message);
@@ -10112,20 +10686,20 @@ function holdLock2(r) {
 function releaseLock2(r) {
   try {
     const f = fLock(r);
-    if ((0, import_node_fs10.existsSync)(f) && JSON.parse((0, import_node_fs10.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs10.unlinkSync)(f);
+    if ((0, import_node_fs11.existsSync)(f) && JSON.parse((0, import_node_fs11.readFileSync)(f, "utf8")).pid === process.pid) (0, import_node_fs11.unlinkSync)(f);
   } catch {
   }
 }
 async function checkConnection(r, now) {
   const c = await connectionState();
-  const st = c.ok ? c.data.state : "unreachable";
+  const st2 = c.ok ? c.data.state : "unreachable";
   const prev = r.conn.state;
-  setConn(r, st, now);
-  if (st !== prev && (prev !== "unknown" || st !== "open")) journal(r, { ev: "conn", state: st, prev });
-  if (st === "open") r.downSince = 0;
+  setConn(r, st2, now);
+  if (st2 !== prev && (prev !== "unknown" || st2 !== "open")) journal2(r, { ev: "conn", state: st2, prev });
+  if (st2 === "open") r.downSince = 0;
   else if (!r.downSince) r.downSince = now;
-  if (st === "open") {
-    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR3) {
+  if (st2 === "open") {
+    if (!r.state.ownerJid || now - r.state.ownerAt > HOUR4) {
       const i = await fetchInstance();
       if (i.ok && i.data.ownerJid) {
         r.state.ownerJid = i.data.ownerJid;
@@ -10136,20 +10710,20 @@ async function checkConnection(r, now) {
     }
     return true;
   }
-  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN3) {
+  if (daytime(now) && now - r.state.lastConnAlertAt >= r.cfg.alarms.connectionEveryMinutes * MIN4) {
     r.state.lastConnAlertAt = now;
     save(r);
-    const since = r.downSince && now - r.downSince >= 30 * MIN3 ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
-    await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st}).${since} \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
+    const since = r.downSince && now - r.downSince >= 30 * MIN4 ? ` \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442 \u0441 ${when(r.downSince)}.` : "";
+    await alarm(r, `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: ${st2}).${since} \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.`);
   }
   return false;
 }
-var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR3).length;
+var dayCreations = (r, now) => r.state.creations.filter((t) => now - t < 24 * HOUR4).length;
 var capReached = (r, now) => dayCreations(r, now) >= r.cfg.maxNewPerDay;
 function noteCreation(r, now) {
-  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR3), now];
+  r.state.creations = [...r.state.creations.filter((t) => now - t < 48 * HOUR4), now];
 }
-var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR3;
+var createWindowOpen = (r, at, now) => now >= at && daytimeMs(at, now) < r.cfg.createCatchupHours * HOUR4;
 function dueCreateDays(r, now) {
   const out = [];
   if (!daytime(now)) return out;
@@ -10182,7 +10756,7 @@ function finishEventIfOver(r, now) {
   r.state.mode = "daily";
   r.state.daily.enabled = false;
   save(r);
-  journal(r, { ev: "event_done", date: ev.date, target: ev.communityId || "" });
+  journal2(r, { ev: "event_done", date: ev.date, target: ev.communityId || "" });
   console.log("[wa] \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440 %s \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D, \u0440\u0435\u0436\u0438\u043C \u0432\u0435\u0440\u043D\u0443\u043B\u0441\u044F \u043D\u0430 \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 (\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E)", ev.date);
   return true;
 }
@@ -10246,7 +10820,7 @@ async function createTarget(r, day, seq, now, opts = {}) {
   r.state.pendingCreate = null;
   noteCreation(r, now);
   save(r);
-  journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name, ...t.source ? { source: t.source } : {} });
+  journal2(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name, ...t.source ? { source: t.source } : {} });
   console.log("[wa] \u0441\u043E\u0437\u0434\u0430\u043D\u043E %s %s (%s)", kind === "community" ? "\u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E" : "\u0433\u0440\u0443\u043F\u043F\u0430", t.id, name);
   noteOk(r);
   return { ok: true, target: t };
@@ -10260,8 +10834,8 @@ async function setupSteps(r, t) {
     const now = r.deps.now();
     if (r.state.paused || now < r.state.retryAt) return false;
     if (now >= closeAtOf(r, t.day)) return true;
-    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN3)) continue;
-    if (s === "lock" && ((t.tries.lock || 0) >= 3 || now - (t.lockAt || 0) < 5 * MIN3)) continue;
+    if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN4)) continue;
+    if (s === "lock" && ((t.tries.lock || 0) >= 3 || now - (t.lockAt || 0) < 5 * MIN4)) continue;
     if (s === "welcome" && ((t.tries.welcome || 0) >= 3 || !isReady(t) || !daytime(now))) continue;
     if (!first) await pause(r, r.cfg.pacing.betweenStepsMs);
     first = false;
@@ -10296,13 +10870,13 @@ async function setupSteps(r, t) {
         err = x.error;
       }
     } else if (s === "welcome") {
-      const x = await sendPart(r, t, "welcome", "main", () => sendText2(t.sendJid, welcomeText(r, t, now)), false);
+      const x = await sendPart(r, t, "welcome", "main", () => sendText(t.sendJid, welcomeText(r, t, now)), false);
       err = x.ok ? "" : x.error;
     }
     if (!err) {
       t.done[s] = true;
       save(r);
-      journal(r, { ev: "step", target: t.id, step: s });
+      journal2(r, { ev: "step", target: t.id, step: s });
       if (s !== "avatar" && s !== "lock") noteOk(r);
       continue;
     }
@@ -10339,7 +10913,7 @@ async function sendPart(r, t, msgId, part, run, manual, extra = {}) {
   const x = await run();
   const unknown = !x.ok && unclearSend(x);
   if ((x.ok || unknown) && part === "main" && msgId !== "welcome") r.lastSeries.set(t.id, r.deps.now());
-  journal(r, {
+  journal2(r, {
     ev: "send",
     msg: msgId,
     part,
@@ -10381,22 +10955,22 @@ async function sendMessageTo(r, t, base, manual) {
       const p = m.poll;
       res = await sendPart(r, t, m.id, part, () => sendPoll(t.sendJid, { name: p.name, values: p.options, selectableCount: p.selectableCount ?? 1 }), manual);
     } else if (part === "text") {
-      res = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual);
+      res = await sendPart(r, t, m.id, part, () => sendText(t.sendJid, m.text), manual);
     } else if (m.media) {
       const media = m.media;
       const caption = m.text.length <= r.cfg.captionLimit ? m.text : void 0;
-      res = await sendPart(r, t, m.id, part, () => sendMedia2(t.sendJid, { mediatype: media.type, url: media.url, caption }), manual);
+      res = await sendPart(r, t, m.id, part, () => sendMedia(t.sendJid, { mediatype: media.type, url: media.url, caption }), manual);
       if (!res.ok && !res.unknown) {
         console.warn("[wa] \u043C\u0435\u0434\u0438\u0430 %s \u043D\u0435 \u0443\u0448\u043B\u043E (%s), \u0448\u043B\u044E \u0442\u0435\u043A\u0441\u0442\u043E\u043C", media.url, res.error);
         if (!r.mediaWarned.has(media.url)) {
           r.mediaWarned.add(media.url);
           void alarm(r, `\u041D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0430\u0441\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0438\u043B\u0438 \u0432\u0438\u0434\u0435\u043E ${media.url}: ${res.error}. \u0428\u043B\u044E \u0442\u043E\u0442 \u0436\u0435 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043D\u0435\u0451. \u041F\u0440\u043E\u0432\u0435\u0440\u044C, \u0447\u0442\u043E \u0444\u0430\u0439\u043B \u0432\u044B\u043B\u043E\u0436\u0435\u043D \u043D\u0430 \u0441\u0430\u0439\u0442.`);
         }
-        const fb = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual, { fallback: "text" });
+        const fb = await sendPart(r, t, m.id, part, () => sendText(t.sendJid, m.text), manual, { fallback: "text" });
         if (fb.ok || fb.unknown) res = fb;
       }
     } else {
-      res = await sendPart(r, t, m.id, part, () => sendText2(t.sendJid, m.text), manual);
+      res = await sendPart(r, t, m.id, part, () => sendText(t.sendJid, m.text), manual);
     }
     if (!res.ok) {
       await noteFail(r, `\u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \xAB${m.id}\xBB \u0432 ${t.id}`, res.error);
@@ -10410,19 +10984,19 @@ function noteNightSkip(r, t, msg, plan) {
   const key = `${msg.id}|${t.day}|${t.id}`;
   if (r.nightSkipped.has(key)) return;
   r.nightSkipped.add(key);
-  journal(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
+  journal2(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
   console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F %s \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 09:00 \u0434\u043E 23:45", msg.id, t.id, hhmmOf(plan));
 }
 var LIVE_LINK_IDS = /* @__PURE__ */ new Set(["t-minus-10", "live-now", "live-10", "last-link", "replay-link"]);
 var MAX_LATE_MIN = 45;
 var DEFAULT_MIN_GAP_MIN = 4;
-var minGapMs = (r) => (r.cfg.pacing.minGapMinutes ?? DEFAULT_MIN_GAP_MIN) * MIN3;
+var minGapMs = (r) => (r.cfg.pacing.minGapMinutes ?? DEFAULT_MIN_GAP_MIN) * MIN4;
 var qkey = (m, t) => `${m.id}|${t.day}|${t.id}`;
 function planQueue(r, now) {
   const q2 = { go: [], wait: [], lag: [], live: [], night: [], lost: [], queued: [] };
   const gap = minGapMs(r);
-  const grace = r.cfg.graceMinutes * MIN3;
-  const maxLate = MAX_LATE_MIN * MIN3;
+  const grace = r.cfg.graceMinutes * MIN4;
+  const maxLate = MAX_LATE_MIN * MIN4;
   for (const t of r.state.targets) {
     if (!isReady(t)) continue;
     const items = [];
@@ -10507,19 +11081,19 @@ async function applyQueue(r, q2) {
   for (const d of q2.lost) r.qmark.set(d.key, "lost");
   for (const d of q2.live) {
     r.skipLog.add(`live|${d.key}`);
-    journal(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "live", plan: hhmmOf(d.plan), by: d.by });
+    journal2(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "live", plan: hhmmOf(d.plan), by: d.by });
     console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u044D\u0444\u0438\u0440\u043D\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430 \xAB%s\xBB", d.msg.id, d.t.id, d.by);
   }
   for (const d of q2.queued) {
     if (r.qmark.get(d.key) === "queued") continue;
     r.qmark.set(d.key, "queued");
-    journal(r, { ev: "queued", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: d.reason, plan: hhmmOf(d.plan), at: hhmmOf(d.at), lateMin: Math.round(d.late / MIN3) });
+    journal2(r, { ev: "queued", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: d.reason, plan: hhmmOf(d.plan), at: hhmmOf(d.at), lateMin: Math.round(d.late / MIN4) });
   }
   if (!q2.lag.length) return;
   const byTarget = /* @__PURE__ */ new Map();
   for (const d of q2.lag) {
     r.skipLog.add(`lag|${d.key}`);
-    journal(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "lag", plan: hhmmOf(d.plan), lateMin: Math.round(d.late / MIN3), ...d.predicted ? { predicted: true } : {} });
+    journal2(r, { ev: "skip", msg: d.msg.id, day: d.t.day, target: d.t.id, reason: "lag", plan: hhmmOf(d.plan), lateMin: Math.round(d.late / MIN4), ...d.predicted ? { predicted: true } : {} });
     const g = byTarget.get(d.t.id) ?? { name: d.t.name, ids: [] };
     g.ids.push(d.msg.id);
     byTarget.set(d.t.id, g);
@@ -10566,7 +11140,7 @@ function extractMembers(info, announcementJid) {
   return found.length ? Math.max(...found) : void 0;
 }
 async function refreshMembers(r, t, now) {
-  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN3) return false;
+  if (t.membersAt && now - t.membersAt < r.cfg.memberCheckMinutes * MIN4) return false;
   const x = t.kind === "community" ? await communityInfo(t.jid) : await groupInfo(t.jid);
   t.membersAt = now;
   if (x.ok) {
@@ -10678,7 +11252,7 @@ function normalizeRequests(data) {
   }
   return out;
 }
-var phoneOf = (raw) => {
+var phoneOf2 = (raw) => {
   for (const k of ["phone_number", "phoneNumber", "phone", "pn", "pn_jid"]) {
     const v = raw[k];
     if (typeof v === "string" && /\d{7,}/.test(v)) return v.replace(/@.*/, "").replace(/\D/g, "");
@@ -10707,7 +11281,7 @@ function noteJoinedDay(r, target, day) {
 function nextJoinDelay(r, serving, now) {
   const jp = r.cfg.joinPolling;
   if (!serving) return between(r, jp.otherSec) * 1e3;
-  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN3;
+  const hot = !jp.idleSec || jp.hotMinutes === void 0 || now - Math.max(r.lastServedAt, r.lastRequestsAt) < jp.hotMinutes * MIN4;
   return between(r, hot ? jp.servingSec : jp.idleSec) * 1e3;
 }
 async function pollJoins(r, t, now) {
@@ -10722,7 +11296,7 @@ async function pollJoins(r, t, now) {
     const k = `${t.jid}|${q2.jid}`;
     if (r.seenReq.has(k)) continue;
     r.seenReq.add(k);
-    append2(fJoins(r), { ts: iso(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q2.jid, phone: phoneOf(q2.raw), raw: q2.raw });
+    append3(fJoins(r), { ts: iso2(now), ev: "request", community: t.jid, target: t.id, day: t.day, jid: q2.jid, phone: phoneOf2(q2.raw), raw: q2.raw });
   }
   const waiting = reqs.map((q2) => q2.jid).filter((jid) => !r.approved.has(`${t.jid}|${jid}`) && (r.approveFails.get(`${t.jid}|${jid}`) || 0) < 3);
   if (!waiting.length) {
@@ -10741,7 +11315,7 @@ async function pollJoins(r, t, now) {
     if (d.status >= 400 && d.status < 500 && ![401, 403, 408, 429].includes(d.status)) {
       for (const jid of todo) r.approveFails.set(`${t.jid}|${jid}`, (r.approveFails.get(`${t.jid}|${jid}`) || 0) + 1);
     }
-    append2(fJoins(r), { ts: iso(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
+    append3(fJoins(r), { ts: iso2(r.deps.now()), ev: "approve_error", community: t.jid, target: t.id, count: todo.length, err: d.error });
     await softJoinFail(r, now, `\u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A ${t.id}: ${d.error}`);
     return 0;
   }
@@ -10750,7 +11324,7 @@ async function pollJoins(r, t, now) {
   let full = false;
   for (const x of normalizeDecisions(d.data, todo)) {
     const k = `${t.jid}|${x.jid}`;
-    append2(fJoins(r), { ts: iso(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
+    append3(fJoins(r), { ts: iso2(r.deps.now()), ev: "approve", community: t.jid, target: t.id, day: t.day, jid: x.jid, ok: x.ok, status: x.status });
     if (x.ok) {
       r.approved.add(k);
       r.joinedCount.set(t.id, (r.joinedCount.get(t.id) || 0) + 1);
@@ -10776,7 +11350,7 @@ var LIMIT_REFUSAL = /^419$|full|limit/i;
 async function softJoinFail(r, now, what) {
   r.joinFailStreak++;
   console.warn("[wa] \u0437\u0430\u044F\u0432\u043A\u0438, \u043E\u0448\u0438\u0431\u043A\u0430 %d \u043F\u043E\u0434\u0440\u044F\u0434: %s", r.joinFailStreak, what);
-  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR3) {
+  if (r.joinFailStreak >= 5 && now - r.joinAlertAt >= HOUR4) {
     r.joinAlertAt = now;
     await alarm(r, `WhatsApp: \u0437\u0430\u044F\u0432\u043A\u0438 \u043D\u0430 \u0432\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u043D\u0435 \u043E\u0434\u043E\u0431\u0440\u044F\u044E\u0442\u0441\u044F (${r.joinFailStreak} \u043E\u0448\u0438\u0431\u043E\u043A \u043F\u043E\u0434\u0440\u044F\u0434). \u041F\u043E\u0441\u043B\u0435\u0434\u043D\u044F\u044F: ${what}. \u041B\u044E\u0434\u0438 \u0436\u0434\u0443\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F.`);
   }
@@ -10793,7 +11367,7 @@ async function joinsTick() {
       let n = 0;
       for (const t of r.state.targets) {
         if (t.kind !== "community" || !isReady(t)) continue;
-        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN3) continue;
+        if (now >= closeAtOf(r, t.day) + r.cfg.joinPolling.keepAfterCloseMin * MIN4) continue;
         if (now < (r.joinNextAt.get(t.id) || 0)) continue;
         n += await pollJoins(r, t, now);
         r.joinNextAt.set(t.id, r.deps.now() + nextJoinDelay(r, serving?.id === t.id, r.deps.now()));
@@ -10807,12 +11381,12 @@ async function joinsTick() {
     r.joining = false;
   }
 }
-var agoText3 = (ms) => {
+var agoText4 = (ms) => {
   const s = Math.max(0, Math.round(ms / 1e3));
   return s < 90 ? `${s} \u0441 \u043D\u0430\u0437\u0430\u0434` : s < 5400 ? `${Math.round(s / 60)} \u043C\u0438\u043D \u043D\u0430\u0437\u0430\u0434` : `${Math.round(s / 3600)} \u0447 \u043D\u0430\u0437\u0430\u0434`;
 };
 var inText = (ms) => {
-  const m = Math.max(0, Math.round(ms / MIN3));
+  const m = Math.max(0, Math.round(ms / MIN4));
   if (m < 90) return `\u0447\u0435\u0440\u0435\u0437 ${m} \u043C\u0438\u043D`;
   if (m >= 2880) return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 1440)} \u0434\u043D. ${Math.floor(m % 1440 / 60)} \u0447`;
   return `\u0447\u0435\u0440\u0435\u0437 ${Math.floor(m / 60)} \u0447 ${m % 60} \u043C\u0438\u043D`;
@@ -10859,7 +11433,7 @@ function targetLine(r, label, day, now) {
   const at = createAtOf(r, day);
   if (!ts.length) return r.state.daily.enabled ? `${label} ${ddmm4(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0441\u043E\u0437\u0434\u0430\u043C \u0432 ${hhmmOf(at)} ${ddmm4(dayKeyOf(at))}` : `${label} ${ddmm4(day)}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0442, \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E`;
   return ts.map((t) => {
-    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText3(now - (t.membersAt || now))})`;
+    const mem = t.members === void 0 ? "\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u043B\u0438" : `\u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 ${t.members} (${agoText4(now - (t.membersAt || now))})`;
     const joined = t.kind === "community" ? `, \u0432\u0441\u0442\u0443\u043F\u0438\u043B\u0438 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0430\u043C ${r.joinedCount.get(t.id) || 0}` : "";
     return `${label} ${ddmm4(day)}: \xAB${t.name}\xBB, ${isReady(t) ? "\u0433\u043E\u0442\u043E\u0432\u043E" : "\u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F"}, ${mem}${joined}`;
   }).join("\n");
@@ -10911,8 +11485,8 @@ function nextStreamAfter(r, day) {
   return d;
 }
 async function cmdQr(r, now) {
-  const wait = r.state.lastQrAt + MIN3 - now;
-  if (wait > 0) return { text: `QR \u043C\u043E\u0436\u043D\u043E \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C \u0440\u0430\u0437 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u0435\u0449\u0451 ${Math.ceil(wait / 1e3)} \u0441.` };
+  const wait2 = r.state.lastQrAt + MIN4 - now;
+  if (wait2 > 0) return { text: `QR \u043C\u043E\u0436\u043D\u043E \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0442\u044C \u0440\u0430\u0437 \u0432 \u043C\u0438\u043D\u0443\u0442\u0443, \u043F\u043E\u0434\u043E\u0436\u0434\u0438 \u0435\u0449\u0451 ${Math.ceil(wait2 / 1e3)} \u0441.` };
   r.state.lastQrAt = now;
   save(r);
   return exclusive(r, async () => {
@@ -10939,7 +11513,7 @@ async function cmdQr(r, now) {
     }
     const b64 = typeof qr?.base64 === "string" ? qr.base64.replace(/^data:image\/\w+;base64,/, "") : "";
     if (!b64) return { text: "QR \u043F\u043E\u043A\u0430 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438 /wa_qr." };
-    journal(r, { ev: "qr" });
+    journal2(r, { ev: "qr" });
     return {
       text: "QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F. \u041D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 \u0441 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E\u0439 SIM: WhatsApp, \u0421\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0430, \u041F\u0440\u0438\u0432\u044F\u0437\u0430\u0442\u044C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E, \u043D\u0430\u0432\u0435\u0441\u0442\u0438 \u043A\u0430\u043C\u0435\u0440\u0443. \u0414\u0435\u0440\u0436\u0438\u0442\u0441\u044F \u043E\u043A\u043E\u043B\u043E \u043C\u0438\u043D\u0443\u0442\u044B, \u043D\u0435 \u043F\u0435\u0440\u0435\u0441\u044B\u043B\u0430\u0439 \u0435\u0433\u043E \u043D\u0438\u043A\u043E\u043C\u0443.",
       photo: { data: Buffer.from(b64, "base64"), caption: "QR \u0434\u043B\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F WhatsApp" }
@@ -10952,7 +11526,7 @@ function cmdPause(r, now, by = "bot") {
   r.state.pausedAt = now;
   r.state.pausedReason = by === "panel" ? "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, \u0438\u0437 \u043F\u0443\u043B\u044C\u0442\u0430" : "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, /wa_pause";
   save(r);
-  journal(r, { ev: "pause", reason: r.state.pausedReason });
+  journal2(r, { ev: "pause", reason: r.state.pausedReason });
   return { text: by === "panel" ? "\u041F\u0430\u0443\u0437\u0430 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B." : "\u041F\u0430\u0443\u0437\u0430 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B. \u0412\u0435\u0440\u043D\u0443\u0442\u044C: /wa_resume." };
 }
 function cmdResume(r) {
@@ -10963,7 +11537,7 @@ function cmdResume(r) {
   r.state.retryAt = 0;
   r.state.pendingCreate = null;
   save(r);
-  journal(r, { ev: "resume" });
+  journal2(r, { ev: "resume" });
   return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
 }
 var fail3 = (code, message) => ({ ok: false, code, message });
@@ -11034,12 +11608,12 @@ async function cmdNew(r, args, now) {
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
     const t = res.target;
-    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN3)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
+    return { text: `\u0421\u043E\u0437\u0434\u0430\u043D\u043E: \xAB${t.name}\xBB. ${isReady(t) ? `\u0421\u0441\u044B\u043B\u043A\u0430: ${t.link}. \u041D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u0432 ${hhmmOf(atTime(addDays(day, -1), c.streamStart) + (c.joinLiveMinutes ?? DEFAULT_JOIN_MINUTES) * MIN4)} \u043D\u0430\u043A\u0430\u043D\u0443\u043D\u0435 \u044D\u0444\u0438\u0440\u0430).` : done ? "\u0414\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F." : "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043D\u0435 \u0437\u0430\u043A\u043E\u043D\u0447\u0435\u043D\u044B, \u043C\u043E\u0434\u0443\u043B\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0445 \u0442\u0438\u043A\u0430\u0445."}` };
   });
 }
 function currentTargets(r, now, dayOffset = 0) {
   const day = r.state.mode === "event" ? r.state.event.date : addDays(dayKeyOf(now), -dayOffset);
-  const list = day ? [...targetsOf(r, day)].reverse().filter((t) => (r.state.mode === "event" ? true : t.source !== "event") && isReady(t) && now < closeAtOf(r, t.day) + dayOffset * 24 * HOUR3) : [];
+  const list = day ? [...targetsOf(r, day)].reverse().filter((t) => (r.state.mode === "event" ? true : t.source !== "event") && isReady(t) && now < closeAtOf(r, t.day) + dayOffset * 24 * HOUR4) : [];
   return { day, list };
 }
 async function sendSeries(r, id, now) {
@@ -11121,7 +11695,7 @@ function waSetMode(mode, nowArg) {
     if (r.state.event.done) r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
   }
   save(r);
-  journal(r, { ev: "mode", mode, by: "panel" });
+  journal2(r, { ev: "mode", mode, by: "panel" });
   return {
     ok: true,
     message: mode === "event" ? "\u0412\u043A\u043B\u044E\u0447\u0451\u043D \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440. \u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u044E\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C, \u043D\u043E \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0442\u0435\u043F\u0435\u0440\u044C \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430." : "\u0412\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C. \u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E, \u043F\u043E\u043A\u0430 \u043D\u0435 \u0432\u043A\u043B\u044E\u0447\u0438\u0448\u044C \u0435\u0433\u043E \u043F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u0442\u0435\u043B\u0435\u043C. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C."
@@ -11136,7 +11710,7 @@ function waSetDaily(enabled, nowArg) {
   if (r.state.daily.enabled === enabled) return { ok: true, code: "same", message: enabled ? "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E." : "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E." };
   r.state.daily.enabled = enabled;
   save(r);
-  journal(r, { ev: "daily", enabled, by: "panel" });
+  journal2(r, { ev: "daily", enabled, by: "panel" });
   const now = clock(r, nowArg);
   if (!enabled) return { ok: true, message: "\u0415\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u043E: \u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u044E\u0442\u0441\u044F. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0434\u043E \u043A\u043E\u043D\u0446\u0430." };
   const nx = nextDailyCreate(r, now);
@@ -11168,7 +11742,7 @@ function waSetEvent(p, nowArg) {
   r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
   syncEventCommunity(r);
   save(r);
-  journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
+  journal2(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
   const at = eventCreateAt(r);
   const text2 = eventTarget(r) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u0414\u043B\u044F \u044D\u0444\u0438\u0440\u0430 ${ddmm4(p.date)} \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E.` : now >= at ? daytime(now) ? `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm4(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 30 \u0441\u0435\u043A\u0443\u043D\u0434.` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm4(p.date)} \u0432 ${start}. \u041D\u0430\u0431\u043E\u0440 \u0443\u0436\u0435 \u0438\u0434\u0451\u0442, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B (\u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB).` : `\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u044D\u0444\u0438\u0440 ${ddmm4(p.date)} \u0432 ${start}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C ${when(at)}, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
   return { ok: true, message: text2 };
@@ -11178,7 +11752,7 @@ function waEventReset() {
   if (!r) return MODULE_OFF3;
   r.state.event = { ...freshEvent(), start: r.cfg.streamStart };
   save(r);
-  journal(r, { ev: "event_reset", by: "panel" });
+  journal2(r, { ev: "event_reset", by: "panel" });
   return { ok: true, message: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u044D\u0444\u0438\u0440\u0430 \u0441\u0431\u0440\u043E\u0448\u0435\u043D\u044B. \u0421\u043E\u0437\u0434\u0430\u043D\u043D\u043E\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0442\u044C, \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F." };
 }
 async function waEventCreateNow(nowArg) {
@@ -11250,17 +11824,17 @@ async function waQr(nowArg) {
     const now = clock(r, nowArg);
     const cs = await connectionState();
     if (!cs.ok) return fail3("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
-    const st = cs.data.state;
-    setConn(r, st, now);
-    if (st === "open") {
+    const st2 = cs.data.state;
+    setConn(r, st2, now);
+    if (st2 === "open") {
       r.qrCache = null;
       await refreshOwner(r, now);
       return { ok: true, state: "open", qr: null, number: numberOf(r), profile: r.profileName };
     }
-    const shown = st === "absent" ? "connecting" : st;
+    const shown = st2 === "absent" ? "connecting" : st2;
     if (r.qrCache && now - r.qrCache.at < 1e4 && r.qrCache.state === shown) return { ok: true, state: shown, qr: r.qrCache.data };
     let qr;
-    if (st === "absent") {
+    if (st2 === "absent") {
       const c = await createInstance();
       if (!c.ok) return fail3("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
       qr = c.data?.qrcode?.base64;
@@ -11273,9 +11847,9 @@ async function waQr(nowArg) {
     if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64) || b64.length > 4e5) return { ok: true, state: shown, qr: null, message: "QR \u0433\u043E\u0442\u043E\u0432\u0438\u0442\u0441\u044F, \u043E\u043D \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434." };
     const data = `data:image/png;base64,${b64}`;
     r.qrCache = { at: now, state: shown, data };
-    if (now - r.qrJournalAt > 5 * MIN3) {
+    if (now - r.qrJournalAt > 5 * MIN4) {
       r.qrJournalAt = now;
-      journal(r, { ev: "qr", by: "panel" });
+      journal2(r, { ev: "qr", by: "panel" });
     }
     return { ok: true, state: shown, qr: data };
   });
@@ -11296,7 +11870,7 @@ async function waLogout(nowArg) {
     r.qrCache = null;
     r.state.lastConnAlertAt = now;
     save(r);
-    journal(r, { ev: "logout", by: "panel" });
+    journal2(r, { ev: "logout", by: "panel" });
     return { ok: true, message: "\u041D\u043E\u043C\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B, \u043F\u043E\u043A\u0430 \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0448\u044C \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E \u043F\u043E QR." };
   });
 }
@@ -11330,7 +11904,7 @@ function disconnectMessage(raw) {
 function describeStatus(r, state, info, infoErr, now, evoErr = "") {
   const base = { state, number: "", profile: "", since: "", reasonCode: null, reason: "", at: now, checked: hhmmOf(now) };
   if (state === "unreachable") {
-    return { ...base, kind: "unreachable", tone: "bad", title: "Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442", detail: `WhatsApp-\u0441\u0435\u0440\u0432\u0438\u0441 (Evolution) \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B: ${clip(evoErr, 120)}. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u0441\u0442\u043E\u044F\u0442, \u043F\u043E\u043A\u0430 \u043E\u043D \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u0435\u0440\u0432\u0435\u0440.` };
+    return { ...base, kind: "unreachable", tone: "bad", title: "Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442", detail: `WhatsApp-\u0441\u0435\u0440\u0432\u0438\u0441 (Evolution) \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B: ${clip2(evoErr, 120)}. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u0441\u0442\u043E\u044F\u0442, \u043F\u043E\u043A\u0430 \u043E\u043D \u043D\u0435 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u0435\u0440\u0432\u0435\u0440.` };
   }
   if (state === "open") {
     const owner = info?.ownerJid || r.state.ownerJid;
@@ -11341,7 +11915,7 @@ function describeStatus(r, state, info, infoErr, now, evoErr = "") {
       title: "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D",
       detail: "\u041D\u043E\u043C\u0435\u0440 \u043D\u0430 \u0441\u0432\u044F\u0437\u0438. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u0435 \u0437\u0430\u044F\u0432\u043E\u043A \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442.",
       number: maskNumber(digitsOf2(owner)),
-      profile: clip(info?.profileName || r.profileName, 60),
+      profile: clip2(info?.profileName || r.profileName, 60),
       since: r.state.connSince ? when(r.state.connSince) : ""
     };
   }
@@ -11359,10 +11933,10 @@ function describeStatus(r, state, info, infoErr, now, evoErr = "") {
     };
   }
   if (state !== "close") {
-    return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `Evolution \u043D\u0430\u0437\u0432\u0430\u043B \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \xAB${clip(state, 30)}\xBB. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB, \u0435\u0441\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043D\u0435 \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F, \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.`, reason: "\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E" };
+    return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `Evolution \u043D\u0430\u0437\u0432\u0430\u043B \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \xAB${clip2(state, 30)}\xBB. \u041D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB, \u0435\u0441\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441 \u043D\u0435 \u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F, \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.`, reason: "\u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E" };
   }
   if (!info) {
-    return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `\u041F\u0440\u0438\u0447\u0438\u043D\u0443 \u0443\u0437\u043D\u0430\u0442\u044C \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C: ${clip(infoErr, 100) || "Evolution \u043D\u0435 \u043E\u0442\u0434\u0430\u043B \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u043D\u0441\u0442\u0430\u043D\u0441\u0430"}. \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.`, reason: "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430" };
+    return { ...base, kind: "disconnected", tone: "bad", title: "\u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D", detail: `\u041F\u0440\u0438\u0447\u0438\u043D\u0443 \u0443\u0437\u043D\u0430\u0442\u044C \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C: ${clip2(infoErr, 100) || "Evolution \u043D\u0435 \u043E\u0442\u0434\u0430\u043B \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u043D\u0441\u0442\u0430\u043D\u0441\u0430"}. \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u0437\u0430\u043D\u043E\u0432\u043E.`, reason: "\u043F\u0440\u0438\u0447\u0438\u043D\u0430 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430" };
   }
   const code = info.disconnectionReasonCode;
   const ms = info.disconnectionAt ? Date.parse(info.disconnectionAt) : NaN;
@@ -11408,22 +11982,22 @@ async function waStatus(nowArg) {
       setConn(r, "unreachable", now);
       value = describeStatus(r, "unreachable", null, "", now, cs.error);
     } else {
-      const st = cs.data.state;
-      setConn(r, st, now);
+      const st2 = cs.data.state;
+      setConn(r, st2, now);
       let info = null;
       let infoErr = "";
-      if (st !== "absent") {
+      if (st2 !== "absent") {
         const i = await fetchInstance();
         if (i.ok) info = i.data;
         else infoErr = i.error;
       }
-      if (st === "open" && info?.ownerJid) {
+      if (st2 === "open" && info?.ownerJid) {
         r.state.ownerJid = info.ownerJid;
         r.state.ownerAt = now;
         r.profileName = info.profileName;
         save(r);
       }
-      value = describeStatus(r, st, info, infoErr, now);
+      value = describeStatus(r, st2, info, infoErr, now);
     }
     r.statusCache = { at: now, value };
     return { ok: true, ...value };
@@ -11449,18 +12023,18 @@ async function waPairing(numberRaw, nowArg) {
       setConn(r, "unreachable", now);
       return fail3("evolution", `Evolution \u043D\u0435 \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442: ${cs.error}`);
     }
-    const st = cs.data.state;
-    setConn(r, st, now);
+    const st2 = cs.data.state;
+    setConn(r, st2, now);
     r.statusCache = null;
-    if (st === "open") return fail3("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
+    if (st2 === "open") return fail3("connected", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D. \u0427\u0442\u043E\u0431\u044B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0434\u0440\u0443\u0433\u043E\u0439, \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043A\u043B\u044E\u0447\u0438 \u044D\u0442\u043E\u0442.");
     const codeOf = (x) => String(x ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     let code = "";
-    if (st === "absent") {
+    if (st2 === "absent") {
       const c = await createInstance(digits);
       if (!c.ok) return fail3("evolution", `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435: ${c.error}`);
       code = codeOf(c.data?.qrcode?.pairingCode);
     } else {
-      if (st === "connecting") {
+      if (st2 === "connecting") {
         const i = await fetchInstance();
         if (i.ok && i.data.ownerJid) return fail3("reconnecting", "\u041D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D, \u0438\u0434\u0451\u0442 \u043F\u0435\u0440\u0435\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043C\u0438\u043D\u0443\u0442\u0443 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.");
         await logoutInstance();
@@ -11476,7 +12050,7 @@ async function waPairing(numberRaw, nowArg) {
     if (code.length !== 8) return fail3("no_code", "Evolution \u043D\u0435 \u0432\u044B\u0434\u0430\u043B \u043A\u043E\u0434. \u041F\u043E\u0434\u043E\u0436\u0434\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u043A\u0443\u043D\u0434 \u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u041D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434\xBB.");
     r.qrCache = null;
     r.pairCache = { at: now, digits, code };
-    journal(r, { ev: "pair", by: "panel" });
+    journal2(r, { ev: "pair", by: "panel" });
     return { ok: true, state: "connecting", pairingCode: code, number: maskNumber(digits), ttlSec: PAIR_TTL_SEC, cached: false };
   });
 }
@@ -11534,14 +12108,14 @@ async function waGroups(force = false, nowArg) {
 }
 function readJsonlTail(file, maxBytes = 256 * 1024) {
   try {
-    const size = (0, import_node_fs10.statSync)(file).size;
+    const size = (0, import_node_fs11.statSync)(file).size;
     const start = Math.max(0, size - maxBytes);
     const buf = Buffer.alloc(size - start);
-    const fd = (0, import_node_fs10.openSync)(file, "r");
+    const fd = (0, import_node_fs11.openSync)(file, "r");
     try {
-      (0, import_node_fs10.readSync)(fd, buf, 0, buf.length, start);
+      (0, import_node_fs11.readSync)(fd, buf, 0, buf.length, start);
     } finally {
-      (0, import_node_fs10.closeSync)(fd);
+      (0, import_node_fs11.closeSync)(fd);
     }
     let text2 = buf.toString("utf8");
     if (start > 0) text2 = text2.slice(text2.indexOf("\n") + 1);
@@ -11561,14 +12135,14 @@ function readJsonlTail(file, maxBytes = 256 * 1024) {
 }
 var JOURNAL_EVENTS = /* @__PURE__ */ new Set(["create", "send", "skip", "queued", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
 var stampOf = (ms) => `${ddmm4(dayKeyOf(ms))} ${hhmmOf(ms)}`;
-var clip = (s, n = 160) => {
+var clip2 = (s, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
   return t.length > n ? `${t.slice(0, n - 1)}\u2026` : t;
 };
 function journalView(r, limit = 20) {
   const nameOfTarget = (id) => r.state.targets.find((t) => t.id === id)?.name || String(id || "");
   const topicOf = (id) => id === "welcome" ? "\u043F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0435" : r.cfg.messages.find((m) => m.id === id)?.topic || String(id || "");
-  const rows = readJsonlTail(fJournal(r)).filter((x) => x && JOURNAL_EVENTS.has(x.ev));
+  const rows = readJsonlTail(fJournal2(r)).filter((x) => x && JOURNAL_EVENTS.has(x.ev));
   return rows.slice(-limit).reverse().map((x) => {
     const ts = Date.parse(String(x.ts || "")) || 0;
     let kind = "info";
@@ -11581,7 +12155,7 @@ function journalView(r, limit = 20) {
       case "send": {
         const part = x.part === "poll" ? ", \u043E\u043F\u0440\u043E\u0441" : x.part === "text" ? ", \u0442\u0435\u043A\u0441\u0442" : "";
         kind = x.ok ? "ok" : "error";
-        text2 = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : x.unknown ? `\u041D\u0435\u044F\u0441\u043D\u043E, \u0443\u0448\u043B\u043E \u043B\u0438 \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}. \u041F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip(x.err, 100)}`;
+        text2 = x.ok ? `\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}${x.manual ? " (\u0432\u0440\u0443\u0447\u043D\u0443\u044E)" : ""}` : x.unknown ? `\u041D\u0435\u044F\u0441\u043D\u043E, \u0443\u0448\u043B\u043E \u043B\u0438 \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip2(x.err, 100)}. \u041F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0432 WhatsApp` : `\u041D\u0435 \u0443\u0448\u043B\u043E \xAB${topicOf(x.msg)}\xBB${part} \u0432 ${nameOfTarget(x.target)}: ${clip2(x.err, 100)}`;
         break;
       }
       case "skip":
@@ -11597,18 +12171,18 @@ function journalView(r, limit = 20) {
         break;
       case "fail":
         kind = "error";
-        text2 = `\u041E\u0448\u0438\u0431\u043A\u0430 ${x.n} \u043F\u043E\u0434\u0440\u044F\u0434: ${clip(x.what, 80)}: ${clip(x.err, 100)}`;
+        text2 = `\u041E\u0448\u0438\u0431\u043A\u0430 ${x.n} \u043F\u043E\u0434\u0440\u044F\u0434: ${clip2(x.what, 80)}: ${clip2(x.err, 100)}`;
         break;
       case "pause":
         kind = "error";
-        text2 = `\u041F\u0430\u0443\u0437\u0430: ${clip(x.reason, 120)}`;
+        text2 = `\u041F\u0430\u0443\u0437\u0430: ${clip2(x.reason, 120)}`;
         break;
       case "resume":
         text2 = "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430";
         break;
       case "alarm":
         kind = "error";
-        text2 = `\u0422\u0440\u0435\u0432\u043E\u0433\u0430: ${clip(x.text, 140)}`;
+        text2 = `\u0422\u0440\u0435\u0432\u043E\u0433\u0430: ${clip2(x.text, 140)}`;
         break;
       case "mode":
         text2 = x.mode === "event" ? "\u0420\u0435\u0436\u0438\u043C: \u0436\u0438\u0432\u043E\u0439 \u044D\u0444\u0438\u0440" : "\u0420\u0435\u0436\u0438\u043C: \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439";
@@ -11647,10 +12221,10 @@ function journalView(r, limit = 20) {
         text2 = "\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D";
         break;
       case "ai_handoff":
-        text2 = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043B ${clip(x.who, 24)} \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443: ${clip(x.why, 100)}. \u041C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432`;
+        text2 = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043B ${clip2(x.who, 24)} \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440\u0443: ${clip2(x.why, 100)}. \u041C\u043E\u043B\u0447\u0438\u0442 \u0441 \u043D\u0438\u043C 12 \u0447\u0430\u0441\u043E\u0432`;
         break;
       case "ai_skip":
-        text2 = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B ${clip(x.who, 24)}: ${clip(x.why, 60)}`;
+        text2 = `\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043D\u0442 \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B ${clip2(x.who, 24)}: ${clip2(x.why, 60)}`;
         break;
       case "dz_on":
         kind = "ok";
@@ -11664,10 +12238,10 @@ function journalView(r, limit = 20) {
         text2 = x.on ? "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D" : "\u0412\u0435\u0431\u0445\u0443\u043A Wazzup \u0441\u043D\u044F\u0442";
         break;
       case "dz_save":
-        text2 = `\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0434\u043E\u0436\u0438\u043C\u0430 WABA \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B: \u0448\u0430\u0431\u043B\u043E\u043D \xAB${clip(x.template, 60)}\xBB`;
+        text2 = `\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0434\u043E\u0436\u0438\u043C\u0430 WABA \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u044B: \u0448\u0430\u0431\u043B\u043E\u043D \xAB${clip2(x.template, 60)}\xBB`;
         break;
       case "dz_tpl":
-        text2 = `\u0428\u0430\u0431\u043B\u043E\u043D WABA \xAB${clip(x.name, 60)}\xBB: \u0441\u0442\u0430\u0442\u0443\u0441 ${clip(x.status, 30) || "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D"}`;
+        text2 = `\u0428\u0430\u0431\u043B\u043E\u043D WABA \xAB${clip2(x.name, 60)}\xBB: \u0441\u0442\u0430\u0442\u0443\u0441 ${clip2(x.status, 30) || "\u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D"}`;
         break;
     }
     return { ts, t: ts ? stampOf(ts) : "", kind, text: text2 };
@@ -11697,7 +12271,7 @@ function cardOf(r, t, now, serving) {
     link: isReady(t) ? t.link : "",
     onSite: serving?.id === t.id,
     members: t.members ?? null,
-    membersAgo: t.membersAt ? agoText3(now - t.membersAt) : "",
+    membersAgo: t.membersAt ? agoText4(now - t.membersAt) : "",
     joinedToday: r.joinedByDay.get(t.id)?.get(dayKeyOf(now)) ?? 0,
     joinedTotal: r.joinedCount.get(t.id) ?? 0
   };
@@ -11708,13 +12282,13 @@ function waPanel(nowArg) {
   const now = clock(r, nowArg);
   const today = dayKeyOf(now);
   const c = tcfg(r);
-  const st = r.state;
-  const ev = st.event;
+  const st2 = r.state;
+  const ev = st2.event;
   const serving = servingTarget(r, now);
   const link = waGroupLink(now, false);
   const evTarget = eventTarget(r);
   const startEff = ev.start || r.cfg.streamStart;
-  const eventStart = st.mode === "event" ? evTarget?.start ?? (startEff !== r.cfg.streamStart ? startEff : void 0) : void 0;
+  const eventStart = st2.mode === "event" ? evTarget?.start ?? (startEff !== r.cfg.streamStart ? startEff : void 0) : void 0;
   let evStatus = "unset";
   let evText = "\u042D\u0444\u0438\u0440 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D. \u0423\u043A\u0430\u0436\u0438 \u0434\u0430\u0442\u0443, \u0432\u0440\u0435\u043C\u044F \u0441\u0442\u0430\u0440\u0442\u0430 \u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430, \u043F\u043E\u0442\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0438.";
   if (ev.done) {
@@ -11722,7 +12296,7 @@ function waPanel(nowArg) {
     evText = `\u042D\u0444\u0438\u0440 ${ddmm4(ev.date)} \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D${ev.doneAt ? ` (${when(ev.doneAt)})` : ""}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F.`;
   } else if (ev.date) {
     const startAt = atTime(ev.date, startEff);
-    if (st.mode !== "event") {
+    if (st2.mode !== "event") {
       evStatus = "inactive";
       evText = `\u042D\u0444\u0438\u0440 ${ddmm4(ev.date)} \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u0432\u043A\u043B\u044E\u0447\u0451\u043D \u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C.`;
     } else if (!evTarget) {
@@ -11731,12 +12305,12 @@ function waPanel(nowArg) {
         evText = `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u0443\u0434\u0435\u0442 \u0441\u043E\u0437\u0434\u0430\u043D\u043E ${when(eventCreateAt(r))}. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0432\u0435\u0434\u0451\u0442 \u0432 \u043D\u0435\u0433\u043E \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 \u044D\u0442\u043E\u0433\u043E.`;
       } else {
         evStatus = "creating";
-        evText = st.paused ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443." : !daytime(now) ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB." : "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434) \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.";
+        evText = st2.paused ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u043D\u0438\u043C\u0438 \u043F\u0430\u0443\u0437\u0443." : !daytime(now) ? "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E, \u043D\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u043E\u0447\u044C: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043C \u043F\u043E\u0441\u043B\u0435 09:00 \u043F\u043E \u0410\u043B\u043C\u0430\u0442\u044B \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB." : "\u0412\u0440\u0435\u043C\u044F \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u044F \u043D\u0430\u0441\u0442\u0443\u043F\u0438\u043B\u043E: \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434) \u0438\u043B\u0438 \u043D\u0430\u0436\u043C\u0438 \xAB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441\xBB.";
       }
     } else if (now < startAt) {
       evStatus = "recruiting";
       evText = "\u0418\u0434\u0451\u0442 \u043D\u0430\u0431\u043E\u0440: \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u044D\u0444\u0438\u0440\u0430.";
-    } else if (now < startAt + r.cfg.streamMinutes * MIN3) {
+    } else if (now < startAt + r.cfg.streamMinutes * MIN4) {
       evStatus = "live";
       evText = "\u042D\u0444\u0438\u0440 \u0438\u0434\u0451\u0442. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E.";
     } else {
@@ -11746,10 +12320,10 @@ function waPanel(nowArg) {
   }
   const dz = dzPanel(now);
   const signupsOf = (day) => dz.days?.find((x) => x.day === day) ?? null;
-  const cardsOf2 = (day) => [...targetsOf(r, day)].reverse().filter((t) => st.mode === "event" || t.source !== "event").map((t) => cardOf(r, t, now, serving));
+  const cardsOf2 = (day) => [...targetsOf(r, day)].reverse().filter((t) => st2.mode === "event" || t.source !== "event").map((t) => cardOf(r, t, now, serving));
   let current = null;
   let next = null;
-  if (st.mode === "event") {
+  if (st2.mode === "event") {
     if (ev.date) {
       const cards = cardsOf2(ev.date);
       current = { title: "\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430", day: ev.date, dayLabel: ddmm4(ev.date), cards, pending: cards.length ? "" : evText, signups: signupsOf(ev.date) };
@@ -11785,20 +12359,20 @@ function waPanel(nowArg) {
     updated: hhmmOf(now),
     tz: "Asia/Almaty",
     module: {
-      paused: st.paused,
-      pausedReason: st.pausedReason,
-      failStreak: st.failStreak,
+      paused: st2.paused,
+      pausedReason: st2.pausedReason,
+      failStreak: st2.failStreak,
       failMax: r.cfg.retry.pauseAfter,
       creationsToday: dayCreations(r, now),
       creationsMax: r.cfg.maxNewPerDay,
-      pendingCreate: !!st.pendingCreate,
+      pendingCreate: !!st2.pendingCreate,
       kind: r.cfg.target
     },
-    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText3(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
+    conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText4(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
     /** Последний статус подключения из памяти (без запроса к Evolution): пульт показывает его сразу, пока приходит свежий. */
     status: r.statusCache ? r.statusCache.value : null,
-    mode: st.mode,
-    daily: { enabled: st.daily.enabled, next: (() => {
+    mode: st2.mode,
+    daily: { enabled: st2.daily.enabled, next: (() => {
       const n = nextDailyCreate(r, now);
       return n ? { day: n.day, dayLabel: ddmm4(n.day), at: n.at, text: when(n.at) } : null;
     })() },
@@ -11819,8 +12393,8 @@ function waPanel(nowArg) {
     },
     link: {
       url: link ?? "",
-      kind: link ? st.mode === "event" ? "event" : "daily" : "permanent",
-      text: link ? st.mode === "event" ? "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430." : "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0433\u043E \u043D\u0430\u0431\u043E\u0440\u0430." : "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F: \u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442.",
+      kind: link ? st2.mode === "event" ? "event" : "daily" : "permanent",
+      text: link ? st2.mode === "event" ? "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0436\u0438\u0432\u043E\u0433\u043E \u044D\u0444\u0438\u0440\u0430." : "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u0432\u0435\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0433\u043E \u043D\u0430\u0431\u043E\u0440\u0430." : "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0430\u0439\u0442\u0435 \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u0430\u044F: \u043F\u043E\u0434\u0445\u043E\u0434\u044F\u0449\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435\u0442.",
       /** Постоянная ссылка для кнопки шаблона WABA: страница переадресует туда же, куда ведёт сайт, а при сбое на постоянную. */
       templateUrl: TEMPLATE_URL,
       templateClicksToday: templateClicks
@@ -11960,7 +12534,7 @@ async function handleWaAdmin(req, res, path) {
 // form-api/server.ts
 function loadEnv() {
   try {
-    const raw = (0, import_node_fs11.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path11.join)(__dirname, ".env"), "utf8");
+    const raw = (0, import_node_fs12.readFileSync)(process.env.FORM_API_ENV || (0, import_node_path12.join)(__dirname, ".env"), "utf8");
     for (const line of raw.split("\n")) {
       const s = line.trim();
       if (!s || s.startsWith("#")) continue;
@@ -12032,9 +12606,9 @@ async function handleLead(req, res) {
   const cleanTelegram = normalizeTelegram(payload.telegram);
   const siteUrl = eventSourceUrl || req.headers.referer || req.headers.origin || "https://onai.academy/workshop";
   const forwarded = req.headers["x-forwarded-for"];
-  const clientIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
+  const clientIp2 = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim() || req.headers["x-real-ip"] || void 0;
   const userAgent = req.headers["user-agent"] || void 0;
-  const metaEventId = eventId || (0, import_node_crypto7.randomUUID)();
+  const metaEventId = eventId || (0, import_node_crypto8.randomUUID)();
   const fbclid = fbc ? fbc.split(".").slice(3).join(".") || void 0 : void 0;
   const captured = await captureLead({
     eventId: metaEventId,
@@ -12054,7 +12628,7 @@ async function handleLead(req, res) {
       eventSourceUrl: siteUrl,
       fbp,
       fbc,
-      clientIp,
+      clientIp: clientIp2,
       userAgent
     })
   ]).then(([crmResult, capiResult]) => {
@@ -12066,8 +12640,8 @@ async function handleLead(req, res) {
 }
 var RETRY_MAX = Number(process.env.LEAD_RETRY_MAX) || 5;
 async function handleReconcile(req, res) {
-  const secret = process.env.RECONCILE_SECRET;
-  if (!secret || req.headers["x-reconcile-secret"] !== secret) {
+  const secret2 = process.env.RECONCILE_SECRET;
+  if (!secret2 || req.headers["x-reconcile-secret"] !== secret2) {
     return json(res, 401, { ok: false, error: "unauthorized" });
   }
   if (!supabaseConfigured()) return json(res, 500, { ok: false, error: "no_supabase" });
@@ -12117,7 +12691,7 @@ function secretOk2(provided) {
   const a = Buffer.from(provided);
   const b = Buffer.from(TG_SECRET);
   if (a.length !== b.length) return false;
-  return (0, import_node_crypto7.timingSafeEqual)(a, b);
+  return (0, import_node_crypto8.timingSafeEqual)(a, b);
 }
 function webhookReply(res, chatId, text2) {
   return json(res, 200, { method: "sendMessage", chat_id: chatId, text: text2, disable_web_page_preview: true });
@@ -12186,7 +12760,7 @@ function handleCalendar(res) {
 }
 function readVersion() {
   try {
-    return (0, import_node_fs11.readFileSync)((0, import_node_path11.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
+    return (0, import_node_fs12.readFileSync)((0, import_node_path12.join)(__dirname, "VERSION"), "utf8").trim() || "dev";
   } catch {
     return "dev";
   }
@@ -12224,6 +12798,7 @@ var server = (0, import_node_http.createServer)(async (req, res) => {
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
     if (method === "POST" && url === "/api/wa-hook") return await handleWaHook(req, res);
     if (url === "/api/wazzup-hook") return await handleWazzupHook(req, res);
+    if (method === "POST" && url === "/api/wa/send") return await handleWaSend(req, res);
     if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     if (method === "GET" && (url === "/api/health" || url === "/health")) return handleHealth(res);
@@ -12245,6 +12820,11 @@ try {
   startWaGroups();
 } catch (err) {
   console.error("[form-api] \u043C\u043E\u0434\u0443\u043B\u044C WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D:", err);
+}
+try {
+  startWaBridge();
+} catch (err) {
+  console.error("[form-api] \u043C\u043E\u0441\u0442 WhatsApp \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D:", err);
 }
 server.listen(PORT, HOST, () => {
   console.log(`[form-api] listening on http://${HOST}:${PORT}`);

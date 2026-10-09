@@ -92,6 +92,27 @@ export type AiHost = {
   ignoreDigits: () => string[];
 };
 
+// ───────────────────────── связка с мостом в бота ─────────────────────────
+
+/**
+ * Мост WhatsApp в бота (wa-bridge.ts) подписывается на тело вебхука Evolution и говорит, нужен ли ему вебхук при выключенном ассистенте.
+ * Связь односторонняя: мост импортирует отсюда, этот файл мост не импортирует. Без регистрации (мост выключен) всё работает как раньше.
+ */
+type BridgeLink = { tap: (body: unknown) => void; wantsHook: () => boolean };
+let bridge: BridgeLink | null = null;
+export function aiBridgeLink(link: BridgeLink | null): void {
+  bridge = link;
+}
+const bridgeWantsHook = (): boolean => {
+  try {
+    return !!bridge?.wantsHook();
+  } catch {
+    return false;
+  }
+};
+/** Хозяин ассистента (часы, очередь Evolution, тревоги, каталог данных) для моста. null: модуль WhatsApp не запущен. */
+export const aiHost = (): AiHost | null => A?.host ?? null;
+
 // ───────────────────────── проверка ответа ─────────────────────────
 
 /** Разрешённые адреса: хост и путь без схемы. После адреса допустимы только «/», «?» и «#». */
@@ -809,6 +830,14 @@ export async function handleWaHook(req: IncomingMessage, res: ServerResponse): P
   const a = A;
   if (a) a.lastHookAt = a.host.now();
   send(200, { ok: true });
+  // Мост в бота получает тело независимо от выключателя ассистента; его сбой ассистента не задевает.
+  if (raw !== null && bridge) {
+    try {
+      bridge.tap(JSON.parse(raw));
+    } catch (e) {
+      console.error("[wa-ai] мост не принял вебхук:", scrub(String((e as Error)?.message || e)).slice(0, 120));
+    }
+  }
   if (!a || raw === null || !a.host.state().enabled) return;
   try {
     ingestPayload(a, JSON.parse(raw));
@@ -857,7 +886,7 @@ export async function aiTick(now: number): Promise<void> {
   const a = A;
   if (!a) return;
   const st = a.host.state();
-  const want = st.enabled && prerequisites().ok;
+  const want = (st.enabled && prerequisites().ok) || bridgeWantsHook();
   if (want === st.hookOn && !(want && now - a.hookAssertAt >= 6 * HOUR)) return;
   if (now - a.hookTryAt < MIN) return;
   a.hookTryAt = now;
@@ -868,7 +897,7 @@ export async function aiTick(now: number): Promise<void> {
     a.hookAssertAt = now;
     if (want !== st.hookOn) {
       a.host.patch({ hookOn: want });
-      a.host.journal({ ev: want ? "ai_on" : "ai_off", by: "tick" });
+      a.host.journal({ ev: want ? (st.enabled ? "ai_on" : "bridge_hook_on") : "ai_off", by: "tick" });
     }
     return;
   }
@@ -973,12 +1002,14 @@ export async function aiSetEnabled(on: unknown): Promise<AiAct> {
       log("включён");
       return { ok: true, message: "ИИ-ассистент включён. Он отвечает только тем, кто написал номеру в личку. Первым никому не пишет." };
     }
-    if (!st.enabled && !st.hookOn) return { ok: true, code: "same", message: "ИИ-ассистент уже выключен." };
+    if (!st.enabled && (!st.hookOn || bridgeWantsHook())) return { ok: true, code: "same", message: "ИИ-ассистент уже выключен." };
     a.host.patch({ enabled: false });
     for (const p of a.pending.values()) if (p.timer) clearTimeout(p.timer);
     a.pending.clear();
     a.host.journal({ ev: "ai_off", by: "panel" });
     log("выключен");
+    // Вебхук нужен мосту в бота: он остаётся, ассистент просто не разбирает сообщения.
+    if (st.hookOn && bridgeWantsHook()) return { ok: true, message: "ИИ-ассистент выключен и не отвечает. Вебхук в Evolution остаётся: он нужен мосту в бота." };
     if (st.hookOn) {
       a.hookTryAt = a.host.now();
       const r = await a.host.exclusive(() => evo.setWebhook(hookArgs(false)));

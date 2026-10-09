@@ -106,6 +106,8 @@ export const evo = {
   /** Тесты ИИ-ассистента: ответ человеку в личку (sendText на @s.whatsapp.net или @lid) не нарушение, а запись в directs. */
   allowDirect: false,
   directs: [] as Array<{ to: string; text: string; delay: number | undefined; linkPreview: unknown }>,
+  /** Файлы входящих сообщений для POST /chat/getBase64FromMediaMessage: id сообщения -> mimetype и base64. Нет записи: 400 «не медиа». */
+  media: new Map<string, { mimetype: string; base64: string }>(),
   /** Вебхук инстанса, как его хранит Evolution после POST /webhook/set. null: не ставился. */
   webhook: null as null | { enabled: boolean; url: string; events: string[]; byEvents: unknown; base64: unknown; headers: Record<string, string> | undefined },
   async start() {
@@ -228,6 +230,13 @@ export const evo = {
           }
           case "GET /group/findGroupInfos":
             return send(200, { id: jid, size: this.members.get(jid) ?? 2 });
+          case "POST /chat/getBase64FromMediaMessage": {
+            // Как в Evolution 2.3.7: тело { message: { key, message }, convertToMp4 }, ответ 201 { mediaType, fileName, mimetype, base64 }.
+            const id = String(body?.message?.key?.id || "");
+            const m = this.media.get(id);
+            if (!body?.message?.message || !m) return send(400, { status: 400, error: "Bad Request", response: { message: ["The message is not of the media type"] } });
+            return send(201, { mediaType: "audioMessage", fileName: `${id}.ogg`, mimetype: m.mimetype, base64: m.base64, buffer: null });
+          }
           case "POST /webhook/set": {
             // Форма тела как в Evolution 2.3.7 (webhookSchema): { webhook: { enabled, url, … } }, enabled и url обязательны.
             const w = body?.webhook;
@@ -294,6 +303,7 @@ export const evo = {
     this.allowDirect = false;
     this.directs = [];
     this.webhook = null;
+    this.media.clear();
   },
   /** Человек отсканировал QR или ввёл код на телефоне: подключение стало open. */
   scan() {

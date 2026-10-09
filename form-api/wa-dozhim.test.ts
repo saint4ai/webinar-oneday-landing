@@ -981,7 +981,7 @@ test("команды владельца: /wa_dozhim показывает сос�
   const w = boot({ dz: { enabled: false } });
   assert.match(HELP_TEXT, /\/wa_dozhim on\|off/);
   assert.match(HELP_TEXT, /\/wa_dozhim_test/);
-  assert.ok(HELP_TEXT.length < 1500);
+  assert.ok(HELP_TEXT.length < 1700);
   const say1 = async (id: number, text: string) => {
     tg.reset();
     await processUpdate({ message: { chat: { id, type: "private" }, from: { id, first_name: "Аня", username: `u${id}` }, text } }, clock.t);

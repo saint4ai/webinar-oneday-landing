@@ -22,6 +22,7 @@
  *   GET|POST /api/admin/wa/*: пульт WhatsApp-сообществ (вкладка «WhatsApp» админки, те же initData и токен), см. wa-admin.ts
  *   POST /api/wa-hook       : вебхук Evolution MESSAGES_UPSERT для ИИ-ассистента в личке WhatsApp (только 127.0.0.1 и секрет в заголовке), см. wa-assistant.ts
  *   POST /api/wazzup-hook   : вебхук Wazzup для дожима WABA (секрет в адресе ?s=), ответ человека на шаблон присылает ссылку, см. wa-dozhim.ts
+ *   POST /api/wa/send       : ответ бота Instagram AI-менеджера человеку в личку WhatsApp (подпись HMAC, IP бота, ключ идемпотентности; при WA_BRIDGE=off 404), см. wa-bridge.ts
  *   GET  /api/health        — состояние (наружу через nginx), /health — то же для проверки на сервере
  *   GET  /calendar          — ссылка «добавить эфир в календарь»
  *
@@ -45,6 +46,7 @@ import { handleWaAdmin } from "./wa-admin";
 import { startWaGroups, waGroupLink, waHealth } from "./wa-groups";
 import { handleWaHook } from "./wa-assistant";
 import { handleWazzupHook } from "./wa-dozhim";
+import { handleWaSend, startWaBridge } from "./wa-bridge";
 
 /**
  * Секреты из .env рядом с бандлом (PM2 сам env-файлы не читает).
@@ -440,6 +442,7 @@ export const server = createServer(async (req, res) => {
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
     if (method === "POST" && url === "/api/wa-hook") return await handleWaHook(req, res);
     if (url === "/api/wazzup-hook") return await handleWazzupHook(req, res);
+    if (method === "POST" && url === "/api/wa/send") return await handleWaSend(req, res);
     if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     // /api/health виден снаружи через nginx (/workshop/api/health), /health только с самого сервера.
@@ -469,6 +472,13 @@ try {
   startWaGroups();
 } catch (err) {
   console.error("[form-api] модуль WhatsApp не запущен:", err);
+}
+
+// Мост WhatsApp в бота: подписка на вебхук Evolution. Без WA_BRIDGE=on ничего не пересылает. Сбой не мешает остальному.
+try {
+  startWaBridge();
+} catch (err) {
+  console.error("[form-api] мост WhatsApp не запущен:", err);
 }
 
 server.listen(PORT, HOST, () => {

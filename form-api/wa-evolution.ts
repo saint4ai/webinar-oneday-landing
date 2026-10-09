@@ -336,6 +336,20 @@ export function setWebhook(p: { url: string; enabled: boolean; events?: string[]
   });
 }
 
+/**
+ * Файл входящего сообщения в base64: POST /chat/getBase64FromMediaMessage/{instance} с телом { message: { key, message }, convertToMp4: false }.
+ * Сверено с исходником 2.3.7 (getBase64FromMediaMessage в whatsapp.baileys.service.ts): если в message есть содержимое, Evolution качает файл по
+ * нему и не ищет сообщение в своей базе (вебхук приходит раньше записи); ответ 201 { mediaType, fileName, mimetype, base64 }, base64 без префикса.
+ * Внутри Evolution при сбое сам ждёт 5 секунд и пробует ещё раз, поэтому таймаут большой.
+ */
+export async function mediaBase64(key: unknown, message: unknown): Promise<EvoResult<{ base64: string; mimetype: string }>> {
+  const r = await evoCall<any>("POST", `/chat/getBase64FromMediaMessage/${I()}`, { message: { key, message }, convertToMp4: false }, MEDIA_TIMEOUT_MS);
+  if (!r.ok) return r;
+  const base64 = (typeof r.data?.base64 === "string" ? r.data.base64 : "").replace(/^data:[^,]*,/, "");
+  if (!base64) return { ok: false, status: r.status, error: "в ответе нет base64" };
+  return { ok: true, status: r.status, data: { base64, mimetype: String(r.data?.mimetype || "") } };
+}
+
 export async function sendMedia(jid: string, p: { mediatype: "image" | "video"; url: string; caption?: string }): Promise<EvoResult<SentMsg>> {
   const mimetype = p.mediatype === "video" ? "video/mp4" : /\.png$/i.test(p.url) ? "image/png" : "image/jpeg";
   return sentOf(

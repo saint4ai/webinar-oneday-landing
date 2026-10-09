@@ -2485,7 +2485,7 @@ test("/help: владельцу справка по всем командам, �
     assert.ok(help.includes(cmd), `в справке нет ${cmd}`);
   }
   assert.equal(help.includes("\u2014"), false);
-  assert.ok(help.length < 1500);
+  assert.ok(help.length < 1700);
   assert.equal(fake.of("sendMessage")[0].body.parse_mode, undefined);
   fake.reset();
   await processUpdate(upd(555, "/help"), now);
