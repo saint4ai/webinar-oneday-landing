@@ -791,8 +791,9 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
     type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.mp4?v=0910a", poster: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.jpg?v=0910a", width: 720, height: 1280, duration: 51,
   });
   assert.equal(byId.get("video-1730")!.media?.type, "video");
-  // личное видео Александра 15:00 ещё не снято: сообщение выключено, пока файл не появится (включить: enabled или /on personal-1500)
-  assert.equal(byId.get("personal-1500")!.enabled, false);
+  // личное видео Александра 15:00 снято 09.10 (монтаж по рилсу «Одно слово в ссылке GitHub»): сообщение включено, видео 50 с
+  assert.notEqual(byId.get("personal-1500")!.enabled, false);
+  assert.match(String(byId.get("personal-1500")!.media?.url), /personal-1500\.mp4\?v=0909p$/);
   assert.equal(byId.get("personal-1500")!.media?.type, "video");
   // ни метки места под видео, ни пометок в квадратных скобках в начале текста для людей нет
   for (const m of sr.messages) assert.equal(/^\[/.test(m.text), false, m.id + ": метка [Видео ...] не идёт в подпись");

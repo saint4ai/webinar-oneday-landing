@@ -127,11 +127,14 @@
     {
       "id": "personal-1500",
       "at": "15:00",
-      "enabled": false,
       "audience": "all",
       "media": {
         "type": "video",
-        "url": "https://onai.academy/workshop-montazh/assets/tg/personal-1500.mp4"
+        "url": "https://onai.academy/workshop-montazh/assets/tg/personal-1500.mp4?v=0909p",
+        "poster": "https://onai.academy/workshop-montazh/assets/tg/personal-1500.jpg?v=0909p",
+        "width": 1080,
+        "height": 1920,
+        "duration": 50
       },
       "text": "Записал пару слов перед эфиром. Сегодня в 20:00 по Алматы жду тебя."
     },
