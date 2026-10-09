@@ -700,3 +700,47 @@ export function M_GameBonus() {
     </Statement>
   );
 }
+
+/**
+ * bon4 · ещё один бонус за покупку, сразу после цены и QR (Александр 09.10 через «Монтаж Reels»): стиль монтажа «35 художников»,
+ * больше 35 разных стилей для захвата внимания. Видео public/montage/bonus/art-motion-35.mp4 (1080×1920, 49 с, речь Александра):
+ * играет само без звука по кругу, клик по видео включает звук с начала, второй клик ставит паузу. Клик слайды не листает.
+ */
+function BonusMotionVideo() {
+  const [sound, setSound] = useState(false);
+  const toggle = (e: React.MouseEvent<HTMLVideoElement>) => {
+    e.stopPropagation();
+    const v = e.currentTarget;
+    if (!sound) { v.muted = false; v.volume = 0.8; v.currentTime = 0; v.play().catch(() => {}); setSound(true); return; }
+    if (v.paused) v.play().catch(() => {}); else v.pause();
+  };
+  return (
+    <div className="relative" style={{ width: "15cqw", aspectRatio: "9 / 16", borderRadius: "1.4cqw", overflow: "hidden", border: `1px solid ${T.gold2}`, boxShadow: T.shadow, background: "#000", pointerEvents: "auto" }}>
+      <video src="/montage/bonus/art-motion-35.mp4" poster="/montage/bonus/art-motion-35.jpg" autoPlay muted loop playsInline preload="auto" onClick={toggle}
+        className="absolute inset-0 w-full h-full" style={{ objectFit: "cover", cursor: "pointer" }} />
+      {!sound && (
+        <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: "1cqw", pointerEvents: "none" }}>
+          <span style={{ ...txt, fontWeight: 700, fontSize: "0.75cqw", color: LT.ink, padding: "0.35cqw 0.8cqw", borderRadius: 99, ...goldButton }}>Нажмите, чтобы включить звук</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function M_BonusMotion() {
+  return (
+    <Statement kicker="Ещё один бонус за покупку" title={<>Пока я записывал этот воркшоп, я придумал ещё более крутое решение для <Em>motion design</Em>, которое вы тоже получите на обучении</>} size="2.15cqw"
+      leftSize="17cqw" left={
+        <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -3 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.15 }}>
+          <BonusMotionVideo />
+        </motion.div>
+      }>
+      <Stagger i={3} base={0.5}>
+        <div className="flex items-baseline" style={{ gap: "1cqw", marginTop: "1.2cqw" }}>
+          <Num size="4.2cqw" color={T.gold}>35+</Num>
+          <div style={{ ...txt, fontWeight: 700, fontSize: "1.25cqw", lineHeight: 1.35, maxWidth: "26cqw" }}>{glueNode("разных стилей монтажа для захвата внимания. Этот стиль тоже даю бонусом к обучению.")}</div>
+        </div>
+      </Stagger>
+    </Statement>
+  );
+}
