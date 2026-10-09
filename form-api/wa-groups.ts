@@ -3,8 +3,8 @@
  *
  * Что делает модуль (подробно в docs/plans/wa-communities-plan.md и docs/tasks/wa_groups.md):
  *  - в 20:00 накануне эфира D создаёт сообщество эфира (запасной тип: обычная группа), сразу ставит настройки:
- *    писать только админам, добавлять участников только админам, вступление по заявке, менять название, описание и аватарку
- *    только админам (шаг lock, у уже созданных сообществ без него выполняется сам на ближайшем проходе); берёт ссылку-приглашение,
+ *    писать только админам, добавлять участников только админам, вступление по заявке (название, описание и аватарку сообщества
+ *    WhatsApp и так даёт менять только админам; у запасной обычной группы это шаг lock); берёт ссылку-приглашение,
  *    ставит аватарку, шлёт приветствие во вкладку объявлений;
  *  - ссылка на сайте (/api/whatsapp-link) ведёт в сообщество того дня, на который сейчас записывает бот
  *    (assignStreamDay): переключение в 20:40, на границе окна записи на идущий эфир;
@@ -1255,7 +1255,9 @@ const welcomeText = (r: Rt, t: Target, now: number) => retime(r, t.start, r.cfg.
  * Критичные шаги (настройки, ссылка, приветствие) при неудаче считаются ошибкой подряд, аватарка нет: она косметика.
  */
 async function setupSteps(r: Rt, t: Target): Promise<boolean> {
-  const order: Step[] = t.kind === "community" ? ["announce", "addMode", "approval", "lock", "link", "avatar", "welcome"] : ["announce", "lock", "link", "avatar", "welcome"];
+  // lock только у обычной группы. У сообщества и его вкладки объявлений WhatsApp отвечает на locked bad-request (проверено на проде 09.10):
+  // название, описание и аватарку сообщества там и так меняют только админы, отдельной настройки нет.
+  const order: Step[] = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "lock", "link", "avatar", "welcome"];
   let first = true;
   for (const s of order) {
     if (t.done[s]) continue;
@@ -1282,14 +1284,9 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
       err = x.ok ? "" : x.error;
     } else if (s === "lock") {
       t.lockAt = now;
-      // Сообщество: само сообщество и его вкладка объявлений, обычная группа: она сама. Повтор безвреден, поэтому при сбое второго вызова шаг повторяется целиком.
-      const a = t.kind === "community" ? await evo.communitySetting(t.jid, "locked") : await evo.groupSetting(t.jid, "locked");
-      let b: typeof a | null = null;
-      if (t.kind === "community" && t.sendJid && t.sendJid !== t.jid) {
-        await pause(r, r.cfg.pacing.betweenStepsMs);
-        b = await evo.groupSetting(t.sendJid, "locked");
-      }
-      err = !a.ok ? a.error : b && !b.ok ? b.error : "";
+      // Только обычная группа (у сообщества шага нет, см. order).
+      const a = await evo.groupSetting(t.jid, "locked");
+      err = a.ok ? "" : a.error;
     } else if (s === "link") {
       const x = t.kind === "community" ? await evo.communityInvite(t.jid) : await evo.groupInvite(t.jid);
       if (!x.ok) err = x.error;

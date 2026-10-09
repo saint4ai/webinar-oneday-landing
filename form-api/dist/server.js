@@ -10253,7 +10253,7 @@ async function createTarget(r, day, seq, now, opts = {}) {
 }
 var welcomeText = (r, t, now) => retime(r, t.start, r.cfg.welcome.replace("{dayWordLower}", dayWordLower(t.day, now)).replace("{date}", ddmm4(t.day)));
 async function setupSteps(r, t) {
-  const order = t.kind === "community" ? ["announce", "addMode", "approval", "lock", "link", "avatar", "welcome"] : ["announce", "lock", "link", "avatar", "welcome"];
+  const order = t.kind === "community" ? ["announce", "addMode", "approval", "link", "avatar", "welcome"] : ["announce", "lock", "link", "avatar", "welcome"];
   let first = true;
   for (const s of order) {
     if (t.done[s]) continue;
@@ -10278,13 +10278,8 @@ async function setupSteps(r, t) {
       err = x.ok ? "" : x.error;
     } else if (s === "lock") {
       t.lockAt = now;
-      const a = t.kind === "community" ? await communitySetting(t.jid, "locked") : await groupSetting(t.jid, "locked");
-      let b = null;
-      if (t.kind === "community" && t.sendJid && t.sendJid !== t.jid) {
-        await pause(r, r.cfg.pacing.betweenStepsMs);
-        b = await groupSetting(t.sendJid, "locked");
-      }
-      err = !a.ok ? a.error : b && !b.ok ? b.error : "";
+      const a = await groupSetting(t.jid, "locked");
+      err = a.ok ? "" : a.error;
     } else if (s === "link") {
       const x = t.kind === "community" ? await communityInvite(t.jid) : await groupInvite(t.jid);
       if (!x.ok) err = x.error;

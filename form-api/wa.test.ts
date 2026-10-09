@@ -268,11 +268,10 @@ test("создание в 20:00: раньше ничего, в 20:00 сообщ�
     approvalRequired: true,
   });
   assert.equal(/\d{3}\s?\d{3}|₸|\$/.test(create.body.description), false, "в описании нет цены");
-  // порядок: подключение, номер, создание, три настройки, закрытие правок (сообщество и вкладка объявлений), ссылка, аватарка, приветствие
+  // порядок: подключение, создание, три настройки, ссылка, аватарка, приветствие (шага lock у сообщества нет: WhatsApp отвечает на locked bad-request)
   assert.deepEqual(evo.seq(), [
     "GET /instance/connectionState", "POST /community/create",
     "POST /community/updateSetting", "POST /community/memberAddMode", "POST /community/joinApprovalMode",
-    "POST /community/updateSetting", "POST /group/updateSetting",
     "GET /community/inviteCode", "POST /group/updateGroupPicture", "POST /message/sendText",
   ]);
   const jid = w.state().targets[0].jid;
@@ -280,10 +279,10 @@ test("создание в 20:00: раньше ничего, в 20:00 сообщ�
   assert.equal(evo.of("/community/updateSetting")[0].query.get("communityJid"), jid);
   assert.deepEqual(evo.of("/community/memberAddMode")[0].body, { mode: "admin_add" });
   assert.deepEqual(evo.of("/community/joinApprovalMode")[0].body, { mode: "on" });
-  // шаг lock: менять название, описание и аватарку может только админ; оба вызова, сообщество и его вкладка объявлений
-  assert.deepEqual(evo.of("/community/updateSetting")[1].body, { action: "locked" });
-  assert.equal(evo.of("/community/updateSetting")[1].query.get("communityJid"), jid);
-  assert.deepEqual(evo.of("/group/updateSetting")[0].body, { groupJid: w.state().targets[0].sendJid, action: "locked" });
+  // шага lock у сообщества нет: ни одного вызова locked ни у сообщества, ни у его вкладки объявлений
+  assert.equal(evo.calls.filter((c) => c.body?.action === "locked").length, 0);
+  assert.equal(evo.of("/community/updateSetting").length, 1);
+  assert.equal(evo.of("/group/updateSetting").length, 0);
   const pic = evo.of("/group/updateGroupPicture")[0].body;
   assert.deepEqual(pic, { groupJid: jid, image: "https://onai.academy/workshop-montazh/assets/tg/wa-avatar.jpg" });
   // приветствие уходит во вкладку объявлений, а не в само сообщество
@@ -292,13 +291,13 @@ test("создание в 20:00: раньше ничего, в 20:00 сообщ�
   assert.notEqual(welcome.number, jid);
   assert.match(welcome.text, /Эфир завтра в 20:00 по Алматы/);
   assert.equal(welcome.text.includes(String.fromCharCode(0x2014)), false);
-  // паузы между шагами в заданных границах, перед первым шагом паузы нет (создание, шесть шагов, пауза внутри lock)
-  assert.equal(sleeps.length, 8);
+  // паузы между шагами в заданных границах, перед первым шагом паузы нет (создание и пять пауз между шестью шагами настройки)
+  assert.equal(sleeps.length, 6);
   for (const ms of sleeps) assert.ok(ms >= 2000 && ms <= 4000, `пауза шага ${ms}`);
   const t = w.state().targets[0];
   assert.equal(t.id, "2026-10-09#1");
   assert.match(t.link, /^https:\/\/chat\.whatsapp\.com\/INV/);
-  assert.deepEqual(Object.keys(t.done).sort(), ["addMode", "announce", "approval", "avatar", "link", "lock", "welcome"]);
+  assert.deepEqual(Object.keys(t.done).sort(), ["addMode", "announce", "approval", "avatar", "link", "welcome"]);
   // журнал: приветствие записано, ключей нет
   const sends = w.journal().filter((r) => r.ev === "send");
   assert.equal(sends.length, 1);
@@ -1058,23 +1057,60 @@ test("очередь: minGapMinutes берётся из расписания; 0 
   assert.ok(sleeps[0] >= 4000 && sleeps[0] <= 9000);
 });
 
-// ───────────────────────── шаг настройки lock: меняет сообщество только админ ─────────────────────────
+// ───────────────────────── шаг настройки lock: только у обычной группы, у сообщества его нет ─────────────────────────
 
-test("lock: новое сообщество закрывается от правок участниками (сообщество и вкладка объявлений); старая цель без done.lock получает шаг сама; сбой не ломает остальное", async () => {
+test("lock: у сообщества и его вкладки объявлений шага нет (WhatsApp отвечает на locked bad-request), старая цель с tries.lock или без done.lock шаг тоже не получает", async () => {
   const w = boot();
   at(8, 20, 0, 0);
   evo.calls = [];
   assert.equal((await waTick()).created, 1);
   const t = w.state().targets[0];
+  assert.equal(t.kind, "community");
+  const locks = () => evo.calls.filter((c) => c.body?.action === "locked");
+  assert.equal(locks().length, 0, "ни у сообщества, ни у вкладки объявлений");
+  assert.equal(t.done.lock, undefined);
+  assert.equal(t.tries.lock, undefined);
+  assert.equal(t.lockAt, undefined);
+  assert.equal(evo.of("/group/updateSetting").length, 0, "вкладку объявлений настройками не трогаем");
+  assert.equal(evo.of("/community/updateSetting").length, 1, "только announcement");
+  assert.equal(t.done.welcome, true, "остальные шаги прошли");
+
+  // цель, созданная до этого решения: без done.lock и даже с записанными попытками lock; шаг не выполняется, тревоги нет
+  const st = w.rt().state.targets[0];
+  delete st.done.lock;
+  st.tries.lock = 2;
+  evo.calls = [];
+  at(8, 20, 6, 0);
+  await waTick();
+  at(8, 20, 12, 0);
+  await waTick();
+  assert.equal(locks().length, 0, "старая цель шаг не получает");
+  assert.equal(evo.of("/community/updateSetting").length, 0);
+  assert.equal(evo.of("/group/updateSetting").length, 0);
+  assert.equal(w.rt().state.targets[0].done.lock, undefined);
+  assert.equal(w.rt().state.targets[0].tries.lock, 2, "попытки не растут");
+  assert.equal(alarms.filter((a) => a.includes("от правок участниками")).length, 0);
+  assert.equal(w.state().paused, false);
+});
+
+test("lock у обычной группы: шаг после announce и до ссылки; старая цель без done.lock получает его сама; сбой не ломает остальное, повтор не чаще раза в 5 минут, после трёх попыток одна тревога", async () => {
+  const w = boot({ kind: "group" });
+  process.env.WA_ADMIN_NUMBERS = "77085834575";
+  at(8, 20, 0, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  const t = w.state().targets[0];
+  assert.equal(t.kind, "group");
   assert.equal(t.done.lock, true);
   const locks = () => evo.calls.filter((c) => c.body?.action === "locked");
   const route = (c: { path: string }) => c.path.split("/").slice(0, 3).join("/"); // без имени инстанса в конце
-  assert.deepEqual(locks().map((c) => [route(c), c.query.get("communityJid") ?? c.body.groupJid]), [["/community/updateSetting", t.jid], ["/group/updateSetting", t.sendJid]]);
-  // lock стоит сразу после approval, до ссылки
+  assert.deepEqual(locks().map((c) => [route(c), c.body.groupJid]), [["/group/updateSetting", t.jid]]);
+  // lock стоит сразу после announce, до ссылки
   const seq = evo.seq().filter((x) => !x.includes("connectionState") && !x.includes("fetchInstances"));
-  assert.ok(seq.indexOf("POST /community/joinApprovalMode") < seq.indexOf("POST /group/updateSetting") && seq.indexOf("POST /group/updateSetting") < seq.indexOf("GET /community/inviteCode"));
+  assert.ok(seq.indexOf("POST /group/create") < seq.indexOf("POST /group/updateSetting") && seq.lastIndexOf("POST /group/updateSetting") < seq.indexOf("GET /group/inviteCode"));
+  assert.equal(evo.of("/group/updateSetting").length, 2, "announcement и locked");
 
-  // сообщество 09.10, созданное до появления шага: done.lock нет, на ближайшем проходе шаг выполняется
+  // группа, созданная до появления шага: done.lock нет, на ближайшем проходе шаг выполняется
   const st = w.rt().state.targets[0];
   delete st.done.lock;
   delete st.tries.lock;
@@ -1083,7 +1119,7 @@ test("lock: новое сообщество закрывается от прав
   at(8, 20, 1, 0);
   await waTick();
   assert.equal(w.rt().state.targets[0].done.lock, true);
-  assert.deepEqual(locks().map(route), ["/community/updateSetting", "/group/updateSetting"]);
+  assert.deepEqual(locks().map(route), ["/group/updateSetting"]);
   assert.equal(w.state().targets[0].done.lock, true, "записано на диск");
   evo.calls = [];
   at(8, 20, 1, 30);
@@ -1091,14 +1127,14 @@ test("lock: новое сообщество закрывается от прав
   assert.equal(locks().length, 0, "повторно не делается");
 
   // сбой lock: остальные шаги идут, цель готова, ошибок подряд нет, повтор не чаще раза в 5 минут, после трёх попыток одна тревога
-  const w2 = boot();
+  const w2 = boot({ kind: "group" });
   evo.fail = (c) => (c.path.startsWith("/group/updateSetting") && c.body?.action === "locked" ? { status: 400, json: { status: 400, error: "Bad Request", response: { message: ["locked"] } } } : null);
   at(8, 20, 0, 0);
   assert.equal((await waTick()).created, 1);
   const t2 = w2.state().targets[0];
   assert.deepEqual([t2.done.link, t2.done.avatar, t2.done.welcome, t2.done.lock, t2.tries.lock], [true, true, true, undefined, 1]);
   assert.equal(w2.state().failStreak, 0, "косметика: не ошибка подряд");
-  assert.ok(waGroupLink(alm(2026, 10, 8, 21, 0)), "сообщество рабочее");
+  assert.ok(waGroupLink(alm(2026, 10, 8, 21, 0)), "группа рабочая");
   at(8, 20, 2, 0);
   await waTick();
   assert.equal(w2.state().targets[0].tries.lock, 1, "раньше чем через 5 минут не повторяем");
@@ -1841,7 +1877,6 @@ test("живой эфир: «Создать сейчас» создаёт оди
   assert.deepEqual(evo.seq(), [
     "GET /instance/connectionState", "GET /instance/fetchInstances", "POST /community/create",
     "POST /community/updateSetting", "POST /community/memberAddMode", "POST /community/joinApprovalMode",
-    "POST /community/updateSetting", "POST /group/updateSetting",
     "GET /community/inviteCode", "POST /group/updateGroupPicture", "POST /message/sendText",
   ]);
   for (const ms of sleeps) assert.ok(ms >= 2000 && ms <= 4000, `пауза шага ${ms}`);
