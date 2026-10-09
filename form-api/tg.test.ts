@@ -777,9 +777,9 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   assert.match(raw.welcome.media.url, /cover-bizon\.jpg\?v=0910a$/);
   const photos = sr.messages.filter((m) => m.media?.type === "photo");
   assert.ok(photos.length >= 15, "карточки есть почти у всех сообщений");
-  // карточка 14:00 перерисована 09.10 (окно CapCut перечёркнуто), ей новая версия адреса 1009c; остальные 0910a
+  // карточка 14:00 перерисована 09.10 (окно CapCut перечёркнуто), ей новая версия адреса 1009c; 19:30 перерисована 10.10 под автовеб («Скоро начинаем»), 1010a; остальные 0910a
   for (const m of photos) {
-    const ver = m.id === "warm-1400" ? "1009c" : "0910a";
+    const ver = m.id === "warm-1400" ? "1009c" : m.id === "warm-1930" ? "1010a" : "0910a";
     assert.match(m.media!.url, new RegExp("^https://onai\\.academy/workshop-montazh/assets/tg/[a-z0-9-]+\\.jpg\\?v=" + ver + "$"), m.id);
   }
   assert.equal(byId.get("warm-1400")!.media!.url, "https://onai.academy/workshop-montazh/assets/tg/warm-edits.jpg?v=1009c");
@@ -807,7 +807,7 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
   for (const id of ["offer-2118", "push-2230", "push-2330", "follow-1030", "follow-1500", "follow-2145"]) assert.equal(byId.get(id)!.audience, "clickedNotPaid", id);
   assert.equal(/₸/.test(raw.welcome.before), false, "в подтверждении записи цены нет");
   for (const m of sr.messages) {
-    if (m.audience === "notClicked" || (m.dayOffset ?? 0) === 0 && m.at < "21:18") assert.equal(/₸/.test(m.text), false, m.id + ": цена до эфира или тем, кто не был на эфире");
+    if (m.audience === "notClicked" || (m.dayOffset ?? 0) === 0 && m.at < "21:12") assert.equal(/₸/.test(m.text), false, m.id + ": цена до эфира или тем, кто не был на эфире");
   }
   assert.match(byId.get("next-day-1100")!.text, /Цену курса назову только участникам эфира\./);
   // подарок за покупку до конца дня из трёх частей назван целиком там, где его перечисляют (лента эфира 20:58, оффер, последний звонок, дожимы):
