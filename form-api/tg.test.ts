@@ -783,9 +783,9 @@ test("tg-series.json: воркшоп только про AI-монтаж, про
     assert.match(m.media!.url, new RegExp("^https://onai\\.academy/workshop-montazh/assets/tg/[a-z0-9-]+\\.jpg\\?v=" + ver + "$"), m.id);
   }
   assert.equal(byId.get("warm-1400")!.media!.url, "https://onai.academy/workshop-montazh/assets/tg/warm-edits.jpg?v=1009c");
-  // видео: прежний рилс 119K с прежними обложкой и размерами, рилс без лица в 16:00, остальные с размерами вертикального экрана
+  // видео: 12:00 рилс «Claude тестирует на Android» 65 тыс. (с 09.10, без рилса про коннекторы), рилс без лица в 16:00, остальные с размерами вертикального экрана
   assert.deepEqual(byId.get("warm-1200")!.media, {
-    type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/reel-119k.mp4", poster: "https://onai.academy/workshop-montazh/assets/tg/reel-119k.jpg", width: 720, height: 1280, duration: 68,
+    type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/reel-android.mp4?v=1009a", poster: "https://onai.academy/workshop-montazh/assets/tg/reel-android.jpg?v=1009a", width: 720, height: 1280, duration: 46,
   });
   assert.deepEqual(byId.get("noface-1600")!.media, {
     type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.mp4?v=0910a", poster: "https://onai.academy/workshop-montazh/assets/tg/noface-tokens.jpg?v=0910a", width: 720, height: 1280, duration: 51,
@@ -865,10 +865,10 @@ test("tg-series.json: рилс 12:00 со ссылкой на пост, 14:00 п
   const raw = JSON.parse(readFileSync(seriesFile, "utf8"));
   const sr = validateSeries(raw);
   const byId = new Map(sr.messages.map((m) => [m.id, m]));
-  const REEL = "https://www.instagram.com/p/Dc8YwYCt_E_/";
-  // 12:00: счётчик 121 тысяча, прежнее видео, одна кнопка в своём ряду на пост рилса
+  const REEL = "https://www.instagram.com/reel/Dd12LJNTSO0/";
+  // 12:00: рилс 65 тысяч (Android), одна кнопка в своём ряду на пост рилса
   const w = byId.get("warm-1200")!;
-  assert.ok(w.text.startsWith("Этот рилс набрал 121 тысячу просмотров. Монтировал его не человек, а ИИ-агент.\n\n"));
+  assert.ok(w.text.startsWith("Этот рилс набрал 65 тысяч просмотров. Монтировал его не человек, а ИИ-агент.\n\n"));
   assert.equal(/119 тысяч/.test(JSON.stringify(raw)), false, "старой цифры 119 тысяч нет");
   assert.equal(w.media?.type, "video");
   assert.deepEqual(w.buttons, [[{ text: "Смотреть рилс в Instagram", url: REEL }]]);
