@@ -93,7 +93,7 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     // Вернуть: вставить M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble с ключами 17, 18, 19, 20, 21 после 16 (импорты уже есть)
     // После урока
     <M_ReadyReel key="22" />,
-    <M_ResultMontage key="22r" />,
+    // 22r M_ResultMontage («За месяц: что смонтировал», 927 тыс.) убран 09.10: повторял слайд 10 M_Proof15 (Александр: «зачем повторяется, он уже был»). Вернуть: вставить M_ResultMontage с ключом 22r после 22
     <M_CodeWordFlow key="44" />,
     <M_Plan30 key="50" />,
     // Переход к продаже · 3 мин
