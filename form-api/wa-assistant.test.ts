@@ -994,3 +994,9 @@ test("тишина пачки случайная около десяти сек�
     if (was.j === undefined) delete process.env.WA_AI_QUIET_JITTER_MS; else process.env.WA_AI_QUIET_JITTER_MS = was.j;
   }
 });
+
+test("ссылки комнаты эфира Bizon 196985 разрешены, другие комнаты и сайты Bizon нет (Александр 09.10.2026)", () => {
+  assert.deepEqual(checkReply("Включите VPN. Основная: https://online.bizon365.ru/room/196985/BguY0kXF-l , запасная: https://start.bizon365.ru/room/196985/BguY0kXF-l"), []);
+  assert.ok(checkReply("Эфир тут: https://start.bizon365.ru/room/111111/abc").includes("link"));
+  assert.ok(checkReply("Эфир тут: https://bizon365.ru/").includes("link"));
+});

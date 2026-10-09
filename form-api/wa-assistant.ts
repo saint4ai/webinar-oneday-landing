@@ -105,7 +105,10 @@ export type AiHost = {
 // ───────────────────────── проверка ответа ─────────────────────────
 
 /** Разрешённые адреса: хост и путь без схемы. После адреса допустимы только «/», «?» и «#». */
-const ALLOWED_LINKS = ["onai.academy/workshop-montazh", "wa.me/77085834575", "t.me/futleid", "t.me/workshop_aiprod_bot"];
+// Комната эфира Bizon (Александр 09.10.2026): на «ссылка не открывается» ассистент даёт обе, online основная, start запасная
+// (start режут провайдеры KZ). Только эта комната 196985, другие комнаты Bizon не пропускаем.
+const ALLOWED_LINKS = ["onai.academy/workshop-montazh", "wa.me/77085834575", "t.me/futleid", "t.me/workshop_aiprod_bot",
+  "online.bizon365.ru/room/196985", "start.bizon365.ru/room/196985"];
 /** Разрешённые имена пользователей (@ник). Остальные в ответе не нужны: так ассистент не повторит чужое. */
 const ALLOWED_HANDLES = new Set(["@futleid", "@workshop_aiprod_bot", "@saint4ai"]);
 const AYANA_RE = /wa\.me\/77085834575|t\.me\/futleid|@futleid/i;
