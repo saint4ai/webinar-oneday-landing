@@ -14,8 +14,8 @@ export const TUNNEL_REELS = ["mcp", "papka", "google10", "podarok", "zashita"].m
 /**
  * Карточки обложки (правка Александра 05.10.2026): свежие скрины его рилсов со счётчиками просмотров
  * (`public/montage/cover/s01–s10`), через одну — видео залетевших рилсов (`v01–v07`, петли 4 с).
- * 09.10: в s09 вместо рилса «Claude Code и реклама в Facebook» стоит «Четыре сайта с анимациями» (обложка new-animations, цифра 43,8 тыс. нарисована
- * как на остальных скринах, 43 757 просмотров на 9 октября 2026, Instagram API).
+ * 09.10: в s09 вместо рилса «Claude Code и реклама в Facebook» стоит «Четыре сайта с анимациями» (обложка new-animations, цифра 43,6 тыс. нарисована
+ * как на остальных скринах, счётчик в приложении Instagram на 9 октября 2026).
  */
 const SHOTS = Array.from({ length: 10 }, (_, i) => `/montage/cover/s${String(i + 1).padStart(2, "0")}.jpg`);
 const VIDEOS = Array.from({ length: 7 }, (_, i) => `/montage/cover/v${String(i + 1).padStart(2, "0")}`);

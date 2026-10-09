@@ -360,17 +360,17 @@ export function M_ReadyReel() {
 }
 
 const FORMATS = [
-  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026 (рилсы 1, 2 и 4: на 09.10.2026).
+  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026 (рилсы 1, 2 и 4: на 09.10.2026; у второго счётчик в приложении, у первого и четвёртого API).
   // 08.10, 14:30 (Александр): четыре формата вместо шести. Подкаст, «Половина и окно в углу» и «Спикер внизу» убраны: это тот же формат, что половина экрана.
   // 09.10 (Александр: «не разбирать один и тот же видос на вебинаре», ТЗ docs/tasks/deck_reels_variety_1009.md): три формата из четырёх сменили рилс, потому что
   // «4 умных коннектора» (120 тыс.) уже разбирается на слайдах с ключами 30, 35 и 44, а у «Карточки спикера» стоял рилс на 3,1 тыс. «Пишет: готово»:
   //   1. Половина экрана: «Джарвис из „Железного человека“ теперь живёт у тебя на компьютере», 9 835 (instagram.com/reel/DdvsAG-NtQb/), face-half-jarvis;
-  //   2. Карточка спикера: «Записываешь экран, а выглядит как моушн-дизайн», 9 257 (instagram.com/reel/DeEX0O2gNTu/), face-card-screenstudio;
+  //   2. Карточка спикера: «Записываешь экран, а выглядит как моушн-дизайн», 9 242 в приложении, API 9 257 (instagram.com/reel/DeEX0O2gNTu/), face-card-screenstudio;
   //   4. Без лица, голос и графика: «Бесплатные тарифы 34 нейросетей на GitHub», 8 068 (instagram.com/reel/Ddvaf6byKio/), noface-voice-free34.
   // Третий формат (голова-рассказчик) не менялся. Старые файлы face-half-connectors, face-card-unlazy, noface-voice-searchconsole лежат в public/montage/noface.
   // Вернуть из убранных форматов: face-corner-jarvis (9,6 тыс.), face-bottom-github (112 тыс.), face-podcast-dilorom (6,1 тыс.).
   { f: "01-polovina-ekrana", t: "Половина экрана", full: "face-half-jarvis", views: "9,8 тыс." },
-  { f: "02-kartochka-spikera", t: "Карточка спикера, как в Screen Studio", full: "face-card-screenstudio", views: "9,3 тыс." },
+  { f: "02-kartochka-spikera", t: "Карточка спикера, как в Screen Studio", full: "face-card-screenstudio", views: "9,2 тыс." },
   { f: "03-bez-lica-golova", t: "Без лица: анимированная голова", noFace: true, full: "noface-puppet-zashita", views: "16,4 тыс." },
   { f: "04-bez-lica-golos", t: "Без лица: голос и графика", noFace: true, full: "noface-voice-free34", views: "8,1 тыс." },
 ];
@@ -435,7 +435,7 @@ export function M_NoFace() {
           </button>
         ))}
       </div>
-      <Note>Мои настоящие рилсы целиком, клик по телефону включает со звуком. Просмотры: Instagram API, 9 октября 2026</Note>
+      <Note>Мои настоящие рилсы целиком, клик по телефону включает со звуком. Просмотры: Instagram API и счётчик в приложении, 9 октября 2026</Note>
     </Statement>
   );
 }
