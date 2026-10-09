@@ -1759,7 +1759,7 @@ test("/bizon: только https://*.bizon365.ru, ссылка в state, пер�
     await processUpdate(upd(900, t), alm(2026, 10, 6, 11, 0));
     return fake.texts(900)[0];
   };
-  assert.match(await say("/bizon"), /Ссылка эфира сейчас: https:\/\/start\.bizon365\.ru\/room\/196985\//);
+  assert.match(await say("/bizon"), /Ссылка эфира сейчас: https:\/\/online.bizon365\.ru\/room\/196985\//);
   for (const bad of ["http://start.bizon365.ru/room/1", "https://evil.example/room/1", "https://bizon365.ru.evil.example/x", "https://start.bizon365.ru", "не ссылка"]) {
     assert.match(await say(`/bizon ${bad}`), /Нужна ссылка вида/);
   }
