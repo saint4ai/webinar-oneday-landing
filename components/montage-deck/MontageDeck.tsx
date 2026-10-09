@@ -23,7 +23,7 @@ import { GLASS } from "./theme";
 import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
-import { M_Case107, M_Want, M_WhoFirst, M_CostNow, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
+import { M_BonusMotion, M_Case107, M_Want, M_WhoFirst, M_CostNow, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
 import { M_ShopReel, M_ReelProgram, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
 import { M_MyPath } from "./slides/warmup";
 import { M_Cases, M_Platform, M_CasePages } from "./slides/cases";
@@ -133,6 +133,8 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     <M_HowToBook key="41" />,
     // Оплата Vibe Production: два QR (Kaspi и карты СНГ/мира), текст над ними с ценой 150 000 ₸ (slides/pay.tsx)
     <M_PayQR key="pay1" variant="production" />,
+    // bon4 · бонус «35 стилей монтажа» с видео сразу после цены и QR (Александр 09.10)
+    <M_BonusMotion key="bon4" />,
     // Блок Vibe Coding PRO (v1 M_VcWho, v2 M_VcProgram, v3 M_VcTariffs), кейсы второй раз (08c2: M_Cases с кикером «Это я собрал сам»), оффер 390 000 ₸
     // (v4 M_VcBundle, v5 M_VcChoose) и оплата пакета (pay2: M_PayQR с variant bundle) убраны 08.10: продаём только Vibe Production.
     // Цены PRO и пакета остались в prices.ts. Вернуть: вставить в этом порядке v1, v2, v3, 08c2, v4, v5, pay2 после pay1 (импорты уже есть). Тексты: docs/copy/deck-block-vcpro.md
