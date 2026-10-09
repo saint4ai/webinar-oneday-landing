@@ -159,7 +159,7 @@ export function M_ShopReel() {
           <motion.div className="absolute" style={{ right: 0, top: 0 }} initial={{ opacity: 0, y: "3cqw", scale: 0.92 }} animate={{ opacity: 1, y: "0cqw", scale: 1 }}
             transition={{ delay: 0.85, type: "spring", stiffness: 120, damping: 16 }}>
             <div className="relative">
-              <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" width="10.8cqw" chrome={false} />
+              <Phone video="/montage/reels/hit-semrush.mp4" src="/montage/reels/hit-semrush.jpg" width="10.8cqw" chrome={false} />
               {/* охват этого рилса: счётчик приложения Instagram, 5 октября 2026 (RESULTS.appCovers) */}
               <Views value="118 тыс." size="0.75cqw" style={{ position: "absolute", left: "0.7cqw", bottom: "0.9cqw" }} />
             </div>
@@ -227,15 +227,25 @@ export function M_ReelProgram() {
 /* ───────────── 36 · Цех «Реклама», модуль 3 «AI-креатор»: фото → реклама (с 08.10 бонус за покупку до конца дня) ───────────── */
 
 /**
- * Видеоурок модуля 3 AI-креатор (public/montage/lessons/ai-creator-lesson.mp4, 16:9, 2 мин 17 с, со звуком): в окне браузера, запускается по клику ведущего.
- * Клик и кнопка слайды не листают (stopPropagation), звук включён, автозапуска нет. Слой слайда пропускает клики насквозь, поэтому pointer-events: auto.
+ * Ролик «Альтернатива рекламы» (public/montage/lessons/alt-ad.mp4, 16:9, 15 с, со звуком, Александр 09.10 вместо видеоурока 2 мин 17 с).
+ * Запускается сам при входе на слайд, по кругу, звук приглушён (громкость 0,3). Если браузер не даёт играть со звуком, играет без звука,
+ * клик по ролику включает звук или ставит паузу. Клик слайды не листает (stopPropagation). Видеоурок ai-creator-lesson.mp4 лежит рядом:
+ * вернуть, поменяв src и poster обратно.
  */
 function LessonPlayer() {
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    v.volume = 0.3;
+    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    return () => { v.pause(); };
+  }, []);
   const toggle = () => {
     const v = ref.current;
     if (!v) return;
+    if (v.muted) { v.muted = false; v.volume = 0.3; if (v.paused) v.play().catch(() => {}); return; }
     if (v.paused) v.play().catch(() => {});
     else v.pause();
   };
@@ -246,7 +256,7 @@ function LessonPlayer() {
           {[T.gold, T.brownLt, T.nightMuted].map((c) => <span key={c} style={{ width: "0.6cqw", height: "0.6cqw", borderRadius: 99, background: c }} />)}
         </div>
         <div className="relative" style={{ aspectRatio: "16 / 9", background: "#000" }}>
-          <video ref={ref} src="/montage/lessons/ai-creator-lesson.mp4" poster="/montage/lessons/ai-creator-lesson.jpg" preload="metadata" playsInline
+          <video ref={ref} src="/montage/lessons/alt-ad.mp4" poster="/montage/lessons/alt-ad.jpg" preload="auto" playsInline loop
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
             className="absolute inset-0 h-full w-full" style={{ objectFit: "contain", background: "#000" }} />
           <button type="button" aria-label={playing ? "Пауза" : "Воспроизвести видеоурок"} aria-pressed={playing}
@@ -260,7 +270,7 @@ function LessonPlayer() {
           </button>
         </div>
       </div>
-      <div style={{ ...txt, fontSize: "0.95cqw", color: T.muted, marginTop: "0.6cqw" }}>Урок из модуля AI-креатор: видео для бизнеса</div>
+      <div style={{ ...txt, fontSize: "0.95cqw", color: T.muted, marginTop: "0.6cqw" }}>Реклама из модуля AI-креатор</div>
     </motion.div>
   );
 }
