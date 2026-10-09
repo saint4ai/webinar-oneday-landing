@@ -2,7 +2,7 @@
  * WhatsApp-сообщества эфира вместо EasyBot. Включается только флагом WA_GROUPS=on, иначе ничего не стартует.
  *
  * Что делает модуль (подробно в docs/plans/wa-communities-plan.md и docs/tasks/wa_groups.md):
- *  - в 20:00 накануне эфира D создаёт сообщество эфира (запасной тип: обычная группа), сразу ставит настройки:
+ *  - в createTime накануне эфира D (20:20 по Алматы, после последней эфирной ссылки; не задано: в старт эфира) создаёт сообщество эфира (запасной тип: обычная группа), сразу ставит настройки:
  *    писать только админам, добавлять участников только админам, вступление по заявке (название, описание и аватарку сообщества
  *    WhatsApp и так даёт менять только админам; у запасной обычной группы это шаг lock); берёт ссылку-приглашение,
  *    ставит аватарку, шлёт приветствие во вкладку объявлений;
@@ -86,6 +86,11 @@ export type WaSeries = {
   version: string;
   timezone: string;
   streamStart: string;
+  /**
+   * Во сколько по Алматы накануне эфира создаётся сообщество следующего эфира (HH:MM). Не задано: в streamStart, как раньше.
+   * Ставим после последней эфирной ссылки (20:15), чтобы создание и настройка не мешали рассылке; переключение ссылки в 20:40 остаётся.
+   */
+  createTime?: string;
   streamMinutes: number;
   joinLiveMinutes?: number;
   firstDay?: string;
@@ -138,7 +143,7 @@ export function validateWaSeries(raw: unknown): WaSeries {
   for (const s of allStrings(raw)) if (s.includes(String.fromCharCode(0x2014))) throw new Error(`wa-series: длинное тире в «${s.slice(0, 50)}»`);
   if (raw.timezone !== "Asia/Almaty") throw new Error("wa-series: timezone должен быть Asia/Almaty");
   if (typeof raw.version !== "string") throw new Error("wa-series: нет version");
-  for (const k of ["streamStart", "closeAt"]) {
+  for (const k of ["streamStart", "closeAt", ...(raw.createTime !== undefined ? ["createTime"] : [])]) {
     try {
       parseHHMM(String(raw[k]));
     } catch {
@@ -225,6 +230,19 @@ export type Target = {
   avatarAt: number;
   /** Когда последний раз пробовали шаг lock (повтор не чаще раза в 5 минут, как у аватарки). */
   lockAt?: number;
+  /**
+   * Мягкие шаги настройки сообщества (announce, addMode, approval): WhatsApp не принял настройку, но шаг считается сделанным.
+   * Ошибка тут, критичной она не становится: failStreak и retryAt не трогаем. Владельцам одна тревога на цель (softAlarmed).
+   */
+  soft?: Partial<Record<Step, string>>;
+  softAlarmed?: boolean;
+  /**
+   * Сообщество на завтра (day позже сегодняшнего дня) не достраивается: ошибка link или welcome не трогает общие failStreak и retryAt,
+   * чтобы не остановить рассылку в текущее сообщество. До этого момента setupSteps цель пропускает.
+   */
+  retryAt?: number;
+  /** Сообщество не создано модулем, а принято чужое: вступление по заявке для него не считается включённым заранее. */
+  adopted?: boolean;
   members?: number;
   membersAt?: number;
   /** Откуда сообщество: ежедневный режим (по умолчанию) или живой эфир. Живой эфир ссылкой в ежедневном режиме не раздаётся. */
@@ -347,6 +365,12 @@ type Rt = {
   skipLog: Set<string>;
   /** С какого момента нет подключения к WhatsApp (0, если оно есть): для утренней сводной тревоги. */
   downSince: number;
+  /**
+   * Сбои создания сообщества с ответом 4xx (не неясным): повтор не раньше createRetryAt, общие failStreak и retryAt не трогаем,
+   * рассылка в текущее сообщество идёт. createFails: сколько неудач подряд (на третьей одна тревога). Только в памяти.
+   */
+  createRetryAt: number;
+  createFails: number;
   /** Заявки, по которым уже писали строку «request»: ключ «сообщество|jid». */
   seenReq: Set<string>;
   /** Одобренные заявки: ключ «сообщество|jid». */
@@ -504,6 +528,8 @@ export function initWaGroups(opts: InitOpts = {}): void {
     qmark: new Map(),
     skipLog: new Set(),
     downSince: 0,
+    createRetryAt: 0,
+    createFails: 0,
     seenReq: new Set(),
     approved: new Set(),
     approveFails: new Map(),
@@ -777,17 +803,18 @@ export const closeAtOf = (r: Rt, day: string) => atTime(addDays(day, 1), r.cfg.c
 export const sendUntilOf = (r: Rt, day: string, m: { dayOffset?: number }) => closeAtOf(r, day) + (m.dayOffset ?? 0) * 24 * HOUR;
 
 /**
- * Когда создавать сообщество эфира X: в старт эфира предыдущего дня эфира (обычно накануне в 20:00).
- * Перед первым днём и после перерыва берём календарную вчера.
+ * Когда создавать сообщество эфира X: в createTime (20:20 в wa-series.json, после последней эфирной ссылки в 20:15) предыдущего
+ * дня эфира, обычно накануне. Не задано: в старт эфира, как раньше. Перед первым днём и после перерыва берём календарную вчера.
  */
 export function createAtOf(r: Rt, day: string): number {
   const c = tcfg(r);
+  const time = r.cfg.createTime ?? c.streamStart;
   let p = addDays(day, -1);
   for (let i = 0; i < 30; i++) {
-    if (isStreamDay(p, c)) return atTime(p, c.streamStart);
+    if (isStreamDay(p, c)) return atTime(p, time);
     p = addDays(p, -1);
   }
-  return atTime(addDays(day, -1), c.streamStart);
+  return atTime(addDays(day, -1), time);
 }
 
 const ddmm = (day: string) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
@@ -1203,6 +1230,17 @@ async function createTarget(r: Rt, day: string, seq: number, now: number, opts: 
     if (ambiguous(res)) {
       // Запрос мог выполниться: вслепую не повторяем, чтобы не наплодить сообществ.
       noteCreation(r, now);
+      if (kind === "community") {
+        // Сообщество на завтра создаётся в разгар эфира: пауза модуля остановила бы рассылку в текущее сообщество (20:58, оффер, дожим).
+        // Повтор блокирует сам pendingCreate до /wa_resume, а рассылка, заявки и достройка идут как обычно.
+        save(r);
+        journal(r, { ev: "create_unclear", name, err: res.error });
+        await alarm(
+          r,
+          `При создании «${name}» не пришёл чёткий ответ (${res.error}). Возможно, оно уже создано: проверь список чатов на телефоне. Рассылка в текущее сообщество идёт как обычно, новые сообщества не создаются, пока не сделаешь /wa_resume. Если создано, удали лишнее; потом /wa_resume, а /wa_new создаст заново.`,
+        );
+        return { ok: false, error: res.error };
+      }
       await pauseModule(
         r,
         now,
@@ -1213,6 +1251,17 @@ async function createTarget(r: Rt, day: string, seq: number, now: number, opts: 
     }
     r.state.pendingCreate = null;
     save(r);
+    if (kind === "community") {
+      // Чёткий отказ (4xx): повтор через 5 минут, потом через 30; общие failStreak и retryAt не трогаем, рассылка идёт. Одна тревога на третьей неудаче.
+      r.createFails++;
+      r.createRetryAt = now + (r.createFails >= 3 ? 30 : 5) * MIN;
+      journal(r, { ev: "create_fail", n: r.createFails, name, err: res.error, retry: iso(r.createRetryAt) });
+      console.warn("[wa] создание %s не вышло (%d подряд), повтор в %s: %s", name, r.createFails, hhmmOf(r.createRetryAt), res.error);
+      if (r.createFails === 3) {
+        await alarm(r, `Сообщество «${name}» не создаётся уже ${r.createFails} раза подряд: ${res.error}. Рассылка идёт как обычно, создание повторяется. Создать вручную: /wa_new.`);
+      }
+      return { ok: false, error: res.error };
+    }
     await noteFail(r, `создание ${name}`, res.error);
     return { ok: false, error: res.error };
   }
@@ -1239,6 +1288,8 @@ async function createTarget(r: Rt, day: string, seq: number, now: number, opts: 
   };
   r.state.targets.push(t);
   r.state.pendingCreate = null;
+  r.createFails = 0;
+  r.createRetryAt = 0;
   noteCreation(r, now);
   save(r);
   journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name, ...(t.source ? { source: t.source } : {}) });
@@ -1262,7 +1313,7 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
   for (const s of order) {
     if (t.done[s]) continue;
     const now = r.deps.now();
-    if (r.state.paused || now < r.state.retryAt) return false;
+    if (r.state.paused || now < r.state.retryAt || now < (t.retryAt ?? 0)) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
     // lock (менять название, описание и аватарку может только админ): косметика безопасности, как аватарка не ломает остальные шаги и не делает цель неготовой.
@@ -1273,15 +1324,32 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
     first = false;
     t.tries[s] = (t.tries[s] || 0) + 1;
     let err = "";
+    // Мягкая ошибка настройки сообщества: шаг всё равно сделан, модуль не встаёт (см. Target.soft).
+    let soft = "";
     if (s === "announce") {
-      const x = t.kind === "community" ? await evo.communitySetting(t.jid, "announcement") : await evo.groupSetting(t.jid, "announcement");
-      err = x.ok ? "" : x.error;
+      if (t.kind === "community") {
+        // Проверено на проде 09.10: POST /community/updateSetting на сообщество отдаёт 400, а вкладка объявлений нового сообщества
+        // и так announce: true. Смотрим саму вкладку и зовём настройку только если она не закрыта для участников.
+        const info = await evo.groupInfo(t.sendJid, setupTimeoutMs());
+        if (!(info.ok && info.data?.announce === true)) {
+          const x = await evo.groupSetting(t.sendJid, "announcement", setupTimeoutMs());
+          if (!x.ok) soft = x.error;
+        }
+      } else {
+        const x = await evo.groupSetting(t.jid, "announcement");
+        err = x.ok ? "" : x.error;
+      }
     } else if (s === "addMode") {
-      const x = await evo.communityMemberAddMode(t.jid, "admin_add");
-      err = x.ok ? "" : x.error;
+      // По умолчанию у нового сообщества участников добавляют только админы; вызов на проде отдаёт 400, поэтому любая ошибка мягкая.
+      const x = await evo.communityMemberAddMode(t.jid, "admin_add", setupTimeoutMs());
+      if (!x.ok) soft = x.error;
     } else if (s === "approval") {
-      const x = await evo.communityJoinApproval(t.jid, "on");
-      err = x.ok ? "" : x.error;
+      // Сообщество, созданное модулем с approvalRequired: true, уже принимает по заявке (default_membership_approval_mode=request_required),
+      // а вызов joinApprovalMode на проде висит дольше 30 с. Поэтому для своих сообществ шаг без вызова; чужое принятое пробуем с 10 с.
+      if (t.adopted) {
+        const x = await evo.communityJoinApproval(t.jid, "on", Math.min(10_000, setupTimeoutMs()));
+        if (!x.ok) soft = x.error;
+      }
     } else if (s === "lock") {
       t.lockAt = now;
       // Только обычная группа (у сообщества шага нет, см. order).
@@ -1306,11 +1374,22 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
       const x = await sendPart(r, t, "welcome", "main", () => evo.sendText(t.sendJid, welcomeText(r, t, now)), false);
       err = x.ok ? "" : x.error;
     }
+    if (soft) {
+      // Мягкий шаг: ошибку запоминаем и пишем в журнал, но шаг сделан, noteFail не зовём, failStreak и retryAt не трогаем.
+      t.soft = { ...(t.soft || {}), [s]: soft };
+      t.done[s] = true;
+      save(r);
+      journal(r, { ev: "step_soft", target: t.id, step: s, err: soft });
+      console.warn("[wa] шаг %s у %s не принят WhatsApp, идём дальше: %s", s, t.id, soft);
+      await softAlarm(r, t);
+      continue;
+    }
     if (!err) {
       t.done[s] = true;
       save(r);
       journal(r, { ev: "step", target: t.id, step: s });
       if (s !== "avatar" && s !== "lock") noteOk(r);
+      await softAlarm(r, t);
       continue;
     }
     save(r);
@@ -1324,10 +1403,52 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
       if ((t.tries.lock || 0) >= 3) await alarm(r, `Не удалось закрыть «${t.name}» от правок участниками (название, описание, аватарка): ${err}. Сообщество работает, проверь его настройки в WhatsApp вручную.`);
       continue;
     }
+    if (t.kind === "community" && t.day > dayKeyOf(now)) {
+      // Сообщество на завтра: сбой ссылки или приветствия не должен останавливать рассылку в текущее сообщество. Ошибка остаётся на самой цели:
+      // повтор через 3 минуты (с третьей попытки через 10), общие failStreak и retryAt не трогаем, одна тревога на третьей попытке.
+      const n = t.tries[s] || 1;
+      t.retryAt = now + (n >= 3 ? 10 : 3) * MIN;
+      save(r);
+      journal(r, { ev: "step_fail", target: t.id, step: s, n, err, retry: iso(t.retryAt) });
+      console.warn("[wa] шаг %s у %s (на завтра) не вышел (%d), повтор в %s: %s", s, t.id, n, hhmmOf(t.retryAt), err);
+      if (n === 3) await alarm(r, `Сообщество «${t.name}» на завтра не достраивается: шаг «${s}», ${n} попытки не вышли (${err}). Рассылка в текущее сообщество идёт как обычно, бот повторяет.`);
+      return false;
+    }
     await noteFail(r, `${t.id}: шаг ${s}`, err);
     return false;
   }
+  await softAlarm(r, t);
   return true;
+}
+
+/** Таймаут вызовов настройки сообщества: не больше 15 с (WA_SETUP_TIMEOUT_MS может только сократить его, для тестов). */
+const SETUP_TIMEOUT_MS = 15_000;
+const setupTimeoutMs = () => {
+  const n = Number(env("WA_SETUP_TIMEOUT_MS"));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, SETUP_TIMEOUT_MS) : SETUP_TIMEOUT_MS;
+};
+
+/**
+ * Мягкие шаги, о которых говорим владельцам. addMode сюда не входит: на проде он отвечает 400 каждый вечер, а по умолчанию у нового
+ * сообщества участников и так добавляют только админы; его ошибка остаётся только в журнале (step_soft).
+ */
+const SOFT_STEP_NAME: Partial<Record<Step, string>> = {
+  announce: "писать во вкладку объявлений только админам",
+  approval: "вступление по заявке",
+};
+
+/**
+ * Одна тревога на цель, когда три шага настройки сообщества пройдены и среди них были мягкие с ошибкой.
+ * Состояние не страдает: сообщество готово, ссылка и рассылка работают, владельцу остаётся проверить настройки в телефоне.
+ */
+async function softAlarm(r: Rt, t: Target) {
+  if (t.softAlarmed || t.kind !== "community" || !t.soft) return;
+  if (!(t.done.announce && t.done.addMode && t.done.approval)) return;
+  const items = (Object.keys(SOFT_STEP_NAME) as Step[]).filter((s) => t.soft?.[s]).map((s) => `${SOFT_STEP_NAME[s]} (${t.soft?.[s]})`);
+  if (!items.length) return;
+  t.softAlarmed = true;
+  save(r);
+  await alarm(r, `Сообщество «${t.name}» создано, но WhatsApp не принял настройку: ${items.join("; ")}. Проверь вручную в телефоне.`);
 }
 
 // ───────────────────────── отправка сообщений ─────────────────────────
@@ -1699,7 +1820,7 @@ const heldMembers = (r: Rt, t: Target) => (t.members ?? 0) + (r.approvedSince.ge
  * Лимит новых сообществ в сутки и пауза модуля действуют; при исчерпанном лимите владельцам одна тревога в день.
  */
 async function openNext(r: Rt, t: Target, now: number, members: number) {
-  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt) return;
+  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt || r.deps.now() < r.createRetryAt) return;
   if (targetsOf(r, t.day)[0].id !== t.id || now >= closeAtOf(r, t.day)) return;
   const limit = r.cfg.overflowAt[t.kind];
   if (capReached(r, now)) {
@@ -1764,7 +1885,7 @@ export async function waTick(): Promise<TickInfo> {
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" as const };
-      for (const day of dueCreates(r, now)) {
+      for (const day of r.deps.now() < r.createRetryAt ? [] : dueCreates(r, now)) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (capReached(r, now)) {
           if (r.state.capAlertDay !== dayKeyOf(now)) {
@@ -2144,6 +2265,7 @@ function cmdPause(r: Rt, now: number, by: "bot" | "panel" = "bot"): WaReply {
 
 function cmdResume(r: Rt): WaReply {
   const was = r.state.paused;
+  const hadPending = !!r.state.pendingCreate;
   r.state.paused = false;
   r.state.pausedReason = "";
   r.state.failStreak = 0;
@@ -2151,7 +2273,7 @@ function cmdResume(r: Rt): WaReply {
   r.state.pendingCreate = null;
   save(r);
   journal(r, { ev: "resume" });
-  return { text: was ? "Пауза снята, счётчик ошибок обнулён. Модуль работает на ближайшем тике (до 30 секунд)." : "Модуль и так не на паузе. Счётчик ошибок обнулён." };
+  return { text: was ? "Пауза снята, счётчик ошибок обнулён. Модуль работает на ближайшем тике (до 30 секунд)." : hadPending ? "Неподтверждённое создание снято с учёта, счётчик ошибок обнулён. Убедись, что лишнего сообщества на телефоне нет: новые создаются со следующего тика." : "Модуль и так не на паузе. Счётчик ошибок обнулён." };
 }
 
 /** Результат действия из пульта или команды: ok, короткий код причины для интерфейса и текст по-русски. */
@@ -2192,7 +2314,7 @@ async function eventCreateNow(r: Rt, now: number): Promise<Act> {
     const ev = r.state.event;
     if (!(await checkConnection(r, now))) return fail("no_connection", `WhatsApp не подключён (${r.conn.state}). Подключи номер по QR.`);
     const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
-    if (!res.ok) return fail("create_failed", r.state.paused ? "Создание не подтверждено, модуль на паузе. Подробности в тревоге в Telegram." : `Не создалось: ${res.error}`);
+    if (!res.ok) return fail("create_failed", r.state.paused || r.state.pendingCreate ? "Создание не подтверждено. Подробности в тревоге в Telegram." : `Не создалось: ${res.error}`);
     syncEventCommunity(r);
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
@@ -2237,7 +2359,7 @@ async function cmdNew(r: Rt, args: string, now: number): Promise<WaReply> {
     if (late) return late;
     if (!(await checkConnection(r, now))) return { text: `WhatsApp не подключён (${r.conn.state}). /wa_qr пришлёт QR.` };
     const res = await createTarget(r, day, 1, r.deps.now());
-    if (!res.ok) return { text: r.state.paused ? "Создание не подтверждено, модуль на паузе. Подробности в тревоге выше." : `Не создалось: ${res.error}` };
+    if (!res.ok) return { text: r.state.paused || r.state.pendingCreate ? "Создание не подтверждено. Подробности в тревоге выше." : `Не создалось: ${res.error}` };
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
     const t = res.target;

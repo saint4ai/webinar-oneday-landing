@@ -456,25 +456,25 @@ test("ссылка весь период набора; прогрев тольк
   assert.ok(s.journal.some((j: any) => /Живой эфир 12\.10 завершён/.test(j.text)));
 });
 
-test("daily: включили (с подтверждением), в 20:00 создаётся сообщество, до 20:40 ссылка прежняя, в 20:40 подмена; пауза и возобновление", async () => {
+test("daily: включили (с подтверждением), в 20:20 создаётся сообщество, до 20:40 ссылка прежняя, в 20:40 подмена; пауза и возобновление", async () => {
   assert.equal(_waRt()!.state.daily.enabled, false);
-  at(13, 12, 0, 0);
+  at(13, 13, 0, 0); // окно догонки вчерашнего создания (20:20 + 6 дневных часов) закрылось в 12:20
   const on = keep(await wa("POST", "daily", { enabled: true, confirm: true }));
   assert.equal(on.status, 200, on.text);
-  assert.match(on.json.message, /эфир 14\.10, создам 13\.10 в 20:00/);
+  assert.match(on.json.message, /эфир 14\.10, создам 13\.10 в 20:20/);
   assert.equal(JSON.parse(readFileSync(join(dataDir, "wa-state.json"), "utf8")).daily.enabled, true, "в wa-state.json записано");
   // пауза: тик ничего не создаёт
   assert.equal((await wa("POST", "pause", {})).status, 200);
-  at(13, 20, 0, 0);
+  at(13, 20, 20, 0);
   evo.calls = [];
   assert.equal((await waTick()).skipped, "paused");
   assert.equal(evo.of("/community/create").length, 0);
   assert.equal((await wa("POST", "resume", {})).status, 200);
-  // 19:59:50 ещё рано, в 20:00 создание
-  at(13, 19, 59, 50);
+  // 20:19:50 ещё рано (в 20:00 уходит эфирная ссылка, создание после неё), в 20:20 создание
+  at(13, 20, 19, 50);
   assert.equal((await waTick()).created, 0);
   evo.calls = [];
-  at(13, 20, 0, 0);
+  at(13, 20, 20, 0);
   assert.equal((await waTick()).created, 1);
   assert.equal(evo.of("/community/create")[0].body.subject, "Вайб-продакшен · эфир 14.10");
   const t = _waRt()!.state.targets.find((x) => x.day === "2026-10-14")!;

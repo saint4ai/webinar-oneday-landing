@@ -69,6 +69,8 @@ const series = {
   version: "2026-10-09.1",
   timezone: "Asia/Almaty",
   streamStart: "20:00",
+  // Сообщество следующего эфира создаётся накануне в 20:20: после последней эфирной ссылки (20:15), чтобы создание не мешало рассылке. Ссылка на сайте переключается в 20:40.
+  createTime: "20:20",
   streamMinutes: 80,
   joinLiveMinutes: 40,
   graceMinutes: 12,

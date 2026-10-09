@@ -95,6 +95,10 @@ export const evo = {
   /** Контакты инстанса для POST /chat/findContacts: remoteJid -> pushName. */
   contacts: new Map<string, string>(),
   announce: new Map<string, string>(),
+  /** Вкладки объявлений и группы, закрытые для участников (findGroupInfos: announce true). */
+  announceOn: new Set<string>(),
+  /** Как на проде: вкладка объявлений нового сообщества сразу announce: true. Тесты шага announce ставят false. */
+  newTabAnnounce: true,
   requests: new Map<string, any[]>(),
   rejectJids: new Set<string>(),
   /** Статус отказа по человеку из rejectJids в ответе на решение по заявкам (по умолчанию 404; 419 это «группа заполнена»). */
@@ -195,6 +199,7 @@ export const evo = {
             const c = `1203630000000${n}@g.us`;
             const an = `1203631000000${n}@g.us`;
             this.announce.set(c, an);
+            if (this.newTabAnnounce) this.announceOn.add(an);
             return send(201, { communityJid: c, announcementJid: an });
           }
           case "GET /community/info":
@@ -221,13 +226,14 @@ export const evo = {
           case "POST /group/create":
             return send(201, { id: `1203632000000${++this.groups}@g.us`, subject: body?.subject });
           case "POST /group/updateSetting":
+            if (body?.action === "announcement") this.announceOn.add(String(body.groupJid || ""));
             return send(201, { updateSetting: "announcement" });
           case "GET /group/inviteCode": {
             const code = `GRP${jid.replace(/\D/g, "").slice(-6)}`;
             return send(200, { inviteCode: code, inviteUrl: `https://chat.whatsapp.com/${code}` });
           }
           case "GET /group/findGroupInfos":
-            return send(200, { id: jid, size: this.members.get(jid) ?? 2 });
+            return send(200, { id: jid, size: this.members.get(jid) ?? 2, announce: this.announceOn.has(jid) });
           case "POST /webhook/set": {
             // Форма тела как в Evolution 2.3.7 (webhookSchema): { webhook: { enabled, url, … } }, enabled и url обязательны.
             const w = body?.webhook;
@@ -285,6 +291,8 @@ export const evo = {
     this.qrCount = 0;
     this.logouts = 0;
     this.members.clear();
+    this.announceOn.clear();
+    this.newTabAnnounce = true;
     this.participants.clear();
     this.contacts.clear();
     this.requests.clear();

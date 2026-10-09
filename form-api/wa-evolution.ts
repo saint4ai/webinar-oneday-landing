@@ -201,7 +201,8 @@ export async function communityCreate(p: { subject: string; description: string;
   const communityJid = String(r.data?.communityJid || "");
   const announcementJid = String(r.data?.announcementJid || "");
   if (!communityJid.endsWith("@g.us") || !announcementJid.endsWith("@g.us")) {
-    return { ok: false, status: r.status, error: "в ответе create нет communityJid или announcementJid", data: r.data };
+    // 2xx без идентификаторов: сообщество, скорее всего, создано, но мы не знаем где. Исход неясный (status 0), второе вслепую не создаём.
+    return { ok: false, status: 0, error: "в ответе create нет communityJid или announcementJid", data: r.data };
   }
   return { ok: true, status: r.status, data: { communityJid, announcementJid } };
 }
@@ -215,12 +216,15 @@ export async function communityInvite(jid: string): Promise<EvoResult<{ inviteCo
   return inviteOf(r);
 }
 
-export const communitySetting = (jid: string, action: "announcement" | "not_announcement" | "locked" | "unlocked") =>
-  evoCall("POST", `/community/updateSetting/${I()}${q(jid)}`, { action });
+export const communitySetting = (jid: string, action: "announcement" | "not_announcement" | "locked" | "unlocked", timeoutMs?: number) =>
+  evoCall("POST", `/community/updateSetting/${I()}${q(jid)}`, { action }, timeoutMs);
 
-export const communityMemberAddMode = (jid: string, mode: "admin_add" | "all_member_add") => evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode });
+/** timeoutMs (необязательно): короче обычных 20 с, для шагов настройки сообщества, где WhatsApp может зависнуть. */
+export const communityMemberAddMode = (jid: string, mode: "admin_add" | "all_member_add", timeoutMs?: number) =>
+  evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode }, timeoutMs);
 
-export const communityJoinApproval = (jid: string, mode: "on" | "off") => evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode });
+export const communityJoinApproval = (jid: string, mode: "on" | "off", timeoutMs?: number) =>
+  evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode }, timeoutMs);
 
 /** Заявки на вступление с исходными атрибутами. */
 export const communityRequests = (jid: string) => evoCall<any>("GET", `/community/requests/${I()}${q(jid)}`);
@@ -234,12 +238,13 @@ export async function groupCreate(p: { subject: string; description: string; par
   const r = await evoCall<any>("POST", `/group/create/${I()}`, { ...p, promoteParticipants: true }, CREATE_TIMEOUT_MS);
   if (!r.ok) return r;
   const groupJid = String(r.data?.id || "");
-  if (!groupJid.endsWith("@g.us")) return { ok: false, status: r.status, error: "в ответе group/create нет id группы", data: r.data };
+  // 2xx без id группы: исход неясный (status 0), как у сообщества.
+  if (!groupJid.endsWith("@g.us")) return { ok: false, status: 0, error: "в ответе group/create нет id группы", data: r.data };
   return { ok: true, status: r.status, data: { groupJid } };
 }
 
-export const groupSetting = (jid: string, action: "announcement" | "not_announcement" | "locked" | "unlocked") =>
-  evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action });
+export const groupSetting = (jid: string, action: "announcement" | "not_announcement" | "locked" | "unlocked", timeoutMs?: number) =>
+  evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action }, timeoutMs);
 
 export async function groupInvite(jid: string): Promise<EvoResult<{ inviteCode: string; inviteUrl: string }>> {
   const r = await evoCall<any>("GET", `/group/inviteCode/${I()}?groupJid=${encodeURIComponent(jid)}`);
@@ -248,7 +253,7 @@ export async function groupInvite(jid: string): Promise<EvoResult<{ inviteCode: 
 }
 
 /** findGroupInfos отдаёт size (число участников). Список самих участников не нужен, поэтому LID вместо номера нам не мешает. */
-export const groupInfo = (jid: string) => evoCall<any>("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`);
+export const groupInfo = (jid: string, timeoutMs?: number) => evoCall<any>("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`, undefined, timeoutMs);
 
 /** Аватарка по ссылке: Evolution сам скачивает картинку. Работает и с JID сообщества. */
 export const updatePicture = (jid: string, imageUrl: string) =>

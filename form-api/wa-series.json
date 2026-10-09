@@ -3,6 +3,7 @@
   "version": "2026-10-09.1",
   "timezone": "Asia/Almaty",
   "streamStart": "20:00",
+  "createTime": "20:20",
   "streamMinutes": 80,
   "joinLiveMinutes": 40,
   "graceMinutes": 12,

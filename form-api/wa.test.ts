@@ -82,7 +82,7 @@ test.beforeEach(() => {
   delete process.env.WA_GROUPS;
 });
 
-type BootOpts = { kind?: Kind; edit?: (s: any) => void; tgEdit?: (s: any) => void; state?: Record<string, unknown>; daily?: boolean };
+type BootOpts = { kind?: Kind; edit?: (s: any) => void; tgEdit?: (s: any) => void; state?: Record<string, unknown>; daily?: boolean; prodCreateTime?: boolean };
 /**
  * Свежие данные, серия бота (время эфира и вызов команд) и модуль. Команды подключены как в startWaGroups.
  * После первого включения модуль стоит в ежедневном режиме с выключенным созданием; прежние тесты проверяют ежедневное
@@ -92,6 +92,9 @@ function boot(o: BootOpts = {}) {
   const dir = tmp();
   writeFileSync(join(dir, "wa-state.json"), JSON.stringify({ v: 1, mode: "daily", daily: { enabled: o.daily !== false }, ...(o.state || {}) }));
   const series = JSON.parse(readFileSync(WA_SERIES, "utf8"));
+  // Боевое расписание создаёт сообщество в 20:20 (после эфирных ссылок). Старые тесты считают от 20:00, поэтому по умолчанию ставим 20:00;
+  // тесты про боевое время просят prodCreateTime: true.
+  if (!o.prodCreateTime) series.createTime = "20:00";
   o.edit?.(series);
   const seriesPath = join(dir, "wa-series.json");
   writeFileSync(seriesPath, JSON.stringify(series));
@@ -268,20 +271,22 @@ test("создание в 20:00: раньше ничего, в 20:00 сообщ�
     approvalRequired: true,
   });
   assert.equal(/\d{3}\s?\d{3}|₸|\$/.test(create.body.description), false, "в описании нет цены");
-  // порядок: подключение, создание, три настройки, ссылка, аватарка, приветствие (шага lock у сообщества нет: WhatsApp отвечает на locked bad-request)
+  // порядок: подключение, создание, проверка вкладки объявлений, режим добавления, ссылка, аватарка, приветствие.
+  // Шага lock у сообщества нет (WhatsApp отвечает на locked bad-request). Вкладка объявлений нового сообщества уже announce: true, поэтому
+  // настройки announcement нет; вступление по заявке включено при создании, joinApprovalMode не вызывается (на проде он висит).
   assert.deepEqual(evo.seq(), [
     "GET /instance/connectionState", "POST /community/create",
-    "POST /community/updateSetting", "POST /community/memberAddMode", "POST /community/joinApprovalMode",
+    "GET /group/findGroupInfos", "POST /community/memberAddMode",
     "GET /community/inviteCode", "POST /group/updateGroupPicture", "POST /message/sendText",
   ]);
   const jid = w.state().targets[0].jid;
-  assert.deepEqual(evo.of("/community/updateSetting")[0].body, { action: "announcement" });
-  assert.equal(evo.of("/community/updateSetting")[0].query.get("communityJid"), jid);
+  assert.equal(evo.of("/group/findGroupInfos")[0].query.get("groupJid"), w.state().targets[0].sendJid, "смотрим вкладку объявлений");
   assert.deepEqual(evo.of("/community/memberAddMode")[0].body, { mode: "admin_add" });
-  assert.deepEqual(evo.of("/community/joinApprovalMode")[0].body, { mode: "on" });
+  assert.equal(evo.of("/community/memberAddMode")[0].query.get("communityJid"), jid);
+  assert.equal(evo.of("/community/joinApprovalMode").length, 0, "вступление по заявке включено при создании");
   // шага lock у сообщества нет: ни одного вызова locked ни у сообщества, ни у его вкладки объявлений
   assert.equal(evo.calls.filter((c) => c.body?.action === "locked").length, 0);
-  assert.equal(evo.of("/community/updateSetting").length, 1);
+  assert.equal(evo.of("/community/updateSetting").length, 0);
   assert.equal(evo.of("/group/updateSetting").length, 0);
   const pic = evo.of("/group/updateGroupPicture")[0].body;
   assert.deepEqual(pic, { groupJid: jid, image: "https://onai.academy/workshop-montazh/assets/tg/wa-avatar.jpg" });
@@ -387,23 +392,385 @@ test("ссылка на сайте: до готовности и без моду
 
 test("ссылка не готова, пока не поставлены настройки: сообщество без ссылки не отдаётся", async () => {
   const w = boot();
-  evo.fail = (c) => (c.path.startsWith("/community/memberAddMode") ? { status: 400 } : null);
+  // ссылка критичный шаг (настройки сообщества мягкие, см. тесты hotfix 09.10): без неё сообщество не готово
+  evo.fail = (c) => (c.path.startsWith("/community/inviteCode") ? { status: 400 } : null);
   at(7, 20, 0, 0);
   const r = await waTick();
   assert.equal(r.created, 1);
   const t = w.state().targets[0];
   assert.equal(t.done.announce, true);
-  assert.equal(t.done.addMode, undefined);
+  assert.equal(t.done.addMode, true);
+  assert.equal(t.done.link, undefined);
   assert.equal(t.link, "");
+  // сообщество на завтра (8-е создаётся 7-го): сбой не трогает общие failStreak и retryAt, ожидание на самой цели
+  assert.equal(w.state().failStreak, 0);
+  assert.equal(t.retryAt, alm(2026, 10, 7, 20, 3, 0));
   assert.equal(waGroupLink(alm(2026, 10, 7, 21, 0)), null);
-  // починили: через время ожидания (бэкофф 60 с) тик достраивает остальное
+  // починили: через 3 минуты тик достраивает остальное
   evo.fail = null;
-  at(7, 20, 1, 5);
+  at(7, 20, 3, 5);
   await waTick();
   const t2 = w.state().targets[0];
   assert.equal(!!t2.done.addMode && !!t2.done.approval && !!t2.done.link, true);
   assert.equal(waGroupLink(alm(2026, 10, 7, 21, 0)), t2.link);
   assert.equal(w.state().failStreak, 0);
+});
+
+// ───────────────────────── hotfix 09.10: настройки сообщества мягкие, создание в 20:20 ─────────────────────────
+
+const SOFT_ALARM = "WhatsApp не принял настройку";
+/** Как на проде 09.10: updateSetting и memberAddMode дают 400, joinApprovalMode висит (в тестах дольше таймаута 300 мс). */
+const prodFailures = (c: { path: string }) => {
+  if (c.path.startsWith("/community/updateSetting") || c.path.startsWith("/community/memberAddMode") || c.path.startsWith("/group/updateSetting")) return { status: 400 };
+  if (c.path.startsWith("/community/joinApprovalMode")) return { delay: 2500 };
+  return null;
+};
+const withSetupTimeout = async (fn: () => Promise<void>) => {
+  process.env.WA_SETUP_TIMEOUT_MS = "300";
+  try {
+    await fn();
+  } finally {
+    delete process.env.WA_SETUP_TIMEOUT_MS;
+  }
+};
+
+test("боевое расписание: createTime 20:20, сообщество следующего эфира создаётся накануне в 20:20; без createTime как раньше в старт эфира; кривое время отвергается", () => {
+  const prod = validateWaSeries(JSON.parse(readFileSync(WA_SERIES, "utf8")));
+  assert.equal(prod.createTime, "20:20");
+  assert.equal(prod.streamStart, "20:00");
+  boot({ prodCreateTime: true });
+  assert.equal(_internals.createAtOf(_waRt()!, "2026-10-09"), alm(2026, 10, 8, 20, 20));
+  // после перерыва правило то же, только время createTime
+  boot({ prodCreateTime: true, tgEdit: (s) => (s.skipDays = ["2026-10-09"]) });
+  assert.equal(_internals.createAtOf(_waRt()!, "2026-10-10"), alm(2026, 10, 8, 20, 20));
+  // createTime не задан: как раньше, в старт эфира
+  boot({ edit: (s) => delete s.createTime });
+  assert.equal(_internals.createAtOf(_waRt()!, "2026-10-09"), alm(2026, 10, 8, 20, 0));
+  const bad = JSON.parse(readFileSync(WA_SERIES, "utf8"));
+  bad.createTime = "25:99";
+  assert.throws(() => validateWaSeries(bad), /createTime вида HH:MM/);
+  // переключение ссылки по-прежнему в 20:40 (assignStreamDay), создание на него не влияет
+  const cfg = { streamStart: "20:00", streamMinutes: 80, joinLiveMinutes: 40, firstDay: "2026-09-01", skipDays: [] as string[] };
+  assert.equal(assignStreamDay(alm(2026, 10, 8, 20, 39, 59), cfg), "2026-10-08");
+  assert.equal(assignStreamDay(alm(2026, 10, 8, 20, 40, 0), cfg), "2026-10-09");
+});
+
+test("hotfix 09.10: 400 на updateSetting и memberAddMode и зависший joinApprovalMode не ломают сообщество: готово, ошибок подряд нет, отправки серии идут раньше создания, одна тревога", async () => {
+  await withSetupTimeout(async () => {
+    const w = boot({ prodCreateTime: true });
+    // сообщество на 9 октября создаётся накануне в 20:20 обычным путём
+    at(8, 20, 19, 55);
+    assert.equal((await waTick()).created, 0, "в 20:19 ещё рано");
+    at(8, 20, 20, 5);
+    assert.equal((await waTick()).created, 1);
+    // 9 октября эфирные ссылки 20:00 и 20:10 уходят в свои тики, тик 20:15 не случился: в 20:20 созрели и ссылка, и создание сообщества на 10-е
+    for (const [h, m] of [[19, 50], [20, 0], [20, 10]]) {
+      at(9, h, m, 5);
+      await waTick();
+    }
+    assert.equal(w.journal().filter((x) => x.ev === "send" && x.ok && ["live-now", "live-10"].includes(x.msg)).length, 2);
+    evo.newTabAnnounce = false;
+    evo.fail = prodFailures;
+    evo.calls = [];
+    at(9, 20, 20, 5);
+    const r = await waTick();
+    assert.equal(r.created, 1, "сообщество на 10-е создано");
+    assert.equal(r.sent, 1, "ссылка 20:15 ушла в том же тике");
+    const j = w.journal();
+    const iSend = j.findIndex((x) => x.ev === "send" && x.msg === "last-link" && x.ok);
+    const iCreate = j.findIndex((x) => x.ev === "create" && x.target === "2026-10-10#1");
+    assert.ok(iSend >= 0 && iCreate > iSend, `отправка (${iSend}) раньше создания (${iCreate})`);
+    const t = w.rt().state.targets.find((x) => x.id === "2026-10-10#1")!;
+    assert.equal(_internals.isReady(t), true, "сообщество готово");
+    assert.match(t.link, /^https:\/\/chat\.whatsapp\.com\/INV/);
+    assert.deepEqual([t.done.announce, t.done.addMode, t.done.approval, t.done.link], [true, true, true, true]);
+    assert.deepEqual(Object.keys(t.soft || {}).sort(), ["addMode", "announce"], "approval у сообщества модуля без вызова, мягкими стали два шага");
+    assert.equal(t.done.welcome, true, "приветствие ушло, цель готова");
+    // вызовы: вкладку смотрим и пробуем закрыть, режим добавления пробуем, joinApprovalMode не зовём (на проде висит), /community/updateSetting не зовём (на проде 400)
+    assert.equal(evo.of("/group/findGroupInfos").filter((c) => c.query.get("groupJid") === t.sendJid).length, 1);
+    assert.deepEqual(evo.of("/group/updateSetting").map((c) => c.body), [{ groupJid: t.sendJid, action: "announcement" }]);
+    assert.equal(evo.of("/community/memberAddMode").length, 1);
+    assert.equal(evo.of("/community/joinApprovalMode").length, 0);
+    assert.equal(evo.of("/community/updateSetting").length, 0);
+    // модуль не встал: ни ошибок подряд, ни ожидания, ни паузы; в журнале мягкие шаги, а не fail
+    const st = w.state();
+    assert.deepEqual([st.failStreak, st.retryAt, st.paused], [0, 0, false]);
+    assert.deepEqual(j.filter((x) => x.ev === "step_soft").map((x) => x.step).sort(), ["addMode", "announce"]);
+    assert.equal(j.filter((x) => x.ev === "fail").length, 0);
+    // одна тревога на цель, и повторные тики её не повторяют
+    const soft = () => alarms.filter((a) => a.includes(SOFT_ALARM));
+    assert.equal(soft().length, 1);
+    assert.match(soft()[0], /^Сообщество «Вайб-продакшен · эфир 10\.10» создано, но WhatsApp не принял настройку: писать во вкладку объявлений только админам \(.*\)\. Проверь вручную в телефоне\.$/);
+    assert.equal(/добавлять участников/.test(soft()[0]), false, "addMode в тревогу не входит");
+    assert.equal(soft()[0].includes(String.fromCharCode(0x2014)), false);
+    evo.calls = [];
+    for (const [h, m] of [[20, 21], [20, 25], [20, 30]]) {
+      at(9, h, m, 5);
+      await waTick();
+    }
+    assert.equal(soft().length, 1, "повторных тревог нет");
+    assert.equal(evo.of("/community/memberAddMode").length, 0, "достраивать нечего");
+    assert.equal(alarms.filter((a) => a.includes("на паузе")).length, 0);
+    // ссылка на сайте переключается в 20:40 на готовое сообщество
+    assert.equal(waGroupLink(alm(2026, 10, 9, 20, 40, 0)), t.link);
+  });
+});
+
+test("создание в 20:20 не мешает эфирным ссылкам: 20:00, 20:10, 20:15 уходят в свои тики, сообщество следующего эфира создаётся после них", async () => {
+  const w = boot({ prodCreateTime: true });
+  at(8, 20, 20, 5);
+  assert.equal((await waTick()).created, 1);
+  const makes = () => evo.of("/community/create").length;
+  const links = () => w.journal().filter((x) => x.ev === "send" && x.ok && ["live-now", "live-10", "last-link"].includes(x.msg)).map((x) => x.msg);
+  at(9, 19, 50, 5); // последнее сообщение до эфира: промежуток 4 минуты от него не мешает 20:00
+  await waTick();
+  for (const [h, m, msg] of [[20, 0, "live-now"], [20, 10, "live-10"], [20, 15, "last-link"]] as Array<[number, number, string]>) {
+    at(9, h, m, 5);
+    const r = await waTick();
+    assert.equal(r.created, 0, `${h}:${m}: создания ещё нет`);
+    assert.equal(w.journal().filter((x) => x.ev === "send" && x.ok && x.msg === msg).length, 1, `${h}:${m}: ${msg} ушла вовремя`);
+  }
+  assert.equal(makes(), 1, "до 20:20 второго сообщества нет");
+  assert.deepEqual(links(), ["live-now", "live-10", "last-link"]);
+  at(9, 20, 20, 5);
+  assert.equal((await waTick()).created, 1);
+  assert.equal(makes(), 2);
+  const st = w.state();
+  assert.deepEqual([st.failStreak, st.retryAt, st.paused], [0, 0, false]);
+  assert.equal(alarms.filter((a) => a.includes(SOFT_ALARM)).length, 0, "при нормальном ответе WhatsApp тревоги нет");
+  // ссылка на сайте в 20:40 ведёт в сообщество 10-го
+  const t10 = w.state().targets.find((x: any) => x.day === "2026-10-10");
+  assert.equal(waGroupLink(alm(2026, 10, 9, 20, 40, 0)), t10.link);
+});
+
+test("announce у сообщества: вкладка уже announce true, настройки нет; не закрыта, закрываем настройкой вкладки; findGroupInfos упал, тоже закрываем; закрыть не вышло, шаг всё равно сделан", async () => {
+  // уже закрыта (как на проде у нового сообщества): ни одного вызова настройки
+  const w = boot();
+  at(8, 20, 0, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  assert.equal(evo.of("/group/findGroupInfos").length, 1);
+  assert.equal(evo.of("/group/updateSetting").length + evo.of("/community/updateSetting").length, 0);
+  assert.equal(w.state().targets[0].soft, undefined);
+  assert.equal(alarms.length, 0);
+  // не закрыта: настройка вкладки объявлений
+  const w2 = boot();
+  evo.newTabAnnounce = false;
+  at(8, 20, 0, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  const t2 = w2.state().targets[0];
+  assert.deepEqual(evo.of("/group/updateSetting").map((c) => c.body), [{ groupJid: t2.sendJid, action: "announcement" }]);
+  assert.equal(evo.announceOn.has(t2.sendJid), true);
+  assert.equal(t2.done.announce, true);
+  assert.equal(t2.soft, undefined);
+  // findGroupInfos упал: пробуем закрыть настройкой
+  const w3 = boot();
+  evo.newTabAnnounce = false;
+  evo.fail = (c) => (c.path.startsWith("/group/findGroupInfos") ? { status: 500 } : null);
+  at(8, 20, 0, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  assert.equal(evo.of("/group/updateSetting").length, 1);
+  assert.equal(w3.state().targets[0].soft, undefined);
+  assert.equal(w3.state().failStreak, 0);
+  // и проверка, и настройка не вышли: шаг сделан как мягкий, ошибок подряд нет
+  const w4 = boot();
+  evo.newTabAnnounce = false;
+  evo.fail = (c) => (c.path.startsWith("/group/updateSetting") ? { status: 400 } : null);
+  at(8, 20, 0, 0);
+  assert.equal((await waTick()).created, 1);
+  const t4 = w4.state().targets[0];
+  assert.equal(t4.done.announce, true);
+  assert.deepEqual(Object.keys(t4.soft), ["announce"]);
+  assert.deepEqual([w4.state().failStreak, w4.state().retryAt], [0, 0]);
+});
+
+test("зависание: memberAddMode не отвечает дольше таймаута, шаг мягкий и быстрый; у чужого принятого сообщества joinApprovalMode пробуется и тоже мягкий, у сообщества модуля не зовётся", async () => {
+  await withSetupTimeout(async () => {
+    // memberAddMode завис
+    const w = boot();
+    evo.fail = (c) => (c.path.startsWith("/community/memberAddMode") ? { delay: 2500 } : null);
+    at(8, 20, 0, 0);
+    const t0 = Date.now();
+    assert.equal((await waTick()).created, 1);
+    assert.ok(Date.now() - t0 < 2000, `таймаут шага 300 мс, а тик занял ${Date.now() - t0} мс`);
+    const t = w.state().targets[0];
+    assert.equal(t.done.addMode, true);
+    assert.match(t.soft.addMode, /timeout/);
+    assert.deepEqual([w.state().failStreak, w.state().retryAt], [0, 0]);
+    assert.equal(evo.of("/community/joinApprovalMode").length, 0, "своё сообщество: вступление по заявке уже включено");
+    assert.equal(alarms.filter((a) => a.includes(SOFT_ALARM)).length, 0, "addMode мягкий только в журнале: на проде он отвечает 400 каждый вечер");
+    assert.equal(w.journal().filter((x) => x.ev === "step_soft" && x.step === "addMode").length, 1);
+
+    // чужое принятое сообщество: вызов с коротким таймаутом, ошибка мягкая
+    evo.fail = null;
+    const w2 = boot();
+    at(8, 20, 0, 0);
+    assert.equal((await waTick()).created, 1);
+    const st = w2.rt().state.targets[0];
+    st.adopted = true;
+    delete st.done.approval;
+    evo.calls = [];
+    evo.fail = (c) => (c.path.startsWith("/community/joinApprovalMode") ? { delay: 2500 } : null);
+    alarms.length = 0;
+    at(8, 20, 1, 0);
+    const t1 = Date.now();
+    await waTick();
+    assert.ok(Date.now() - t1 < 2000, `таймаут шага 300 мс, а тик занял ${Date.now() - t1} мс`);
+    assert.deepEqual(evo.of("/community/joinApprovalMode").map((c) => c.body), [{ mode: "on" }]);
+    assert.equal(w2.rt().state.targets[0].done.approval, true);
+    assert.match(w2.rt().state.targets[0].soft!.approval!, /timeout/);
+    assert.deepEqual([w2.rt().state.failStreak, w2.rt().state.retryAt, w2.rt().state.paused], [0, 0, false]);
+    assert.equal(alarms.filter((a) => a.includes(SOFT_ALARM)).length, 1);
+  });
+});
+
+test("обычная группа по-старому: announce через настройку группы без findGroupInfos, ошибка критичная (бэкофф), мягких шагов нет", async () => {
+  const w = boot({ kind: "group" });
+  process.env.WA_ADMIN_NUMBERS = "77085834575";
+  evo.fail = (c) => (c.path.startsWith("/group/updateSetting") ? { status: 400 } : null);
+  at(8, 20, 0, 0);
+  assert.equal((await waTick()).created, 1);
+  const t = w.state().targets[0];
+  assert.equal(t.kind, "group");
+  assert.equal(t.done.announce, undefined, "announce не прошёл");
+  assert.equal(w.state().failStreak, 1);
+  assert.ok(w.state().retryAt > clock.t, "бэкофф выставлен");
+  assert.equal(evo.of("/group/findGroupInfos").length, 0);
+  assert.equal(t.soft, undefined);
+  assert.equal(w.journal().filter((x) => x.ev === "step_soft").length, 0);
+  assert.equal(alarms.filter((a) => a.includes(SOFT_ALARM)).length, 0);
+});
+
+/** Общий разгон для тестов сбоев: сообщество на 9-е создано накануне, эфирные ссылки 9-го ушли, часы стоят на 20:15 9 октября. */
+async function bootEveningOf9() {
+  const w = boot({ prodCreateTime: true });
+  at(8, 20, 20, 5);
+  assert.equal((await waTick()).created, 1);
+  for (const [h, m] of [[19, 50], [20, 0], [20, 10], [20, 15]]) {
+    at(9, h, m, 5);
+    await waTick();
+  }
+  alarms.length = 0;
+  evo.calls = [];
+  return w;
+}
+const sentOk = (w: ReturnType<typeof boot>, msg: string) => w.journal().filter((x) => x.ev === "send" && x.ok && x.msg === msg && x.target === "2026-10-09#1").length;
+
+test("сбой создания сообщества на завтра в 20:20 (неясный исход, обрыв, 200 без JID, 4xx) не трогает рассылку: 20:58 и оффер уходят в текущее сообщество, модуль не на паузе, второго сообщества нет", async () => {
+  const create = (o: unknown) => (c: { path: string }) => (c.path.startsWith("/community/create") ? (o as any) : null);
+  const variants: Array<{ name: string; fail: (c: { path: string }) => any; unclear: boolean }> = [
+    { name: "500", fail: create({ status: 500 }), unclear: true },
+    { name: "обрыв", fail: create({ hang: true }), unclear: true },
+    { name: "200 без JID", fail: create({ status: 200, json: { ok: true } }), unclear: true },
+    { name: "400", fail: create({ status: 400 }), unclear: false },
+  ];
+  for (const v of variants) {
+    const w = await bootEveningOf9();
+    evo.fail = v.fail;
+    const creates = () => evo.of("/community/create").length;
+    at(9, 20, 20, 5);
+    assert.equal((await waTick()).created, 0, v.name);
+    assert.equal(creates(), 1, `${v.name}: одна попытка`);
+    const st0 = w.state();
+    assert.deepEqual([st0.paused, st0.failStreak, st0.retryAt], [false, 0, 0], `${v.name}: модуль не встал`);
+    assert.equal(w.state().targets.length, 1, `${v.name}: второго сообщества нет`);
+    assert.equal(!!st0.pendingCreate, v.unclear, `${v.name}: pendingCreate только при неясном исходе`);
+    if (v.unclear) {
+      assert.equal(alarms.filter((a) => /проверь список чатов на телефоне/.test(a)).length, 1, `${v.name}: одна тревога`);
+      assert.match(alarms[0], /Рассылка в текущее сообщество идёт как обычно/);
+      assert.equal(st0.creations.length, 2, `${v.name}: неясная попытка учтена в лимите`);
+    }
+    // 20:30: неясное создание не повторяется (ждёт /wa_resume), чёткий отказ повторяется через 5 минут
+    at(9, 20, 30, 5);
+    await waTick();
+    assert.equal(creates(), v.unclear ? 1 : 2, `${v.name}: повтор в 20:30`);
+    // 20:58 и оффер 21:18 уходят в текущее сообщество
+    at(9, 20, 58, 5);
+    const r58 = await waTick();
+    assert.ok(r58.sent >= 1, `${v.name}: 20:58 ушло`);
+    assert.equal(sentOk(w, "training"), 1, `${v.name}: training в сообщество 9-го`);
+    at(9, 21, 18, 5);
+    await waTick();
+    assert.ok(sentOk(w, "offer") >= 1, `${v.name}: оффер 21:18 ушёл`);
+    const st = w.state();
+    assert.deepEqual([st.paused, st.failStreak, st.retryAt], [false, 0, 0], `${v.name}: к 21:18 модуль не на паузе`);
+    assert.equal(alarms.filter((a) => /на паузе/.test(a)).length, 0, `${v.name}: тревоги о паузе нет`);
+    assert.equal(w.state().targets.length, 1, `${v.name}: сообщество всё ещё одно`);
+    assert.equal(creates(), v.unclear ? 1 : 3, `${v.name}: число попыток создания`);
+    if (!v.unclear) {
+      assert.equal(alarms.filter((a) => /не создаётся уже 3 раза подряд/.test(a)).length, 1, "400: одна тревога на третьей неудаче");
+      assert.equal(w.rt().createFails, 3);
+    }
+    // восстановление: WhatsApp ответил нормально (для неясного исхода после /wa_resume), сообщество создано, готово, ссылка переключается в 20:40 следующего дня
+    evo.fail = null;
+    if (v.unclear) {
+      const [reply] = await ownerSay("/wa_resume");
+      assert.match(reply, /Неподтверждённое создание снято с учёта/);
+      assert.equal(w.state().pendingCreate, null);
+    }
+    at(9, 21, 40, 5);
+    assert.equal((await waTick()).created, 1, `${v.name}: после восстановления создано`);
+    const t10 = w.state().targets.find((x: any) => x.day === "2026-10-10");
+    assert.ok(t10.link, `${v.name}: готово`);
+    assert.equal(w.state().failStreak, 0);
+  }
+});
+
+test("сообщество на завтра не достраивается (ссылка 400): рассылка в текущее идёт, failStreak и retryAt не трогаются, повтор через 3 минуты, одна тревога на третьей попытке; цель текущего дня по-старому", async () => {
+  const w = await bootEveningOf9();
+  evo.fail = (c) => (c.path.startsWith("/community/inviteCode") ? { status: 400 } : null);
+  const invites = () => evo.of("/community/inviteCode").length;
+  const t10 = () => w.rt().state.targets.find((x) => x.id === "2026-10-10#1")!;
+  const common = () => {
+    const s = w.state();
+    assert.deepEqual([s.paused, s.failStreak, s.retryAt], [false, 0, 0]);
+  };
+  at(9, 20, 20, 5);
+  assert.equal((await waTick()).created, 1);
+  assert.equal(t10().tries.link, 1);
+  assert.equal(t10().retryAt, alm(2026, 10, 9, 20, 23, 5), "повтор через 3 минуты");
+  assert.equal(_internals.isReady(t10()), false);
+  common();
+  const n1 = invites();
+  at(9, 20, 22, 5);
+  await waTick();
+  assert.equal(invites(), n1, "раньше срока цель не трогаем");
+  at(9, 20, 23, 10);
+  await waTick();
+  assert.equal(t10().tries.link, 2);
+  assert.equal(alarms.filter((a) => /на завтра не достраивается/.test(a)).length, 0);
+  at(9, 20, 26, 15);
+  await waTick();
+  assert.equal(t10().tries.link, 3);
+  assert.equal(alarms.filter((a) => /на завтра не достраивается/.test(a)).length, 1, "тревога на третьей попытке");
+  assert.equal(t10().retryAt, alm(2026, 10, 9, 20, 36, 15), "с третьей попытки интервал 10 минут");
+  common();
+  // эфирные 20:58 и оффер идут в текущее сообщество, пока новое достраивается
+  at(9, 20, 58, 5);
+  assert.ok((await waTick()).sent >= 1);
+  assert.equal(sentOk(w, "training"), 1);
+  common();
+  evo.fail = null;
+  at(9, 21, 18, 5);
+  await waTick();
+  assert.ok(sentOk(w, "offer") >= 1);
+  assert.equal(_internals.isReady(t10()), true, "достроилось после восстановления");
+  assert.match(t10().link, /^https:\/\/chat\.whatsapp\.com\/INV/);
+  assert.equal(alarms.filter((a) => /на завтра не достраивается/.test(a)).length, 1, "тревога одна");
+  common();
+
+  // сообщество текущего дня по-старому: ошибка критичного шага это общий failStreak и бэкофф
+  const w2 = boot();
+  at(8, 15, 0, 0);
+  evo.fail = (c) => (c.path.startsWith("/community/inviteCode") ? { status: 400 } : null);
+  await ownerSay("/wa_new 2026-10-08");
+  const today = w2.rt().state.targets[0];
+  assert.equal(today.day, "2026-10-08");
+  assert.equal(w2.state().failStreak, 1);
+  assert.ok(w2.state().retryAt > clock.t);
+  assert.equal(today.retryAt, undefined);
 });
 
 // ───────────────────────── переполнение ─────────────────────────
@@ -1072,7 +1439,7 @@ test("lock: у сообщества и его вкладки объявлени�
   assert.equal(t.tries.lock, undefined);
   assert.equal(t.lockAt, undefined);
   assert.equal(evo.of("/group/updateSetting").length, 0, "вкладку объявлений настройками не трогаем");
-  assert.equal(evo.of("/community/updateSetting").length, 1, "только announcement");
+  assert.equal(evo.of("/community/updateSetting").length, 0, "вкладка и так announce: true, настройка не нужна");
   assert.equal(t.done.welcome, true, "остальные шаги прошли");
 
   // цель, созданная до этого решения: без done.lock и даже с записанными попытками lock; шаг не выполняется, тревоги нет
@@ -1239,12 +1606,12 @@ test("нет подключения: ничего не уходит, трево�
   process.env.EVOLUTION_URL = saved;
 });
 
-test("создание без чёткого ответа: пауза и тревога, вслепую не повторяем; 4xx это обычная ошибка с повтором", async () => {
+test("создание без чёткого ответа: тревога и ожидание /wa_resume без паузы модуля, вслепую не повторяем; 4xx это отказ с повтором через 5 минут", async () => {
   const w = boot();
   evo.fail = (c) => (c.path.startsWith("/community/create") ? { status: 500 } : null);
   at(8, 20, 0, 0);
   await waTick();
-  assert.equal(w.state().paused, true);
+  assert.equal(w.state().paused, false, "сообщество создаётся в разгар эфира: пауза остановила бы рассылку");
   assert.ok(w.state().pendingCreate);
   assert.equal(w.state().creations.length, 1, "неясная попытка учтена в лимите");
   assert.match(alarms[0], /проверь список чатов на телефоне/);
@@ -1257,16 +1624,19 @@ test("создание без чёткого ответа: пауза и тре�
   at(8, 20, 10, 0);
   assert.equal((await waTick()).created, 1);
 
-  // 400: сообщество не создано, счётчик ошибок 1, повтор через минуту
+  // 400: сообщество не создано, общий счётчик ошибок не растёт, повтор через 5 минут
   const w2 = boot();
   evo.fail = (c) => (c.path.startsWith("/community/create") ? { status: 400 } : null);
   at(8, 20, 0, 0);
   await waTick();
   assert.equal(w2.state().paused, false);
-  assert.equal(w2.state().failStreak, 1);
+  assert.equal(w2.state().failStreak, 0);
+  assert.equal(w2.state().retryAt, 0);
   assert.equal(w2.state().pendingCreate, null);
   evo.fail = null;
   at(8, 20, 1, 5);
+  assert.equal((await waTick()).created, 0, "раньше чем через 5 минут не повторяем");
+  at(8, 20, 5, 10);
   assert.equal((await waTick()).created, 1);
 });
 
@@ -1876,7 +2246,7 @@ test("живой эфир: «Создать сейчас» создаёт оди
   assert.equal(evo.of("/community/create").length, 1);
   assert.deepEqual(evo.seq(), [
     "GET /instance/connectionState", "GET /instance/fetchInstances", "POST /community/create",
-    "POST /community/updateSetting", "POST /community/memberAddMode", "POST /community/joinApprovalMode",
+    "GET /group/findGroupInfos", "POST /community/memberAddMode",
     "GET /community/inviteCode", "POST /group/updateGroupPicture", "POST /message/sendText",
   ]);
   for (const ms of sleeps) assert.ok(ms >= 2000 && ms <= 4000, `пауза шага ${ms}`);
@@ -2428,7 +2798,8 @@ test("ревью п.1: тик и «Создать сейчас» одновре�
   assert.equal(creates(), 1, "после неясного ответа вторая кнопка не создаёт вслепую");
   assert.equal(a.ok, false);
   assert.deepEqual([b.ok, b.code], [false, "pending"], "вторая кнопка в очереди видит неподтверждённое создание");
-  assert.equal(w3.state().paused, true);
+  assert.equal(w3.state().paused, false, "рассылку неясное создание не останавливает");
+  assert.ok(w3.state().pendingCreate, "но блокирует повторное создание до /wa_resume");
   assert.equal(w3.state().targets.length, 0);
 });
 
@@ -2548,8 +2919,13 @@ test("ревью п.2: 5xx у картинки не заменяется тек�
   assert.equal((await waTick()).created, 1);
   assert.equal(evo.of("/message/sendText").length, 1);
   assert.equal(alarms.filter((a) => a.startsWith("Не уверен, что приветствие ушло в «Вайб-продакшен · эфир 09.10»")).length, 1);
-  assert.equal(w2.state().failStreak, 1);
+  // сообщество на завтра: сбой приветствия не трогает общий failStreak, ожидание на самой цели (3 минуты)
+  assert.equal(w2.state().failStreak, 0);
+  assert.equal(w2.state().targets[0].retryAt, alm(2026, 10, 8, 20, 3, 0));
   at(8, 20, 2, 0);
+  await waTick();
+  assert.equal(evo.of("/message/sendText").length, 1, "до истечения ожидания цель не трогаем");
+  at(8, 20, 3, 5);
   await waTick();
   assert.equal(evo.of("/message/sendText").length, 1, "приветствие второй раз не уходит");
   assert.equal(w2.state().targets[0].done.welcome, true);

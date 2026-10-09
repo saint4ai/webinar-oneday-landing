@@ -1411,11 +1411,11 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
   function waDailyBody(s) {
     var d = s.daily, box = h('div', { class: 'modebody' });
     box.appendChild(h('div', { class: 'swrow' },
-      h('div', null, h('b', { text: 'Ежедневное создание сообществ' }), h('div', { class: 'hint', text: d.enabled ? 'Включено: каждый день в 20:00 создаётся сообщество под эфир следующего дня, ссылка на сайте переключается в 20:40.' : 'Выключено: новые сообщества не создаются. Созданные работают до конца.' })),
+      h('div', null, h('b', { text: 'Ежедневное создание сообществ' }), h('div', { class: 'hint', text: d.enabled ? 'Включено: каждый день в 20:20 создаётся сообщество под эфир следующего дня, ссылка на сайте переключается в 20:40.' : 'Выключено: новые сообщества не создаются. Созданные работают до конца.' })),
       h('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': String(d.enabled), 'aria-label': 'Ежедневное создание сообществ', disabled: !!wa.busy, onclick: function () {
         if (d.enabled) waAct('daily', { enabled: false }, 'Выключаю…'); else ask('daily-on')();
       } }, h('i'))));
-    if (wa.conf === 'daily-on') box.appendChild(confirmBox('Включить ежедневное создание? Сообщество под ближайший эфир создастся ' + (d.next ? d.next.text : 'в 20:00') + ', дальше каждый день.', 'Включить', function () { waAct('daily', { enabled: true, confirm: true }, 'Включаю…'); }));
+    if (wa.conf === 'daily-on') box.appendChild(confirmBox('Включить ежедневное создание? Сообщество под ближайший эфир создастся ' + (d.next ? d.next.text : 'в 20:20') + ', дальше каждый день.', 'Включить', function () { waAct('daily', { enabled: true, confirm: true }, 'Включаю…'); }));
     if (d.enabled && d.next) box.appendChild(h('div', { class: 'hint', text: 'Ближайшее создание: эфир ' + d.next.dayLabel + ', ' + d.next.text + '.' }));
     box.appendChild(h('div', { class: 'actions' }, btn('Создать сообщество следующего эфира сейчас', ask('dailycreate'), 'ghost')));
     if (wa.conf === 'dailycreate') box.appendChild(confirmBox('Создать сообщество ближайшего эфира прямо сейчас, не дожидаясь 20:00?', 'Создать', function () { waAct('daily/create', { confirm: true }, 'Создаю сообщество, это займёт около минуты…'); }));

@@ -7331,7 +7331,7 @@ async function communityCreate(p) {
   const communityJid = String(r.data?.communityJid || "");
   const announcementJid = String(r.data?.announcementJid || "");
   if (!communityJid.endsWith("@g.us") || !announcementJid.endsWith("@g.us")) {
-    return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 create \u043D\u0435\u0442 communityJid \u0438\u043B\u0438 announcementJid", data: r.data };
+    return { ok: false, status: 0, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 create \u043D\u0435\u0442 communityJid \u0438\u043B\u0438 announcementJid", data: r.data };
   }
   return { ok: true, status: r.status, data: { communityJid, announcementJid } };
 }
@@ -7341,25 +7341,24 @@ async function communityInvite(jid) {
   if (!r.ok) return r;
   return inviteOf(r);
 }
-var communitySetting = (jid, action) => evoCall("POST", `/community/updateSetting/${I()}${q(jid)}`, { action });
-var communityMemberAddMode = (jid, mode) => evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode });
-var communityJoinApproval = (jid, mode) => evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode });
+var communityMemberAddMode = (jid, mode, timeoutMs2) => evoCall("POST", `/community/memberAddMode/${I()}${q(jid)}`, { mode }, timeoutMs2);
+var communityJoinApproval = (jid, mode, timeoutMs2) => evoCall("POST", `/community/joinApprovalMode/${I()}${q(jid)}`, { mode }, timeoutMs2);
 var communityRequests = (jid) => evoCall("GET", `/community/requests/${I()}${q(jid)}`);
 var communityDecide = (jid, participants, action) => evoCall("POST", `/community/requests/${I()}${q(jid)}`, { participants, action });
 async function groupCreate(p) {
   const r = await evoCall("POST", `/group/create/${I()}`, { ...p, promoteParticipants: true }, CREATE_TIMEOUT_MS);
   if (!r.ok) return r;
   const groupJid = String(r.data?.id || "");
-  if (!groupJid.endsWith("@g.us")) return { ok: false, status: r.status, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 group/create \u043D\u0435\u0442 id \u0433\u0440\u0443\u043F\u043F\u044B", data: r.data };
+  if (!groupJid.endsWith("@g.us")) return { ok: false, status: 0, error: "\u0432 \u043E\u0442\u0432\u0435\u0442\u0435 group/create \u043D\u0435\u0442 id \u0433\u0440\u0443\u043F\u043F\u044B", data: r.data };
   return { ok: true, status: r.status, data: { groupJid } };
 }
-var groupSetting = (jid, action) => evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action });
+var groupSetting = (jid, action, timeoutMs2) => evoCall("POST", `/group/updateSetting/${I()}`, { groupJid: jid, action }, timeoutMs2);
 async function groupInvite(jid) {
   const r = await evoCall("GET", `/group/inviteCode/${I()}?groupJid=${encodeURIComponent(jid)}`);
   if (!r.ok) return r;
   return inviteOf(r);
 }
-var groupInfo = (jid) => evoCall("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`);
+var groupInfo = (jid, timeoutMs2) => evoCall("GET", `/group/findGroupInfos/${I()}?groupJid=${encodeURIComponent(jid)}`, void 0, timeoutMs2);
 var updatePicture = (jid, imageUrl) => evoCall("POST", `/group/updateGroupPicture/${I()}`, { groupJid: jid, image: imageUrl }, MEDIA_TIMEOUT_MS);
 function inviteOf(r) {
   const inviteCode = String(r.data?.inviteCode || "");
@@ -9502,7 +9501,7 @@ function validateWaSeries(raw) {
   for (const s of allStrings2(raw)) if (s.includes(String.fromCharCode(8212))) throw new Error(`wa-series: \u0434\u043B\u0438\u043D\u043D\u043E\u0435 \u0442\u0438\u0440\u0435 \u0432 \xAB${s.slice(0, 50)}\xBB`);
   if (raw.timezone !== "Asia/Almaty") throw new Error("wa-series: timezone \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C Asia/Almaty");
   if (typeof raw.version !== "string") throw new Error("wa-series: \u043D\u0435\u0442 version");
-  for (const k of ["streamStart", "closeAt"]) {
+  for (const k of ["streamStart", "closeAt", ...raw.createTime !== void 0 ? ["createTime"] : []]) {
     try {
       parseHHMM(String(raw[k]));
     } catch {
@@ -9703,6 +9702,8 @@ function initWaGroups(opts = {}) {
     qmark: /* @__PURE__ */ new Map(),
     skipLog: /* @__PURE__ */ new Set(),
     downSince: 0,
+    createRetryAt: 0,
+    createFails: 0,
     seenReq: /* @__PURE__ */ new Set(),
     approved: /* @__PURE__ */ new Set(),
     approveFails: /* @__PURE__ */ new Map(),
@@ -9922,12 +9923,13 @@ var closeAtOf = (r, day) => atTime(addDays(day, 1), r.cfg.closeAt);
 var sendUntilOf = (r, day, m) => closeAtOf(r, day) + (m.dayOffset ?? 0) * 24 * HOUR3;
 function createAtOf(r, day) {
   const c = tcfg(r);
+  const time = r.cfg.createTime ?? c.streamStart;
   let p = addDays(day, -1);
   for (let i = 0; i < 30; i++) {
-    if (isStreamDay(p, c)) return atTime(p, c.streamStart);
+    if (isStreamDay(p, c)) return atTime(p, time);
     p = addDays(p, -1);
   }
-  return atTime(addDays(day, -1), c.streamStart);
+  return atTime(addDays(day, -1), time);
 }
 var ddmm4 = (day) => `${day.slice(8, 10)}.${day.slice(5, 7)}`;
 var nameOf = (r, day, seq) => r.cfg.name.replace("{date}", ddmm4(day)) + (seq > 1 ? ` (${seq})` : "");
@@ -10211,6 +10213,15 @@ async function createTarget(r, day, seq, now, opts = {}) {
   if (!res.ok) {
     if (ambiguous(res)) {
       noteCreation(r, now);
+      if (kind === "community") {
+        save(r);
+        journal(r, { ev: "create_unclear", name, err: res.error });
+        await alarm(
+          r,
+          `\u041F\u0440\u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0438 \xAB${name}\xBB \u043D\u0435 \u043F\u0440\u0438\u0448\u0451\u043B \u0447\u0451\u0442\u043A\u0438\u0439 \u043E\u0442\u0432\u0435\u0442 (${res.error}). \u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E, \u043E\u043D\u043E \u0443\u0436\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u043E: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u043F\u0438\u0441\u043E\u043A \u0447\u0430\u0442\u043E\u0432 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0432 \u0442\u0435\u043A\u0443\u0449\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0438\u0434\u0451\u0442 \u043A\u0430\u043A \u043E\u0431\u044B\u0447\u043D\u043E, \u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u044E\u0442\u0441\u044F, \u043F\u043E\u043A\u0430 \u043D\u0435 \u0441\u0434\u0435\u043B\u0430\u0435\u0448\u044C /wa_resume. \u0415\u0441\u043B\u0438 \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u0443\u0434\u0430\u043B\u0438 \u043B\u0438\u0448\u043D\u0435\u0435; \u043F\u043E\u0442\u043E\u043C /wa_resume, \u0430 /wa_new \u0441\u043E\u0437\u0434\u0430\u0441\u0442 \u0437\u0430\u043D\u043E\u0432\u043E.`
+        );
+        return { ok: false, error: res.error };
+      }
       await pauseModule(
         r,
         now,
@@ -10221,6 +10232,16 @@ async function createTarget(r, day, seq, now, opts = {}) {
     }
     r.state.pendingCreate = null;
     save(r);
+    if (kind === "community") {
+      r.createFails++;
+      r.createRetryAt = now + (r.createFails >= 3 ? 30 : 5) * MIN3;
+      journal(r, { ev: "create_fail", n: r.createFails, name, err: res.error, retry: iso(r.createRetryAt) });
+      console.warn("[wa] \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 %s \u043D\u0435 \u0432\u044B\u0448\u043B\u043E (%d \u043F\u043E\u0434\u0440\u044F\u0434), \u043F\u043E\u0432\u0442\u043E\u0440 \u0432 %s: %s", name, r.createFails, hhmmOf(r.createRetryAt), res.error);
+      if (r.createFails === 3) {
+        await alarm(r, `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \xAB${name}\xBB \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F \u0443\u0436\u0435 ${r.createFails} \u0440\u0430\u0437\u0430 \u043F\u043E\u0434\u0440\u044F\u0434: ${res.error}. \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0438\u0434\u0451\u0442 \u043A\u0430\u043A \u043E\u0431\u044B\u0447\u043D\u043E, \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u0442\u0441\u044F. \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E: /wa_new.`);
+      }
+      return { ok: false, error: res.error };
+    }
     await noteFail(r, `\u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 ${name}`, res.error);
     return { ok: false, error: res.error };
   }
@@ -10244,6 +10265,8 @@ async function createTarget(r, day, seq, now, opts = {}) {
   };
   r.state.targets.push(t);
   r.state.pendingCreate = null;
+  r.createFails = 0;
+  r.createRetryAt = 0;
   noteCreation(r, now);
   save(r);
   journal(r, { ev: "create", target: t.id, day, kind, jid: t.jid, sendJid: t.sendJid, name, ...t.source ? { source: t.source } : {} });
@@ -10258,7 +10281,7 @@ async function setupSteps(r, t) {
   for (const s of order) {
     if (t.done[s]) continue;
     const now = r.deps.now();
-    if (r.state.paused || now < r.state.retryAt) return false;
+    if (r.state.paused || now < r.state.retryAt || now < (t.retryAt ?? 0)) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN3)) continue;
     if (s === "lock" && ((t.tries.lock || 0) >= 3 || now - (t.lockAt || 0) < 5 * MIN3)) continue;
@@ -10267,15 +10290,26 @@ async function setupSteps(r, t) {
     first = false;
     t.tries[s] = (t.tries[s] || 0) + 1;
     let err = "";
+    let soft = "";
     if (s === "announce") {
-      const x = t.kind === "community" ? await communitySetting(t.jid, "announcement") : await groupSetting(t.jid, "announcement");
-      err = x.ok ? "" : x.error;
+      if (t.kind === "community") {
+        const info = await groupInfo(t.sendJid, setupTimeoutMs());
+        if (!(info.ok && info.data?.announce === true)) {
+          const x = await groupSetting(t.sendJid, "announcement", setupTimeoutMs());
+          if (!x.ok) soft = x.error;
+        }
+      } else {
+        const x = await groupSetting(t.jid, "announcement");
+        err = x.ok ? "" : x.error;
+      }
     } else if (s === "addMode") {
-      const x = await communityMemberAddMode(t.jid, "admin_add");
-      err = x.ok ? "" : x.error;
+      const x = await communityMemberAddMode(t.jid, "admin_add", setupTimeoutMs());
+      if (!x.ok) soft = x.error;
     } else if (s === "approval") {
-      const x = await communityJoinApproval(t.jid, "on");
-      err = x.ok ? "" : x.error;
+      if (t.adopted) {
+        const x = await communityJoinApproval(t.jid, "on", Math.min(1e4, setupTimeoutMs()));
+        if (!x.ok) soft = x.error;
+      }
     } else if (s === "lock") {
       t.lockAt = now;
       const a = await groupSetting(t.jid, "locked");
@@ -10299,11 +10333,21 @@ async function setupSteps(r, t) {
       const x = await sendPart(r, t, "welcome", "main", () => sendText2(t.sendJid, welcomeText(r, t, now)), false);
       err = x.ok ? "" : x.error;
     }
+    if (soft) {
+      t.soft = { ...t.soft || {}, [s]: soft };
+      t.done[s] = true;
+      save(r);
+      journal(r, { ev: "step_soft", target: t.id, step: s, err: soft });
+      console.warn("[wa] \u0448\u0430\u0433 %s \u0443 %s \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442 WhatsApp, \u0438\u0434\u0451\u043C \u0434\u0430\u043B\u044C\u0448\u0435: %s", s, t.id, soft);
+      await softAlarm(r, t);
+      continue;
+    }
     if (!err) {
       t.done[s] = true;
       save(r);
       journal(r, { ev: "step", target: t.id, step: s });
       if (s !== "avatar" && s !== "lock") noteOk(r);
+      await softAlarm(r, t);
       continue;
     }
     save(r);
@@ -10317,10 +10361,38 @@ async function setupSteps(r, t) {
       if ((t.tries.lock || 0) >= 3) await alarm(r, `\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043A\u0440\u044B\u0442\u044C \xAB${t.name}\xBB \u043E\u0442 \u043F\u0440\u0430\u0432\u043E\u043A \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0430\u043C\u0438 (\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435, \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435, \u0430\u0432\u0430\u0442\u0430\u0440\u043A\u0430): ${err}. \u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442, \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0432 WhatsApp \u0432\u0440\u0443\u0447\u043D\u0443\u044E.`);
       continue;
     }
+    if (t.kind === "community" && t.day > dayKeyOf(now)) {
+      const n = t.tries[s] || 1;
+      t.retryAt = now + (n >= 3 ? 10 : 3) * MIN3;
+      save(r);
+      journal(r, { ev: "step_fail", target: t.id, step: s, n, err, retry: iso(t.retryAt) });
+      console.warn("[wa] \u0448\u0430\u0433 %s \u0443 %s (\u043D\u0430 \u0437\u0430\u0432\u0442\u0440\u0430) \u043D\u0435 \u0432\u044B\u0448\u0435\u043B (%d), \u043F\u043E\u0432\u0442\u043E\u0440 \u0432 %s: %s", s, t.id, n, hhmmOf(t.retryAt), err);
+      if (n === 3) await alarm(r, `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \xAB${t.name}\xBB \u043D\u0430 \u0437\u0430\u0432\u0442\u0440\u0430 \u043D\u0435 \u0434\u043E\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u0435\u0442\u0441\u044F: \u0448\u0430\u0433 \xAB${s}\xBB, ${n} \u043F\u043E\u043F\u044B\u0442\u043A\u0438 \u043D\u0435 \u0432\u044B\u0448\u043B\u0438 (${err}). \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0432 \u0442\u0435\u043A\u0443\u0449\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0438\u0434\u0451\u0442 \u043A\u0430\u043A \u043E\u0431\u044B\u0447\u043D\u043E, \u0431\u043E\u0442 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u0442.`);
+      return false;
+    }
     await noteFail(r, `${t.id}: \u0448\u0430\u0433 ${s}`, err);
     return false;
   }
+  await softAlarm(r, t);
   return true;
+}
+var SETUP_TIMEOUT_MS = 15e3;
+var setupTimeoutMs = () => {
+  const n = Number(env7("WA_SETUP_TIMEOUT_MS"));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, SETUP_TIMEOUT_MS) : SETUP_TIMEOUT_MS;
+};
+var SOFT_STEP_NAME = {
+  announce: "\u043F\u0438\u0441\u0430\u0442\u044C \u0432\u043E \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0430\u043C",
+  approval: "\u0432\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0435"
+};
+async function softAlarm(r, t) {
+  if (t.softAlarmed || t.kind !== "community" || !t.soft) return;
+  if (!(t.done.announce && t.done.addMode && t.done.approval)) return;
+  const items = Object.keys(SOFT_STEP_NAME).filter((s) => t.soft?.[s]).map((s) => `${SOFT_STEP_NAME[s]} (${t.soft?.[s]})`);
+  if (!items.length) return;
+  t.softAlarmed = true;
+  save(r);
+  await alarm(r, `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \xAB${t.name}\xBB \u0441\u043E\u0437\u0434\u0430\u043D\u043E, \u043D\u043E WhatsApp \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u043B \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0443: ${items.join("; ")}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0432 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435.`);
 }
 function partsOf(r, m) {
   const parts = ["main"];
@@ -10583,7 +10655,7 @@ async function refreshMembers(r, t, now) {
 }
 var heldMembers = (r, t) => (t.members ?? 0) + (r.approvedSince.get(t.id) || 0);
 async function openNext(r, t, now, members) {
-  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt) return;
+  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt || r.deps.now() < r.createRetryAt) return;
   if (targetsOf(r, t.day)[0].id !== t.id || now >= closeAtOf(r, t.day)) return;
   const limit = r.cfg.overflowAt[t.kind];
   if (capReached(r, now)) {
@@ -10638,7 +10710,7 @@ async function waTick() {
         if (incomplete) await setupSteps(r, t);
       }
       if (r.state.pendingCreate) return { sent, created, skipped: "paused" };
-      for (const day of dueCreates(r, now)) {
+      for (const day of r.deps.now() < r.createRetryAt ? [] : dueCreates(r, now)) {
         if (r.state.paused || r.deps.now() < r.state.retryAt) break;
         if (capReached(r, now)) {
           if (r.state.capAlertDay !== dayKeyOf(now)) {
@@ -10957,6 +11029,7 @@ function cmdPause(r, now, by = "bot") {
 }
 function cmdResume(r) {
   const was = r.state.paused;
+  const hadPending = !!r.state.pendingCreate;
   r.state.paused = false;
   r.state.pausedReason = "";
   r.state.failStreak = 0;
@@ -10964,7 +11037,7 @@ function cmdResume(r) {
   r.state.pendingCreate = null;
   save(r);
   journal(r, { ev: "resume" });
-  return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
+  return { text: was ? "\u041F\u0430\u0443\u0437\u0430 \u0441\u043D\u044F\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u041C\u043E\u0434\u0443\u043B\u044C \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u043C \u0442\u0438\u043A\u0435 (\u0434\u043E 30 \u0441\u0435\u043A\u0443\u043D\u0434)." : hadPending ? "\u041D\u0435\u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u043E\u0435 \u0441\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u0441\u043D\u044F\u0442\u043E \u0441 \u0443\u0447\u0451\u0442\u0430, \u0441\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D. \u0423\u0431\u0435\u0434\u0438\u0441\u044C, \u0447\u0442\u043E \u043B\u0438\u0448\u043D\u0435\u0433\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430 \u043D\u0430 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0435 \u043D\u0435\u0442: \u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u0437\u0434\u0430\u044E\u0442\u0441\u044F \u0441\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0433\u043E \u0442\u0438\u043A\u0430." : "\u041C\u043E\u0434\u0443\u043B\u044C \u0438 \u0442\u0430\u043A \u043D\u0435 \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u0421\u0447\u0451\u0442\u0447\u0438\u043A \u043E\u0448\u0438\u0431\u043E\u043A \u043E\u0431\u043D\u0443\u043B\u0451\u043D." };
 }
 var fail3 = (code, message) => ({ ok: false, code, message });
 function eventCreateCheck(r, now) {
@@ -10991,7 +11064,7 @@ async function eventCreateNow(r, now) {
     const ev = r.state.event;
     if (!await checkConnection(r, now)) return fail3("no_connection", `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438 \u043D\u043E\u043C\u0435\u0440 \u043F\u043E QR.`);
     const res = await createTarget(r, ev.date, 1, r.deps.now(), { source: "event", start: ev.start });
-    if (!res.ok) return fail3("create_failed", r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
+    if (!res.ok) return fail3("create_failed", r.state.paused || r.state.pendingCreate ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432 Telegram." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}`);
     syncEventCommunity(r);
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
@@ -11030,7 +11103,7 @@ async function cmdNew(r, args, now) {
     if (late) return late;
     if (!await checkConnection(r, now)) return { text: `WhatsApp \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0451\u043D (${r.conn.state}). /wa_qr \u043F\u0440\u0438\u0448\u043B\u0451\u0442 QR.` };
     const res = await createTarget(r, day, 1, r.deps.now());
-    if (!res.ok) return { text: r.state.paused ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E, \u043C\u043E\u0434\u0443\u043B\u044C \u043D\u0430 \u043F\u0430\u0443\u0437\u0435. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432\u044B\u0448\u0435." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}` };
+    if (!res.ok) return { text: r.state.paused || r.state.pendingCreate ? "\u0421\u043E\u0437\u0434\u0430\u043D\u0438\u0435 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u043E. \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438 \u0432 \u0442\u0440\u0435\u0432\u043E\u0433\u0435 \u0432\u044B\u0448\u0435." : `\u041D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B\u043E\u0441\u044C: ${res.error}` };
     await pause(r, r.cfg.pacing.betweenStepsMs);
     const done = await setupSteps(r, res.target);
     const t = res.target;
