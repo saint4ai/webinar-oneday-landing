@@ -17,6 +17,7 @@ import { HELP_TEXT, initTgWorkshop, processUpdate, registerWa, registerWaReport 
 import { _waRt, initWaGroups, resetWaGroups, waCommand, waPanel, waPause, waReportLine, waResume, waTick } from "./wa-groups";
 import {
   _ai, aiFlush, aiNumber, aiPanel, aiSetEnabled, aiTest, checkReply, cleanReply, handleWaHook, hookUrl, MEDIA_PHRASE, SAFE_FALLBACK, HISTORY, LIMIT_PERSON, LIMIT_TOTAL,
+  quietWithJitter,
 } from "./wa-assistant";
 
 process.env.TG_WORKSHOP_BOT_TOKEN = "WATEST:tgtoken123";
@@ -95,6 +96,7 @@ test.beforeEach(() => {
   rnd = 0;
   process.env.OPENAI_API_KEY = OPENAI_KEY;
   process.env.WA_AI_QUIET_MS = "100000";
+  process.env.WA_AI_QUIET_JITTER_MS = "0";
   delete process.env.WA_ADMIN_NUMBERS;
   delete process.env.WA_AI_TIMEOUT_MS;
 });
@@ -971,4 +973,24 @@ test("classifyIncoming: текст, ответ-цитата, нажатая кн
   for (const jid of ["1203630000@g.us", "status@broadcast", "123@newsletter", "abc@s.whatsapp.net", "", "7701555@c.us"]) assert.equal(k(jid, { conversation: "x" }), null, jid);
   assert.equal(_ai.classifyIncoming({ key: { remoteJid: P1, fromMe: true, id: "X" }, message: { conversation: "x" } }), null);
   assert.equal(_ai.classifyIncoming(null), null);
+});
+
+test("тишина пачки случайная около десяти секунд: окно 8–12 с, разброс задаётся переменной (Александр 09.10.2026)", () => {
+  const was = { q: process.env.WA_AI_QUIET_MS, j: process.env.WA_AI_QUIET_JITTER_MS };
+  try {
+    delete process.env.WA_AI_QUIET_MS;
+    delete process.env.WA_AI_QUIET_JITTER_MS;
+    assert.equal(quietWithJitter(() => 0), 8000, "нижняя граница");
+    assert.equal(quietWithJitter(() => 0.5), 10_000, "середина");
+    assert.equal(quietWithJitter(() => 0.999999), 12_000, "верхняя граница");
+    for (let i = 0; i < 200; i++) {
+      const v = quietWithJitter();
+      assert.ok(v >= 8000 && v <= 12_000, `вне окна: ${v}`);
+    }
+    process.env.WA_AI_QUIET_JITTER_MS = "0";
+    assert.equal(quietWithJitter(() => 0), 10_000, "без разброса ровно тишина");
+  } finally {
+    if (was.q === undefined) delete process.env.WA_AI_QUIET_MS; else process.env.WA_AI_QUIET_MS = was.q;
+    if (was.j === undefined) delete process.env.WA_AI_QUIET_JITTER_MS; else process.env.WA_AI_QUIET_JITTER_MS = was.j;
+  }
 });

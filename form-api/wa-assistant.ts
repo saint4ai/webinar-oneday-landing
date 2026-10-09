@@ -42,11 +42,21 @@ export const LIMIT_PERSON = 30;
 export const LIMIT_TOTAL = 400;
 /** После передачи менеджеру молчим с человеком столько. */
 export const SILENCE_MS = 12 * HOUR;
-/** Тишина после последнего сообщения пачки. */
+/** Тишина после последнего сообщения пачки. Александр 09.10.2026: «случайная задержка около десяти секунд», за неё
+ * два-три сообщения человека склеиваются в один ответ. Середина 10 с, разброс ниже. */
 const quietMs = () => {
   const n = Number(env("WA_AI_QUIET_MS"));
-  return Number.isFinite(n) && n >= 0 && env("WA_AI_QUIET_MS") !== "" ? n : 8000;
+  return Number.isFinite(n) && n >= 0 && env("WA_AI_QUIET_MS") !== "" ? n : 10_000;
 };
+/** Разброс тишины в обе стороны: WA_AI_QUIET_JITTER_MS, по умолчанию 20% тишины (при 10 с окно 8–12 с). */
+const jitterMs = () => {
+  const n = Number(env("WA_AI_QUIET_JITTER_MS"));
+  return Number.isFinite(n) && n >= 0 && env("WA_AI_QUIET_JITTER_MS") !== "" ? n : Math.round(quietMs() * 0.2);
+};
+/** Тишина с разбросом для одной пачки: новое случайное значение на каждое сообщение, не меньше нуля. */
+export function quietWithJitter(rand: () => number = Math.random): number {
+  return Math.max(0, quietMs() + Math.round((rand() * 2 - 1) * jitterMs()));
+}
 const timeoutMs = () => {
   const n = Number(env("WA_AI_TIMEOUT_MS"));
   return Number.isFinite(n) && n > 0 ? n : 30_000;
@@ -588,7 +598,7 @@ function schedule(a: Ai, jid: string) {
   // Тишина считается от последнего сообщения, но человек, который пишет без пауз, не должен ждать ответа бесконечно:
   // пачка закрывается не позже чем через минуту после первого сообщения.
   const cap = Number(env("WA_AI_MAX_WAIT_MS")) || Math.max(60_000, quietMs());
-  const wait = Math.min(quietMs(), Math.max(0, p.firstAt + cap - Date.now()));
+  const wait = Math.min(quietWithJitter(), Math.max(0, p.firstAt + cap - Date.now()));
   p.timer = setTimeout(() => runBatch(a, jid), wait);
   p.timer.unref?.();
 }
