@@ -177,14 +177,17 @@ test("wa-series.json: проходит проверку и совпадает с
   assert.deepEqual(s.messages.filter((m) => m.enabled === false).map((m) => m.id), []);
   const personal = s.messages.find((m) => m.id === "personal")!;
   assert.deepEqual(personal.media, { type: "video", url: "https://onai.academy/workshop-montazh/assets/tg/personal-1500.mp4?v=0909p" });
-  // текст 12:00: 121 тысяча и ссылка на рилс; 14:00: «Я не открывал CapCut» и карточка warm-edits.jpg?v=1009c; «вместе соберём ролик» в 11:30, 19:30 и +1 19:50
+  // текст 12:00: 121 тысяча и ссылка на рилс; 14:00: «Я не открывал CapCut» и карточка warm-edits.jpg?v=1009c; с 10.10 (автовеб по записи) без «вместе соберём ролик»: 11:30 «покажу, как ИИ монтирует», 19:30 «покажу весь путь рилса», +1 19:50 «Начинаем в 20:00»
   const byId = Object.fromEntries(s.messages.map((m) => [m.id, m]));
   assert.ok(byId["reel-119k"].text.includes("65 тысяч") && byId["reel-119k"].text.includes("Рилс в Instagram: https://www.instagram.com/reel/Dd12LJNTSO0/"));
   assert.ok(byId["warm-edits"].text.startsWith("Я не открывал CapCut"));
   assert.equal(byId["warm-edits"].media?.url, "https://onai.academy/workshop-montazh/assets/tg/warm-edits.jpg?v=1009c");
-  for (const id of ["morning", "t-minus-30", "replay-link"]) assert.ok(byId[id].text.includes("мы вместе соберём ролик"), id);
+  for (const id of ["morning", "t-minus-30", "replay-link"]) assert.equal(byId[id].text.includes("соберём ролик"), false, id);
+  assert.ok(byId["morning"].text.includes("покажу, как ИИ монтирует мои рилсы"));
+  assert.ok(byId["t-minus-30"].text.includes("Покажу весь путь рилса"));
+  assert.ok(byId["replay-link"].text.includes("Начинаем в 20:00 по Алматы"));
   assert.equal(s.createTime, "20:20");
-  assert.match(s.welcome, /вместе соберём ролик/);
+  assert.equal(/соберём ролик/.test(s.welcome), false);
   assert.equal(s.welcome.includes("Записи не будет"), false);
   // имя менеджера нигде не пишем, длинного тире нет
   assert.equal(/Аян/.test(readFileSync(WA_SERIES, "utf8")), false);
@@ -2325,7 +2328,7 @@ test("живой эфир: старт не в 20:00 сдвигает серию 
   assert.equal(planOf("push"), "22:30", "дожим привязан к 23:59, а не к старту");
   assert.equal(planOf("last-call"), "23:30");
   const txt = _internals.retime(r, "19:00", rawMsgs["morning"].text);
-  assert.match(txt, /Сегодня в 19:00 по Алматы .17:00 по Москве. мы вместе соберём ролик/);
+  assert.match(txt, /Сегодня в 19:00 по Алматы .17:00 по Москве. покажу, как ИИ монтирует мои рилсы/);
   assert.match(txt, /Бесплатный эфир «Вайб-продакшен»[.]/); // время теперь только в первой строке (подставлено 19:00 и 17:00 по Москве)
   assert.equal(txt.includes("20:00"), false);
   assert.equal(_internals.retime(r, "20:00", rawMsgs["morning"].text), rawMsgs["morning"].text, "обычный старт ничего не меняет");
@@ -2343,7 +2346,7 @@ test("живой эфир: старт не в 20:00 сдвигает серию 
   evo.calls = [];
   at(12, 10, 30, 5);
   assert.equal((await waTick()).sent, 1);
-  assert.match(evo.of("/message/sendMedia")[0].body.caption, /Сегодня в 19:00 по Алматы .17:00 по Москве. мы вместе соберём ролик/);
+  assert.match(evo.of("/message/sendMedia")[0].body.caption, /Сегодня в 19:00 по Алматы .17:00 по Москве. покажу, как ИИ монтирует мои рилсы/);
   assert.match(evo.of("/message/sendMedia")[0].body.caption, /17:00 по Москве/);
   assert.equal(evo.of("/message/sendPoll").length, 1);
   // панель показывает серию такой, какой она уйдёт
