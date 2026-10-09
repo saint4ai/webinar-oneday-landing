@@ -7,7 +7,7 @@ import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { ReelPhone } from "./pipeline";
 import { ReelRail, Views } from "../ReelRail";
-import { RESULTS } from "../results";
+import { RESULTS, coversFrom } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton } from "../theme";
 import { moneyUsd } from "../prices";
@@ -75,7 +75,7 @@ export function M_ThreeSeconds() {
       leftSize="15cqw" leftOverflow="hidden"
       left={
         // мои рилсы с охватом: обложки со счётчиком из приложения Instagram летят вниз бесконечной колонкой, цифра крупно поверх
-        <ReelRail vertical items={[...RESULTS.appCovers]} itemWidth="9.5cqw" gap={0.1} speed={0.22} style={{ height: "100%", width: "100%" }} render={(r) => (
+        <ReelRail vertical items={coversFrom(RESULTS.appCovers, 4)} itemWidth="9.5cqw" gap={0.1} speed={0.22} style={{ height: "100%", width: "100%" }} render={(r) => (
           <div className="relative" style={{ width: "100%", aspectRatio: "9/16", borderRadius: "1cqw", overflow: "hidden", boxShadow: T.shadowSm, background: T.night2 }}>
             <img src={`/montage/reels/${r.file}.jpg`} alt={`${r.title}: ${r.views} просмотров`} className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 flex justify-start" style={{ padding: "0.5cqw", background: "linear-gradient(transparent, rgba(10,8,7,.55))" }}>
@@ -360,14 +360,19 @@ export function M_ReadyReel() {
 }
 
 const FORMATS = [
-  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026.
+  // full: мой рилс этого формата целиком (public/montage/noface, сдал «Монтаж Reels» 08.10), views: Instagram API на 08.10.2026 (рилсы 1, 2 и 4: на 09.10.2026).
   // 08.10, 14:30 (Александр): четыре формата вместо шести. Подкаст, «Половина и окно в углу» и «Спикер внизу» убраны: это тот же формат, что половина экрана.
-  // Вернуть: face-corner-jarvis (9,6 тыс.), face-bottom-github (112 тыс.), face-podcast-dilorom (6,1 тыс.), файлы лежат в public/montage/noface.
-  { f: "01-polovina-ekrana", t: "Половина экрана", full: "face-half-connectors", views: "120 тыс." },
-  { f: "02-kartochka-spikera", t: "Карточка спикера, как в Screen Studio", full: "face-card-unlazy", views: "3,1 тыс." },
+  // 09.10 (Александр: «не разбирать один и тот же видос на вебинаре», ТЗ docs/tasks/deck_reels_variety_1009.md): три формата из четырёх сменили рилс, потому что
+  // «4 умных коннектора» (120 тыс.) уже разбирается на слайдах с ключами 30, 35 и 44, а у «Карточки спикера» стоял рилс на 3,1 тыс. «Пишет: готово»:
+  //   1. Половина экрана: «Джарвис из „Железного человека“ теперь живёт у тебя на компьютере», 9 835 (instagram.com/reel/DdvsAG-NtQb/), face-half-jarvis;
+  //   2. Карточка спикера: «Записываешь экран, а выглядит как моушн-дизайн», 9 257 (instagram.com/reel/DeEX0O2gNTu/), face-card-screenstudio;
+  //   4. Без лица, голос и графика: «Бесплатные тарифы 34 нейросетей на GitHub», 8 068 (instagram.com/reel/Ddvaf6byKio/), noface-voice-free34.
+  // Третий формат (голова-рассказчик) не менялся. Старые файлы face-half-connectors, face-card-unlazy, noface-voice-searchconsole лежат в public/montage/noface.
+  // Вернуть из убранных форматов: face-corner-jarvis (9,6 тыс.), face-bottom-github (112 тыс.), face-podcast-dilorom (6,1 тыс.).
+  { f: "01-polovina-ekrana", t: "Половина экрана", full: "face-half-jarvis", views: "9,8 тыс." },
+  { f: "02-kartochka-spikera", t: "Карточка спикера, как в Screen Studio", full: "face-card-screenstudio", views: "9,3 тыс." },
   { f: "03-bez-lica-golova", t: "Без лица: анимированная голова", noFace: true, full: "noface-puppet-zashita", views: "16,4 тыс." },
-  // у ролика с закадровым голосом текущей цифры просмотров нет (снят с ленты), счётчик не показываем
-  { f: "04-bez-lica-golos", t: "Без лица: голос и графика", noFace: true, full: "noface-voice-searchconsole", views: "" },
+  { f: "04-bez-lica-golos", t: "Без лица: голос и графика", noFace: true, full: "noface-voice-free34", views: "8,1 тыс." },
 ];
 
 /**
@@ -430,7 +435,7 @@ export function M_NoFace() {
           </button>
         ))}
       </div>
-      <Note>Мои настоящие рилсы целиком, клик по телефону включает со звуком. Просмотры: Instagram API, 8 октября 2026</Note>
+      <Note>Мои настоящие рилсы целиком, клик по телефону включает со звуком. Просмотры: Instagram API, 9 октября 2026</Note>
     </Statement>
   );
 }

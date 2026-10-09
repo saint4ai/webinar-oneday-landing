@@ -6,7 +6,7 @@ import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { CostDrop3D } from "../fx";
 import { MontageBg } from "../MontageBg";
 import { ReelRail } from "../ReelRail";
-import { RESULTS } from "../results";
+import { RESULTS, coversFrom } from "../results";
 import { Statement } from "../Statement";
 import { GLASS, LT, T, card, glass, goldButton } from "../theme";
 import { moneyUsd } from "../prices";
@@ -208,7 +208,8 @@ export function M_CostStory() {
 
 /**
  * 10 · 30 дней: 927 тыс. просмотров на трёх площадках, по 5 рилсов в день. Под цифрами бесконечная лента обложек рилсов
- * со счётчиком просмотров из приложения Instagram (RESULTS.appCovers, раздатки 05.10, папка 04).
+ * со счётчиком просмотров из приложения Instagram (RESULTS.appCovers, раздатки 05.10, папка 04). Лента начата с третьей обложки (coversFrom(…, 2)),
+ * чтобы слайды с лентой (ключи 10 и 14) открывались разными рилсами; рилс «Четыре сайта с анимациями» с цифрой на 9 октября, подпись RESULTS.appCoversSource.
  * 927 тыс. — сумма трёх площадок со скринов 6 октября (RESULTS.totalViews, разбивка на слайде 10g), не число людей.
  */
 export function M_Proof15() {
@@ -225,7 +226,7 @@ export function M_Proof15() {
         ))}
       </div>
       <motion.div {...inUp(2, 0.22)} style={{ marginTop: "1.2cqw", maxWidth: "54cqw" }}>
-        <ReelRail items={[...RESULTS.appCovers]} itemWidth="8.4cqw" speed={0.3} render={(r) => (
+        <ReelRail items={coversFrom(RESULTS.appCovers, 2)} itemWidth="8.4cqw" speed={0.3} render={(r) => (
           <div>
             <img src={`/montage/reels/${r.file}.jpg`} alt={`${r.title}: ${r.views} просмотров`} draggable={false}
               style={{ display: "block", width: "100%", aspectRatio: "9 / 16", objectFit: "cover", borderRadius: "1cqw", border: `1px solid ${T.line}`, boxShadow: T.shadowSm }} />
@@ -237,7 +238,7 @@ export function M_Proof15() {
           </div>
         )} />
       </motion.div>
-      <Note style={{ marginTop: "0.9cqw" }}>Счётчики Instagram, 05.10.2026. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены (скрины 06.10.2026), это не число людей</Note>
+      <Note style={{ marginTop: "0.9cqw" }}>{RESULTS.appCoversSource}. {RESULTS.totalViews}: просмотры Instagram, TikTok и YouTube сложены (скрины 06.10.2026), это не число людей</Note>
     </Statement>
   );
 }
