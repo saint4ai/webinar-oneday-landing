@@ -7429,8 +7429,15 @@ var LIMIT_TOTAL = 400;
 var SILENCE_MS = 12 * HOUR;
 var quietMs = () => {
   const n = Number(env4("WA_AI_QUIET_MS"));
-  return Number.isFinite(n) && n >= 0 && env4("WA_AI_QUIET_MS") !== "" ? n : 8e3;
+  return Number.isFinite(n) && n >= 0 && env4("WA_AI_QUIET_MS") !== "" ? n : 1e4;
 };
+var jitterMs = () => {
+  const n = Number(env4("WA_AI_QUIET_JITTER_MS"));
+  return Number.isFinite(n) && n >= 0 && env4("WA_AI_QUIET_JITTER_MS") !== "" ? n : Math.round(quietMs() * 0.2);
+};
+function quietWithJitter(rand = Math.random) {
+  return Math.max(0, quietMs() + Math.round((rand() * 2 - 1) * jitterMs()));
+}
 var timeoutMs = () => {
   const n = Number(env4("WA_AI_TIMEOUT_MS"));
   return Number.isFinite(n) && n > 0 ? n : 3e4;
@@ -7812,7 +7819,7 @@ function schedule(a, jid) {
   if (!p) return;
   if (p.timer) clearTimeout(p.timer);
   const cap = Number(env4("WA_AI_MAX_WAIT_MS")) || Math.max(6e4, quietMs());
-  const wait = Math.min(quietMs(), Math.max(0, p.firstAt + cap - Date.now()));
+  const wait = Math.min(quietWithJitter(), Math.max(0, p.firstAt + cap - Date.now()));
   p.timer = setTimeout(() => runBatch(a, jid), wait);
   p.timer.unref?.();
 }
