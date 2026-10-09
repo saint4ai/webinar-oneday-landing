@@ -12,7 +12,7 @@ import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton, nightCard } from "../theme";
 import { moneyBoth } from "../prices";
-import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, nb, thousands, txt } from "../ui";
+import { Arrow, EASE, Em, H, Kicker, MaskIcon, Note, Num, Px, Rise, STEP, Stagger, glueNode, nb, thousands, txt } from "../ui";
 import { DirectPhone } from "./lesson3";
 
 /**
@@ -181,6 +181,46 @@ export function M_ShopReel() {
           <ResultLine delay={1.6}>Результат: первые ролики и план выпуска на месяц</ResultLine>
         </>
       } />
+  );
+}
+
+/**
+ * 35p · Что внутри модуля AI-монтаж (Александр, 09.10): программа обучения не была расписана, люди не понимали, что входит в курс.
+ * Пять уроков строками: номер и название, что делаете, справа золотом результат; под ними золотая карточка бонуса.
+ * Тексты: docs/tasks/deck_program_1009.md. Всё в левых 60% кадра.
+ */
+export function M_ReelProgram() {
+  const rows: [string, string, string, string][] = [
+    ["1", "Рабочее место", "Ставим Claude и систему монтажа по шагам. Терминал не нужен: агент ставит всё сам", "Агент готов монтировать"],
+    ["2", "Сценарий и 3 секунды", "Идея по чужим удачным рилсам, текст с сильным началом", "Сценарий, который не пролистывают"],
+    ["3", "Выбор стиля", "Форматы с лицом и без, голос свой или нейросети", "Ваш стиль закреплён за агентом"],
+    ["4", "Сборка ролика", "Агент собирает графику, субтитры и звук по вашему голосу, вы правите словами", "Готовый рилс"],
+    ["5", "Серия роликов", "Несколько рилсов за раз и план выпуска на месяц", "30 роликов в месяц"],
+  ];
+  return (
+    <Statement kicker="Модуль 1 · AI-монтаж" title={<>Что вы сделаете <Em>за 5 уроков</Em></>} size="2.6cqw">
+      <div style={{ maxWidth: "56cqw" }}>
+        {rows.map(([n, name, what, res], i) => (
+          <motion.div key={n} className="grid items-center" initial={{ opacity: 0, x: "-1cqw" }} animate={{ opacity: 1, x: "0cqw" }}
+            transition={{ delay: 0.4 + i * 0.1, duration: 0.4, ease: EASE }}
+            style={{ gridTemplateColumns: "2.4cqw minmax(0, 1fr) 13.5cqw", columnGap: "1.2cqw", padding: "0.75cqw 0", borderBottom: `1px solid ${T.line}` }}>
+            <span style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.5cqw", lineHeight: 1, color: T.gold }}>{n}</span>
+            <div className="min-w-0">
+              <div style={{ ...txt, fontWeight: 800, fontSize: "1.2cqw", lineHeight: 1.25 }}>{glueNode(name)}</div>
+              <div style={{ ...txt, fontWeight: 500, fontSize: "0.98cqw", lineHeight: 1.35, color: T.muted, marginTop: "0.2cqw" }}>{glueNode(what)}</div>
+            </div>
+            <span style={{ ...txt, fontWeight: 800, fontSize: "1.05cqw", lineHeight: 1.3, color: T.gold }}>{glueNode(res)}</span>
+          </motion.div>
+        ))}
+      </div>
+      <Stagger i={0} base={1}
+        style={{ ...card, maxWidth: "56cqw", marginTop: "1.2cqw", borderRadius: 22, padding: "1cqw 1.6cqw", border: `1px solid ${T.gold2}`, background: `${T.gold}1F` }}>
+        <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.1cqw", lineHeight: 1.25, color: T.gold }}>{glueNode("Бонус: моя схема выкладки через пробные рилсы")}</div>
+        <div style={{ ...txt, fontWeight: 500, fontSize: "1cqw", lineHeight: 1.4, marginTop: "0.4cqw" }}>
+          {glueNode("Во сколько публикую и как тестирую рилс на новой аудитории, прежде чем его увидят подписчики.")}
+        </div>
+      </Stagger>
+    </Statement>
   );
 }
 

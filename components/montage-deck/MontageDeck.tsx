@@ -24,7 +24,7 @@ import { M_Chapter } from "./slides/M_Chapter";
 import { M_Check, M_Poll, M_Program, M_Promise, M_Guides, M_About, M_CostStory, M_Proof15 } from "./slides/start";
 import { M_Bottleneck, M_Vacancy, M_ThreeSeconds, M_OnePhrase, M_OneOf14, M_AgentOnPC, M_FiveSteps, M_StepVoice, M_Styles, M_StepAssemble, M_ReadyReel, M_NoFace } from "./slides/lesson1";
 import { M_Case107, M_Want, M_WhoFirst, M_NotCourse, M_Anchor, M_Installments, M_Discount, M_SixMonths, M_HowToBook, M_Inaction, M_OneScreen, M_Doubts, M_Subscriptions, M_Slots, M_FinalCTA, M_GameBonus } from "./slides/sale";
-import { M_ShopReel, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
+import { M_ShopReel, M_ReelProgram, M_ShopAd, M_ShopLead, M_ForYou, M_SoloVsCourse } from "./slides/directions";
 import { M_MyPath } from "./slides/warmup";
 import { M_Cases, M_Platform, M_CasePages } from "./slides/cases";
 import { M_ResultMontage, M_ViralReels, M_Growth30, M_Inquiries } from "./slides/results";
@@ -113,6 +113,8 @@ export function MontageDeck({ shots = {} }: { shots?: Shots }) {
     // 35 (модуль 1, AI-монтаж), 37 (модуль 2, ассистенты и автоматизация), потом опрос 03 переворачивается (37w) и «сами или с обучением» (37v).
     // Режиссура: docs/tasks/deck_wave4_directions.md. Порядок модулей с 08.10: 1 AI-монтаж (35), 2 ассистенты и автоматизация (37), 3 AI-креатор (36, он же бонус).
     <M_ShopReel key="35" />,
+    // 35p · программа модуля 1: что входит в 5 уроков и бонус (Александр, 09.10)
+    <M_ReelProgram key="35p" />,
     // hf · Higgsfield прямо из Claude (Александр 08.10, 15:00): как с ним работать на обучении, сразу после модуля 1
     <M_Higgsfield key="hf" />,
     <M_ShopLead key="37" />,
