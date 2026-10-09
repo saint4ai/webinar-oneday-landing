@@ -70,12 +70,12 @@ export function M_Case107() {
     <Statement kicker="Тот самый 1 из 14" title="Один рилс" size="2.8cqw"
       leftSize="18cqw" left={
         <motion.div initial={{ opacity: 0, y: "3cqw", rotate: -4 }} animate={{ opacity: 1, y: "0cqw", rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.15 }}>
-          <Phone video="/montage/reels/hit-connectors.mp4" src="/montage/reels/hit-connectors.jpg" views={nb("118 тыс.")} caption="4 умных коннектора для Claude" width="13.5cqw" showTop={false} />
+          <Phone video="/montage/reels/hit-gitingest.mp4" src="/montage/reels/hit-gitingest.jpg" views={nb("114 тыс.")} caption="Одно слово в ссылке GitHub" width="13.5cqw" showTop={false} />
         </motion.div>
       }>
-      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("118 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" accent={NUM_ACCENT} /></div>
+      <div style={{ marginTop: "-0.6cqw" }}><ExtrudedNumber value={nb("114 тыс.")} label="просмотров · смонтировал агент" size="6.4cqw" accent={NUM_ACCENT} /></div>
       <Stagger i={4} base={0.6}><Lead style={{ marginTop: "2cqw", maxWidth: "34cqw" }}>Я записал видео, агент собрал графику, анимацию, субтитры и звук по моим правкам.</Lead></Stagger>
-      <Note>Статистика Instagram на 5 октября 2026</Note>
+      <Note>Статистика Instagram на 9 октября 2026</Note>
     </Statement>
   );
 }
