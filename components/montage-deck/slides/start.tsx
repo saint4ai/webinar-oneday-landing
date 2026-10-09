@@ -151,7 +151,7 @@ export function M_Guides({ kicker, title, lead }: { kicker: string; title: strin
   );
 }
 
-/** 8 · Кто я: фото на свету, рядом скрин профиля Instagram со скруглёнными углами. alex-cacao.webp — alex.webp, где салатовый логотип на футболке перекрашен в золото бренда. */
+/** 8 · Кто я: фото на свету, рядом скрин профиля Instagram со скруглёнными углами. С 09.10 вторая фотография (alex-2-gold.webp: «мое фото 2», фон вырезан, салатовый логотип перекрашен в золото), чтобы не повторять alex-cacao.webp других слайдов (Александр). */
 export function M_About() {
   return (
     <SlideLayout className="bg-transparent" background={<MontageBg tone="soft" />} objectColumnSize="25cqw" objectOverflow="visible" contentMinWidth={0}
@@ -160,7 +160,7 @@ export function M_About() {
           {/* Свет: белый блик сверху и золотое пятно за спиной, без жёстких краёв */}
           <div className="absolute" style={{ left: "-30%", right: "-30%", top: "-6%", height: "70%", background: "radial-gradient(closest-side, rgba(251,243,228,.16), rgba(251,243,228,0))" }} />
           <div className="absolute" style={{ left: "-10%", right: "-10%", top: "16%", bottom: "-4%", background: `radial-gradient(closest-side, ${T.gold}B3, ${T.gold}33 60%, ${T.gold}00)` }} />
-          <img src="/montage/alex-cacao.webp" alt="Александр" className="absolute bottom-0 left-[52%] h-[72%] w-auto max-w-none" style={{ translate: "-50% 0", filter: "drop-shadow(0 2cqw 3cqw rgba(42,33,28,.25))" }} />
+          <img src="/montage/alex-2-gold.webp" alt="Александр" className="absolute bottom-0 left-[52%] h-[72%] w-auto max-w-none" style={{ translate: "-50% 0", filter: "drop-shadow(0 2cqw 3cqw rgba(42,33,28,.25))" }} />
         </motion.div>
       }>
       <Rise><Kicker>Кто ведёт</Kicker></Rise>
