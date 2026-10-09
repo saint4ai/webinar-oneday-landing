@@ -127,7 +127,24 @@ function GuideCover({ no, title, text, icon, gold }: { no: number; title: string
 }
 
 /** 7 и 58 · Три гайда за досмотр: обложки раскрываются веером в 3D из одной стопки. */
-export function M_Guides({ kicker, title, lead }: { kicker: string; title: string; lead: string }) {
+/** Финальный слайд гайдов (58): гайды выдаёт менеджер в WhatsApp по слову ГАЙД (Александр 09.10: «пусть пишут не в чат, а нашему менеджеру»).
+ *  Имя менеджера не пишем никогда. QR qr-guide-manager.svg открывает чат https://wa.me/77085834575 с готовым словом ГАЙД. */
+function GuideContact() {
+  return (
+    <motion.div className="flex items-center" style={{ gap: "1.4cqw", marginTop: "0.2cqw" }} initial={{ opacity: 0, y: "1cqw" }} animate={{ opacity: 1, y: "0cqw" }} transition={{ delay: 0.35, duration: 0.5, ease: EASE }}>
+      <div style={{ ...card, background: LT.paper, borderRadius: 16, padding: "0.5cqw", width: "8.4cqw", flexShrink: 0, boxShadow: T.shadow }}>
+        <img src="/montage/qr-guide-manager.svg" alt="QR-код: чат с менеджером в WhatsApp со словом ГАЙД" draggable={false} style={{ display: "block", width: "100%", height: "auto" }} />
+      </div>
+      <div>
+        <div style={{ fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.55cqw", lineHeight: 1.2, color: T.ink }}>Напишите <span style={{ color: T.gold }}>ГАЙД</span> менеджеру в WhatsApp</div>
+        <div style={{ ...label, fontSize: "1.2cqw", fontWeight: 700, color: T.gold, marginTop: "0.45cqw", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>+7 708 583 45 75</div>
+        <div style={{ ...label, fontSize: "0.95cqw", fontWeight: 500, color: T.muted, marginTop: "0.25cqw" }}>Или наведите камеру на QR: чат откроется сам</div>
+      </div>
+    </motion.div>
+  );
+}
+
+export function M_Guides({ kicker, title, lead, contact = false }: { kicker: string; title: string; lead: string; contact?: boolean }) {
   const guides = [
     ["Как делать вирусный рилс", "Правило первых 3 секунд и пробные рилсы", "lg-i-rocket"],
     ["Контент-план на месяц", "И схема выкладки: что и когда публиковать", "lg-i-calfilm"],
@@ -136,8 +153,9 @@ export function M_Guides({ kicker, title, lead }: { kicker: string; title: strin
   // Обложки раздвинуты на ширину карточки: средняя не закрывает заголовок крайних (раньше шаг 12cqw при ширине 15cqw)
   const fan = [{ x: -15.4, r: -8, ry: 12, y: 1.2 }, { x: 0, r: 0, ry: 0, y: -0.6 }, { x: 15.4, r: 8, ry: -12, y: 1.2 }];
   return (
-    <Statement kicker={kicker} title={title} lead={lead} size="2.8cqw">
-      <div className="relative" style={{ width: "44cqw", height: "22cqw", perspective: "1600px", marginTop: "0.6cqw", marginLeft: "3.6cqw" }}>
+    <Statement kicker={kicker} title={title} lead={contact ? undefined : lead} size="2.8cqw">
+      {contact && <GuideContact />}
+      <div className="relative" style={{ width: "44cqw", height: "22cqw", perspective: "1600px", marginTop: contact ? "1.2cqw" : "0.6cqw", marginLeft: "3.6cqw", ...(contact ? { transform: "scale(0.86)", transformOrigin: "50% 0" } : {}) }}>
         {guides.map(([t, d, ic], i) => (
           <motion.div key={t} className="absolute top-0" style={{ left: "50%", marginLeft: "-7.5cqw", width: "15cqw", height: "20cqw", zIndex: i === 1 ? 3 : 1, transformOrigin: "50% 100%" }}
             initial={{ opacity: 0, x: "0cqw", y: "3cqw", rotate: 0, rotateY: 0 }}
