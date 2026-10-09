@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
 import { CAMERA_SAFE_MASK } from "./fx/brand";
 import { GLASS, T } from "./theme";
 import { Typo } from "./Typo";
@@ -26,22 +25,32 @@ export function MontageBg({ tone = "paper", children }: { tone?: Tone | "ink"; c
     <div className="absolute inset-0" data-deck-bg style={{ background: base }}>
       <style>{`.montage-deck .sl-col { padding: 1.667cqw 2.917cqw !important; }`}</style>
       <Typo />
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: night ? T.nightText : T.brown,
-          opacity: night ? 0.07 : 0.1,
-          WebkitMaskImage: "url(/montage/fisheye-grid.svg)",
-          maskImage: "url(/montage/fisheye-grid.svg)",
-          WebkitMaskSize: "cover",
-          maskSize: "cover",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-        }}
-      />
+      {night ? (
+        // Сетка ночного фона — готовая картинка (линии #FBF3E4 с прозрачностью 0,5 × 0,07, docs/perf/make-grid-png.mjs), а не слой-маска из SVG:
+        // тот же рисунок, но слой с векторной маской на каждом кадре стоил около половины затрат GPU-процесса.
+        <div
+          className="absolute inset-0"
+          style={{ backgroundImage: "url(/montage/fisheye-grid-night.png)", backgroundSize: "cover", backgroundPosition: "center" }}
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: T.brown,
+            opacity: 0.1,
+            WebkitMaskImage: "url(/montage/fisheye-grid.svg)",
+            maskImage: "url(/montage/fisheye-grid.svg)",
+            WebkitMaskSize: "cover",
+            maskSize: "cover",
+            WebkitMaskPosition: "center",
+            maskPosition: "center",
+          }}
+        />
+      )}
       {GLASS && !children && (
         <div className="absolute inset-0 overflow-hidden" style={{ WebkitMaskImage: CAMERA_SAFE_MASK, maskImage: CAMERA_SAFE_MASK }} aria-hidden>
-          <motion.div
+          {/* дрейф свечения: CSS-анимация (globals.css, mbg-drift): 14 с, easeInOut, x 0 → 2,2% → 0, y 0 → −1,6% → 0, как было в framer-motion */}
+          <div
             className="absolute"
             style={{
               inset: "-6%",
@@ -51,9 +60,8 @@ export function MontageBg({ tone = "paper", children }: { tone?: Tone | "ink"; c
                 "radial-gradient(38% 48% at 60% 52%, rgba(160,83,42,.26), transparent 74%)",
                 "radial-gradient(26% 30% at 46% 14%, rgba(227,192,123,.15), transparent 70%)",
               ].join(","),
+              animation: "mbg-drift 14s ease-in-out infinite",
             }}
-            animate={{ x: ["0%", "2.2%", "0%"], y: ["0%", "-1.6%", "0%"] }}
-            transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
           />
         </div>
       )}

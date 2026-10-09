@@ -549,3 +549,33 @@ html.lite *::after {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* ───────── Презентация /montage: бесконечные движения на CSS (компоновщик), а не на Motion ─────────
+ * Раньше покачивание объектов и дрейф свечения фона считал framer-motion в каждом кадре на главном потоке
+ * (замеры docs/reports/deck_perf_1009.md). Картинка и тайминг те же. */
+@keyframes px-bob {
+  0%, 100% { transform: translateY(0%); }
+  50% { transform: translateY(-4%); }
+}
+@keyframes mbg-drift {
+  0%, 100% { transform: translate(0%, 0%); }
+  50% { transform: translate(2.2%, -1.6%); }
+}
+@keyframes wave-bar {
+  0%, 100% { height: var(--h0); }
+  50% { height: var(--h1); }
+}
+@keyframes gold-ring {
+  from { box-shadow: 0 0 0 0cqw #E3C07B66; }
+  to { box-shadow: 0 0 0 1cqw #E3C07B00; }
+}
+@keyframes cases-drift {
+  0%, 100% { transform: translate(0cqw, 0cqw); }
+  50% { transform: translate(1cqw, -0.7cqw); }
+}
+/* Вкладка скрыта: движения колоды на паузе (класс ставит SlideDeck по visibilitychange) */
+html.deck-hidden .montage-deck *,
+html.deck-hidden .montage-deck *::before,
+html.deck-hidden .montage-deck *::after {
+  animation-play-state: paused !important;
+}

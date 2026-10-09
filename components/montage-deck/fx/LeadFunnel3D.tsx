@@ -115,7 +115,8 @@ export function LeadFunnel3D({ stages }: { stages: FunnelStage[] }) {
     } else {
       // прогрев: воронка уже полная в момент показа слайда
       for (let i = 0; i < 240; i++) step(0, 1 / 30);
-      const loop = (now: number) => { const dt = Math.min((now - last) / 1000, 0.05); last = now; step(now, dt); raf = requestAnimationFrame(loop); };
+      // не чаще ~60 кадров в секунду: движение считается по dt, на экранах 120 Гц результат тот же, работа вдвое меньше
+      const loop = (now: number) => { raf = requestAnimationFrame(loop); if (now - last < 14) return; const dt = Math.min((now - last) / 1000, 0.05); last = now; step(now, dt); };
       raf = requestAnimationFrame(loop);
     }
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };

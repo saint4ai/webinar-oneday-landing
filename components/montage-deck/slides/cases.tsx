@@ -231,10 +231,9 @@ export function M_Cases({ kicker, title = "Что я собрал для биз�
 
       <div className="relative grid items-center" style={{ gridTemplateColumns: "30cqw minmax(0, 1fr)", gap: "2.4cqw", maxWidth: "54cqw", marginTop: "1.4cqw" }}>
         {/* Тёплое свечение бренда за стеклом: без него стекло на ночном фоне не читается. Медленно плывёт, правее колонки не выходит */}
-        <motion.div aria-hidden className="pointer-events-none absolute" style={{ top: "-14%", bottom: "-14%", left: "-6%", right: 0, filter: "blur(2.6cqw)",
+        <div aria-hidden className="pointer-events-none absolute" style={{ top: "-14%", bottom: "-14%", left: "-6%", right: 0, filter: "blur(2.6cqw)", animation: "cases-drift 9s ease-in-out infinite",
           // свет падает на кромки окна сверху и снизу и под карточку кейса, иначе края стекла тонут в ночном фоне
-          background: "radial-gradient(30% 30% at 18% 6%, rgba(227,192,123,.55), transparent 70%), radial-gradient(34% 30% at 40% 96%, rgba(160,83,42,.8), transparent 72%), radial-gradient(36% 46% at 70% 64%, rgba(160,83,42,.6), transparent 72%), radial-gradient(26% 32% at 86% 22%, rgba(227,192,123,.35), transparent 70%)" }}
-          animate={{ x: ["0cqw", "1cqw", "0cqw"], y: ["0cqw", "-0.7cqw", "0cqw"] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }} />
+          background: "radial-gradient(30% 30% at 18% 6%, rgba(227,192,123,.55), transparent 70%), radial-gradient(34% 30% at 40% 96%, rgba(160,83,42,.8), transparent 72%), radial-gradient(36% 46% at 70% 64%, rgba(160,83,42,.6), transparent 72%), radial-gradient(26% 32% at 86% 22%, rgba(227,192,123,.35), transparent 70%)" }} />
 
         <div className="relative" style={{ aspectRatio: "16 / 11.4", perspective: "90cqw" }}>
           {/* Стопка карточек: пустое стекло и следующий кейс веером выглядывают сзади — видно, что решений много */}

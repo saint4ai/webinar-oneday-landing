@@ -28,8 +28,9 @@ export function SlideDeck({ slides, lightSlideKeys, theme = "dark" }: SlideDeckP
   const [idx, setIdx] = useState(0);
   const [speakerMode, setSpeakerMode] = useState<"live" | "preview">("live");
 
-  // Cursor-glow — radial-gradient следующий за мышкой.
-  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+  // Cursor-glow — radial-gradient следующий за мышкой. Круг 900×900 (радиус 450px) двигается через transform прямо в DOM,
+  // без setState: раньше каждое движение мыши перерисовывало весь SlideDeck и градиент на весь кадр.
+  const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let rafId: number | null = null;
@@ -38,7 +39,10 @@ export function SlideDeck({ slides, lightSlideKeys, theme = "dark" }: SlideDeckP
 
     const flushCursor = () => {
       rafId = null;
-      setCursor({ x: pendingX, y: pendingY });
+      const g = glowRef.current;
+      if (!g) return;
+      g.style.transform = `translate3d(${pendingX - 450}px, ${pendingY - 450}px, 0)`;
+      g.style.visibility = "visible";
     };
 
     const onMove = (e: MouseEvent) => {
@@ -51,6 +55,19 @@ export function SlideDeck({ slides, lightSlideKeys, theme = "dark" }: SlideDeckP
     return () => {
       window.removeEventListener("mousemove", onMove);
       if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // Вкладка скрыта (свёрнуто окно, другая вкладка): бесконечные CSS-анимации колоды ставим на паузу (правило html.deck-hidden в globals.css),
+  // при возврате они продолжаются с того же места. rAF-циклы (холсты, ленты) браузер в скрытой вкладке и так не вызывает.
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => root.classList.toggle("deck-hidden", document.hidden);
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      root.classList.remove("deck-hidden");
     };
   }, []);
 
@@ -140,14 +157,18 @@ export function SlideDeck({ slides, lightSlideKeys, theme = "dark" }: SlideDeckP
         style={{ width: "min(100vw, 177.778vh)", height: "min(100vh, 56.25vw)", containerType: "size" }}
       >
       {/* === Cursor-glow · radial gradient за курсором (как в vanilla presentation.html) === */}
-      {cursor && (
-        <div
-          className="pointer-events-none absolute inset-0 z-[1]"
-          style={{
-            background: `radial-gradient(450px circle at ${cursor.x}px ${cursor.y}px, ${cacao ? "rgba(201,160,90,0.16)" : "rgba(182,255,0,0.18)"}, transparent 65%)`,
-          }}
-        />
-      )}
+      <div
+        ref={glowRef}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 z-[1]"
+        style={{
+          width: 900,
+          height: 900,
+          visibility: "hidden",
+          transform: "translate3d(-450px, -450px, 0)",
+          background: `radial-gradient(450px circle at 450px 450px, ${cacao ? "rgba(201,160,90,0.16)" : "rgba(182,255,0,0.18)"}, transparent 65%)`,
+        }}
+      />
 
       <AnimatePresence mode="wait">
         <motion.div

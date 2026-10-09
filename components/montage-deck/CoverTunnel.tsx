@@ -2,6 +2,7 @@
 
 import { useReducedMotion } from "framer-motion";
 import { B, CAMERA_SAFE_MASK } from "./fx/brand";
+import { SlideVideo } from "./SlideVideo";
 
 /**
  * Тоннель обложки (правка Александра 05.10.2026): на зрителя летят его свежие скрины рилсов со счётчиками
@@ -69,7 +70,7 @@ export function CoverTunnel({ cards: items }: { cards: CoverCard[] }) {
               background: B.night2,
             }}>
               {c.item.video ? (
-                <video src={c.item.video} poster={c.item.poster} muted autoPlay loop playsInline preload="auto"
+                <SlideVideo src={c.item.video} poster={c.item.poster} muted autoPlay loop playsInline preload="auto"
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               ) : (
                 <img src={c.item.poster} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />

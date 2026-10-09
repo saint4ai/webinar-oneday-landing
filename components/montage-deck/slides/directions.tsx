@@ -8,6 +8,7 @@ import { useCountUp } from "@/components/sales-deck/useCountUp";
 import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { Views } from "../ReelRail";
+import { SlideVideo } from "../SlideVideo";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton, nightCard } from "../theme";
@@ -83,9 +84,10 @@ function Wave({ bars = 16, height = "1.9cqw", color = T.gold }: { bars?: number;
   return (
     <div className="flex items-center" style={{ height, gap: "0.16cqw", flex: 1 }}>
       {Array.from({ length: bars }, (_, i) => (
-        <motion.span key={i} style={{ width: "0.22cqw", borderRadius: 2, background: color }}
-          animate={{ height: [`${25 + ((i * 37) % 55)}%`, `${45 + ((i * 53) % 55)}%`, `${25 + ((i * 37) % 55)}%`] }}
-          transition={{ duration: 0.9 + (i % 5) * 0.14, repeat: Infinity, ease: "easeInOut" }} />
+        // CSS-анимация высоты (globals.css, wave-bar): те же проценты, длительность и easeInOut, что были в framer-motion
+        <span key={i} style={{ width: "0.22cqw", borderRadius: 2, background: color,
+          ["--h0" as string]: `${25 + ((i * 37) % 55)}%`, ["--h1" as string]: `${45 + ((i * 53) % 55)}%`,
+          animation: `wave-bar ${0.9 + (i % 5) * 0.14}s ease-in-out infinite` }} />
       ))}
     </div>
   );
@@ -206,7 +208,7 @@ function LessonPlayer() {
           {[T.gold, T.brownLt, T.nightMuted].map((c) => <span key={c} style={{ width: "0.6cqw", height: "0.6cqw", borderRadius: 99, background: c }} />)}
         </div>
         <div className="relative" style={{ aspectRatio: "16 / 9", background: "#000" }}>
-          <video ref={ref} src="/montage/lessons/ai-creator-lesson.mp4" poster="/montage/lessons/ai-creator-lesson.jpg" preload="metadata" playsInline
+          <SlideVideo videoRef={ref} src="/montage/lessons/ai-creator-lesson.mp4" poster="/montage/lessons/ai-creator-lesson.jpg" preload="metadata" playsInline
             onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
             className="absolute inset-0 h-full w-full" style={{ objectFit: "contain", background: "#000" }} />
           <button type="button" aria-label={playing ? "Пауза" : "Воспроизвести видеоурок"} aria-pressed={playing}

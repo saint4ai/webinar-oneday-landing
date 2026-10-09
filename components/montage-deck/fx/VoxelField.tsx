@@ -15,12 +15,19 @@ const rgb = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return [n >> 16, (n >> 8) & 255, n & 255] as const;
 };
-const hexA = (hex: string, a: number) => `rgba(${rgb(hex).join(", ")}, ${a})`;
+
+/** Правый край видимой части: дальше маска CAMERA_SAFE_MASK уже полностью прозрачна (59% ширины). Столбики правее не рисуем. */
+const VISIBLE_RIGHT = 0.59;
+/** Не чаще ~60 кадров в секунду: на экранах 120 Гц (MacBook Pro) волна такая же гладкая, а работа вдвое меньше. */
+const MIN_FRAME_MS = 14;
+/** Цвет с прозрачностью в 256 ступенях: строки собраны заранее, а не склеиваются 2700 раз за кадр (меньше мусора для сборщика). Шаг 1/255 равен точности самого холста. */
+const alphaTable = (rgbStr: string) => Array.from({ length: 256 }, (_, q) => `rgba(${rgbStr}, ${q / 255})`);
 /** Смесь двух цветов бренда: грани столбиков — оттенки ночного фона, без чужих цветов. */
-const mixA = (a: string, b: string, t: number, alpha: number) => {
+const mixRgb = (a: string, b: string, t: number) => {
   const x = rgb(a), y = rgb(b);
-  return `rgba(${x.map((v, i) => Math.round(v * t + y[i] * (1 - t))).join(", ")}, ${alpha})`;
+  return x.map((v, i) => Math.round(v * t + y[i] * (1 - t))).join(", ");
 };
+const q255 = (a: number) => Math.max(0, Math.min(255, Math.round(a * 255)));
 
 export function VoxelField({ accent = B.gold }: { accent?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -43,47 +50,66 @@ export function VoxelField({ accent = B.gold }: { accent?: string }) {
     const ro = new ResizeObserver(resize);
     ro.observe(cv);
 
+    // Таблицы цветов граней: те же смеси цветов бренда, что были в mixA/hexA, только заранее
+    const leftT = alphaTable(mixRgb(B.night2, B.brown, 0.9));
+    const rightT = alphaTable(mixRgb(B.night2, B.night, 0.35));
+    const capDarkT = alphaTable(mixRgb(B.night2, B.brown, 0.8));
+    const accentT = alphaTable(rgb(accent).join(", "));
+    // Столбики в порядке отрисовки (от дальних к ближним) с постоянным затуханием к краям; невидимые (fade ≤ 0,02) отброшены сразу
+    const cols: { i: number; j: number; fade: number }[] = [];
+    for (let s = 0; s <= 2 * (N - 1); s++) {
+      for (let i = 0; i < N; i++) {
+        const j = s - i;
+        if (j < 0 || j >= N) continue;
+        const edge = Math.min(i, j, N - 1 - i, N - 1 - j) / (N * 0.22);
+        const fade = Math.min(1, edge) * (0.35 + 0.65 * (1 - (i + j) / (2 * N)));
+        if (fade <= 0.02) continue;
+        cols.push({ i, j, fade });
+      }
+    }
+
     const draw = (t: number) => {
       ctx.clearRect(0, 0, w, h);
       const tile = w / 30; // полуширина ромба
       const ox = w * 0.34, oy = h * 0.3; // вершина поля — в левой части кадра
       const maxH = tile * 3.2;
-      // волна идёт из угла поля по диагонали + вторая, медленная, поперёк
-      for (let s = 0; s <= 2 * (N - 1); s++) {
-        for (let i = 0; i < N; i++) {
-          const j = s - i;
-          if (j < 0 || j >= N) continue;
-          const d = Math.hypot(i - N * 0.3, j - N * 0.3);
-          const wave = Math.sin(d * 0.55 - t * 1.6) * 0.5 + 0.5;
-          const swell = Math.sin((i - j) * 0.25 + t * 0.7) * 0.5 + 0.5;
-          const k = Math.pow(wave * 0.75 + swell * 0.25, 2.2);
-          const colH = tile * 0.25 + k * maxH;
-          const x = ox + (i - j) * tile;
-          const y = oy + (i + j) * tile * 0.5;
-          // затухание к краям — поле растворяется в фоне
-          const edge = Math.min(i, j, N - 1 - i, N - 1 - j) / (N * 0.22);
-          const fade = Math.min(1, edge) * (0.35 + 0.65 * (1 - (i + j) / (2 * N)));
-          if (fade <= 0.02) continue;
-          const top = y - colH;
-          // левая грань — второй слой ночи, правая — между ночью и вторым слоем
-          ctx.fillStyle = mixA(B.night2, B.brown, 0.9, fade);
-          ctx.beginPath(); ctx.moveTo(x - tile, top + tile * 0.5); ctx.lineTo(x, top + tile); ctx.lineTo(x, y + tile); ctx.lineTo(x - tile, y + tile * 0.5); ctx.fill();
-          ctx.fillStyle = mixA(B.night2, B.night, 0.35, fade);
-          ctx.beginPath(); ctx.moveTo(x + tile, top + tile * 0.5); ctx.lineTo(x, top + tile); ctx.lineTo(x, y + tile); ctx.lineTo(x + tile, y + tile * 0.5); ctx.fill();
-          // крышка: тёплая тёмная внизу волны, золото на гребне
-          ctx.fillStyle = k > 0.5 ? hexA(accent, fade * Math.min(0.95, 0.22 + (k - 0.5) * 1.6)) : mixA(B.night2, B.brown, 0.8, fade);
-          ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x + tile, top + tile * 0.5); ctx.lineTo(x, top + tile); ctx.lineTo(x - tile, top + tile * 0.5); ctx.fill();
-          ctx.strokeStyle = hexA(accent, fade * (0.08 + k * 0.3));
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
+      const maxX = w * VISIBLE_RIGHT + 1;
+      for (const { i, j, fade } of cols) {
+        const x = ox + (i - j) * tile;
+        // вне кадра слева и справа за маской камеры (59%) столбик не виден
+        if (x + tile + 1 < 0 || x - tile > maxX) continue;
+        const y = oy + (i + j) * tile * 0.5;
+        if (y - tile * 0.25 - maxH > h) continue;
+        const d = Math.hypot(i - N * 0.3, j - N * 0.3);
+        const wave = Math.sin(d * 0.55 - t * 1.6) * 0.5 + 0.5;
+        const swell = Math.sin((i - j) * 0.25 + t * 0.7) * 0.5 + 0.5;
+        const k = Math.pow(wave * 0.75 + swell * 0.25, 2.2);
+        const colH = tile * 0.25 + k * maxH;
+        const top = y - colH;
+        // левая грань — второй слой ночи, правая — между ночью и вторым слоем
+        ctx.fillStyle = leftT[q255(fade)];
+        ctx.beginPath(); ctx.moveTo(x - tile, top + tile * 0.5); ctx.lineTo(x, top + tile); ctx.lineTo(x, y + tile); ctx.lineTo(x - tile, y + tile * 0.5); ctx.fill();
+        ctx.fillStyle = rightT[q255(fade)];
+        ctx.beginPath(); ctx.moveTo(x + tile, top + tile * 0.5); ctx.lineTo(x, top + tile); ctx.lineTo(x, y + tile); ctx.lineTo(x + tile, y + tile * 0.5); ctx.fill();
+        // крышка: тёплая тёмная внизу волны, золото на гребне
+        ctx.fillStyle = k > 0.5 ? accentT[q255(fade * Math.min(0.95, 0.22 + (k - 0.5) * 1.6))] : capDarkT[q255(fade)];
+        ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x + tile, top + tile * 0.5); ctx.lineTo(x, top + tile); ctx.lineTo(x - tile, top + tile * 0.5); ctx.fill();
+        ctx.strokeStyle = accentT[q255(fade * (0.08 + k * 0.3))];
+        ctx.lineWidth = 1;
+        ctx.stroke();
       }
     };
 
     if (reduce) draw(1.2);
     else {
       const start = performance.now();
-      const loop = (now: number) => { draw((now - start) / 1000); raf = requestAnimationFrame(loop); };
+      let last = 0;
+      const loop = (now: number) => {
+        raf = requestAnimationFrame(loop);
+        if (now - last < MIN_FRAME_MS) return;
+        last = now;
+        draw((now - start) / 1000);
+      };
       raf = requestAnimationFrame(loop);
     }
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };

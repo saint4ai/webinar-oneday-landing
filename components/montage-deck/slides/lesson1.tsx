@@ -7,6 +7,7 @@ import { MontageBg } from "../MontageBg";
 import { Phone } from "../Phone";
 import { ReelPhone } from "./pipeline";
 import { ReelRail, Views } from "../ReelRail";
+import { SlideVideo } from "../SlideVideo";
 import { RESULTS } from "../results";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton } from "../theme";
@@ -287,7 +288,7 @@ export function M_Styles() {
             <motion.div key={r.video} className="relative overflow-hidden" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.15 + (i % 3) * 0.06 + Math.floor(i / 3) * 0.06, duration: 0.4, ease: EASE }}
               style={{ aspectRatio: "9 / 16", borderRadius: "0.8cqw", background: T.night2, boxShadow: T.shadowSm }}>
-              <video src={`/montage/reels/${r.video}.mp4`} poster={`/montage/reels/${r.video}.jpg`} autoPlay muted loop playsInline className="absolute inset-0 h-full w-full object-cover" />
+              <SlideVideo src={`/montage/reels/${r.video}.mp4`} poster={`/montage/reels/${r.video}.jpg`} autoPlay muted loop playsInline className="absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-x-0 bottom-0" style={{ padding: "0.45cqw", background: "linear-gradient(transparent, rgba(10,8,7,.55))" }}><Views value={r.views} size="0.78cqw" /></div>
               <div className="absolute inset-0" style={{ borderRadius: "0.8cqw", transition: "box-shadow .35s", boxShadow: i === a ? `inset 0 0 0 0.25cqw ${T.gold}` : `inset 0 0 0 1px ${T.nightLine}` }} />
             </motion.div>

@@ -46,8 +46,13 @@ export function ReelRail<T>({ items, render, itemWidth, gap = 0.12, amp = 0, spe
 
   useEffect(() => {
     let raf = 0;
+    let last = 0;
     const t0 = performance.now();
     const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      // не чаще ~60 кадров в секунду: лента едет медленно (меньше пикселя за кадр), на экранах 120 Гц удвоенная частота ничего не добавляет
+      if (now - last < 14) return;
+      last = now;
       const first = cells.current[0];
       if (first && wrap.current) {
         const size = vertical ? first.offsetHeight : first.offsetWidth;
@@ -72,7 +77,6 @@ export function ReelRail<T>({ items, render, itemWidth, gap = 0.12, amp = 0, spe
           el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${r}deg)`;
         });
       }
-      raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);

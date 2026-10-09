@@ -1,4 +1,5 @@
 import { LT, T } from "./theme";
+import { SlideVideo } from "./SlideVideo";
 
 /** Айфон с рилсом 9:16: корпус цвета ночи сайта #14100E, экран — интерфейс Instagram. src — картинка, video — ролик в цикле без звука.
  *  ratio="9/19" — для скринов профиля: телефон выше, видео без обрезки не влезает. */
@@ -9,7 +10,7 @@ export function Phone({ src, video, views, author = "saint4ai", caption, width =
     <div style={{ width, aspectRatio: ratio, background: T.night, borderRadius: "1.8cqw", padding: "0.25cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}` }}>
       <div className="relative w-full h-full overflow-hidden" style={{ borderRadius: "1.55cqw", background: T.night2 }}>
         {video ? (
-          <video key={video} src={video} poster={src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+          <SlideVideo key={video} src={video} poster={src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
         ) : src ? (
           <img src={src} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : null}

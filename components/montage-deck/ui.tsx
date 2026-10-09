@@ -125,9 +125,13 @@ export const Px = ({ name, size = "6cqw", delay = 0.15, bob = true, style }: { n
   return (
     <motion.div style={{ height: size, width: lego ? "auto" : size, flexShrink: 0, ...style }} initial={{ opacity: 0, scale: 0.6, rotate: -8 }} animate={{ opacity: 1, scale: 1, rotate: 0 }}
       transition={{ type: "spring", stiffness: 180, damping: 14, delay }}>
-      <motion.img src={lego ? `/montage/lego/${name}.webp` : `/montage/px/${name}.png`} alt=""
-        style={{ height: "100%", width: lego ? "auto" : "100%", display: "block", imageRendering: lego ? "auto" : "pixelated", filter: "drop-shadow(0 14px 18px rgba(42,33,28,.18))" }}
-        animate={bob ? { y: ["0%", "-4%", "0%"] } : undefined} transition={bob ? { duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: delay + 0.6 } : undefined} />
+      {/* Покачивание — CSS-анимация transform (globals.css, px-bob), а не Motion: она идёт на компоновщике и не будит главный поток каждый кадр.
+          Те же 3,2 с, easeInOut, y 0 → −4% → 0, старт через delay + 0,6 с, как было в framer-motion. Двигается обёртка, а картинка с тенью drop-shadow
+          стоит внутри неподвижно: тень едет вместе с картинкой, но размытие тени не пересчитывается на каждом кадре. */}
+      <div style={{ height: "100%", width: lego ? "auto" : "100%", ...(bob ? { animation: `px-bob 3.2s ease-in-out ${delay + 0.6}s infinite` } : null) }}>
+        <img src={lego ? `/montage/lego/${name}.webp` : `/montage/px/${name}.png`} alt=""
+          style={{ height: "100%", width: lego ? "auto" : "100%", display: "block", imageRendering: lego ? "auto" : "pixelated", filter: "drop-shadow(0 14px 18px rgba(42,33,28,.18))" }} />
+      </div>
     </motion.div>
   );
 };

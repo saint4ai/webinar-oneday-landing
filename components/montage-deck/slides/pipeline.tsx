@@ -7,6 +7,7 @@ import { SlideLayout } from "@/components/sales-deck/SlideLayout";
 import { MontageBg } from "../MontageBg";
 import { NOFACE_REELS } from "../noface-reels";
 import { Views } from "../ReelRail";
+import { SlideVideo } from "../SlideVideo";
 import { Statement } from "../Statement";
 import { LT, T, card, goldButton } from "../theme";
 import { Arrow, EASE, Em, Kicker, MaskIcon, Note, Num, Px, Stagger, glueNode, nb, txt } from "../ui";
@@ -100,7 +101,7 @@ export function M_LessonVideo() {
           <MontageBg tone="night" />
           {/* видео на весь кадр лежит под сеткой колонок, постер над ним гаснет, когда урок включили */}
           <div className="absolute inset-0" style={{ opacity: started ? 1 : 0, transition: "opacity .35s", background: "#000" }}>
-            <video ref={ref} src={LESSON_SRC} preload="metadata" playsInline
+            <SlideVideo videoRef={ref} src={LESSON_SRC} preload="metadata" playsInline
               onLoadedMetadata={() => setReady(true)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
               onEnded={() => { setPlaying(false); setStarted(false); }}
               className="absolute inset-0 h-full w-full" style={{ objectFit: "contain", background: "#000" }} />
@@ -293,7 +294,7 @@ export function ReelPhone({ file, views, width, i, active, setActive }: { file: 
   return (
     <div style={{ width, aspectRatio: "9/16", background: T.night, borderRadius: "1.8cqw", padding: "0.25cqw", boxShadow: `0 0 0 1px ${T.nightLine} inset, ${T.shadow}`, flexShrink: 0 }}>
       <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: "1.55cqw", background: T.night2 }}>
-        <video ref={ref} src={`/montage/noface/${file}.mp4`} poster={`/montage/noface/${file}.jpg`} preload="metadata" playsInline
+        <SlideVideo videoRef={ref} src={`/montage/noface/${file}.mp4`} poster={`/montage/noface/${file}.jpg`} preload="metadata" playsInline
           onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); setActive(null); }}
           className="absolute inset-0 h-full w-full object-cover" />
         {views && <Views value={views} size="0.8cqw" style={{ position: "absolute", left: "0.7cqw", bottom: "0.8cqw" }} />}
@@ -375,7 +376,8 @@ const Stat = ({ icon, n, label }: { icon: ReactNode; n: string; label: string })
 function CarouselStack({ c }: { c: (typeof CAROUSELS)[number] }) {
   const [n, setN] = useState(0);
   const ks = Array.from({ length: CAROUSEL_SLIDES }, (_, k) => k);
-  const src = (k: number) => `/montage/carousels/${c.base}-${k + 1}.jpg`;
+  // облегчённые копии 1080 px (docs/perf/make-small-images.mjs): в рамке 16% ширины кадра хватает с запасом, в памяти в 4 раза легче
+  const src = (k: number) => `/montage/carousels/${c.base}-${k + 1}-1080.jpg`;
   const R = "1.3cqw";
   const last = n === CAROUSEL_SLIDES - 1;
   return (

@@ -282,8 +282,9 @@ export function M_HowToBook() {
         ))}
       </div>
       <Stagger i={6} style={{ marginTop: "2cqw" }}>
-        <motion.div className="inline-flex" animate={{ boxShadow: [`0 0 0 0cqw ${T.gold}66`, `0 0 0 1cqw ${T.gold}00`] }} transition={{ delay: 1.2, duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-          style={{ ...goldButton, borderRadius: 999, padding: "1cqw 2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.2cqw" }}>МОНТАЖ в чат</motion.div>
+        {/* золотое кольцо-пульс: CSS-анимация (globals.css, gold-ring), 1,6 с easeOut, старт через 1,2 с, как было в framer-motion */}
+        <div className="inline-flex"
+          style={{ ...goldButton, borderRadius: 999, padding: "1cqw 2cqw", fontFamily: "var(--font-unbounded)", fontWeight: 700, fontSize: "1.2cqw", animation: "gold-ring 1.6s ease-out 1.2s infinite" }}>МОНТАЖ в чат</div>
       </Stagger>
       <Stagger i={7} base={0.4}><Note style={{ marginTop: "1.4cqw", maxWidth: "52cqw" }}>Бронь {moneyBoth(BOOKING_PRICE)} входит в цену обучения. Остаток вам пришлёт менеджер вместе со ссылкой. Вопросы: Telegram @futleid, WhatsApp {nb("+7 708 583 4575")}</Note></Stagger>
     </Statement>
