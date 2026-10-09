@@ -35,8 +35,21 @@ const IDS = {
   "+1 день 21:45": "next-2145",
 };
 
-/** Файлы, которых ещё нет: сообщение выключено (enabled: false), пока файл не появится в workshop-montazh/assets/tg. */
-const NOT_READY = new Set(["personal-1500.mp4"]);
+/** Файлы, которых ещё нет: сообщение выключено (enabled: false), пока файл не появится на сайте. Сейчас все готовы (личное видео 15:00 включено 09.10). */
+const NOT_READY = new Set();
+
+/**
+ * Версии картинок и видео (`?v=...`) берём из form-api/tg-series.json: файлы одни и те же, адреса должны совпадать, иначе WhatsApp
+ * и Telegram отдадут разные кешированные версии. Файл, которого в tg-series нет (например next-1030-wa.jpg), остаётся без версии.
+ */
+const VERSIONS = new Map();
+(function collect(x) {
+  if (typeof x === "string") {
+    const m = /\/([^/?]+)\?(v=[^&]+)$/.exec(x);
+    if (m) VERSIONS.set(m[1], "?" + m[2]);
+  } else if (Array.isArray(x)) x.forEach(collect);
+  else if (x && typeof x === "object") Object.values(x).forEach(collect);
+})(JSON.parse(readFileSync("form-api/tg-series.json", "utf8")));
 
 /** Метка места под видео в начале текста: «[Видео Александра, 15 с]» и пустая строка. В подпись к видео она не идёт. */
 const SLOT = /^\[[^\]\n]+\]\n\n/;
@@ -52,7 +65,7 @@ const messages = chain.whatsapp.map((m) => {
   if (m.media) {
     video = /\.mp4$/i.test(m.media);
     if (NOT_READY.has(m.media)) out.enabled = false;
-    out.media = { type: video ? "video" : "image", url: IMG + m.media };
+    out.media = { type: video ? "video" : "image", url: IMG + m.media + (VERSIONS.get(m.media) ?? "") };
   }
   out.text = video ? m.text.replace(SLOT, "") : m.text;
   if (m.extra && /опрос/i.test(m.extra)) {
@@ -66,7 +79,7 @@ const messages = chain.whatsapp.map((m) => {
 const series = {
   _about:
     "Расписание WhatsApp-сообщества эфира. Сообщения собираются скриптом scripts/build-wa-series.mjs из секции whatsapp в docs/mailings/chain-v2.json (правь chain-v2 и запускай скрипт, а не этот файл). Время по Алматы, день эфира D, сообщения идут в день D; у сообщений с dayOffset 1 время следующего дня (D+1), они уходят в то же сообщество и не попадают в сообщество следующего эфира. Название, описание и приветствие написаны под модуль и уходят в WhatsApp только после «ок» Александра.",
-  version: "2026-10-09.1",
+  version: "2026-10-09.2",
   timezone: "Asia/Almaty",
   streamStart: "20:00",
   // Сообщество следующего эфира создаётся накануне в 20:20: после последней эфирной ссылки (20:15), чтобы создание не мешало рассылке. Ссылка на сайте переключается в 20:40.
@@ -90,7 +103,7 @@ const series = {
   description:
     "Бесплатный воркшоп «Вайб-продакшен» от onAI Academy: как ИИ-агент монтирует рилсы без монтажёра и без лица в кадре. Эфир в 20:00 по Алматы. Здесь напоминания и ссылка на эфир.",
   welcome:
-    "Это сообщество бесплатного воркшопа «Вайб-продакшен». Эфир {dayWordLower} в 20:00 по Алматы (18:00 по Москве). Сюда придут напоминания и ссылка на эфир, писать здесь могут только админы. Записи не будет, приходи вживую.",
+    "Это сообщество бесплатного воркшопа «Вайб-продакшен». Эфир {dayWordLower} в 20:00 по Алматы (18:00 по Москве), вместе соберём ролик. Сюда придут напоминания и ссылка на эфир, писать здесь могут только админы.",
   avatar: [IMG + "wa-avatar.jpg", IMG + "cover-bizon.jpg"],
   messages,
 };

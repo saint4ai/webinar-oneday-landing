@@ -904,7 +904,7 @@ test("tg-series.json: файлы медиа включённых сообщен�
   const sr = validateSeries(JSON.parse(readFileSync(seriesFile, "utf8")));
   // Карточки 09.10 дорисовывает второй исполнитель: пока файла нет, имя из серии обязано быть в этом списке.
   // Когда карточка появилась в workshop-montazh/assets/tg, её можно убрать отсюда (с ней тест тоже зелёный).
-  const PENDING = new Set(["t-minus-30.jpg", "live-10.jpg", "bonus-got.jpg", "vaib.jpg", "installment.jpg", "again-today.jpg", "next-1030.jpg", "next-1500.jpg", "next-1950.jpg", "next-2145.jpg"]);
+  const PENDING = new Set(["t-minus-30.jpg", "live-10.jpg", "bonus-got.jpg", "vaib.jpg", "installment.jpg", "again-today.jpg", "next-1030.jpg", "next-1500.jpg", "next-1950.jpg", "next-2145.jpg", "personal-1500.mp4", "personal-1500.jpg"]); // личное видео 15:00 лежит на сервере, в git его нет (файлы в рабочей папке воронки, не закоммичены)
   const missing: string[] = [];
   const check = (id: string, media?: { url: string; poster?: string }) => {
     for (const u of [media?.url, media?.poster]) {
