@@ -440,3 +440,6 @@ code{font-family:'Manrope',sans-serif;font-weight:800;background:rgba(227,192,12
 
 .pf .p .k .no{width:26px;height:26px;font-size:12px}
 .pf .p.n .k .no{background:var(--gold)}
+
+/* ссылка на репозиторий в фразах для агента: переносится в любом месте и чуть мельче, чтобы карточка не росла (10.10) */
+.url { display: block; white-space: nowrap; font-size: 0.8em; margin: 2px 0; }

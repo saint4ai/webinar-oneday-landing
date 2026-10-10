@@ -269,7 +269,7 @@ const reg1 = {
   <div class="svh"><span></span><span>Сервис</span><span>Зачем</span><span>Где</span><span>Что важно</span></div>
   <div class="svl">
     ${svc(1, lgName("claude", "Claude Desktop"), "приложение, в котором работают все 3 чата", '<a href="https://claude.com/download">claude.com/download</a>', "нужна платная подписка Pro или Max: на бесплатном тарифе вкладка Code не открывается")}
-    ${svc(2, txName("Z", "Zernio"), "один вход для Instagram, WhatsApp и Telegram", '<a href="https://zernio.com">zernio.com</a>', "Instagram должен быть «Бизнес» или «Автор», личный не подключается. Ключ: раздел API keys, права read-write")}
+    ${svc(2, lgName("zernio", "Zernio"), "один вход для Instagram, WhatsApp и Telegram", '<a href="https://zernio.com">zernio.com</a>', "Instagram должен быть «Бизнес» или «Автор», личный не подключается. Ключ: раздел API keys, права read-write")}
     ${svc(3, lgName("openai", "OpenAI"), "ассистент отвечает людям с помощью модели OpenAI", '<a href="https://platform.openai.com">platform.openai.com</a>', "пополнение от 5 долларов. Сразу поставьте месячный лимит, для начала 10 долларов")}
     ${svc(4, lgName("telegram", "Бот Telegram"), "сюда приходят заявки", '<a href="https://t.me/BotFather">@BotFather</a><span>команда /newbot</span>', "имя бота нельзя поменять потом, выбирайте внимательно")}
     ${svc(5, txName("S", "Сервер"), "ассистент работает круглые сутки", '<a href="https://hoster.kz">Hoster.kz</a> (Kaspi), <a href="https://timeweb.cloud">Timeweb Cloud</a> (карта банка Казахстана), <a href="https://beget.com">Beget</a> (Россия)', "Ubuntu 24.04, 2 ядра, 2 ГБ памяти. Агент сам ставит туда ассистента")}
@@ -328,7 +328,7 @@ LESSONS.push({
     ["Отвечаете на вопросы по одному в разных сообщениях", "ответьте одним сообщением: агенту проще собрать профиль."],
   ],
   done: "агент написал, что проверка компьютера пройдена, пересказал ваши ответы, и в боковой панели 3 чата в одной папке.",
-  phrase: "Вот репозиторий курса: <span class=\"v\">&lt;ссылка из урока&gt;</span>. Установи всё и проверь мой компьютер.",
+  phrase: "Вот репозиторий: <span class=\"v\">github.com/<wbr>saint4ai/<wbr>reels-montage-remotion-course</span>. Установи всё и проверь компьютер.",
   extraB: () => `<div><div class="hd" style="margin-bottom:5px"><span>5 вопросов, к которым стоит подготовиться</span></div><div class="qs">
     ${["Чем вы занимаетесь и кому продаёте?", "Зачем вам рилсы: заявки, продажи, личный бренд, клиенты на SMM?", "Вы в кадре или без лица? Есть готовая запись?", "Какой монтаж нравится?", "Куда сейчас приходят клиенты: директ Instagram, WhatsApp, Telegram?"].map((q, i) => `<div class="q"><span class="no">${i + 1}</span><span class="tx">${q}</span></div>`).join("")}</div></div>`,
 });
@@ -735,7 +735,7 @@ const cheat = {
   html: `<div class="gclip bleed"><img class="glow" src="../img/glow-gold.png" style="right:-220px;top:-280px;width:800px;opacity:.5" alt=""></div>
   <div><div class="kicker">Шпаргалка</div><h1 class="u" style="font-size:34px;line-height:1.12;margin-top:10px">10 фраз для агента</h1></div>
   <div class="sh10">
-    ${sh(1, "1.1", "Монтажёр", `Вот репозиторий курса: ${V("<ссылка из урока>")}. Установи всё и проверь мой компьютер.`)}
+    ${sh(1, "1.1", "Монтажёр", `Вот репозиторий: <span class="v">github.com/<wbr>saint4ai/<wbr>reels-montage-<wbr>remotion-course</span>. Установи всё и проверь компьютер.`)}
     ${sh(2, "1.2", "Скриптолог", "Вот ники экспертов: @… @… @… Найди их залетевшие рилсы и предложи 5 идей под мою нишу.")}
     ${sh(3, "1.3", "Монтажёр", "Вот 3 рилса, монтаж которых мне нравится: … Цепляет: … Разбери и предложи мне стиль.")}
     ${sh(4, "1.4", "Монтажёр", "Запись готова, файл в папке ролика. Собери черновик.")}
