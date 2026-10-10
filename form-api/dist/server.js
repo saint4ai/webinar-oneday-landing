@@ -10838,8 +10838,27 @@ function noteNightSkip(r, t, msg, plan) {
   journal(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
   console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F %s \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 09:00 \u0434\u043E 23:45", msg.id, t.id, hhmmOf(plan));
 }
-function warmsBeforeLive(r, m) {
-  return !LIVE_LINK_IDS.has(m.id) && minsOf3(m.at) < minsOf3(r.cfg.streamStart);
+var PRE_LIVE_PATTERNS = [
+  /сегодня/i,
+  /через\s+\d+\s+мин/i,
+  /начинаем/i,
+  /начали/i,
+  /эфир\s+ид[её]т/i,
+  /ссылк[а-яё]*\s+(?:пришлю|будет|придёт|придет)/i
+];
+function warmsBeforeLive(r, t, m) {
+  if (LIVE_LINK_IDS.has(m.id) || minsOf3(m.at) >= minsOf3(r.cfg.streamStart)) return false;
+  const e = effMsg(r, t, m);
+  const said = `${e.text}
+${e.poll?.name ?? ""}`;
+  return !PRE_LIVE_PATTERNS.some((re) => re.test(said));
+}
+function eventStartOf(r) {
+  const eff = r.state.event.start || r.cfg.streamStart;
+  return eventTarget(r)?.start ?? (eff !== r.cfg.streamStart ? eff : void 0);
+}
+function warmList(r, start) {
+  return r.cfg.messages.filter((m) => m.enabled !== false && !m.dayOffset && warmsBeforeLive(r, { start }, m) && sendableTime(planOf(r, { day: "2000-01-01", start }, m))).map((m) => ({ id: m.id, at: hhmmOf(planOf(r, { day: "2000-01-01", start }, m)), topic: m.topic || m.id })).sort((a, b) => a.at.localeCompare(b.at));
 }
 function seriesViews(r, t) {
   const ev = r.state.event;
@@ -10867,7 +10886,7 @@ function planQueue(r, now) {
     for (let idx = 0; idx < r.cfg.messages.length; idx++) {
       const msg = r.cfg.messages[idx];
       if (msg.enabled === false) continue;
-      if (early && !warmsBeforeLive(r, msg)) continue;
+      if (early && !warmsBeforeLive(r, t, msg)) continue;
       if (now >= sendUntilOf(r, t.day, msg)) continue;
       if (msg.dayOffset && t.source === "event") continue;
       const plan = planOf(r, t, msg);
@@ -11269,7 +11288,7 @@ function nextMessage(r, now) {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
       if (event && m.dayOffset) continue;
-      if (warmOnly && !warmsBeforeLive(r, m)) continue;
+      if (warmOnly && !warmsBeforeLive(r, { start }, m)) continue;
       const plan = planOf(r, { day, start }, m);
       if (plan >= notBefore && plan >= now && plan < sendUntilOf(r, day, m) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
@@ -11669,10 +11688,12 @@ function waEventLaunch(nowArg) {
   save2(r);
   journal(r, { ev: "event_launch", date: ev.date, by: "panel" });
   const next = nextMessage(r, now);
+  const warm = warmList(r, eventStartOf(r));
+  const what = warm.length ? `\u0432 \u0434\u043D\u0438 \u0434\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)} \u0443\u0445\u043E\u0434\u044F\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0433\u0440\u0435\u0432\u0430\u044E\u0449\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F (${warm.map((w) => `\xAB${w.topic}\xBB \u0432 ${w.at}`).join(", ")}): \u0431\u0435\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u043D\u0430 \u044D\u0444\u0438\u0440, \u043E\u0444\u0444\u0435\u0440\u0430 \u0438 \u0432\u0441\u0435\u0433\u043E, \u0433\u0434\u0435 \u0441\u043A\u0430\u0437\u0430\u043D\u043E \xAB\u0441\u0435\u0433\u043E\u0434\u043D\u044F\xBB, \xAB\u0447\u0435\u0440\u0435\u0437 N \u043C\u0438\u043D\u0443\u0442\xBB, \xAB\u043D\u0430\u0447\u0438\u043D\u0430\u0435\u043C\xBB. \u041E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u0435 \u043F\u0440\u0438\u0434\u0451\u0442 \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430` : `\u0432 \u0434\u043D\u0438 \u0434\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)} \u0441\u043B\u0430\u0442\u044C \u043D\u0435\u0447\u0435\u0433\u043E: \u0432\u0441\u044F \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430 (\u0441\u0435\u0433\u043E\u0434\u043D\u044F, \u0441\u0441\u044B\u043B\u043A\u0430, \u043E\u0444\u0444\u0435\u0440), \u0434\u043E \u044D\u0442\u043E\u0433\u043E \u0434\u043D\u044F \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0431\u0443\u0434\u0435\u0442 \u043C\u043E\u043B\u0447\u0430\u0442\u044C`;
   return {
     ok: true,
     code: "launched",
-    message: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E. \u0421\u0435\u0440\u0438\u044F \u0438\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E \u0434\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)}, \u043D\u043E \u0432 \u0434\u043D\u0438 \u0434\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0445\u043E\u0434\u044F\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0433\u0440\u0435\u0432\u0430\u044E\u0449\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: \u0431\u0435\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u043D\u0430 \u044D\u0444\u0438\u0440 \u0438 \u043E\u0444\u0444\u0435\u0440\u0430, \u043E\u043D\u0438 \u043F\u0440\u0438\u0434\u0443\u0442 \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430${next ? `. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${ddmm4(next.day)} \u0432 ${hhmmOf(next.plan)}` : ""}. Telegram \u043F\u043E-\u043F\u0440\u0435\u0436\u043D\u0435\u043C\u0443 \u0448\u043B\u0451\u0442 \u0441\u0435\u0440\u0438\u044E \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430.`
+    message: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E: ${what}${next ? `. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${ddmm4(next.day)} \u0432 ${hhmmOf(next.plan)}` : ""}. Telegram \u043F\u043E-\u043F\u0440\u0435\u0436\u043D\u0435\u043C\u0443 \u0448\u043B\u0451\u0442 \u0441\u0435\u0440\u0438\u044E \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430.`
   };
 }
 function waPause(nowArg) {
@@ -12193,6 +12214,7 @@ function eventPlan(r, now) {
       first = hhmmOf(plan);
     }
   }
+  const warm = warmList(r, eventStart);
   const items = [];
   items.push(
     tgt ? { key: "create", text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u043D\u043E: ${when(tgt.createdAt)}`, state: "done" } : createAt && now >= createAt ? { key: "create", text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0451\u0442\u0441\u044F \u0441\u0435\u0439\u0447\u0430\u0441 (\u0441\u0440\u043E\u043A \u0431\u044B\u043B ${when(createAt)})`, state: "now" } : { key: "create", text: `\u0421\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u0441\u043E\u0437\u0434\u0430\u0441\u0442\u0441\u044F: ${when(createAt)}`, state: "next" }
@@ -12203,7 +12225,11 @@ function eventPlan(r, now) {
     state: tgt ? now < startAt ? "now" : "done" : "next"
   });
   items.push(
-    ev.launchedAt ? { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E ${when(ev.launchedAt)}, \u0434\u0430\u043B\u044C\u0448\u0435 \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0433\u0440\u0435\u0432, \u0431\u0435\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u043D\u0430 \u044D\u0444\u0438\u0440 \u0438 \u043E\u0444\u0444\u0435\u0440\u0430, \u044D\u0444\u0438\u0440 ${ddmm4(ev.date)}`, state: now >= closeAt ? "done" : "now" } : { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0442\u043E\u043B\u044C\u043A\u043E ${ddmm4(ev.date)}${first ? `, \u043F\u0435\u0440\u0432\u0430\u044F \u0432 ${first}` : ""}`, state: now >= closeAt ? "done" : dayKeyOf(now) === ev.date ? "now" : "next" }
+    ev.launchedAt ? {
+      key: "mail",
+      text: warm.length ? `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E ${when(ev.launchedAt)}, \u0434\u043E \u044D\u0444\u0438\u0440\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0433\u0440\u0435\u0432 (${warm.length} \u0432 \u0434\u0435\u043D\u044C: ${warm.map((w) => w.at).join(", ")}), \u044D\u0444\u0438\u0440 ${ddmm4(ev.date)}` : `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E ${when(ev.launchedAt)}, \u043D\u043E \u0434\u043E \u044D\u0444\u0438\u0440\u0430 \u0441\u043B\u0430\u0442\u044C \u043D\u0435\u0447\u0435\u0433\u043E: \u0432\u0441\u044F \u0441\u0435\u0440\u0438\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430 \u043F\u043E\u0434 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430, \u044D\u0444\u0438\u0440 ${ddmm4(ev.date)}`,
+      state: now >= closeAt ? "done" : "now"
+    } : { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0442\u043E\u043B\u044C\u043A\u043E ${ddmm4(ev.date)}${first ? `, \u043F\u0435\u0440\u0432\u0430\u044F \u0432 ${first}` : ""}`, state: now >= closeAt ? "done" : dayKeyOf(now) === ev.date ? "now" : "next" }
   );
   items.push({ key: "live", text: `\u042D\u0444\u0438\u0440: ${ddmm4(ev.date)} \u0432 ${startEff}`, state: now >= startAt + r.cfg.streamMinutes * MIN3 ? "done" : now >= startAt ? "now" : "next" });
   items.push({ key: "close", text: `\u0417\u0430\u043A\u0440\u044B\u0442\u0438\u0435: ${when(closeAt)}`, state: now >= closeAt ? "done" : "next" });
@@ -12357,6 +12383,8 @@ function waPanel(nowArg) {
       done: !!ev.done,
       launched: !!ev.launchedAt,
       launchedText: ev.launchedAt ? when(ev.launchedAt) : "",
+      /** Что уйдёт в дни до эфира при досрочном запуске (прогрев без «сегодня», ссылки и оффера). Пусто: слать нечего. */
+      warm: warmList(r, eventStart),
       /** Кнопку «Запустить рассылки сейчас» можно нажать: режим прямого эфира, сообщество есть, день эфира ещё не наступил, не запущено. */
       canLaunch: st.mode === "event" && !!ev.date && !ev.done && !ev.launchedAt && !!evTarget && today < ev.date,
       plan: eventPlan(r, now)
