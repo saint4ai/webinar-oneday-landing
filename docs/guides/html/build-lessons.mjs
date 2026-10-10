@@ -1,7 +1,8 @@
 // Сборка PDF-раздаток к урокам: Playwright Chromium, альбомный A4, одна секция = одна страница.
-// Запуск: node docs/guides/html/build-lessons.mjs [all|<имя раздела>|общий] [--shots <папка>]
-//   без аргументов: общий PDF и PDF каждого раздела в docs/guides/out/lessons/
-//   --shots <папка>: дополнительно снимки страниц общего файла в PNG (для просмотра вёрстки)
+// Запуск: node docs/guides/html/build-lessons.mjs [all|<имя раздела>|общий|extra|all-extra] [--shots <папка>]
+//   без аргументов: общий PDF и PDF каждого раздела основного пакета, затем дополнения (docs/guides/out/lessons/)
+//   extra: только дополнения (общий Vibe-Production-dopolneniya.pdf и по файлу на раздел); all-extra: только общий файл дополнений
+//   --shots <папка>: дополнительно снимки страниц общего файла в PNG (для просмотра вёрстки; у дополнений файлы x01.png…)
 // Перед запуском взять общий замок тяжёлых процессов (heavy.ps1 take), после сборки снять (release).
 // Потом: python docs/guides/html/qa-lessons.py  (pypdf, текст, ссылки, превью JPG и лист-превью)
 import { chromium } from "@playwright/test";
@@ -22,8 +23,11 @@ if (shotsDir) mkdirSync(shotsDir, { recursive: true });
 const pos = args.filter((a, i) => !a.startsWith("--") && !(shotsIdx >= 0 && i === shotsIdx + 1));
 const want = pos[0] || "all";
 
-const jobs = [{ file: "all", pdf: "Vibe-Production-razdatki.pdf" }, ...manifest.sections.map((s) => ({ file: s.file, pdf: `${s.file}.pdf` }))];
-const todo = want === "all" ? jobs : want === "общий" ? [jobs[0]] : jobs.filter((j) => j.file === want);
+const mainJobs = [{ file: "all", pdf: "Vibe-Production-razdatki.pdf" }, ...manifest.sections.map((s) => ({ file: s.file, pdf: `${s.file}.pdf` }))];
+// дополнения: свои HTML и PDF, в общий файл основного пакета не входят
+const extraJobs = manifest.extra ? [{ file: "all-extra", pdf: `${manifest.extra.all}.pdf` }, ...manifest.extra.sections.map((s) => ({ file: s.file, pdf: `${s.file}.pdf` }))] : [];
+const jobs = [...mainJobs, ...extraJobs];
+const todo = want === "all" ? jobs : want === "общий" ? [jobs[0]] : want === "extra" ? extraJobs : jobs.filter((j) => j.file === want);
 if (!todo.length) { console.log("нет такого раздела: " + want); process.exit(2); }
 
 const browser = await chromium.launch();
@@ -91,7 +95,7 @@ for (const job of todo) {
   if (issues.length) { bad += issues.length; console.log(`[${job.file}] проверка вёрстки (${issues.length}):\n  ` + [...new Set(issues)].slice(0, 400).join("\n  ")); }
   else console.log(`[${job.file}] вёрстка: переполнений нет`);
 
-  if (args.includes("--dump") && job.file === "all") {
+  if (args.includes("--dump") && (job.file === "all" || job.file === "all-extra")) {
     const dump = await page.evaluate(() => [...document.querySelectorAll(".page")].map((pg, i) => {
       const parts = [];
       const walk = (el, d) => { for (const c of el.children) { if (c.classList.contains("foot") || c.classList.contains("glow")) continue; const r = c.getBoundingClientRect(); const cn = (c.className.baseVal === undefined ? c.className : "").toString().split(" ")[0] || c.tagName.toLowerCase(); parts.push(`${"  ".repeat(d)}${cn} ${Math.round(r.height)}`); if (c.classList.contains("bd") && d < 1) walk(c, d + 1); } };
@@ -100,9 +104,10 @@ for (const job of todo) {
     }));
     console.log(dump.join("\n"));
   }
-  if (shotsDir && job.file === "all") {
+  if (shotsDir && (job.file === "all" || job.file === "all-extra")) {
     const secs = await page.$$(".page");
-    for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: join(shotsDir, `p${String(i + 1).padStart(2, "0")}.png`) });
+    const pre = job.file === "all" ? "p" : "x";
+    for (let i = 0; i < secs.length; i++) await secs[i].screenshot({ path: join(shotsDir, `${pre}${String(i + 1).padStart(2, "0")}.png`) });
     console.log(`снимки страниц: ${secs.length} в ${shotsDir}`);
   }
 

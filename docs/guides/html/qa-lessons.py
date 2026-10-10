@@ -209,8 +209,9 @@ print(f"превью: {len(paths)} страниц в {PREV}, лист {os.path.j
 
 # 6. альбомы для Telegram: страницы по разделам, ширина 1600 px (docs/guides/out/lessons/phone/<раздел>/01.jpg…)
 import shutil
-if os.path.isdir(PHONE):
-    shutil.rmtree(PHONE)
+# удаляем только папки основного пакета: альбомы дополнений делает qa-lessons-extra.py
+for s_ in manifest["sections"]:
+    shutil.rmtree(os.path.join(PHONE, s_["file"]), ignore_errors=True)
 n_ph = 0
 for s_ in manifest["sections"]:
     d_ = os.path.join(PHONE, s_["file"])

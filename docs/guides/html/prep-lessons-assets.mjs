@@ -2,7 +2,7 @@
 // Запуск: node docs/guides/html/prep-lessons-assets.mjs
 // Логотипы не перерисованы: берутся настоящие файлы из репозитория, меняется только заливка на цвет текста бренда.
 import sharp from "sharp";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -11,8 +11,8 @@ const root = join(here, "../../..");
 const img = join(here, "img");
 
 // 1. Lego-объекты, которых ещё нет в img/ (иконки i-… до 240 px, сцены s-… до 360 px, фабрика крупнее).
-const small = ["lg-i-laptopfilm"];
-const scene = ["lg-s13-editor", "lg-s21-robot", "lg-s32-hand", "lg-s43-leaving", "lg-s59-desk", "lg-s50-plan"];
+const small = ["lg-i-laptopfilm", "lg-i-calfilm"];
+const scene = ["lg-s13-editor", "lg-s21-robot", "lg-s32-hand", "lg-s43-leaving", "lg-s59-desk", "lg-s50-plan", "lg-ch2-studio", "lg-s23-noface", "lg-ch1-clapper", "lg-s09-coins"];
 const jobs = [
   ...small.map((n) => [n, 240]),
   ...scene.map((n) => [n, 360]),
@@ -44,4 +44,14 @@ for (const [name, rel, recolor] of logos) {
   s = s.replace(/<title>[^<]*<\/title>/, "");
   writeFileSync(join(img, `logo-${name}.svg`), s);
 }
+
+// 3. Дополнения (10.10.2026): логотипы Higgsfield, Kling, TikTok, YouTube и Google Таблиц.
+// Источники (все настоящие, ничего не перерисовано), подробности в отчёте задачи:
+//   Higgsfield: https://higgsfield.ai/icon.png (favicon сайта, 192 px), Kling: apple-touch-icon с kling.ai (180 px),
+//   TikTok: однотонный знак (public/montage/logos/tiktok.svg), YouTube: Wikimedia Commons «YouTube full-color icon (2024).svg» (общественное достояние),
+//   Google Таблицы: https://www.gstatic.com/images/branding/productlogos/sheets_2026q3/v1/web/192px.svg (официальный логотип Google; PNG, потому что в нём фильтр и градиент).
+copyFileSync(join(here, "img-src/higgsfield-icon.png"), join(img, "logo-higgsfield.png"));
+copyFileSync(join(here, "img-src/kling-icon.png"), join(img, "logo-kling.png"));
+for (const n of ["tiktok", "youtube"]) writeFileSync(join(img, `logo-${n}.svg`), readFileSync(join(here, `img-src/${n}.svg`), "utf8").replace(/<title>[^<]*<\/title>/, ""));
+await sharp(readFileSync(join(here, "img-src/googlesheets.svg")), { density: 384 }).resize({ width: 256, height: 256, fit: "inside" }).png({ compressionLevel: 9 }).toFile(join(img, "logo-sheets.png"));
 console.log("ok");

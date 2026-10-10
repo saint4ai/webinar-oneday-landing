@@ -5,6 +5,7 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { extraSections } from "./lessons-extra.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "lessons");
@@ -93,7 +94,7 @@ const result = (text, tag = "Результат урока") => `<div class="res
 
 const H = (t, icon, extra = "") => `<div class="hd">${icon ? `<span class="hi">${icon}</span>` : ""}<span>${t}</span>${extra}</div>`;
 
-const you = (steps, two = false) => `<div class="you${two ? " two" : ""}">${H("Что делаете вы", G("user", { c: NIGHT, w: 2.6 }))}<ol>${steps.map((s, i) => `<li><span class="no">${i + 1}</span><span class="tx">${s}</span><span class="bx"></span></li>`).join("")}</ol></div>`;
+const you = (steps, two = false, from = 1, title = "Что делаете вы") => `<div class="you${two ? " two" : ""}">${H(title, G("user", { c: NIGHT, w: 2.6 }))}<ol>${steps.map((s, i) => `<li><span class="no">${i + from}</span><span class="tx">${s}</span><span class="bx"></span></li>`).join("")}</ol></div>`;
 
 const agent = (items, title = "Что делает агент") => `<div class="ag"><div class="hd">${IMG("lg-i-robot")}<span>${title}</span></div><ul>${items.map((s) => `<li>${s}</li>`).join("")}</ul></div>`;
 
@@ -575,7 +576,12 @@ LESSONS.push({
     "Ключи сохраняйте файлом в Загрузках (как на стр. 7), агенту пишите только путь к файлу.",
     "Ответьте на вопросы о бизнесе: что можно называть, какие ссылки давать, как записаться, каким тоном говорить, куда слать заявки.",
     "Прочитайте ответы ассистента на 10 типичных вопросов и напишите «ок» или правки.",
+  ],
+  // шаги 7–9 (тестовый режим) идут сверху третьей страницы урока, чтобы первая не переполнилась
+  you2: [
+    `Сначала тестовый режим. Скажите агенту: «Включи тестовый режим для моего второго аккаунта <span class="fnm">[@ник]</span>». Агент сначала покажет, что ассистент ответил бы, ничего не отправляя, а потом включит ответы только вашему второму аккаунту. Остальным людям ассистент пока молчит.`,
     "Проверьте вживую: со второго аккаунта напишите комментарий с кодовым словом и вопрос в директ.",
+    "Всё пришло как надо: скажите «Выключи тестовый режим, запускай для всех».",
   ],
   agent: ["заполняет базу знаний и инструкцию ассистента;", "ставит ассистента на ваш сервер;", "подключает Zernio и проверяет, что всё работает."],
   rule: ["Ассистент говорит только то, что вы ему разрешили.", "ассистент придумывает цены и сроки.", "в базе знаний записано, что называть можно, а что передать вам."],
@@ -583,8 +589,9 @@ LESSONS.push({
     ["Личный аккаунт Instagram", "переключите на «Бизнес» или «Автор» в настройках Instagram."],
     ["Ключ вставили в чат", "удалите ключ в сервисе, создайте новый и передайте файлом."],
     ["Проверяете со своего же аккаунта", "пишите со второго аккаунта."],
+    ["Ассистент молчит людям", "тестовый режим не выключен: скажите «Выключи тестовый режим»."],
   ],
-  done: "комментарий со словом получил ответ, в директ пришёл материал, тестовая заявка пришла в Telegram. WhatsApp и Telegram-канал подключаются так же, по желанию.",
+  done: "комментарий со словом получил ответ, в директ пришёл материал, тестовая заявка пришла в Telegram, а тестовый режим выключен. WhatsApp и Telegram-канал подключаются так же, по желанию.",
   phrase: "Подключи ассистента для директа. Ключи лежат в Загрузках: zernio-key.txt, openai-key.txt, telegram-bot-key.txt. IP сервера: [адрес].",
   extraB: () => `<div><div class="hd" style="margin-bottom:6px"><span>Что важно знать</span></div><div class="plat">
     <div class="pt" style="flex:1.2"><span class="lgo">${LOGO("instagram")}</span><div><b>Instagram</b><span>аккаунт «Бизнес» или «Автор». В директе ответить можно в течение 24 часов после сообщения человека.</span></div></div>
@@ -610,7 +617,7 @@ LESSONS.push({
   you: [
     "Выпишите дела, которые делаете руками чаще раза в неделю.",
     "Выберите самое частое и опишите по формуле «когда → что → куда».",
-    "Дайте доступ, как скажет агент. Для Google Таблицы обычно нужно открыть доступ к таблице с правами редактора для адреса служебного аккаунта, который пришлёт агент.",
+    "Заявки в таблицу: раздатка «Заявки строкой в Google Таблице» (дополнение к уроку 2.3). Для других таблиц дайте доступ так, как скажет агент.",
     "Проверьте работу на тестовых данных.",
     "Включите и попросите сообщать вам в Telegram, если что-то сломалось.",
   ],
@@ -739,7 +746,7 @@ function lessonPages(L) {
   if (L.id === "1.3" || L.id === "2.2") {
     // три страницы: схема и шаги; агент, правило и дополнительный блок; ошибки, готово и фраза
     const p2 = { cls: "ls", html: `${slimHeader(L)}<div class="bd"><div class="gr2 l">${agent(L.agent)}${rule(...L.rule)}</div>${L.extraB()}</div>` };
-    const p3 = { cls: "cream ls roomy", html: `${slimHeader(L)}<div class="bd">${errors(L.errors)}<div class="gr2">${done(L.done)}${phrase(L.phrase, L.phraseLabel)}</div></div>` };
+    const p3 = { cls: L.you2 ? "cream ls" : "cream ls roomy", html: `${slimHeader(L)}<div class="bd">${L.you2 ? you(L.you2, false, L.you.length + 1, "Что делаете вы, продолжение") : ""}${errors(L.errors)}<div class="gr2">${done(L.done)}${phrase(L.phrase, L.phraseLabel)}</div></div>` };
     return [pa, p2, p3];
   }
   if (L.id === "1.5") {
@@ -826,11 +833,11 @@ const nbspText = (t) => t
   .replace(/(^|[\s>])([вкосуиаВКСУОИА]) (?=\S)/g, "$1$2" + NBSP)
   .replace(/(\d+–\d+)/g, '<span class="nw">$1</span>');
 const nbsp = (h) => h.replace(/>([^<]+)</g, (m, t) => ">" + nbspText(t) + "<");
-const doc = (title, secs) => nbsp(`<!doctype html>
+const doc = (title, secs, extra = false) => nbsp(`<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <title>${title}</title>
 <link rel="stylesheet" href="../common.css">
-<link rel="stylesheet" href="lessons.css">
+<link rel="stylesheet" href="lessons.css">${extra ? '\n<link rel="stylesheet" href="lessons-extra.css">' : ""}
 </head>
 <body>
 ${secs}
@@ -864,5 +871,20 @@ const allHtml = SECTIONS.map((s) => {
   return `<!-- ${s.title} -->\n${out}`;
 }).join("\n\n");
 writeFileSync(join(outDir, "all.html"), doc("Vibe Production: раздатки к урокам", allHtml));
-writeFileSync(join(outDir, "manifest.json"), JSON.stringify({ total: all.length, sections: manifest }, null, 1));
-console.log(`страниц всего ${all.length}, файлов ${SECTIONS.length + 1}`);
+
+/* ====================== дополнения (5 разделов), отдельная нумерация и общий файл ====================== */
+// Основной пакет выше не меняется: дополнения пишутся в свои файлы и в manifest.extra, общий PDF основного пакета их не включает.
+const XS = extraSections({ IMG, LOGO, G, H, ARROW_G, ARROW_N, CHAT, result, you, agent, rule, errors, done, phrase, rb, GOLD, GOLD2, BROWN, NIGHT, INK, CREAM });
+const xall = XS.flatMap((s) => s.pages);
+const xmanifest = [];
+let xstart = 0;
+for (const s of XS) {
+  writeFileSync(join(outDir, `${s.file}.html`), doc(s.title, renderPages(s.pages, xstart, xall.length), true));
+  xmanifest.push({ file: s.file, pages: s.pages.length, start: xstart });
+  xstart += s.pages.length;
+}
+let xgi = 0;
+const xallHtml = XS.map((s) => `<!-- ${s.title} -->\n` + s.pages.map((p) => { xgi++; return `<section class="page ${p.cls}">\n${p.html}\n${footer(xgi, xall.length)}\n</section>`; }).join("\n\n")).join("\n\n");
+writeFileSync(join(outDir, "all-extra.html"), doc("Vibe Production: дополнения к урокам", xallHtml, true));
+writeFileSync(join(outDir, "manifest.json"), JSON.stringify({ total: all.length, sections: manifest, extra: { total: xall.length, all: "Vibe-Production-dopolneniya", sections: xmanifest } }, null, 1));
+console.log(`страниц всего ${all.length}, файлов ${SECTIONS.length + 1}; дополнения: страниц ${xall.length}, файлов ${XS.length + 1}`);
