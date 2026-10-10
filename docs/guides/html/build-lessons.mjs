@@ -88,7 +88,7 @@ for (const job of todo) {
     });
     return out;
   });
-  if (issues.length) { bad += issues.length; console.log(`[${job.file}] проверка вёрстки (${issues.length}):\n  ` + [...new Set(issues)].slice(0, 80).join("\n  ")); }
+  if (issues.length) { bad += issues.length; console.log(`[${job.file}] проверка вёрстки (${issues.length}):\n  ` + [...new Set(issues)].slice(0, 400).join("\n  ")); }
   else console.log(`[${job.file}] вёрстка: переполнений нет`);
 
   if (args.includes("--dump") && job.file === "all") {

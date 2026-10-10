@@ -14,6 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OUT = os.path.join(ROOT, "docs", "guides", "out", "lessons")
 PREV = os.path.join(OUT, "preview")
+PHONE = os.path.join(OUT, "phone")
 SRC = os.path.join(ROOT, "docs", "guides", "lesson-handouts.md")
 MANIFEST = os.path.join(HERE, "lessons", "manifest.json")
 os.makedirs(PREV, exist_ok=True)
@@ -85,11 +86,18 @@ for name, want in files:
 
 # 2. кликабельные ссылки общего файла
 want_urls = ["https://onai.academy/", "https://www.instagram.com/saint4ai/", "https://claude.com/download", "https://zernio.com",
-             "https://platform.openai.com", "https://t.me/BotFather", "https://hoster.kz", "https://timeweb.cloud", "https://beget.com"]
+             "https://platform.openai.com", "https://t.me/BotFather", "https://hoster.kz", "https://timeweb.cloud", "https://beget.com",
+             "https://github.com/saint4ai/reels-montage-remotion-course", "https://www.instagram.com/p/Dc8YwYCt_E_/"]
 for u in want_urls:
     if not any(l.rstrip("/") == u.rstrip("/") for l in full_links):
         problems.append(f"в общем PDF нет ссылки {u}")
 print("ссылки в общем PDF:", len(full_links), "уникальных", len(set(full_links)))
+REPO = "https://github.com/saint4ai/reels-montage-remotion-course"
+t11 = chr(10).join(page_stats(os.path.join(OUT, "1-1-rabochee-mesto.pdf"))[1])
+if not any(REPO == ln.strip() for ln in t11.splitlines()):
+    problems.append("урок 1.1: ссылка на репозиторий не стоит отдельной строкой целиком")
+else:
+    print("урок 1.1: ссылка на репозиторий отдельной строкой целиком")
 
 # 3. сверка с исходным текстом: каждый смысловой фрагмент должен быть в PDF
 def norm(s):
@@ -198,6 +206,21 @@ for i, im in enumerate(ims):
     d.text((x, y + th + 4), f"стр. {i + 1}  {labels[i]}", fill=(227, 192, 123), font=font)
 sheet.save(os.path.join(OUT, "preview-sheet.jpg"), quality=85)
 print(f"превью: {len(paths)} страниц в {PREV}, лист {os.path.join(OUT, 'preview-sheet.jpg')}")
+
+# 6. альбомы для Telegram: страницы по разделам, ширина 1600 px (docs/guides/out/lessons/phone/<раздел>/01.jpg…)
+import shutil
+if os.path.isdir(PHONE):
+    shutil.rmtree(PHONE)
+n_ph = 0
+for s_ in manifest["sections"]:
+    d_ = os.path.join(PHONE, s_["file"])
+    os.makedirs(d_, exist_ok=True)
+    for k in range(s_["pages"]):
+        im = ims[s_["start"] + k]
+        h = round(im.height * 1600 / im.width)
+        im.resize((1600, h), Image.LANCZOS).save(os.path.join(d_, f"{k + 1:02d}.jpg"), quality=88)
+        n_ph += 1
+print(f"альбомы для телефона: {n_ph} картинок в {len(manifest['sections'])} папках, {PHONE}")
 
 print("ПРОБЛЕМ: %d" % len(problems))
 for p in problems:
