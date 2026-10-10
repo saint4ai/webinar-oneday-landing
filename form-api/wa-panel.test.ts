@@ -292,6 +292,21 @@ test.beforeEach(() => {
   initWaGroups({ dir: mkdtempSync(join(tmpdir(), "wa-panel-")), seriesFile: join(REPO, "form-api", "wa-series.json"), deps: { now: () => clock.t, sleep: async () => {}, rand: () => 0.5, notify: async () => 1 } });
 });
 
+/** Свежий модуль со своей серией (edit правит копию wa-series.json). Нужен там, где важен текст сообщений серии. */
+function useSeries(edit: (s: any) => void) {
+  const dir = mkdtempSync(join(tmpdir(), "wa-panel-series-"));
+  const series = JSON.parse(readFileSync(join(REPO, "form-api", "wa-series.json"), "utf8"));
+  edit(series);
+  const seriesPath = join(dir, "wa-series.json");
+  writeFileSync(seriesPath, JSON.stringify(series));
+  resetWaGroups();
+  initWaGroups({ dir, seriesFile: seriesPath, deps: { now: () => clock.t, sleep: async () => {}, rand: () => 0.5, notify: async () => 1 } });
+}
+/** Прогрев без «сегодня» и без времени эфира (так выглядели бы бонусы и видео-прогрев без привязки к вечеру). */
+const neutralWarm = (s: any) => {
+  for (const m of s.messages) if (m.id === "reg-bonus" || m.id === "video-ai") m.text = "Нейтральный прогрев без привязки ко дню и времени эфира.";
+};
+
 const PAIR_STEPS = "WhatsApp на телефоне → Настройки → Связанные устройства → Привязать устройство → Привязать по номеру телефона → ввести код";
 
 test("панель: «Статус WhatsApp» первым блоком; подключён: зелёный, номер закрыт, кнопки подключения спрятаны, вместо них «Отключить номер» с подтверждением в странице", async () => {
@@ -721,6 +736,7 @@ test("панель: рубильник «Автоматизация» вверх
 });
 
 test("панель: прямой эфир (одна дата): режим так и называется, под формой план одной лентой из настроек и серии; кнопки «Создать сообщество сейчас», «Запустить рассылки сейчас» (с подтверждением), «Сбросить»; на паузе план говорит об этом", async () => {
+  useSeries(neutralWarm);
   waSetMode("event");
   assert.equal(waSetEvent({ date: "2026-10-15", start: "20:30", recruitFrom: "2026-10-12" }, clock.t).ok, true);
   const p = loadPanel();
@@ -743,7 +759,7 @@ test("панель: прямой эфир (одна дата): режим так
   const n0 = p.fetched.filter((f) => f.url.endsWith("wa/event/launch")).length;
   p.button("Запустить рассылки сейчас").dispatch("click");
   const dlg = all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0];
-  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. После запуска в сообщество каждый день до эфира будут уходить только прогревающие сообщения: «Бонусы за регистрацию» в 13:00, «Видео-прогрев: почему AI-монтаж сейчас» в 18:00\. Всё, где сказано «сегодня», «через N минут», «начинаем», а также ссылка на эфир, сам эфир и оффер придут в день эфира\./);
+  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. После запуска в сообщество каждый день до эфира будут уходить только прогревающие сообщения: «Бонусы за регистрацию» в 13:00, «Видео-прогрев: почему AI-монтаж сейчас» в 18:00\. Всё, где сказано «сегодня», «через N минут», «начинаем» или названо время эфира, а также ссылка на эфир, сам эфир и оффер придут в день эфира\./);
   assert.match(dlg.textContent, /Telegram по-прежнему шлёт серию только в день эфира\./);
   assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/event/launch")).length, n0, "без подтверждения запроса нет");
   p.button("Да, запустить").dispatch("click");
@@ -753,7 +769,7 @@ test("панель: прямой эфир (одна дата): режим так
   assert.equal(launch[0].body.confirm, true);
   assert.equal(p.button("Рассылки запущены").disabled, true);
   assert.match(ribbon(), /Рассылки: запущены досрочно 08\.10 в 12:00, до эфира только прогрев \(2 в день: 13:00, 18:00\), эфир 15\.10/);
-  assert.match(p.text(), /Рассылки запущены досрочно \(08\.10 в 12:00\): в дни до эфира идёт только прогрев, ссылка на эфир, оффер и всё про «сегодня» придут в день эфира\./);
+  assert.match(p.text(), /Рассылки запущены досрочно \(08\.10 в 12:00\): в дни до эфира идёт только прогрев, ссылка на эфир, оффер, время эфира и всё про «сегодня» придут в день эфира\./);
   // рубильник выключен: у плана красная строка
   setAutomation(false, "тест");
   await p.tick(20000);
@@ -772,13 +788,6 @@ test("панель: прямой эфир (одна дата): режим так
 });
 
 test("панель: вся серия под день эфира: в подтверждении запуска прямо сказано, что до эфира не уйдёт ни одного сообщения; в плане и подсказке то же", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "wa-panel-warm-"));
-  const series = JSON.parse(readFileSync(join(REPO, "form-api", "wa-series.json"), "utf8"));
-  for (const m of series.messages) if (m.id === "reg-bonus" || m.id === "video-ai") m.text += "\n\nСегодня в 20:00 покажу, как это работает.";
-  const seriesPath = join(dir, "wa-series.json");
-  writeFileSync(seriesPath, JSON.stringify(series));
-  resetWaGroups();
-  initWaGroups({ dir, seriesFile: seriesPath, deps: { now: () => clock.t, sleep: async () => {}, rand: () => 0.5, notify: async () => 1 } });
   waSetMode("event");
   assert.equal(waSetEvent({ date: "2026-10-15", start: "20:00", recruitFrom: "2026-10-12" }, clock.t).ok, true);
   assert.equal((await waEventCreateNow(clock.t)).ok, true);
@@ -787,7 +796,7 @@ test("панель: вся серия под день эфира: в подтв�
   assert.deepEqual((waPanel(clock.t) as any).event.warm, []);
   p.button("Запустить рассылки сейчас").dispatch("click");
   const dlg = all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0];
-  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. Вся серия написана под день эфира \(«сегодня», ссылка, оффер\), поэтому в дни до эфира не уйдёт ни одного сообщения: сообщество будет молчать до 15\.10, досрочный запуск ничего не изменит\./);
+  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. Вся серия написана под день эфира \(«сегодня», время эфира, ссылка, оффер\), поэтому в дни до эфира не уйдёт ни одного сообщения: сообщество будет молчать до 15\.10, досрочный запуск ничего не изменит\./);
   p.button("Да, запустить").dispatch("click");
   await p.settle();
   const ribbon = all(all(p.view, (e) => hasClass(e, "plan"))[0], (e) => e.tag === "li").map((li) => li.textContent).join(" · ");
