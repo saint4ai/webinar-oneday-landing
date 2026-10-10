@@ -10,8 +10,9 @@
  *
  * Общий рубильник «Автоматизация» (automation.ts): выключен, значит ни одного планового сообщения серии, включая
  * essential. Итоговые отчёты владельцам идут независимо.
- * Прямой эфир (режим event у WhatsApp, eventNow из tg-workshop): серия идёт только в день эфира, со сдвигом
- * времени под старт эфира; записанных на ежедневный день, который ещё не закончился, тик переписывает на день эфира (moveToEvent).
+ * Прямой эфир (режим event у WhatsApp, eventNow из tg-workshop): новая ежедневная серия в дни до эфира не идёт, в день эфира серия
+ * идёт со сдвигом времени под старт. Что уже идёт, не обрывается: «+1 день» вчерашнего ежедневного эфира (дожим с оффером до 23:59) и
+ * сам день сохранения доходят как обычно. Записанных на более поздние ежедневные дни тик переписывает на день эфира (moveToEvent).
  *
  * Скорость исходящих (20 в секунду, приоритет приветствий, пауза на 429) держит общий
  * ограничитель в tg-workshop. Второй процесс не шлёт: его останавливает lock-файл data/scheduler.lock.
@@ -42,7 +43,7 @@ import {
 import { noteRuntime, type Subscriber, type TgStore } from "./tg-store";
 import { dailyKeyboard, renderDailyReport } from "./tg-admin";
 import { automationOn } from "./automation";
-import { addDays, atTime, dayKeyOf, isStreamDay, parseHHMM, startShiftMin, type EventSched } from "./tg-time";
+import { addDays, atTime, dayKeyOf, eventKeepDay, isStreamDay, parseHHMM, startShiftMin, type EventSched } from "./tg-time";
 
 const TICK_MS = 30_000;
 const LOCK_STALE_MS = 3 * TICK_MS;
@@ -89,15 +90,23 @@ function candidateDays(sr: Series, now: number): string[] {
 }
 
 /**
+ * Прямой эфир придерживает сообщение дня day? Ежедневные сообщения дней позже дня сохранения и до даты эфира не идут. Не придерживаются:
+ * день самого эфира, «+1 день» (дожим после уже прошедшего ежедневного эфира с оффером до 23:59) и сам день сохранения.
+ */
+function holdsBack(ev: EventSched | null | undefined, day: string, msg: { dayOffset?: number }, now: number): boolean {
+  return !!ev && day !== ev.date && !msg.dayOffset && day > eventKeepDay(ev, now);
+}
+
+/**
  * Какие пары (сообщение, день эфира D) сейчас в окне отправки. По возрастанию планового времени.
- * Прямой эфир активен (ev): только его день, со сдвигом времени под старт эфира; ежедневной серии в другие дни нет.
+ * Прямой эфир активен (ev): день эфира со сдвигом времени под старт; новой ежедневной серии в другие дни нет (holdsBack).
  */
 export function dueMessages(sr: Series, now: number, ev: EventSched | null = eventNow(now)): Due[] {
   const out: Due[] = [];
   for (const day of candidateDays(sr, now)) {
-    if (ev && day !== ev.date) continue;
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
+      if (holdsBack(ev, day, msg, now)) continue;
       const plan = planTime(day, msg, eventShiftMin(sr, ev, day, msg));
       if (inWindow(now, plan, sr.graceMinutes)) out.push({ msg, day, plan });
     }
@@ -123,15 +132,17 @@ export function pickRecipients(st: TgStore, msg: SeriesMsg, day: string, opts: {
 }
 
 /**
- * Прямой эфир: кто записан на ежедневный день, который раньше даты эфира и ещё не закончился, переписывается на день эфира
- * (событие rejoin, переживает рестарт). Ежедневной серии в дни до эфира нет, так что иначе такие люди остались бы без рассылки.
- * Те, чей день уже прошёл, получили свою серию и не трогаются; заблокировавшие и отписавшиеся тоже. Возвращает, сколько переписано.
+ * Прямой эфир: кто записан на ежедневный день позже дня сохранения и раньше даты эфира, переписывается на день эфира
+ * (событие rejoin, переживает рестарт). Ежедневной серии в такие дни нет, так что иначе эти люди остались бы без рассылки.
+ * Записанные на сам день сохранения остаются на нём и получают ссылку и живой, как обещано при записи. Те, чей день уже прошёл,
+ * получили свою серию и не трогаются; заблокировавшие и отписавшиеся тоже. Возвращает, сколько переписано.
  */
 export function moveToEvent(st: TgStore, sr: Series, ev: EventSched, now: number): number {
   const cfg = timeCfg(sr);
+  const keep = eventKeepDay(ev, now);
   let n = 0;
   for (const s of [...st.subs.values()]) {
-    if (!st.isActive(s) || s.streamDay >= ev.date || now >= dayEnd(s.streamDay, cfg, now)) continue;
+    if (!st.isActive(s) || s.streamDay <= keep || s.streamDay >= ev.date || now >= dayEnd(s.streamDay, cfg, now)) continue;
     st.recordEvent({ type: "rejoin", chat_id: s.chatId, streamDay: ev.date, ts: new Date(now).toISOString() });
     n++;
   }
@@ -279,9 +290,9 @@ let errAlerted = false;
 /** Сообщения, чьё окно уже закрылось, а получатели остались: фиксируем в логе, что пропустили. */
 function logLate(st: TgStore, sr: Series, now: number, ev: EventSched | null = null) {
   for (const day of candidateDays(sr, now)) {
-    if (ev && day !== ev.date) continue;
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
+      if (holdsBack(ev, day, msg, now)) continue;
       const plan = planTime(day, msg, eventShiftMin(sr, ev, day, msg));
       const key = `${msg.id}|${day}`;
       if (now <= plan + sr.graceMinutes * 60_000 || lateLogged.has(key)) continue;
@@ -330,8 +341,9 @@ export async function dailyReport(now: number = Date.now()): Promise<boolean> {
   const today = dayKeyOf(now);
   const ev = eventNow(now);
   for (const day of [addDays(today, -1), today]) {
-    // Прямой эфир: итог только за его день (в другие дни эфира нет), день эфира считается эфирным всегда.
-    if (ev && day !== ev.date) continue;
+    // Прямой эфир: итог за день эфира и за ежедневные дни, в которые рассылка реально шла (вчерашний эфир, день сохранения),
+    // приходит как обычно; за дни, когда эфира нет, итога нет. День эфира считается эфирным всегда.
+    if (ev && day !== ev.date && !st.sentOnDay(day)) continue;
     if ((!isStreamDay(day, cfg) && ev?.date !== day) || st.isReported(day)) continue;
     const at = dayEnd(day, cfg, now) + REPORT_DELAY_MS;
     if (now < at || now > at + REPORT_WINDOW_MS) continue;

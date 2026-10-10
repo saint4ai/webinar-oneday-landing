@@ -38,15 +38,18 @@ const listeners = new Set<Listener>();
 
 const file = () => (dir ? join(dir, "automation-state.json") : "");
 
-function save() {
+/** Записать состояние на диск. false: не получилось (после перезапуска вернётся прежнее состояние). Нет папки данных (тесты): true. */
+function save(): boolean {
   const f = file();
-  if (!f) return;
+  if (!f) return true;
   try {
     const tmp = `${f}.tmp.${process.pid}`;
     writeFileSync(tmp, JSON.stringify({ v: 1, ...state }, null, 2) + "\n", "utf8");
     renameSync(tmp, f);
+    return true;
   } catch (e) {
     console.error("[automation] не смог записать automation-state.json:", (e as Error).message);
+    return false;
   }
 }
 
@@ -92,18 +95,22 @@ export function onAutomationChange(fn: Listener): () => void {
   return () => void listeners.delete(fn);
 }
 
-export type AutoChange = { changed: boolean; info: AutoInfo };
+/** saved: состояние записано на диск (false: после перезапуска вернётся прежнее). */
+export type AutoChange = { changed: boolean; info: AutoInfo; saved: boolean };
+
+/** Добавляется к ответу владельцу, если состояние не записалось на диск. */
+export const NOT_SAVED_TEXT = "Не сохранилось на диск: после перезапуска вернётся прежнее состояние.";
 
 /**
  * Включить или выключить. Повтор того же состояния ничего не меняет (changed: false), время и причина прежние.
  * by: кто нажал («из админки», «командой /auto_off, Александр»), reason: зачем (необязательно, до 200 знаков).
  */
 export function setAutomation(on: boolean, by: string, reason = "", nowArg?: number): AutoChange {
-  if (state.on === on) return { changed: false, info: automationInfo() };
+  if (state.on === on) return { changed: false, info: automationInfo(), saved: true };
   const now = nowArg ?? Date.now();
   if (on) state = { ...state, on: true, onAt: now, onBy: str(by, 100) };
   else state = { ...state, on: false, offAt: now, offBy: str(by, 100), offReason: str(reason).trim() || "без причины", onAt: 0, onBy: "" };
-  save();
+  const saved = save();
   const info = automationInfo();
   for (const fn of listeners) {
     try {
@@ -112,7 +119,7 @@ export function setAutomation(on: boolean, by: string, reason = "", nowArg?: num
       /* слушатель не должен ломать переключение */
     }
   }
-  return { changed: true, info };
+  return { changed: true, info, saved };
 }
 
 /** «10.10 в 21:05» по Алматы. */

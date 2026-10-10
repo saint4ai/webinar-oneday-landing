@@ -42,12 +42,13 @@ import {
   liveDayNow,
   parseHHMM,
   retimeStream,
+  eventKeepDay,
   setUtcOffsetMinutes,
   streamEnd,
   type EventSched,
   type TimeCfg,
 } from "./tg-time";
-import { automationInfo, automationOn, changeText, initAutomation, KEEPS_TEXT, setAutomation, STOPS_TEXT, stampText, type AutoInfo } from "./automation";
+import { automationInfo, automationOn, changeText, initAutomation, KEEPS_TEXT, NOT_SAVED_TEXT, setAutomation, STOPS_TEXT, stampText, type AutoInfo } from "./automation";
 
 // ───────────────────────── конфиг ─────────────────────────
 
@@ -386,14 +387,16 @@ export function assignDay(now: number, cfg: TimeCfg): string {
   return assignStreamDay(now, cfg);
 }
 /**
- * Идёт ли эфир прямо сейчас и какого дня. Прямой эфир активен: живой только его дата (в другие дни эфира нет, кнопку входа не даём),
- * иначе обычное правило.
+ * Идёт ли эфир прямо сейчас и какого дня. Прямой эфир активен: живой его дата и день сохранения (ежедневный эфир этого дня
+ * доходит как обычно), в остальные дни эфира нет, кнопку входа не даём. Прямого эфира нет: обычное правило.
  */
 export function liveNow(now: number, cfg: TimeCfg): string | null {
   const e = eventNow(now);
   if (!e) return liveDayNow(now, cfg);
   const today = dayKeyOf(now);
-  return today === e.date && isLive(today, now, cfgOn(cfg, today, now)) ? today : null;
+  if (today === e.date) return isLive(today, now, cfgOn(cfg, today, now)) ? today : null;
+  // День сохранения прямого эфира: ежедневный эфир этого дня ещё идёт как обычно. Дальше до даты эфира эфира нет.
+  return today <= eventKeepDay(e, now) ? liveDayNow(now, cfg) : null;
 }
 /** Конец эфира дня day с учётом старта прямого эфира. */
 export const dayEnd = (day: string, cfg: TimeCfg, now: number): number => streamEnd(day, cfgOn(cfg, day, now));
@@ -440,6 +443,10 @@ export function initTgWorkshop(opts: { dir?: string; seriesFile?: string } = {})
   store = new TgStore(dataDir);
   // Общий рубильник «Автоматизация» (automation.ts) живёт в той же папке данных.
   initAutomation(dataDir);
+  // Файл состояния не прочитался: рубильник молча выключился бы. Владельцы должны узнать об этом сразу, а не по тишине рассылки.
+  if (!automationOn() && automationInfo().offBy === "система") {
+    void notifyOwners("Автоматизация выключена: файл состояния не прочитался. Включить: /auto_on").catch(() => 0);
+  }
   if (botOff()) {
     botError = "off";
     console.log("[tg] TG_BOT=off: бот и планировщик не запущены");
@@ -1087,9 +1094,15 @@ async function onStart(m: TgMessage, payload: string, now: number) {
   const from = m.from as TgUser;
   const prev = st.subs.get(m.chat.id);
   // День подписчика не трогаем, пока его эфир не закончился; закончился или человек новый: назначаем по правилу.
-  // Прямой эфир (режим event): чей ежедневный день ещё не прошёл, переезжает на день прямого эфира, ежедневной серии до него нет.
+  // Прямой эфир (режим event): записанный на ежедневный день позже дня сохранения переезжает на день прямого эфира (ежедневной серии
+  // в такие дни нет); записанный на сам день сохранения остаётся на нём и получает его эфир.
   const ev = eventNow(now);
-  const day = prev && now < dayEnd(prev.streamDay, cfg, now) ? (ev && prev.streamDay < ev.date ? ev.date : prev.streamDay) : assignDay(now, cfg);
+  const day =
+    prev && now < dayEnd(prev.streamDay, cfg, now)
+      ? ev && prev.streamDay > eventKeepDay(ev, now) && prev.streamDay < ev.date
+        ? ev.date
+        : prev.streamDay
+      : assignDay(now, cfg);
   st.recordEvent({
     type: "start",
     chat_id: m.chat.id,
@@ -1416,7 +1429,7 @@ ${KEEPS_TEXT}
 Включить: /auto_on.${waLine}`;
 }
 
-export type AutoSwitch = { changed: boolean; text: string; info: AutoInfo };
+export type AutoSwitch = { changed: boolean; saved: boolean; text: string; info: AutoInfo };
 
 /**
  * Включить или выключить общий рубильник (кнопка в админке, команды /auto_on и /auto_off). Записывает состояние на диск и
@@ -1425,14 +1438,14 @@ export type AutoSwitch = { changed: boolean; text: string; info: AutoInfo };
  */
 export async function switchAutomation(on: boolean, by: string, reason = "", opts: { now?: number; except?: number } = {}): Promise<AutoSwitch> {
   const r = setAutomation(on, by, reason, opts.now);
-  if (!r.changed) return { changed: false, text: on ? "Автоматизация уже включена." : `Автоматизация уже выключена с ${stampText(r.info.offAt)}.`, info: r.info };
-  const text = changeText(on, r.info, waPauseInfo());
+  if (!r.changed) return { changed: false, saved: true, text: on ? "Автоматизация уже включена." : `Автоматизация уже выключена с ${stampText(r.info.offAt)}.`, info: r.info };
+  const text = changeText(on, r.info, waPauseInfo()) + (r.saved ? "" : `\n${NOT_SAVED_TEXT}`);
   try {
     await notifyOwners(text, opts.except);
   } catch {
     /* Telegram недоступен: состояние уже записано */
   }
-  return { changed: true, text, info: r.info };
+  return { changed: true, saved: r.saved, text, info: r.info };
 }
 
 // ───────────────────────── команды владельцев ─────────────────────────

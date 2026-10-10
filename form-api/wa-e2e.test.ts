@@ -13,7 +13,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { createServer as createNetServer } from "node:net";
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EVO_KEY, evo, INSTANCE_TOKEN, openai, OPENAI_KEY, PNG_B64, runWaPage, TPL_LINK, TPL_REMINDER, tg, wazzup, WZ_CHANNEL, WZ_KEY, WZ_SECRET, wzInbound } from "./wa-testkit";
@@ -738,4 +738,22 @@ test("рубильник «Автоматизация» через настоя�
   assert.match(tg.texts(OWNER_CHAT)[1], /^Автоматизация включена\. Кем: из админки, id 789638302\./);
   clock.t += 60_000;
   assert.notEqual((await waTick()).skipped, "automation");
+});
+
+test("рубильник через настоящий сервер: запись состояния на диск не удалась, админке в ответе сказано об этом, в памяти рубильник переключился", async () => {
+  const auto = (body: unknown) => call("POST", "/api/admin/automation", { init: init(), token, body });
+  // на месте временного файла записи стоит папка: temp и rename не получатся
+  const blocker = join(dataDir, `automation-state.json.tmp.${process.pid}`);
+  mkdirSync(blocker);
+  try {
+    const off = await auto({ on: false, confirm: true, reason: "проверка записи" });
+    assert.deepEqual([off.status, off.json.on, off.json.saved], [200, false, false]);
+    assert.equal(off.json.message, "Автоматизация выключена. Не сохранилось на диск: после перезапуска вернётся прежнее состояние.");
+    assert.equal((await call("GET", "/api/health")).json.automation, "off");
+  } finally {
+    rmSync(blocker, { recursive: true, force: true });
+  }
+  const on = await auto({ on: true, confirm: true });
+  assert.deepEqual([on.json.on, on.json.saved, on.json.message], [true, true, "Автоматизация включена."]);
+  assert.equal(JSON.parse(readFileSync(join(dataDir, "automation-state.json"), "utf8")).on, true);
 });

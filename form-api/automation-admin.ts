@@ -10,7 +10,7 @@
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { adminJson, adminReadBody, gateAdminSession } from "./tg-miniapp";
-import { automationInfo, KEEPS_TEXT, STOPS_TEXT, stampText } from "./automation";
+import { automationInfo, KEEPS_TEXT, NOT_SAVED_TEXT, STOPS_TEXT, stampText } from "./automation";
 import { getStore, switchAutomation, waPauseInfo } from "./tg-workshop";
 
 const MAX_BODY = 2048;
@@ -68,7 +68,9 @@ export async function handleAutomationAdmin(req: IncomingMessage, res: ServerRes
     if (body.confirm !== true) return adminJson(res, 400, { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
     const reason = typeof body.reason === "string" ? body.reason : "";
     const r = await switchAutomation(body.on, `из админки, id ${gate.userId}`, reason.trim() || "вручную, из админки");
-    return adminJson(res, 200, { ...automationView(), changed: r.changed, message: r.changed ? (body.on ? "Автоматизация включена." : "Автоматизация выключена.") : r.text });
+    const base = r.changed ? (body.on ? "Автоматизация включена." : "Автоматизация выключена.") : r.text;
+    // Не записалось на диск: после перезапуска вернётся прежнее состояние, об этом говорим прямо в ответе.
+    return adminJson(res, 200, { ...automationView(), changed: r.changed, saved: r.saved, message: r.saved ? base : `${base} ${NOT_SAVED_TEXT}` });
   } catch (e) {
     console.error("[automation-admin] ошибка:", String((e as Error)?.message || e).slice(0, 200));
     if (!res.headersSent) adminJson(res, 500, { ok: false, code: "internal", message: "Внутренняя ошибка. Попробуй ещё раз." });

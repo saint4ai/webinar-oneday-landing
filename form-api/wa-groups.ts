@@ -272,6 +272,8 @@ export type EventCfg = {
   doneAt?: number;
   /** Рассылки запущены досрочно (кнопка «Запустить рассылки сейчас»): с этого момента серия WhatsApp идёт каждый день до эфира. */
   launchedAt?: number;
+  /** Когда прямой эфир сохранили в пульте (при повторном сохранении до конца эфира остаётся первое время): от него Telegram считает день сохранения. */
+  savedAt?: number;
 };
 
 /** Постоянная ссылка для кнопки шаблона WABA (workshop-montazh/wa.html): переадресует в сообщество текущего набора. */
@@ -495,6 +497,7 @@ function loadState(r: Rt): State {
         ...(typeof ev.communityId === "string" && ev.communityId ? { communityId: ev.communityId } : {}),
         ...(ev.done === true ? { done: true, doneAt: num(ev.doneAt) } : {}),
         ...(num(ev.launchedAt) > 0 ? { launchedAt: num(ev.launchedAt) } : {}),
+        ...(num(ev.savedAt) > 0 ? { savedAt: num(ev.savedAt) } : {}),
       };
     }
     // Режимы взаимоисключающие: в живом эфире ежедневное создание всегда выключено.
@@ -617,7 +620,7 @@ function eventSched(r: Rt, now: number): EventSched | null {
   const ev = r.state.event;
   if (r.state.mode !== "event" || ev.done || !ev.date) return null;
   if (now >= closeAtOf(r, ev.date)) return null;
-  return { date: ev.date, start: ev.start || r.cfg.streamStart };
+  return { date: ev.date, start: ev.start || r.cfg.streamStart, ...(ev.savedAt ? { since: ev.savedAt } : {}) };
 }
 
 /** То, что модуль даёт ИИ-ассистенту: часы, очередь запросов к Evolution, состояние, тревоги, условия отправки. */
@@ -1619,6 +1622,14 @@ function noteNightSkip(r: Rt, t: Target, msg: WaMsg, plan: number) {
 // Между разными сообществами промежуток считается отдельно, паузы между ними прежние (betweenSendsMs).
 
 /**
+ * Сообщение серии годится для дня до эфира (досрочный запуск)? Только прогрев: без ссылки на эфир (LIVE_LINK_IDS) и всего, что стоит в
+ * серии на время старта эфира или позже (сам эфир, тренинг, оффер «до 23:59», дожим). Иначе люди пришли бы в пустую комнату.
+ */
+function warmsBeforeLive(r: Rt, m: WaMsg): boolean {
+  return !LIVE_LINK_IDS.has(m.id) && minsOf(m.at) < minsOf(r.cfg.streamStart);
+}
+
+/**
  * Дни серии для сообщества. Обычно один: день самого сообщества. Если рассылки прямого эфира запущены досрочно, то и каждый день с
  * момента запуска до дня эфира: на такой день берётся копия цели с этим днём (ключи отправки, журнал и срок рассылки у каждого дня
  * свои), сообщения до момента запуска не досылаются. День эфира остаётся самой целью.
@@ -1678,9 +1689,12 @@ function planQueue(r: Rt, now: number): QueuePlan {
   for (const t of r.state.targets.flatMap((x) => seriesViews(r, x))) {
     if (!isReady(t)) continue;
     const items: QItem[] = [];
+    // День до эфира у сообщества прямого эфира (досрочный запуск): уходит только прогрев.
+    const early = t.source === "event" && !!r.state.event.launchedAt && t.day < r.state.event.date;
     for (let idx = 0; idx < r.cfg.messages.length; idx++) {
       const msg = r.cfg.messages[idx];
       if (msg.enabled === false) continue;
+      if (early && !warmsBeforeLive(r, msg)) continue;
       // Конец рассылки у каждого сообщения свой: «+1 день» может уйти в сообщество вчерашнего эфира, пока не кончился следующий день.
       if (now >= sendUntilOf(r, t.day, msg)) continue;
       // Сообщения «+1 день» написаны под ежедневный эфир с повтором в 20:00; в сообщество разового живого эфира они не идут.
@@ -2167,10 +2181,11 @@ function nextMessage(r: Rt, now: number): NextMsg | null {
     return { plan: h.plan, id: h.msg.id, topic: h.msg.topic || h.msg.id, day: h.t.day, due: h.at, queued: all.length };
   }
   let best: NextMsg | null = null;
-  const consider = (day: string, start?: string, event = false, notBefore = 0) => {
+  const consider = (day: string, start?: string, event = false, notBefore = 0, warmOnly = false) => {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
       if (event && m.dayOffset) continue;
+      if (warmOnly && !warmsBeforeLive(r, m)) continue;
       const plan = planOf(r, { day, start }, m);
       if (plan >= notBefore && plan >= now && plan < sendUntilOf(r, day, m) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
@@ -2180,7 +2195,7 @@ function nextMessage(r: Rt, now: number): NextMsg | null {
     if (ev.date && !ev.done) {
       const start = eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : undefined);
       // Досрочный запуск: серия идёт и в дни до эфира, начиная с момента запуска.
-      if (ev.launchedAt) for (let day = dayKeyOf(ev.launchedAt), i = 0; i < 60 && day < ev.date; i++, day = addDays(day, 1)) consider(day, start, true, ev.launchedAt);
+      if (ev.launchedAt) for (let day = dayKeyOf(ev.launchedAt), i = 0; i < 60 && day < ev.date; i++, day = addDays(day, 1)) consider(day, start, true, ev.launchedAt, true);
       consider(ev.date, start, true);
     }
     return best;
@@ -2610,7 +2625,7 @@ export function waSetEvent(p: { date?: unknown; start?: unknown; recruitFrom?: u
   if (!isDayKey(p.recruitFrom)) return fail("bad_recruit", "Укажи день начала набора.");
   if (p.recruitFrom > p.date) return fail("bad_recruit", "Набор не может начаться позже дня эфира.");
   if (p.recruitFrom < addDays(p.date, -30)) return fail("bad_recruit", "Набор длиннее 30 дней: проверь дату.");
-  r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
+  r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom, savedAt: cur.date && !cur.done && cur.savedAt ? cur.savedAt : now };
   syncEventCommunity(r);
   save(r);
   journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
@@ -2658,8 +2673,8 @@ export async function waDailyCreateNow(nowArg?: number): Promise<Act> {
 /**
  * Кнопка «Запустить рассылки сейчас» (прямой эфир, досрочно). По умолчанию серия ждёт дня эфира. После запуска серия WhatsApp идёт в
  * сообщество прямого эфира каждый день по расписанию, с ближайшего сообщения и до дня эфира включительно (у каждого дня свои метки
- * отправки). Telegram запуск не меняет: он по-прежнему шлёт серию только в день эфира. Тексты серии написаны под день эфира,
- * в другие дни они неточны, о чём пульт предупреждает в подтверждении.
+ * отправки), но в дни до эфира только прогрев: без ссылки на эфир, без самого эфира и оффера (warmsBeforeLive), чтобы никто не пришёл
+ * в пустую комнату. Ссылка, эфир и оффер приходят в день эфира. Telegram запуск не меняет: он по-прежнему шлёт серию только в день эфира.
  */
 export function waEventLaunch(nowArg?: number): Act {
   const r = rt;
@@ -2681,7 +2696,7 @@ export function waEventLaunch(nowArg?: number): Act {
   return {
     ok: true,
     code: "launched",
-    message: `Рассылки запущены досрочно. Серия идёт в сообщество каждый день по расписанию до эфира ${ddmm(ev.date)} включительно${next ? `, ближайшее сообщение: ${ddmm(next.day)} в ${hhmmOf(next.plan)}` : ""}. Telegram по-прежнему шлёт серию только в день эфира.`,
+    message: `Рассылки запущены досрочно. Серия идёт в сообщество каждый день по расписанию до эфира ${ddmm(ev.date)}, но в дни до эфира уходят только прогревающие сообщения: без ссылки на эфир и оффера, они придут в день эфира${next ? `. Ближайшее сообщение: ${ddmm(next.day)} в ${hhmmOf(next.plan)}` : ""}. Telegram по-прежнему шлёт серию только в день эфира.`,
   };
 }
 
@@ -3366,7 +3381,7 @@ function eventPlan(r: Rt, now: number): EventPlan | null {
   });
   items.push(
     ev.launchedAt
-      ? { key: "mail", text: `Рассылки: запущены досрочно ${when(ev.launchedAt)}, дальше каждый день по расписанию, эфир ${ddmm(ev.date)}`, state: now >= closeAt ? "done" : "now" }
+      ? { key: "mail", text: `Рассылки: запущены досрочно ${when(ev.launchedAt)}, дальше каждый день только прогрев, без ссылки на эфир и оффера, эфир ${ddmm(ev.date)}`, state: now >= closeAt ? "done" : "now" }
       : { key: "mail", text: `Рассылки: только ${ddmm(ev.date)}${first ? `, первая в ${first}` : ""}`, state: now >= closeAt ? "done" : dayKeyOf(now) === ev.date ? "now" : "next" },
   );
   items.push({ key: "live", text: `Эфир: ${ddmm(ev.date)} в ${startEff}`, state: now >= startAt + r.cfg.streamMinutes * MIN ? "done" : now >= startAt ? "now" : "next" });

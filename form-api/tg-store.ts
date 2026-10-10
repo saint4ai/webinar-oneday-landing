@@ -186,6 +186,8 @@ export class TgStore {
   private readonly sent = new Set<string>();
   /** То же только для успешных отправок (для /series). */
   private readonly sentOk = new Set<string>();
+  /** Дни эфира, за которые бот хоть что-то отправлял по серии (в том числе неудачно): итог эфира нужен только за такие дни. */
+  private readonly sentDays = new Set<string>();
   /** Ключи «чат|день» по переходам в эфир. */
   private readonly clicks = new Set<string>();
   /** Клики на «Спасибо»: сколько за день по каналу, плюс ключи «день|канал|eid» против дублей. */
@@ -230,6 +232,7 @@ export class TgStore {
     for (const e of sent.rows) {
       if (!e || !e.msg) continue;
       this.sent.add(TgStore.sentKey(e.msg, e.day, e.chat_id));
+      if (e.day) this.sentDays.add(e.day);
       if (e.ok) this.sentOk.add(TgStore.sentKey(e.msg, e.day, e.chat_id));
     }
     const clicks = readJsonl<{ chat_id: number; day: string }>(this.fClicks);
@@ -360,11 +363,17 @@ export class TgStore {
   recordSent(e: SentEntry) {
     this.append(this.fSent, e);
     this.sent.add(TgStore.sentKey(e.msg, e.day, e.chat_id));
+    if (e.day) this.sentDays.add(e.day);
     if (e.ok) this.sentOk.add(TgStore.sentKey(e.msg, e.day, e.chat_id));
   }
 
   hasSent(msg: string, day: string, chatId: number): boolean {
     return this.sent.has(TgStore.sentKey(msg, day, chatId));
+  }
+
+  /** Бот отправлял что-то по серии за день эфира day. */
+  sentOnDay(day: string): boolean {
+    return this.sentDays.has(day);
   }
 
   /** Клик по переходу в эфир. Пара (chat_id, день) пишется один раз. Возвращает true, если запись новая. */

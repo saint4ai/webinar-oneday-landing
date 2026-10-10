@@ -156,7 +156,20 @@ export function assignStreamDay(now: number, cfg: TimeCfg): string {
  * Прямой эфир (режим event у WhatsApp, docs/tasks/automation_master_switch_event_mode.md): одна дата и своё время старта.
  * Пока режим активен, Telegram назначает всем записавшимся этот день и шлёт серию только в него, со сдвигом под start.
  */
-export type EventSched = { date: string; start: string };
+export type EventSched = {
+  date: string;
+  start: string;
+  /** Когда настройки прямого эфира сохранили (мс). Не задано: считаем, что сохранили только что. */
+  since?: number;
+};
+
+/**
+ * День сохранения прямого эфира: ежедневный эфир этого дня идёт как обычно (записавшиеся на него остаются на нём, получают ссылку и
+ * живой, кнопка входа работает), ежедневных дней позже него и до даты эфира нет. Записанных на более поздние дни переписывают на дату эфира.
+ */
+export function eventKeepDay(ev: EventSched, now: number): string {
+  return dayKeyOf(ev.since ?? now);
+}
 
 const toMin = (hhmm: string) => {
   const p = parseHHMM(hhmm);

@@ -2189,7 +2189,7 @@ test("живой эфир: настройки проверяются; задат
   const ok = waSetEvent({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-09" });
   assert.equal(ok.ok, true);
   assert.match(ok.message, /Сообщество создам 09\.10 в 10:00/);
-  assert.deepEqual(_waRt()!.state.event, { date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-09" });
+  assert.deepEqual(_waRt()!.state.event, { date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-09", savedAt: clock.t });
   // набор уже идёт: создам в ближайшие 30 секунд
   const now = waSetEvent({ date: EVENT_DAY, start: "20:00", recruitFrom: "2026-10-08" });
   assert.match(now.message, /Набор уже идёт/);
@@ -3876,12 +3876,12 @@ test("Задача 3: «Запустить рассылки сейчас»: по
   at(13, 15, 10, 0);
   const go = waEventLaunch(clock.t);
   assert.deepEqual([go.ok, go.code], [true, "launched"]);
-  assert.match(go.message, /Рассылки запущены досрочно\. Серия идёт в сообщество каждый день по расписанию до эфира 15\.10 включительно, ближайшее сообщение: 13\.10 в 16:00\. Telegram по-прежнему шлёт серию только в день эфира\./);
+  assert.match(go.message, /Рассылки запущены досрочно\. Серия идёт в сообщество каждый день по расписанию до эфира 15\.10, но в дни до эфира уходят только прогревающие сообщения: без ссылки на эфир и оффера, они придут в день эфира\. Ближайшее сообщение: 13\.10 в 16:00\. Telegram по-прежнему шлёт серию только в день эфира\./);
   assert.equal(w.state().event.launchedAt, clock.t);
   assert.ok(w.journal().some((j) => j.ev === "event_launch" && j.date === D15));
   assert.deepEqual([ev().launched, ev().canLaunch, ev().launchedText], [true, false, "13.10 в 15:10"]);
   assert.equal(waEventLaunch(clock.t).code, "same");
-  assert.match(ev().plan.line, /Рассылки: запущены досрочно 13\.10 в 15:10, дальше каждый день по расписанию, эфир 15\.10/);
+  assert.match(ev().plan.line, /Рассылки: запущены досрочно 13\.10 в 15:10, дальше каждый день только прогрев, без ссылки на эфир и оффера, эфир 15\.10/);
   const nm = (waPanel(clock.t) as any).nextMessage;
   assert.deepEqual([nm.id, nm.at, nm.dayLabel], ["noface", "16:00", "13.10"]);
   // 15:00 уже было до запуска: не досылается; 16:00 уходит
@@ -3934,7 +3934,7 @@ test("Задача 1.2 и 3: Telegram следует за режимом WhatsAp
   };
   at(12, 10, 0, 0);
   await waTick(); // сообщество создано
-  assert.deepEqual(eventSchedNow(), { date: D15, start: "20:30" });
+  assert.deepEqual(eventSchedNow(), { date: D15, start: "20:30", since: alm(2026, 10, 8, 12, 0) });
   // человек записывается в Telegram посреди набора
   tg.reset();
   await processUpdate(upd(5001, "/start"), alm(2026, 10, 12, 14, 0));
@@ -4049,4 +4049,65 @@ test("Задача 1.1: неясный ответ WhatsApp при создани
   assert.equal((await waTick()).created, 1);
   assert.equal(creates(), 2);
   assert.equal(event15(w).source, "event");
+});
+
+test("Задача 3 (деньги): после «Запустить рассылки сейчас» в дни до эфира уходит только прогрев: без ссылки на эфир, самого эфира, оффера и дожима; в день эфира всё как в плане", async () => {
+  const w = bootEvent15({ recruitFrom: "2026-10-12" });
+  at(12, 10, 0, 0);
+  await waTick();
+  at(13, 8, 0, 0);
+  const go = waEventLaunch(clock.t);
+  assert.equal(go.code, "launched");
+  assert.match(go.message, /но в дни до эфира уходят только прогревающие сообщения: без ссылки на эфир и оффера, они придут в день эфира\. Ближайшее сообщение: 13\.10 в 11:30\./);
+  const r = w.rt();
+  const day0 = r.cfg.messages.filter((m) => !m.dayOffset && m.enabled !== false);
+  // 13.10: тик в плановое время каждого сообщения дня
+  const runDay = async (d: number) => {
+    for (const m of day0) {
+      clock.t = _internals.planOf(r, { day: `2026-10-${d}`, start: undefined }, m) + 5000;
+      await waTick();
+    }
+  };
+  await runDay(13);
+  const sent13 = mainSends(w).filter((x) => x.day === "2026-10-13").map((x) => x.msg);
+  assert.deepEqual(sent13, ["morning", "reel-119k", "reg-bonus", "warm-edits", "personal", "noface", "numbers", "video-ai", "live-bonus", "t-minus-30"]);
+  for (const id of ["t-minus-10", "live-now", "live-10", "last-link", "training", "offer", "push", "last-call"]) assert.equal(sent13.includes(id), false, `${id} не уходит до дня эфира`);
+  // пульт: после последнего прогрева 13.10 ближайшее сообщение это утреннее следующего дня, а не вечерняя ссылка
+  at(13, 19, 35, 0);
+  const nm = (waPanel(clock.t) as any).nextMessage;
+  assert.deepEqual([nm.id, nm.dayLabel, nm.at], ["morning", "14.10", "11:30"]);
+  // 14.10 то же самое, не больше
+  await runDay(14);
+  assert.equal(mainSends(w).filter((x) => x.day === "2026-10-14").length, 10);
+  assert.equal(mainSends(w).some((x) => x.day === "2026-10-14" && ["t-minus-10", "live-now", "offer"].includes(x.msg)), false);
+  // день эфира: полная лента, в том числе ссылка и оффер
+  await runDay(15);
+  const sent15 = mainSends(w).filter((x) => x.day === D15).map((x) => x.msg);
+  assert.equal(sent15.length, day0.length);
+  for (const id of ["t-minus-10", "live-now", "offer", "last-call"]) assert.ok(sent15.includes(id), `${id} уходит в день эфира`);
+  // тексты плана
+  assert.match((waPanel(clock.t) as any).event.plan.line, /Рассылки: запущены досрочно 13\.10 в 08:00, дальше каждый день только прогрев, без ссылки на эфир и оффера, эфир 15\.10/);
+});
+
+test("Задача 3: savedAt: когда сохранили прямой эфир, помнится между перезапусками и не сдвигается повторным сохранением, пока эфир не завершён; Telegram получает его как since", async () => {
+  const w = bootEvent15({ recruitFrom: "2026-10-12" });
+  const saved = clock.t; // bootEvent15: 8 октября 12:00
+  assert.equal(w.state().event.savedAt, saved);
+  assert.deepEqual(eventSchedNow(), { date: D15, start: "20:00", since: saved });
+  // повторное сохранение до создания сообщества (поправили набор): первое время остаётся
+  at(9, 15, 0, 0);
+  assert.equal(waSetEvent({ date: D15, start: "20:30", recruitFrom: "2026-10-13" }).ok, true);
+  assert.equal(w.state().event.savedAt, saved);
+  assert.deepEqual(eventSchedNow(), { date: D15, start: "20:30", since: saved });
+  // перезапуск
+  const dir = w.dir;
+  resetWaGroups();
+  initWaGroups({ dir, seriesFile: join(dir, "wa-series.json"), deps: deps() });
+  assert.equal(_waRt()!.state.event.savedAt, saved);
+  // сброс и новый эфир: время новое
+  assert.equal(waEventReset().ok, true);
+  assert.equal(eventSchedNow(), null);
+  at(9, 16, 0, 0);
+  assert.equal(waSetEvent({ date: "2026-10-16", start: "20:00", recruitFrom: "2026-10-14" }).ok, true);
+  assert.equal(_waRt()!.state.event.savedAt, clock.t);
 });

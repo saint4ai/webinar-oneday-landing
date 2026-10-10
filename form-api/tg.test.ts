@@ -10,7 +10,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer, type Server } from "node:http";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -48,7 +48,7 @@ import {
   verifyInitData, verifySession, type ListQuery,
 } from "./tg-miniapp";
 import { periodFromDates } from "./tg-admin";
-import { assignDay, calendarStart, HELP_TEXT, registerEventMode } from "./tg-workshop";
+import { assignDay, calendarStart, HELP_TEXT, registerEventMode, switchAutomation } from "./tg-workshop";
 import { eventShiftMin } from "./tg-scheduler";
 import { retimeStream, startShiftMin } from "./tg-time";
 import { automationInfo, automationOn, initAutomation, setAutomation } from "./automation";
@@ -3642,8 +3642,10 @@ test("POST /api/lead на порту 4112: без Telegram заявка прох
 // ───────────────────────── прямой эфир и общий рубильник (docs/tasks/automation_master_switch_event_mode.md) ─────────────────────────
 // Прямой эфир подключает модуль WhatsApp (registerEventMode); здесь вместо него подставной источник с тем же правилом: активен до 00:00 после дня эфира.
 
-const liveEvent = (e: { date: string; start: string } | null = { date: "2026-10-15", start: "20:30" }) =>
-  registerEventMode(e ? (now) => (now < atTime(addDays(e.date, 1), "00:00") ? e : null) : null);
+/** since: когда прямой эфир сохранили (по умолчанию утром 11.10: 12.10 уже день без эфира, ежедневный эфир 11.10 ещё доходит как обычно). */
+const SAVED = alm(2026, 10, 11, 9, 0);
+const liveEvent = (e: { date: string; start: string } | null = { date: "2026-10-15", start: "20:30" }, since: number | undefined = SAVED) =>
+  registerEventMode(e ? (now) => (now < atTime(addDays(e.date, 1), "00:00") ? { ...e, ...(since ? { since } : {}) } : null) : null);
 
 /** Рассылка настоящим sendContent с управляемыми часами: видно и получателей, и итоговый текст (с подогнанными часами). */
 function liveDeps(t: number, log: Array<{ id: string; chat: number; day: string; text: string }>): Deps {
@@ -3929,4 +3931,142 @@ test("исходники automation*.ts и tg-*.ts: без длинного ти
     assert.equal(/\.(getHours|getMinutes|getDate|getDay|getMonth|getFullYear)\(/.test(src), false, `${f}: локальные геттеры Date`);
     assert.equal(/toLocale|Intl\./.test(src), false, `${f}: Intl и toLocale`);
   }
+});
+
+// ───────────────────────── правки после проверки скептика (10.10): деньги, день сохранения, файл состояния, итог эфира ─────────────────────────
+
+test("Задача 3 (деньги): эфир 10.10 был ежедневным, 11.10 утром сохранили прямой эфир на 15.10: записавшиеся 10.10 получают все «+1 день» (дожим с оффером до 23:59, повтор ссылки)", async () => {
+  const log: Array<{ id: string; chat: number; day: string; text: string }> = [];
+  const { store } = boot(base.messages);
+  store.setSeriesEnabled(true);
+  sub(store, 760, "2026-10-10", alm(2026, 10, 10, 10, 0)); // нажал на эфир, не оплатил
+  sub(store, 761, "2026-10-10", alm(2026, 10, 10, 10, 0)); // не нажимал
+  store.recordClick(760, "2026-10-10", iso(alm(2026, 10, 10, 20, 5)));
+  liveEvent({ date: "2026-10-15", start: "20:30" }, alm(2026, 10, 11, 9, 0));
+  const run = (t: number) => tick(t, liveDeps(t, log));
+  for (const [h, mi] of [[10, 30], [11, 0], [15, 0], [19, 50], [21, 45]]) await run(alm(2026, 10, 11, h, mi, 5));
+  assert.deepEqual(
+    log.map((x) => `${x.id}:${x.chat}`),
+    ["follow-1030:760", "next-day-1100:761", "follow-1500:760", "replay-link-1950:761", "follow-2145:760"],
+    "все «+1 день» вчерашнего эфира дошли, в том числе оффер до 23:59",
+  );
+  assert.match(log.find((x) => x.id === "follow-2145")!.text, /23:59/);
+  assert.equal(store.subs.get(760)!.streamDay, "2026-10-10", "вчерашних записавшихся не переписываем");
+  // а новой ежедневной серии 11.10 и дальше нет: следующие дни тихие
+  log.length = 0;
+  for (const [d, h, mi] of [[12, 11, 30], [12, 19, 50], [12, 20, 0], [13, 11, 30], [14, 19, 50]]) await run(alm(2026, 10, d, h, mi, 5));
+  assert.equal(log.length, 0);
+});
+
+test("Задача 3 (деньги): прямой эфир сохранили 10.10 в 15:00, в день ежедневного эфира: записавшиеся на 10.10 остаются на нём и получают link-1950 и live-2000; записанных на 11.10 переносит на дату эфира; кнопка входа сегодня работает, завтра нет", async () => {
+  const log: Array<{ id: string; chat: number; day: string; text: string }> = [];
+  const { store } = boot([msg("link-1950", "19:50", { essential: true }), msg("live-2000", "20:00", { audience: "notClicked" })]);
+  store.setSeriesEnabled(true);
+  sub(store, 770, "2026-10-10", alm(2026, 10, 10, 10, 0)); // записан на сегодня
+  sub(store, 771, "2026-10-11", alm(2026, 10, 10, 12, 0)); // записан на завтра
+  liveEvent({ date: "2026-10-15", start: "20:30" }, alm(2026, 10, 10, 15, 0));
+  const run = (t: number) => tick(t, liveDeps(t, log));
+  await run(alm(2026, 10, 10, 15, 0, 30));
+  assert.equal(store.subs.get(770)!.streamDay, "2026-10-10", "сегодняшний остаётся на сегодня");
+  assert.equal(store.subs.get(771)!.streamDay, "2026-10-15", "завтрашний переписан на день эфира");
+  // повторный /start: сегодняшний остаётся, завтрашний на дате эфира, новый получает дату эфира
+  await processUpdate(upd(770, "/start"), alm(2026, 10, 10, 16, 0));
+  await processUpdate(upd(771, "/start"), alm(2026, 10, 10, 16, 0));
+  await processUpdate(upd(772, "/start"), alm(2026, 10, 10, 16, 0));
+  assert.deepEqual([770, 771, 772].map((id) => store.subs.get(id)!.streamDay), ["2026-10-10", "2026-10-15", "2026-10-15"]);
+  await run(alm(2026, 10, 10, 19, 50, 5));
+  await run(alm(2026, 10, 10, 20, 0, 5));
+  assert.deepEqual(log.map((x) => `${x.id}:${x.chat}`), ["link-1950:770", "live-2000:770"], "эфир сегодняшнего дня дошёл");
+  // кнопка входа: сегодня во время ежедневного эфира есть, завтра в то же время нет (эфира нет до даты события)
+  fake.reset();
+  await processUpdate(upd(773, "привет"), alm(2026, 10, 10, 20, 30));
+  assert.match(fake.texts(773)[0], /уже идёт/);
+  fake.reset();
+  await processUpdate(upd(774, "привет"), alm(2026, 10, 11, 20, 30));
+  assert.equal(fake.texts(774)[0], base.welcome.other);
+  log.length = 0;
+  await run(alm(2026, 10, 11, 19, 50, 5));
+  await run(alm(2026, 10, 11, 20, 0, 5));
+  assert.equal(log.length, 0, "11.10 ежедневного эфира нет");
+});
+
+test("Задача 3: прямой эфир сохранили утром 11.10: итог вчерашнего ежедневного эфира владельцам приходит как раньше; за дни без эфира итога нет", async () => {
+  const { store } = boot([msg("link", "19:50", { essential: true })]);
+  store.setSeriesEnabled(true);
+  sub(store, 780, "2026-10-10", alm(2026, 10, 10, 10, 0));
+  const f = fakeDeps();
+  assert.equal(await tick(alm(2026, 10, 10, 19, 55), f.deps), 1, "10.10 рассылка шла");
+  assert.equal(store.sentOnDay("2026-10-10"), true);
+  assert.equal(store.sentOnDay("2026-10-12"), false);
+  liveEvent({ date: "2026-10-15", start: "20:30" }, alm(2026, 10, 11, 8, 0));
+  fake.reset();
+  // окно итога 10.10: с 21:25 до 09:25 следующего дня, 11.10 в 08:30 оно ещё открыто
+  assert.equal(await dailyReport(alm(2026, 10, 11, 8, 30)), true);
+  assert.match(fake.texts(900)[0], /^Эфир 10 октября: записались в бота 1/);
+  assert.equal(store.isReported("2026-10-10"), true);
+  // дни без эфира: итога нет (11.10 после сохранения рассылки не было, 13.10 тоже)
+  fake.reset();
+  assert.equal(await dailyReport(alm(2026, 10, 11, 21, 30)), false);
+  assert.equal(await dailyReport(alm(2026, 10, 13, 21, 30)), false);
+  assert.deepEqual(fake.texts(900), []);
+  // день эфира по-прежнему со своим итогом
+  assert.equal(await dailyReport(alm(2026, 10, 15, 21, 56)), true);
+  assert.match(fake.texts(900)[0], /^Эфир 15 октября/);
+  // восстановление sentOnDay из журнала после рестарта хранилища
+  assert.equal(new TgStore(store.dir).sentOnDay("2026-10-10"), true);
+});
+
+test("Задача 2 (доработка): файл состояния рубильника не прочитался при старте: владельцам сразу сообщение; обычный старт и выключенный рубильник из файла молчат; /auto_on чинит файл", async () => {
+  const { dir, seriesPath } = boot();
+  const settle = () => new Promise((r) => setTimeout(r, 60));
+  fake.reset();
+  initTgWorkshop({ dir, seriesFile: seriesPath });
+  await settle();
+  assert.deepEqual([fake.texts(900), fake.texts(901), automationOn()], [[], [], true], "файла нет: тишина");
+  // выключен владельцем и записан нормально: на старте молчим
+  setAutomation(false, "из теста", "отпуск", alm(2026, 10, 6, 12, 0));
+  initTgWorkshop({ dir, seriesFile: seriesPath });
+  await settle();
+  assert.deepEqual([fake.texts(900), fake.texts(901), automationOn()], [[], [], false]);
+  // файл повреждён
+  writeFileSync(join(dir, "automation-state.json"), "{не json");
+  initTgWorkshop({ dir, seriesFile: seriesPath });
+  await waitFor(() => fake.texts(900).length > 0 && fake.texts(901).length > 0);
+  assert.equal(fake.texts(900)[0], "Автоматизация выключена: файл состояния не прочитался. Включить: /auto_on");
+  assert.equal(fake.texts(901)[0], fake.texts(900)[0]);
+  assert.equal(automationOn(), false);
+  // /auto_on записывает нормальный файл, следующий старт молчит
+  await processUpdate(upd(900, "/auto_on"), alm(2026, 10, 6, 12, 5));
+  assert.equal(automationOn(), true);
+  fake.reset();
+  initTgWorkshop({ dir, seriesFile: seriesPath });
+  await settle();
+  assert.deepEqual([fake.texts(900), fake.texts(901), automationOn()], [[], [], true]);
+});
+
+test("Задача 2 (доработка): состояние не записалось на диск: в ответе владельцу сказано, что после перезапуска вернётся прежнее; в памяти рубильник всё равно переключился", async () => {
+  const { dir } = boot();
+  // папка данных заменена файлом: запись через temp и rename не получится
+  rmSync(dir, { recursive: true, force: true });
+  writeFileSync(dir, "это файл, а не папка");
+  const now = alm(2026, 10, 6, 12, 0);
+  const r = setAutomation(false, "тест", "проверка", now);
+  assert.deepEqual([r.changed, r.saved, automationOn()], [true, false, false]);
+  fake.reset();
+  const sw = await switchAutomation(true, "тест", "", { now });
+  assert.deepEqual([sw.changed, sw.saved], [true, false]);
+  assert.match(sw.text, /\nНе сохранилось на диск: после перезапуска вернётся прежнее состояние\.$/);
+  assert.equal(fake.texts(900)[0], sw.text, "и владельцам в уведомлении");
+  // команда бота: автору в ответе, второму владельцу в уведомлении
+  fake.reset();
+  await processUpdate(upd(900, "/auto_off"), now);
+  assert.match(fake.texts(900)[0], /Не сохранилось на диск: после перезапуска вернётся прежнее состояние\./);
+  assert.match(fake.texts(901)[0], /Не сохранилось на диск/);
+  // нормальная запись: предупреждения нет
+  const ok = boot();
+  fake.reset();
+  const sw2 = await switchAutomation(false, "тест", "", { now });
+  assert.equal(sw2.saved, true);
+  assert.doesNotMatch(sw2.text, /Не сохранилось/);
+  void ok;
 });
