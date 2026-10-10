@@ -691,6 +691,8 @@ var TgStore = class _TgStore {
     this.sent = /* @__PURE__ */ new Set();
     /** То же только для успешных отправок (для /series). */
     this.sentOk = /* @__PURE__ */ new Set();
+    /** Дни эфира, за которые бот хоть что-то отправлял по серии (в том числе неудачно): итог эфира нужен только за такие дни. */
+    this.sentDays = /* @__PURE__ */ new Set();
     /** Ключи «чат|день» по переходам в эфир. */
     this.clicks = /* @__PURE__ */ new Set();
     /** Клики на «Спасибо»: сколько за день по каналу, плюс ключи «день|канал|eid» против дублей. */
@@ -726,6 +728,7 @@ var TgStore = class _TgStore {
     for (const e of sent.rows) {
       if (!e || !e.msg) continue;
       this.sent.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
+      if (e.day) this.sentDays.add(e.day);
       if (e.ok) this.sentOk.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
     }
     const clicks = readJsonl(this.fClicks);
@@ -842,10 +845,15 @@ var TgStore = class _TgStore {
   recordSent(e) {
     this.append(this.fSent, e);
     this.sent.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
+    if (e.day) this.sentDays.add(e.day);
     if (e.ok) this.sentOk.add(_TgStore.sentKey(e.msg, e.day, e.chat_id));
   }
   hasSent(msg, day, chatId) {
     return this.sent.has(_TgStore.sentKey(msg, day, chatId));
+  }
+  /** Бот отправлял что-то по серии за день эфира day. */
+  sentOnDay(day) {
+    return this.sentDays.has(day);
   }
   /** Клик по переходу в эфир. Пара (chat_id, день) пишется один раз. Возвращает true, если запись новая. */
   recordClick(chatId, day, ts) {
@@ -1080,6 +1088,9 @@ function assignStreamDay(now, cfg) {
   const today = dayKeyOf(now);
   if (isStreamDay(today, cfg) && now < joinCloses(today, cfg)) return today;
   return nextStreamDay(addDays(today, 1), cfg);
+}
+function eventKeepDay(ev, now) {
+  return dayKeyOf(ev.since ?? now);
 }
 var toMin = (hhmm) => {
   const p = parseHHMM(hhmm);
@@ -1696,13 +1707,15 @@ var listeners = /* @__PURE__ */ new Set();
 var file = () => dir ? (0, import_node_path5.join)(dir, "automation-state.json") : "";
 function save() {
   const f = file();
-  if (!f) return;
+  if (!f) return true;
   try {
     const tmp = `${f}.tmp.${process.pid}`;
     (0, import_node_fs5.writeFileSync)(tmp, JSON.stringify({ v: 1, ...state }, null, 2) + "\n", "utf8");
     (0, import_node_fs5.renameSync)(tmp, f);
+    return true;
   } catch (e) {
     console.error("[automation] \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C automation-state.json:", e.message);
+    return false;
   }
 }
 var str = (x, max = 200) => typeof x === "string" ? x.slice(0, max) : "";
@@ -1731,12 +1744,13 @@ function onAutomationChange(fn) {
   listeners.add(fn);
   return () => void listeners.delete(fn);
 }
+var NOT_SAVED_TEXT = "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u043B\u043E\u0441\u044C \u043D\u0430 \u0434\u0438\u0441\u043A: \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u043A\u0430 \u0432\u0435\u0440\u043D\u0451\u0442\u0441\u044F \u043F\u0440\u0435\u0436\u043D\u0435\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435.";
 function setAutomation(on, by, reason = "", nowArg) {
-  if (state.on === on) return { changed: false, info: automationInfo() };
+  if (state.on === on) return { changed: false, info: automationInfo(), saved: true };
   const now = nowArg ?? Date.now();
   if (on) state = { ...state, on: true, onAt: now, onBy: str(by, 100) };
   else state = { ...state, on: false, offAt: now, offBy: str(by, 100), offReason: str(reason).trim() || "\u0431\u0435\u0437 \u043F\u0440\u0438\u0447\u0438\u043D\u044B", onAt: 0, onBy: "" };
-  save();
+  const saved = save();
   const info = automationInfo();
   for (const fn of listeners) {
     try {
@@ -1744,7 +1758,7 @@ function setAutomation(on, by, reason = "", nowArg) {
     } catch {
     }
   }
-  return { changed: true, info };
+  return { changed: true, info, saved };
 }
 var stampText = (ms) => `${dayKeyOf(ms).slice(8, 10)}.${dayKeyOf(ms).slice(5, 7)} \u0432 ${hhmmOf(ms)}`;
 var STOPS_TEXT = "\u041E\u0441\u0442\u0430\u043D\u043E\u0432\u044F\u0442\u0441\u044F: WhatsApp \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u0451\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u0430, \u043D\u0435 \u0448\u043B\u0451\u0442 \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0443 \u0438 \u043D\u0435 \u043E\u0434\u043E\u0431\u0440\u044F\u0435\u0442 \u0437\u0430\u044F\u0432\u043A\u0438; Telegram \u043D\u0435 \u0448\u043B\u0451\u0442 \u043F\u043B\u0430\u043D\u043E\u0432\u044B\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u0441\u0435\u0440\u0438\u0438, \u0432\u043A\u043B\u044E\u0447\u0430\u044F \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435.";
@@ -1990,7 +2004,8 @@ function liveNow(now, cfg) {
   const e = eventNow(now);
   if (!e) return liveDayNow(now, cfg);
   const today = dayKeyOf(now);
-  return today === e.date && isLive(today, now, cfgOn(cfg, today, now)) ? today : null;
+  if (today === e.date) return isLive(today, now, cfgOn(cfg, today, now)) ? today : null;
+  return today <= eventKeepDay(e, now) ? liveDayNow(now, cfg) : null;
 }
 var dayEnd = (day, cfg, now) => streamEnd(day, cfgOn(cfg, day, now));
 function applyOverrides(sr, ov) {
@@ -2022,6 +2037,9 @@ function initTgWorkshop(opts = {}) {
   const dataDir = opts.dir || env("DATA_DIR") || (0, import_node_path6.join)(__dirname, "data");
   store = new TgStore(dataDir);
   initAutomation(dataDir);
+  if (!automationOn() && automationInfo().offBy === "\u0441\u0438\u0441\u0442\u0435\u043C\u0430") {
+    void notifyOwners("\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430: \u0444\u0430\u0439\u043B \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F \u043D\u0435 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043B\u0441\u044F. \u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C: /auto_on").catch(() => 0);
+  }
   if (botOff()) {
     botError = "off";
     console.log("[tg] TG_BOT=off: \u0431\u043E\u0442 \u0438 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B");
@@ -2481,7 +2499,7 @@ async function onStart(m, payload, now) {
   const from = m.from;
   const prev = st.subs.get(m.chat.id);
   const ev = eventNow(now);
-  const day = prev && now < dayEnd(prev.streamDay, cfg, now) ? ev && prev.streamDay < ev.date ? ev.date : prev.streamDay : assignDay(now, cfg);
+  const day = prev && now < dayEnd(prev.streamDay, cfg, now) ? ev && prev.streamDay > eventKeepDay(ev, now) && prev.streamDay < ev.date ? ev.date : prev.streamDay : assignDay(now, cfg);
   st.recordEvent({
     type: "start",
     chat_id: m.chat.id,
@@ -2756,13 +2774,14 @@ ${KEEPS_TEXT}
 }
 async function switchAutomation(on, by, reason = "", opts = {}) {
   const r = setAutomation(on, by, reason, opts.now);
-  if (!r.changed) return { changed: false, text: on ? "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430." : `\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430 \u0441 ${stampText(r.info.offAt)}.`, info: r.info };
-  const text2 = changeText(on, r.info, waPauseInfo());
+  if (!r.changed) return { changed: false, saved: true, text: on ? "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0443\u0436\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430." : `\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0443\u0436\u0435 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430 \u0441 ${stampText(r.info.offAt)}.`, info: r.info };
+  const text2 = changeText(on, r.info, waPauseInfo()) + (r.saved ? "" : `
+${NOT_SAVED_TEXT}`);
   try {
     await notifyOwners(text2, opts.except);
   } catch {
   }
-  return { changed: true, text: text2, info: r.info };
+  return { changed: true, saved: r.saved, text: text2, info: r.info };
 }
 async function ownerCommand(cmd, args, m, now) {
   const st = getStore();
@@ -3100,12 +3119,15 @@ function candidateDays(sr, now) {
   for (let k = 0; k <= back; k++) out.push(addDays(today, -k));
   return out;
 }
+function holdsBack(ev, day, msg, now) {
+  return !!ev && day !== ev.date && !msg.dayOffset && day > eventKeepDay(ev, now);
+}
 function dueMessages(sr, now, ev = eventNow(now)) {
   const out = [];
   for (const day of candidateDays(sr, now)) {
-    if (ev && day !== ev.date) continue;
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
+      if (holdsBack(ev, day, msg, now)) continue;
       const plan = planTime(day, msg, eventShiftMin(sr, ev, day, msg));
       if (inWindow(now, plan, sr.graceMinutes)) out.push({ msg, day, plan });
     }
@@ -3125,9 +3147,10 @@ function pickRecipients(st, msg, day, opts = {}) {
 }
 function moveToEvent(st, sr, ev, now) {
   const cfg = timeCfg(sr);
+  const keep = eventKeepDay(ev, now);
   let n = 0;
   for (const s of [...st.subs.values()]) {
-    if (!st.isActive(s) || s.streamDay >= ev.date || now >= dayEnd(s.streamDay, cfg, now)) continue;
+    if (!st.isActive(s) || s.streamDay <= keep || s.streamDay >= ev.date || now >= dayEnd(s.streamDay, cfg, now)) continue;
     st.recordEvent({ type: "rejoin", chat_id: s.chatId, streamDay: ev.date, ts: new Date(now).toISOString() });
     n++;
   }
@@ -3227,9 +3250,9 @@ var errStreak = 0;
 var errAlerted = false;
 function logLate(st, sr, now, ev = null) {
   for (const day of candidateDays(sr, now)) {
-    if (ev && day !== ev.date) continue;
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
+      if (holdsBack(ev, day, msg, now)) continue;
       const plan = planTime(day, msg, eventShiftMin(sr, ev, day, msg));
       const key = `${msg.id}|${day}`;
       if (now <= plan + sr.graceMinutes * 6e4 || lateLogged.has(key)) continue;
@@ -3262,7 +3285,7 @@ async function dailyReport(now = Date.now()) {
   const today = dayKeyOf(now);
   const ev = eventNow(now);
   for (const day of [addDays(today, -1), today]) {
-    if (ev && day !== ev.date) continue;
+    if (ev && day !== ev.date && !st.sentOnDay(day)) continue;
     if (!isStreamDay(day, cfg) && ev?.date !== day || st.isReported(day)) continue;
     const at = dayEnd(day, cfg, now) + REPORT_DELAY_MS;
     if (now < at || now > at + REPORT_WINDOW_MS) continue;
@@ -7501,7 +7524,8 @@ async function handleAutomationAdmin(req, res) {
     if (body.confirm !== true) return adminJson(res, 400, { ok: false, code: "confirm", message: "\u041D\u0443\u0436\u043D\u043E \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044F." });
     const reason = typeof body.reason === "string" ? body.reason : "";
     const r = await switchAutomation(body.on, `\u0438\u0437 \u0430\u0434\u043C\u0438\u043D\u043A\u0438, id ${gate.userId}`, reason.trim() || "\u0432\u0440\u0443\u0447\u043D\u0443\u044E, \u0438\u0437 \u0430\u0434\u043C\u0438\u043D\u043A\u0438");
-    return adminJson(res, 200, { ...automationView(), changed: r.changed, message: r.changed ? body.on ? "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430." : "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430." : r.text });
+    const base = r.changed ? body.on ? "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430." : "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0437\u0430\u0446\u0438\u044F \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D\u0430." : r.text;
+    return adminJson(res, 200, { ...automationView(), changed: r.changed, saved: r.saved, message: r.saved ? base : `${base} ${NOT_SAVED_TEXT}` });
   } catch (e) {
     console.error("[automation-admin] \u043E\u0448\u0438\u0431\u043A\u0430:", String(e?.message || e).slice(0, 200));
     if (!res.headersSent) adminJson(res, 500, { ok: false, code: "internal", message: "\u0412\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u044F\u044F \u043E\u0448\u0438\u0431\u043A\u0430. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439 \u0435\u0449\u0451 \u0440\u0430\u0437." });
@@ -9976,7 +10000,8 @@ function loadState(r) {
         recruitFrom: day(ev.recruitFrom),
         ...typeof ev.communityId === "string" && ev.communityId ? { communityId: ev.communityId } : {},
         ...ev.done === true ? { done: true, doneAt: num2(ev.doneAt) } : {},
-        ...num2(ev.launchedAt) > 0 ? { launchedAt: num2(ev.launchedAt) } : {}
+        ...num2(ev.launchedAt) > 0 ? { launchedAt: num2(ev.launchedAt) } : {},
+        ...num2(ev.savedAt) > 0 ? { savedAt: num2(ev.savedAt) } : {}
       };
     }
     if (st.mode === "event") st.daily.enabled = false;
@@ -10085,7 +10110,7 @@ function eventSched(r, now) {
   const ev = r.state.event;
   if (r.state.mode !== "event" || ev.done || !ev.date) return null;
   if (now >= closeAtOf(r, ev.date)) return null;
-  return { date: ev.date, start: ev.start || r.cfg.streamStart };
+  return { date: ev.date, start: ev.start || r.cfg.streamStart, ...ev.savedAt ? { since: ev.savedAt } : {} };
 }
 function aiHostOf(r) {
   return {
@@ -10813,6 +10838,9 @@ function noteNightSkip(r, t, msg, plan) {
   journal(r, { ev: "skip", msg: msg.id, day: t.day, target: t.id, reason: "night", plan: hhmmOf(plan) });
   console.warn("[wa] \xAB%s\xBB \u0432 %s \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: \u043F\u043B\u0430\u043D\u043E\u0432\u043E\u0435 \u0432\u0440\u0435\u043C\u044F %s \u0432\u043D\u0435 \u043E\u043A\u043D\u0430 09:00 \u0434\u043E 23:45", msg.id, t.id, hhmmOf(plan));
 }
+function warmsBeforeLive(r, m) {
+  return !LIVE_LINK_IDS.has(m.id) && minsOf3(m.at) < minsOf3(r.cfg.streamStart);
+}
 function seriesViews(r, t) {
   const ev = r.state.event;
   if (t.source !== "event" || ev.done || !ev.launchedAt || t.day !== ev.date) return [t];
@@ -10835,9 +10863,11 @@ function planQueue(r, now) {
   for (const t of r.state.targets.flatMap((x) => seriesViews(r, x))) {
     if (!isReady(t)) continue;
     const items = [];
+    const early = t.source === "event" && !!r.state.event.launchedAt && t.day < r.state.event.date;
     for (let idx = 0; idx < r.cfg.messages.length; idx++) {
       const msg = r.cfg.messages[idx];
       if (msg.enabled === false) continue;
+      if (early && !warmsBeforeLive(r, msg)) continue;
       if (now >= sendUntilOf(r, t.day, msg)) continue;
       if (msg.dayOffset && t.source === "event") continue;
       const plan = planOf(r, t, msg);
@@ -11235,10 +11265,11 @@ function nextMessage(r, now) {
     return { plan: h.plan, id: h.msg.id, topic: h.msg.topic || h.msg.id, day: h.t.day, due: h.at, queued: all.length };
   }
   let best = null;
-  const consider = (day, start, event = false, notBefore = 0) => {
+  const consider = (day, start, event = false, notBefore = 0, warmOnly = false) => {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
       if (event && m.dayOffset) continue;
+      if (warmOnly && !warmsBeforeLive(r, m)) continue;
       const plan = planOf(r, { day, start }, m);
       if (plan >= notBefore && plan >= now && plan < sendUntilOf(r, day, m) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
@@ -11247,7 +11278,7 @@ function nextMessage(r, now) {
     const ev = r.state.event;
     if (ev.date && !ev.done) {
       const start = eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : void 0);
-      if (ev.launchedAt) for (let day = dayKeyOf(ev.launchedAt), i = 0; i < 60 && day < ev.date; i++, day = addDays(day, 1)) consider(day, start, true, ev.launchedAt);
+      if (ev.launchedAt) for (let day = dayKeyOf(ev.launchedAt), i = 0; i < 60 && day < ev.date; i++, day = addDays(day, 1)) consider(day, start, true, ev.launchedAt, true);
       consider(ev.date, start, true);
     }
     return best;
@@ -11589,7 +11620,7 @@ function waSetEvent(p, nowArg) {
   if (!isDayKey(p.recruitFrom)) return fail3("bad_recruit", "\u0423\u043A\u0430\u0436\u0438 \u0434\u0435\u043D\u044C \u043D\u0430\u0447\u0430\u043B\u0430 \u043D\u0430\u0431\u043E\u0440\u0430.");
   if (p.recruitFrom > p.date) return fail3("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0447\u0430\u0442\u044C\u0441\u044F \u043F\u043E\u0437\u0436\u0435 \u0434\u043D\u044F \u044D\u0444\u0438\u0440\u0430.");
   if (p.recruitFrom < addDays(p.date, -30)) return fail3("bad_recruit", "\u041D\u0430\u0431\u043E\u0440 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 30 \u0434\u043D\u0435\u0439: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u0434\u0430\u0442\u0443.");
-  r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom };
+  r.state.event = { date: p.date, start, recruitFrom: p.recruitFrom, savedAt: cur.date && !cur.done && cur.savedAt ? cur.savedAt : now };
   syncEventCommunity(r);
   save2(r);
   journal(r, { ev: "event_set", date: p.date, start, recruitFrom: p.recruitFrom, by: "panel" });
@@ -11641,7 +11672,7 @@ function waEventLaunch(nowArg) {
   return {
     ok: true,
     code: "launched",
-    message: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E. \u0421\u0435\u0440\u0438\u044F \u0438\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E \u0434\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)} \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u0435\u043B\u044C\u043D\u043E${next ? `, \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${ddmm4(next.day)} \u0432 ${hhmmOf(next.plan)}` : ""}. Telegram \u043F\u043E-\u043F\u0440\u0435\u0436\u043D\u0435\u043C\u0443 \u0448\u043B\u0451\u0442 \u0441\u0435\u0440\u0438\u044E \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430.`
+    message: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438 \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E. \u0421\u0435\u0440\u0438\u044F \u0438\u0434\u0451\u0442 \u0432 \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E \u0434\u043E \u044D\u0444\u0438\u0440\u0430 ${ddmm4(ev.date)}, \u043D\u043E \u0432 \u0434\u043D\u0438 \u0434\u043E \u044D\u0444\u0438\u0440\u0430 \u0443\u0445\u043E\u0434\u044F\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0433\u0440\u0435\u0432\u0430\u044E\u0449\u0438\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F: \u0431\u0435\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u043D\u0430 \u044D\u0444\u0438\u0440 \u0438 \u043E\u0444\u0444\u0435\u0440\u0430, \u043E\u043D\u0438 \u043F\u0440\u0438\u0434\u0443\u0442 \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430${next ? `. \u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435: ${ddmm4(next.day)} \u0432 ${hhmmOf(next.plan)}` : ""}. Telegram \u043F\u043E-\u043F\u0440\u0435\u0436\u043D\u0435\u043C\u0443 \u0448\u043B\u0451\u0442 \u0441\u0435\u0440\u0438\u044E \u0442\u043E\u043B\u044C\u043A\u043E \u0432 \u0434\u0435\u043D\u044C \u044D\u0444\u0438\u0440\u0430.`
   };
 }
 function waPause(nowArg) {
@@ -12172,7 +12203,7 @@ function eventPlan(r, now) {
     state: tgt ? now < startAt ? "now" : "done" : "next"
   });
   items.push(
-    ev.launchedAt ? { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E ${when(ev.launchedAt)}, \u0434\u0430\u043B\u044C\u0448\u0435 \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E, \u044D\u0444\u0438\u0440 ${ddmm4(ev.date)}`, state: now >= closeAt ? "done" : "now" } : { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0442\u043E\u043B\u044C\u043A\u043E ${ddmm4(ev.date)}${first ? `, \u043F\u0435\u0440\u0432\u0430\u044F \u0432 ${first}` : ""}`, state: now >= closeAt ? "done" : dayKeyOf(now) === ev.date ? "now" : "next" }
+    ev.launchedAt ? { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u044B \u0434\u043E\u0441\u0440\u043E\u0447\u043D\u043E ${when(ev.launchedAt)}, \u0434\u0430\u043B\u044C\u0448\u0435 \u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0433\u0440\u0435\u0432, \u0431\u0435\u0437 \u0441\u0441\u044B\u043B\u043A\u0438 \u043D\u0430 \u044D\u0444\u0438\u0440 \u0438 \u043E\u0444\u0444\u0435\u0440\u0430, \u044D\u0444\u0438\u0440 ${ddmm4(ev.date)}`, state: now >= closeAt ? "done" : "now" } : { key: "mail", text: `\u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0438: \u0442\u043E\u043B\u044C\u043A\u043E ${ddmm4(ev.date)}${first ? `, \u043F\u0435\u0440\u0432\u0430\u044F \u0432 ${first}` : ""}`, state: now >= closeAt ? "done" : dayKeyOf(now) === ev.date ? "now" : "next" }
   );
   items.push({ key: "live", text: `\u042D\u0444\u0438\u0440: ${ddmm4(ev.date)} \u0432 ${startEff}`, state: now >= startAt + r.cfg.streamMinutes * MIN3 ? "done" : now >= startAt ? "now" : "next" });
   items.push({ key: "close", text: `\u0417\u0430\u043A\u0440\u044B\u0442\u0438\u0435: ${when(closeAt)}`, state: now >= closeAt ? "done" : "next" });
