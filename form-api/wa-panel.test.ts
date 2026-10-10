@@ -7,7 +7,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -743,7 +743,7 @@ test("панель: прямой эфир (одна дата): режим так
   const n0 = p.fetched.filter((f) => f.url.endsWith("wa/event/launch")).length;
   p.button("Запустить рассылки сейчас").dispatch("click");
   const dlg = all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0];
-  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. После запуска серия пойдёт в сообщество каждый день по расписанию, с ближайшего сообщения до дня эфира\. В дни до эфира уходят только прогревающие сообщения, без ссылки на эфир и оффера: они придут в день эфира\./);
+  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. После запуска в сообщество каждый день до эфира будут уходить только прогревающие сообщения: «Бонусы за регистрацию» в 13:00, «Видео-прогрев: почему AI-монтаж сейчас» в 18:00\. Всё, где сказано «сегодня», «через N минут», «начинаем», а также ссылка на эфир, сам эфир и оффер придут в день эфира\./);
   assert.match(dlg.textContent, /Telegram по-прежнему шлёт серию только в день эфира\./);
   assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/event/launch")).length, n0, "без подтверждения запроса нет");
   p.button("Да, запустить").dispatch("click");
@@ -752,8 +752,8 @@ test("панель: прямой эфир (одна дата): режим так
   assert.equal(launch.length, 1);
   assert.equal(launch[0].body.confirm, true);
   assert.equal(p.button("Рассылки запущены").disabled, true);
-  assert.match(ribbon(), /Рассылки: запущены досрочно 08\.10 в 12:00, дальше каждый день только прогрев, без ссылки на эфир и оффера, эфир 15\.10/);
-  assert.match(p.text(), /Рассылки запущены досрочно \(08\.10 в 12:00\): в сообщество каждый день идёт только прогрев, ссылка на эфир и оффер придут в день эфира\./);
+  assert.match(ribbon(), /Рассылки: запущены досрочно 08\.10 в 12:00, до эфира только прогрев \(2 в день: 13:00, 18:00\), эфир 15\.10/);
+  assert.match(p.text(), /Рассылки запущены досрочно \(08\.10 в 12:00\): в дни до эфира идёт только прогрев, ссылка на эфир, оффер и всё про «сегодня» придут в день эфира\./);
   // рубильник выключен: у плана красная строка
   setAutomation(false, "тест");
   await p.tick(20000);
@@ -769,4 +769,28 @@ test("панель: прямой эфир (одна дата): режим так
   await p.tick(20000);
   p.button("Сбросить").dispatch("click");
   assert.match(all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0].textContent, /Telegram вернётся к ежедневной серии\./);
+});
+
+test("панель: вся серия под день эфира: в подтверждении запуска прямо сказано, что до эфира не уйдёт ни одного сообщения; в плане и подсказке то же", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "wa-panel-warm-"));
+  const series = JSON.parse(readFileSync(join(REPO, "form-api", "wa-series.json"), "utf8"));
+  for (const m of series.messages) if (m.id === "reg-bonus" || m.id === "video-ai") m.text += "\n\nСегодня в 20:00 покажу, как это работает.";
+  const seriesPath = join(dir, "wa-series.json");
+  writeFileSync(seriesPath, JSON.stringify(series));
+  resetWaGroups();
+  initWaGroups({ dir, seriesFile: seriesPath, deps: { now: () => clock.t, sleep: async () => {}, rand: () => 0.5, notify: async () => 1 } });
+  waSetMode("event");
+  assert.equal(waSetEvent({ date: "2026-10-15", start: "20:00", recruitFrom: "2026-10-12" }, clock.t).ok, true);
+  assert.equal((await waEventCreateNow(clock.t)).ok, true);
+  const p = loadPanel();
+  await p.settle();
+  assert.deepEqual((waPanel(clock.t) as any).event.warm, []);
+  p.button("Запустить рассылки сейчас").dispatch("click");
+  const dlg = all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0];
+  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. Вся серия написана под день эфира \(«сегодня», ссылка, оффер\), поэтому в дни до эфира не уйдёт ни одного сообщения: сообщество будет молчать до 15\.10, досрочный запуск ничего не изменит\./);
+  p.button("Да, запустить").dispatch("click");
+  await p.settle();
+  const ribbon = all(all(p.view, (e) => hasClass(e, "plan"))[0], (e) => e.tag === "li").map((li) => li.textContent).join(" · ");
+  assert.match(ribbon, /Рассылки: запущены досрочно 08\.10 в 12:00, но до эфира слать нечего: вся серия написана под день эфира, эфир 15\.10/);
+  assert.match(p.text(), /Рассылки запущены досрочно \(08\.10 в 12:00\): до эфира слать нечего, вся серия написана под день эфира, сообщество молчит до 15\.10\./);
 });
