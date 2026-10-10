@@ -8,15 +8,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer, type Server } from "node:http";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assignStreamDay, dayKeyOf, setUtcOffsetMinutes } from "./tg-time";
+import { addDays, assignStreamDay, dayKeyOf, setUtcOffsetMinutes } from "./tg-time";
 import { EVO_KEY, evo, INSTANCE_TOKEN, OWNER_JID, PNG_B64, runWaPage, tg } from "./wa-testkit";
-import { dayReportText, getStore, HELP_TEXT, initTgWorkshop, notifyOwners, parseTyBody, processUpdate, registerWa, registerWaReport } from "./tg-workshop";
+import { dayReportText, eventNow, getStore, HELP_TEXT, initTgWorkshop, notifyOwners, parseTyBody, processUpdate, registerWa, registerWaReport, switchAutomation } from "./tg-workshop";
+import { tick as tgTick } from "./tg-scheduler";
+import { aiPanel, aiSetEnabled } from "./wa-assistant";
+import { automationOn, setAutomation } from "./automation";
 import {
   _internals, _waRt, adminNumbers, extractMembers, initWaGroups, joinsTick, normalizeRequests, resetWaGroups, startWaGroups,
-  validateWaSeries, waCommand, waConnection, waEventCreateNow, waEventReset, waGroupLink, waGroups, waHealth, waLogout, waPanel, waPause,
+  validateWaSeries, waCommand, waConnection, waDailyCreateNow, waEventCreateNow, waEventLaunch, waEventReset, waGroupLink, waGroups, waHealth, waLogout, waPanel, waPause,
   maskNumber, waPairing, waQr, waReportLine, waResume, waSendSeries, waSetDaily, waSetEvent, waSetMode, waStatus, waTick, type Kind,
 } from "./wa-groups";
 
@@ -2625,11 +2628,11 @@ test("пульт: журнал показывает отправки, ошибк
   assert.ok(j3.some((x) => x.kind === "ok" && x.text.startsWith(`Отправлено «${topic}»`)), j3.map((x) => x.text).join(" | "));
 });
 
-test("пульт: команды бота в живом эфире: /wa показывает режим и сообщество эфира, /wa_new создаёт сообщество эфира", async () => {
+test("пульт: команды бота в прямом эфире: /wa показывает режим и сообщество эфира, /wa_new создаёт сообщество эфира", async () => {
   const w = bootEvent({ recruitFrom: "2026-10-11" });
   at(8, 12, 0, 0);
   const [s1] = await ownerSay("/wa");
-  assert.match(s1, /Режим: живой эфир 12\.10 в 20:00, набор с 11\.10/);
+  assert.match(s1, /Режим: прямой эфир 12\.10 в 20:00, набор с 11\.10/);
   assert.match(s1, /Сообщество эфира 12\.10: пока нет, создам 11\.10 в 10:00/);
   const [n] = await ownerSay("/wa_new");
   assert.match(n, /Создано: «Вайб-продакшен · эфир 12\.10»/);
@@ -3519,4 +3522,531 @@ test("подключение по номеру: проверка номера, c
   assert.ok(pairs.length >= 3);
   for (const row of pairs) assert.deepEqual(Object.keys(row).sort(), ["by", "ev", "ts"]);
   assert.ok((waPanel(clock.t) as any).journal.some((j: any) => j.text === "Запрошен код для подключения номера по телефону"));
+});
+
+// ───────────────────────── общий рубильник «Автоматизация» и прямой эфир (docs/tasks/automation_master_switch_event_mode.md) ─────────────────────────
+
+const D15 = "2026-10-15";
+/** Прямой эфир, который Telegram видит сейчас (по часам теста). */
+const eventSchedNow = () => eventNow(clock.t);
+
+/** Прямой эфир 15 октября: режим event, набор с 12 октября (или с recruitFrom), часы на 8 октября 12:00. */
+function bootEvent15(o: BootOpts & { start?: string; recruitFrom?: string } = {}) {
+  const w = boot({ daily: false, ...o });
+  at(8, 12, 0, 0);
+  assert.equal(waSetMode("event").ok, true);
+  const set = waSetEvent({ date: D15, start: o.start ?? "20:00", recruitFrom: o.recruitFrom ?? "2026-10-12" });
+  assert.equal(set.ok, true, set.message);
+  return w;
+}
+const event15 = (w: ReturnType<typeof boot>) => w.state().targets.find((t: any) => t.day === D15);
+
+test("Задача 1.1: прямой эфир 15.10, набор с 12.10, старт 20:30: сообщество в день набора в 10:00, до 15.10 ни одного сообщения серии, 15.10 лента сдвинута на 30 минут, в 00:00 режим закрыт и ссылка снова постоянная", async () => {
+  const w = bootEvent15({ start: "20:30" });
+  // до начала набора ничего не создаётся
+  for (const [d, h, mi] of [[9, 20, 0], [10, 10, 0], [11, 10, 0], [11, 23, 0]]) {
+    at(d, h, mi, 5);
+    assert.equal((await waTick()).created, 0, `${d}.10 ${h}:${mi}`);
+  }
+  assert.equal(creates(), 0);
+  at(12, 9, 59, 50);
+  assert.equal((await waTick()).created, 0);
+  // 12.10 в 10:00 создаётся одно сообщество, описание и приветствие уже с новым стартом
+  at(12, 10, 0, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  const t = event15(w);
+  assert.deepEqual([t.source, t.start, t.name], ["event", "20:30", "Вайб-продакшен · эфир 15.10"]);
+  assert.match(evo.of("/community/create")[0].body.description, /Эфир в 20:30 по Алматы/);
+  assert.match(evo.of("/message/sendText")[0].body.text, /Эфир 15 октября в 20:30 по Алматы \(18:30 по Москве\)/);
+  // весь набор ссылка на сайте ведёт в него, после 00:00 дня после эфира постоянная
+  for (const [d, h, mi] of [[12, 10, 6], [13, 12, 0], [14, 23, 59], [15, 8, 0], [15, 23, 59]]) assert.equal(waGroupLink(alm(2026, 10, d, h, mi), false), t.link, `${d}.10 ${h}:${mi}`);
+  assert.equal(waGroupLink(alm(2026, 10, 16, 0, 0), false), null);
+  // до дня эфира серия не идёт ни в один день, в том числе в 11:30 и 20:00
+  for (const [d, h, mi] of [[12, 11, 30], [12, 20, 0], [13, 11, 30], [13, 20, 0], [14, 11, 30], [14, 19, 50], [14, 23, 30]]) {
+    evo.calls = [];
+    at(d, h, mi, 5);
+    assert.equal((await waTick()).sent, 0, `${d}.10 ${h}:${mi}`);
+    assert.equal(evo.of("/message/").length, 0, `${d}.10 ${h}:${mi}: ни одного сообщения`);
+  }
+  assert.deepEqual(mainSends(w), []);
+  // день эфира: каждое сообщение до оффера включительно уходит на 30 минут позже, дожим и «последние 30 минут» на своём месте
+  const r = w.rt();
+  const day0 = r.cfg.messages.filter((m) => !m.dayOffset && m.enabled !== false);
+  for (const m of day0) {
+    at(15, 0, 0, 0);
+    clock.t = _internals.planOf(r, { day: D15, start: "20:30" }, m) + 5000;
+    await waTick();
+  }
+  const sent = mainSends(w);
+  assert.equal(sent.length, day0.length, "ушла вся лента дня эфира");
+  const at_ = (id: string) => almHM(sent.find((x) => x.msg === id)!.ts);
+  assert.deepEqual(
+    ["morning", "t-minus-30", "t-minus-10", "live-now", "live-10", "last-link", "training", "offer", "push", "last-call"].map(at_),
+    ["12:00", "20:00", "20:20", "20:30", "20:40", "20:45", "21:28", "21:48", "22:30", "23:30"],
+  );
+  // тексты с часами нового старта, в том числе время ссылки на эфир
+  const caption = (re: RegExp) => evo.calls.map((c) => String(c.body?.caption ?? c.body?.text ?? "")).find((x) => re.test(x)) ?? "";
+  const c30 = caption(/Через 30 минут, в/);
+  assert.match(c30, /в 20:30 по Алматы \(18:30 по Москве\)/);
+  assert.match(c30, /Ссылка будет здесь в 20:20/);
+  assert.equal(c30.includes("19:50"), false);
+  assert.match(caption(/за 10 минут до эфира, в/), /за 10 минут до эфира, в 20:20/, "время ссылки в тексте 19:00 тоже сдвинуто");
+  // 00:00: режим закрыт, ссылка постоянная, больше ничего не уходит
+  evo.calls = [];
+  at(16, 0, 0, 5);
+  await waTick();
+  assert.equal(evo.of("/message/").length, 0);
+  assert.deepEqual([w.state().mode, w.state().event.done], ["daily", true]);
+  assert.equal(waGroupLink(clock.t, false), null);
+  assert.equal(eventSchedNow(), null, "Telegram тоже вернулся к ежедневному");
+  assert.equal(alarms.some((a) => /так и не было создано/.test(a)), false, "сообщество было: тревоги нет");
+});
+
+test("Задача 1.1: сбой WhatsApp в день набора: создание повторяется (через 5 минут, потом через 30), к дню эфира сообщество появляется само, прошлые сообщения не досылаются, остальные уходят; тревога одна", async () => {
+  const w = bootEvent15({ recruitFrom: "2026-10-12" });
+  evo.fail = (c) => (c.path.startsWith("/community/create") ? { status: 400, json: { status: 400, error: "Bad Request", response: { message: ["boom"] } } } : null);
+  at(12, 10, 0, 0);
+  assert.equal((await waTick()).created, 0);
+  at(12, 10, 5, 1);
+  await waTick();
+  at(12, 10, 10, 2);
+  await waTick();
+  assert.equal(w.journal().filter((r) => r.ev === "create_fail").length, 3);
+  assert.equal(alarms.filter((a) => /не создаётся уже 3 раза подряд/.test(a)).length, 1, "одна тревога на третьей неудаче");
+  for (const [d, h, mi] of [[12, 15, 0], [13, 12, 0], [14, 12, 0], [15, 10, 0]]) {
+    at(d, h, mi, 5);
+    assert.equal((await waTick()).created, 0, `${d}.10 ${h}:${mi}: ещё не создаётся`);
+  }
+  assert.equal(waGroupLink(clock.t, false), null, "сообщества нет: ссылка на сайте постоянная");
+  assert.equal(alarms.filter((a) => /не создаётся уже 3 раза подряд/.test(a)).length, 1, "лишних тревог нет");
+  // WhatsApp ожил в день эфира в 14:10: сообщество создаётся само на ближайшем тике
+  evo.fail = null;
+  at(15, 14, 10, 0);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 1);
+  const t = event15(w);
+  assert.equal(t.source, "event");
+  assert.equal(waGroupLink(clock.t, false), t.link, "ссылка на сайте сразу ведёт в него");
+  // 11:30, 12:00, 12:30 и 14:00 уже в прошлом для нового сообщества: их не досылаем
+  at(15, 14, 10, 40);
+  assert.equal((await waTick()).sent, 0);
+  at(15, 15, 0, 5);
+  assert.equal((await waTick()).sent, 1);
+  assert.deepEqual(mainSends(w).map((x) => x.msg), ["personal"], "серия началась с 15:00");
+  // дальше по расписанию
+  at(15, 16, 0, 5);
+  await waTick();
+  assert.deepEqual(mainSends(w).map((x) => x.msg), ["personal", "noface"]);
+  at(16, 0, 0, 5);
+  await waTick();
+  assert.deepEqual([w.state().mode, w.state().event.done], ["daily", true]);
+  assert.equal(alarms.some((a) => /так и не было создано/.test(a)), false);
+});
+
+test("Задача 1.1: сообщество так и не создалось к концу дня эфира: ничего не уходило, в 00:00 режим закрывается, ссылка постоянная, владельцам одна тревога", async () => {
+  const w = bootEvent15({ recruitFrom: "2026-10-12" });
+  evo.fail = (c) => (c.path.startsWith("/community/create") ? { status: 400, json: { status: 400, error: "Bad Request", response: { message: ["boom"] } } } : null);
+  for (const [d, h, mi] of [[12, 10, 0], [12, 10, 5], [12, 10, 10], [13, 12, 0], [14, 12, 0], [15, 12, 0], [15, 20, 0], [15, 21, 20], [15, 23, 30]]) {
+    at(d, h, mi, 5);
+    await waTick();
+  }
+  assert.equal(evo.of("/message/").length, 0, "ни одного сообщения в никуда");
+  assert.equal(w.state().targets.length, 0);
+  assert.equal(w.state().mode, "event", "до 00:00 режим ещё идёт");
+  evo.calls = [];
+  at(16, 0, 0, 5);
+  await waTick();
+  assert.deepEqual([w.state().mode, w.state().event.done, w.state().daily.enabled], ["daily", true, false]);
+  assert.equal(waGroupLink(clock.t, false), null);
+  assert.equal(eventSchedNow(), null);
+  assert.equal(evo.of("/message/").length, 0);
+  const lost = alarms.filter((a) => /Прямой эфир 15\.10 прошёл, а сообщество для него так и не было создано/.test(a));
+  assert.equal(lost.length, 1, alarms.join(" | "));
+  // повторные тики тревогу не повторяют
+  at(16, 0, 1, 5);
+  await waTick();
+  assert.equal(alarms.filter((a) => /так и не было создано/.test(a)).length, 1);
+});
+
+test("Задача 1.3: пауза WhatsApp-модуля: стоят создание, серия, одобрение заявок и ручные действия (без запросов к Evolution); ссылка на сайте, завершение прямого эфира и привязка сообщества работают", async () => {
+  const w = boot();
+  const t = await createFor(w, 9);
+  at(9, 10, 0, 0);
+  await waTick(); // подключение open
+  evo.requests.set(t.jid, [{ jid: "77010000001@s.whatsapp.net", request_time: "1760000001", request_method: "invite_link" }]);
+  assert.match(waPause(clock.t).message, /рассылка, создание и одобрение заявок остановлены/);
+  at(9, 11, 30, 5);
+  evo.calls = [];
+  const tick = await waTick();
+  assert.deepEqual([tick.skipped, tick.sent, tick.created], ["paused", 0, 0]);
+  assert.equal(await joinsTick(), 0);
+  assert.equal(evo.calls.length, 0, "на паузе к Evolution не ходим вообще: ни серии, ни заявок, ни проверки подключения");
+  at(9, 20, 0, 5);
+  assert.equal((await waTick()).created, 0, "создание на 10.10 тоже стоит");
+  const manual = await waDailyCreateNow(clock.t);
+  assert.deepEqual([manual.ok, /на паузе/.test(manual.message)], [false, true]);
+  assert.equal((await waSendSeries("offer", clock.t)).code, "paused");
+  assert.equal(evo.calls.length, 0);
+  // ссылка на сайте продолжает отдаваться
+  assert.equal(waGroupLink(alm(2026, 10, 9, 12, 0), false), t.link);
+  // пульт и /wa прямо говорят про паузу
+  assert.equal((waPanel(clock.t) as any).module.paused, true);
+  assert.match((await ownerSay("/wa"))[0], /WhatsApp-модуль: на паузе \(вручную, из пульта\)/);
+  // снятие паузы возвращает всё: заявка одобряется, прогрев идёт
+  waResume();
+  at(9, 20, 10, 0);
+  assert.equal(await joinsTick(), 1);
+
+  // прямой эфир на паузе: дата прошла, режим всё равно закрывается (ссылка на сайте возвращается на постоянную)
+  const w2 = bootEvent15({ recruitFrom: "2026-10-12" });
+  at(12, 10, 0, 0);
+  await waTick();
+  assert.ok(event15(w2));
+  waPause(clock.t);
+  at(16, 0, 0, 5);
+  evo.calls = [];
+  assert.equal((await waTick()).skipped, "paused");
+  assert.deepEqual([w2.state().mode, w2.state().event.done], ["daily", true], "режим закрыт даже на паузе");
+  assert.equal(waGroupLink(clock.t, false), null);
+});
+
+test("Задача 2: рубильник выключен: WhatsApp не создаёт сообщества, не шлёт серию, не одобряет заявки и не берётся за ручные действия; подключение и ссылка на сайте работают; пауза модуля не тронута; включение возвращает всё как было", async () => {
+  const w = boot();
+  const t = await createFor(w, 9);
+  at(9, 10, 0, 0);
+  await waTick();
+  evo.requests.set(t.jid, [{ jid: "77010000001@s.whatsapp.net", request_time: "1760000001", request_method: "invite_link" }]);
+  // выключили
+  tg.reset();
+  const off = await switchAutomation(false, "из админки, id 789638302", "перерыв", { now: alm(2026, 10, 9, 10, 1) });
+  assert.equal(off.changed, true);
+  assert.match(tg.texts(900)[0], /^Автоматизация выключена\. Кем: из админки, id 789638302\. Когда: 09\.10 в 10:01\. Причина: перерыв\./);
+  assert.deepEqual(tg.texts(901), tg.texts(900), "оба владельца получили уведомление");
+  assert.equal(w.state().paused, false, "пауза модуля рубильником не трогается");
+  assert.equal(JSON.parse(readFileSync(join(w.dir, "automation-state.json"), "utf8")).on, false, "состояние на диске");
+  // тик: подключение проверяем (от него зависят ассистент и дожим), остального нет
+  at(9, 11, 30, 5);
+  evo.calls = [];
+  const r = await waTick();
+  assert.deepEqual([r.skipped, r.sent, r.created], ["automation", 0, 0]);
+  assert.equal(evo.seq()[0], "GET /instance/connectionState");
+  assert.ok(evo.calls.every((c) => c.path.startsWith("/instance/")), "только проверка подключения: " + evo.seq().join(", "));
+  // состояние подключения живое и при выключенном рубильнике
+  evo.state = "close";
+  at(9, 11, 31, 5);
+  await waTick();
+  assert.equal(w.rt().conn.state, "close");
+  evo.state = "open";
+  at(9, 11, 32, 5);
+  await waTick();
+  assert.equal(w.rt().conn.state, "open");
+  // заявки не одобряются, создание на 10.10 не идёт
+  evo.calls = [];
+  assert.equal(await joinsTick(), 0);
+  assert.equal(evo.of("/community/requests").length, 0);
+  at(9, 20, 0, 5);
+  evo.calls = [];
+  assert.equal((await waTick()).created, 0);
+  assert.equal(creates(), 0, "новых сообществ нет");
+  // ручные действия закрыты и объясняют почему
+  const man = await waDailyCreateNow(clock.t);
+  assert.deepEqual([man.ok, /Автоматизация выключена/.test(man.message)], [false, true]);
+  assert.equal((await waSendSeries("offer", clock.t)).code, "automation_off");
+  assert.match((await ownerSay("/wa_send offer"))[0], /Автоматизация выключена/);
+  assert.match((await ownerSay("/wa_new"))[0], /Автоматизация выключена/);
+  assert.equal(evo.of("/message/").length, 0);
+  // ссылка на сайте и пульт
+  assert.equal(waGroupLink(alm(2026, 10, 9, 12, 0), false), t.link);
+  const p = waPanel(clock.t) as any;
+  assert.deepEqual([p.module.paused, p.module.halted, p.automation.on], [false, true, false]);
+  assert.match(p.automation.sinceText, /^Выключена с 09\.10 в 10:01, из админки, id 789638302\. Причина: перерыв\.$/);
+  assert.match((await ownerSay("/wa"))[0], /^Автоматизация ВЫКЛЮЧЕНА с 09\.10 в 10:01/);
+  assert.ok(p.journal.some((j: any) => /^Автоматизация выключена \(из админки, id 789638302\): перерыв/.test(j.text)));
+  // включили: серия и заявки идут дальше, пропущенное старше 45 минут не досылается
+  tg.reset();
+  const on = await switchAutomation(true, "командой /auto_on", "", { now: alm(2026, 10, 9, 20, 5) });
+  assert.equal(on.changed, true);
+  assert.match(tg.texts(900)[0], /^Автоматизация включена\. Кем: командой \/auto_on\. Когда: 09\.10 в 20:05\./);
+  assert.doesNotMatch(tg.texts(900)[0], /остаётся на паузе/);
+  at(9, 20, 10, 0);
+  assert.equal(await joinsTick(), 1, "заявка одобрена");
+  assert.ok(w.journal().some((j) => j.ev === "auto_on"));
+
+  // WhatsApp на паузе по сбою: после включения остаётся на паузе с прежней причиной
+  const w2 = boot();
+  await createFor(w2, 9);
+  w2.rt().state.paused = true;
+  w2.rt().state.pausedReason = "создание 2026-10-10: 502";
+  w2.rt().state.pausedAt = clock.t;
+  setAutomation(false, "тест", "", clock.t);
+  tg.reset();
+  setAutomation(true, "тест", "", clock.t);
+  assert.deepEqual([w2.rt().state.paused, w2.rt().state.pausedReason], [true, "создание 2026-10-10: 502"]);
+  assert.equal((await waTick()).skipped, "paused");
+  await switchAutomation(false, "тест", "", { now: clock.t });
+  tg.reset();
+  await switchAutomation(true, "тест", "", { now: clock.t });
+  assert.match(tg.texts(900)[0], /WhatsApp-модуль остаётся на паузе: создание 2026-10-10: 502\. Снять: \/wa_resume\./);
+  assert.match((await ownerSay("/auto"))[0], /WhatsApp-модуль отдельно стоит на паузе: создание 2026-10-10: 502/);
+});
+
+test("Задача 2: ИИ-ассистент в личке WhatsApp рубильнику не подчиняется, а паузе модуля подчиняется", async () => {
+  const w = boot();
+  await createFor(w, 9);
+  at(9, 10, 0, 0);
+  await waTick();
+  process.env.OPENAI_API_KEY = "test-openai-key-panel-only";
+  process.env.PORT = process.env.PORT || "4010";
+  try {
+    assert.equal((await aiSetEnabled(true)).ok, true);
+    const reason = () => String((aiPanel(clock.t) as any).reason);
+    setAutomation(false, "тест", "", clock.t);
+    assert.doesNotMatch(reason(), /Сейчас не отвечает|рубильник|Автоматизация|пауз/i, "рубильник ассистента не останавливает: " + reason());
+    setAutomation(true, "тест", "", clock.t);
+    waPause(clock.t);
+    assert.match(reason(), /Сейчас не отвечает: модуль на паузе/, "пауза модуля его останавливает");
+    waResume();
+    assert.doesNotMatch(reason(), /Сейчас не отвечает/);
+    await aiSetEnabled(false);
+  } finally {
+    delete process.env.OPENAI_API_KEY;
+  }
+});
+
+test("Задача 3: план прямого эфира считается из настроек и серии одной лентой; на паузе при выключенном рубильнике и при паузе модуля; Telegram в плане", async () => {
+  const w = bootEvent15({ start: "20:30", recruitFrom: "2026-10-12" });
+  const plan = () => (waPanel(clock.t) as any).event.plan;
+  const ribbon = "Сообщество создастся: 12.10 в 10:00 · Набор: 12.10–15.10, ссылка на сайте ведёт в это сообщество · Рассылки: только 15.10, первая в 12:00 · Эфир: 15.10 в 20:30 · Закрытие: 16.10 в 00:00";
+  assert.equal(plan().line, ribbon);
+  assert.deepEqual(plan().items.map((i: any) => [i.key, i.state]), [["create", "next"], ["recruit", "next"], ["mail", "next"], ["live", "next"], ["close", "next"]]);
+  assert.equal(plan().paused, false);
+  assert.match(plan().telegram, /Telegram: всем записавшимся назначен день эфира 15\.10, серия идёт только в него, со сдвигом под старт 20:30\./);
+  assert.match((await ownerSay("/wa"))[0], new RegExp(`План: ${ribbon.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n`));
+  // сообщество создано: первая строка про факт, набор идёт
+  at(12, 10, 0, 0);
+  await waTick();
+  assert.equal(plan().items[0].text, "Сообщество создано: 12.10 в 10:00");
+  assert.deepEqual(plan().items.slice(0, 2).map((i: any) => i.state), ["done", "now"]);
+  // время создания и сообщения берутся из серии, а не пишутся руками: старт 20:00 даёт 11:30
+  const w2 = bootEvent15({ recruitFrom: "2026-10-13" });
+  assert.match(plan().line, /Сообщество создастся: 13\.10 в 10:00 · Набор: 13\.10–15\.10, .* первая в 11:30 · Эфир: 15\.10 в 20:00 · /);
+  void w2;
+  // рубильник выключен: план сообщает, что рассылки не уйдут
+  setAutomation(false, "тест", "", clock.t);
+  assert.deepEqual([plan().paused, plan().pausedText], [true, "на паузе: рассылки не уйдут"]);
+  assert.match(plan().pausedWhy, /^Автоматизация выключена/);
+  assert.match((await ownerSay("/wa"))[0], /\(на паузе: рассылки не уйдут\)/);
+  setAutomation(true, "тест", "", clock.t);
+  assert.equal(plan().paused, false);
+  waPause(clock.t);
+  assert.deepEqual([plan().paused, plan().pausedText], [true, "на паузе: рассылки не уйдут"]);
+  assert.match(plan().pausedWhy, /WhatsApp-модуль на паузе: вручную, из пульта/);
+  waResume();
+  // режим не прямой эфир, дата не задана или эфир завершён: плана нет
+  waSetMode("daily");
+  assert.equal(plan(), null);
+  waSetMode("event");
+  void w;
+});
+
+test("Задача 3: «Запустить рассылки сейчас»: по умолчанию серия ждёт дня эфира; после запуска идёт в сообщество каждый день по расписанию до эфира, у каждого дня свои метки; повтор и рестарт не дублируют; Telegram не меняется", async () => {
+  const w = bootEvent15({ recruitFrom: "2026-10-12" });
+  const ev = () => (waPanel(clock.t) as any).event;
+  // условия: режим, дата, сообщество
+  waSetMode("daily");
+  assert.equal(waEventLaunch(clock.t).code, "wrong_mode");
+  waSetMode("event");
+  at(12, 9, 0, 0);
+  assert.deepEqual([waEventLaunch(clock.t).code, ev().canLaunch], ["no_community", false]);
+  at(12, 10, 0, 0);
+  await waTick();
+  at(13, 11, 30, 5);
+  assert.equal((await waTick()).sent, 0, "по умолчанию серия ждёт дня эфира");
+  assert.equal(ev().canLaunch, true);
+  // рубильник выключен или модуль на паузе: запуск не принимается
+  setAutomation(false, "тест", "", clock.t);
+  assert.equal(waEventLaunch(clock.t).code, "automation_off");
+  setAutomation(true, "тест", "", clock.t);
+  waPause(clock.t);
+  assert.equal(waEventLaunch(clock.t).code, "paused");
+  waResume();
+  assert.equal(w.state().event.launchedAt, undefined);
+  // запуск 13.10 в 15:10
+  at(13, 15, 10, 0);
+  const go = waEventLaunch(clock.t);
+  assert.deepEqual([go.ok, go.code], [true, "launched"]);
+  assert.match(go.message, /Рассылки запущены досрочно\. Серия идёт в сообщество каждый день по расписанию до эфира 15\.10 включительно, ближайшее сообщение: 13\.10 в 16:00\. Telegram по-прежнему шлёт серию только в день эфира\./);
+  assert.equal(w.state().event.launchedAt, clock.t);
+  assert.ok(w.journal().some((j) => j.ev === "event_launch" && j.date === D15));
+  assert.deepEqual([ev().launched, ev().canLaunch, ev().launchedText], [true, false, "13.10 в 15:10"]);
+  assert.equal(waEventLaunch(clock.t).code, "same");
+  assert.match(ev().plan.line, /Рассылки: запущены досрочно 13\.10 в 15:10, дальше каждый день по расписанию, эфир 15\.10/);
+  const nm = (waPanel(clock.t) as any).nextMessage;
+  assert.deepEqual([nm.id, nm.at, nm.dayLabel], ["noface", "16:00", "13.10"]);
+  // 15:00 уже было до запуска: не досылается; 16:00 уходит
+  at(13, 15, 10, 30);
+  assert.equal((await waTick()).sent, 0);
+  at(13, 16, 0, 5);
+  assert.equal((await waTick()).sent, 1);
+  const first = mainSends(w);
+  assert.deepEqual(first.map((x) => [x.msg, x.day, x.target]), [["noface", "2026-10-13", "2026-10-15#1"]], "метки отправки у виртуального дня свои");
+  // 14.10 утреннее уходит один раз, повторный тик ничего не добавляет
+  at(14, 11, 30, 5);
+  assert.equal((await waTick()).sent, 1);
+  at(14, 11, 30, 40);
+  assert.equal((await waTick()).sent, 0);
+  // после рестарта метки восстанавливаются из журнала, запуск помнится, повтора нет
+  const dir = w.dir;
+  resetWaGroups();
+  initWaGroups({ dir, seriesFile: join(dir, "wa-series.json"), deps: deps() });
+  assert.equal(_waRt()!.state.event.launchedAt, alm(2026, 10, 13, 15, 10));
+  at(14, 11, 31, 10);
+  assert.equal((await waTick()).sent, 0, "после рестарта 11:30 второй раз не уходит");
+  // день эфира: своя лента с метками дня эфира, утреннее уходит и тут
+  at(15, 11, 30, 5);
+  assert.equal((await waTick()).sent, 1);
+  const ids = mainSends(w).map((x) => `${x.msg}@${x.day}`);
+  assert.deepEqual(ids, ["noface@2026-10-13", "morning@2026-10-14", "morning@2026-10-15"]);
+  // «+1 день» в сообщество прямого эфира по-прежнему не идёт
+  at(16, 10, 30, 5);
+  evo.calls = [];
+  await waTick();
+  assert.equal(evo.of("/message/").length, 0);
+  // сброс эфира забывает запуск
+  const w3 = bootEvent15();
+  at(12, 10, 0, 0);
+  await waTick();
+  at(13, 12, 0, 0);
+  assert.equal(waEventLaunch(clock.t).code, "launched");
+  assert.equal(waEventReset().ok, true);
+  assert.equal(w3.state().event.launchedAt, undefined);
+  assert.equal(eventSchedNow(), null);
+});
+
+test("Задача 1.2 и 3: Telegram следует за режимом WhatsApp: записавшийся в набор получает день эфира, серия Telegram только 15.10 со сдвигом, досрочный запуск WhatsApp Telegram не меняет; сброс эфира возвращает ежедневную запись", async () => {
+  const w = bootEvent15({ start: "20:30", recruitFrom: "2026-10-12" });
+  getStore().setSeriesEnabled(true);
+  const ids: string[] = [];
+  const run = async (t: number) => {
+    clock.t = t;
+    return tgTick(t, { now: () => t, send: async (s, m, day) => (ids.push(`${m.id}:${day}:${s.chatId}`), { ok: true }) });
+  };
+  at(12, 10, 0, 0);
+  await waTick(); // сообщество создано
+  assert.deepEqual(eventSchedNow(), { date: D15, start: "20:30" });
+  // человек записывается в Telegram посреди набора
+  tg.reset();
+  await processUpdate(upd(5001, "/start"), alm(2026, 10, 12, 14, 0));
+  assert.equal(getStore().subs.get(5001)!.streamDay, D15);
+  assert.match(tg.calls.map((c) => String(c.body.caption ?? c.body.text ?? "")).join("\n"), /15 октября в 20:30 по Алматы/);
+  // досрочный запуск WhatsApp: Telegram не трогает
+  at(13, 15, 10, 0);
+  assert.equal(waEventLaunch(clock.t).code, "launched");
+  // дни до эфира: ни одного сообщения Telegram (ни 15:00, ни 19:50, ни живого)
+  for (const [d, h, mi] of [[12, 15, 0], [12, 19, 50], [12, 20, 0], [13, 11, 30], [13, 15, 0], [13, 19, 50], [14, 11, 30], [14, 19, 50]]) await run(alm(2026, 10, d, h, mi, 5));
+  assert.deepEqual(ids, []);
+  // день эфира: сдвиг 30 минут (утреннее 11:30 -> 12:00)
+  await run(alm(2026, 10, 15, 11, 59, 5));
+  assert.deepEqual(ids, []);
+  await run(alm(2026, 10, 15, 12, 0, 5));
+  assert.deepEqual(ids, [`morning-1130:${D15}:5001`]);
+  // сброс эфира: ежедневная запись возвращается (в 21:00 по обычным правилам уже следующий день, а не день эфира)
+  at(15, 21, 0, 0);
+  await processUpdate(upd(5002, "/start"), clock.t);
+  assert.equal(getStore().subs.get(5002)!.streamDay, D15, "эфир ещё активен: окно «зайти» до 21:10");
+  assert.equal(waEventReset().ok, true);
+  await processUpdate(upd(5003, "/start"), clock.t);
+  assert.equal(getStore().subs.get(5003)!.streamDay, "2026-10-16", "прямого эфира нет: обычное правило");
+  void w;
+});
+
+test("server.ts: health.automation, маршрут рубильника закрыт без входа; рубильник из файла останавливает WhatsApp; /calendar знает старт прямого эфира", async () => {
+  const dir = tmp();
+  const bundle = join(dir, "server.js");
+  buildBundle("form-api/server.ts", bundle);
+  writeFileSync(join(dir, "tg-series.json"), readFileSync(TG_SERIES));
+  writeFileSync(join(dir, "wa-series.json"), readFileSync(WA_SERIES));
+  const data = join(dir, "data");
+  mkdirSync(data, { recursive: true });
+  const today = dayKeyOf(Date.now());
+  const date = addDays(today, 3);
+  writeFileSync(join(data, "automation-state.json"), JSON.stringify({ v: 1, on: false, offAt: Date.now(), offBy: "тест", offReason: "проверка", onAt: 0, onBy: "" }));
+  writeFileSync(join(data, "wa-state.json"), JSON.stringify({ v: 1, mode: "event", daily: { enabled: false }, event: { date, start: "20:30", recruitFrom: today }, targets: [] }));
+  const run = async (port: number, extra: Record<string, string | undefined>) => {
+    const child = spawn(process.execPath, [bundle], {
+      env: childEnv({
+        FORM_API_ENV: join(dir, "нет.env"), TG_SERIES_FILE: undefined, ADMIN_APP_HTML: undefined, WA_SERIES_FILE: undefined, TG_BOT: undefined,
+        WHATSAPP_LINK_PATH: join(dir, "нет-ссылки.json"), TG_WORKSHOP_BOT_TOKEN: process.env.TG_WORKSHOP_BOT_TOKEN,
+        TG_WORKSHOP_WEBHOOK_SECRET: "srv-hook-secret-123456", TG_GO_SECRET: "srv-go-secret-1234567", TG_LINK_OWNER_IDS: "900",
+        ADMIN_APP_IDS: "789638302", ADMIN_APP_PIN: "4821", ADMIN_APP_SECRET: "srv-session-secret-0123456789",
+        WA_GROUPS: "on", EVOLUTION_API_KEY: EVO_KEY, EVOLUTION_URL: process.env.EVOLUTION_URL, PORT: String(port), DATA_DIR: data, ...extra,
+      }),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let log = "";
+    child.stdout.on("data", (d) => (log += d));
+    child.stderr.on("data", (d) => (log += d));
+    await waitFor(() => /listening on/.test(log), 20_000);
+    return { child, log: () => log };
+  };
+  const s = await run(4116, {});
+  try {
+    const base = "http://127.0.0.1:4116";
+    const health = (await (await fetch(`${base}/api/health`)).json()) as any;
+    assert.equal(health.automation, "off", "рубильник из файла");
+    assert.equal(health.ok, true);
+    // маршрут рубильника без входа в админку закрыт (и GET, и POST)
+    assert.equal((await fetch(`${base}/api/admin/automation`)).status, 403);
+    assert.equal((await fetch(`${base}/api/admin/automation`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true, confirm: true }) })).status, 403);
+    assert.equal(JSON.parse(readFileSync(join(data, "automation-state.json"), "utf8")).on, false, "чужой запрос состояние не изменил");
+    // календарь: пока идёт набор, зовёт на день эфира и его время 20:30
+    const cal = await fetch(`${base}/calendar`, { redirect: "manual" });
+    assert.equal(cal.status, 302);
+    const ymd = date.replace(/-/g, "");
+    assert.match(String(cal.headers.get("location")), new RegExp(`dates=${ymd}T203000%2F${ymd}T223000`));
+    assert.match(decodeURIComponent(String(cal.headers.get("location"))).replace(/\+/g, " "), /Старт в 20:30 по Алматы/);
+    // WhatsApp при выключенном рубильнике после первого тика (5 секунд) только проверил подключение
+    await waitFor(() => evo.of("/instance/connectionState").length >= 1, 20_000);
+    await new Promise((r) => setTimeout(r, 500));
+    assert.equal(evo.of("/community/create").length, 0, "сообщество не создаётся");
+    assert.equal(evo.of("/message/").length, 0);
+    assert.equal(s.log().includes(EVO_KEY), false);
+  } finally {
+    s.child.kill();
+    await new Promise((r) => s.child.on("close", r));
+  }
+  // рубильник включён (файла нет): в health on
+  rmSync(join(data, "automation-state.json"));
+  const s2 = await run(4117, {});
+  try {
+    assert.equal(((await (await fetch("http://127.0.0.1:4117/api/health")).json()) as any).automation, "on");
+  } finally {
+    s2.child.kill();
+    await new Promise((r) => s2.child.on("close", r));
+  }
+});
+
+test("Задача 1.1: неясный ответ WhatsApp при создании (5xx): сообщество само повторно не создаётся, владельцам тревога; кнопка и тик ждут снятия ожидания; после /wa_resume сообщество создаётся", async () => {
+  const w = bootEvent15({ recruitFrom: "2026-10-12" });
+  evo.fail = (c) => (c.path.startsWith("/community/create") ? { status: 500 } : null);
+  at(12, 10, 0, 0);
+  assert.equal((await waTick()).created, 0);
+  assert.equal(creates(), 1);
+  assert.ok(w.state().pendingCreate, "создание без чёткого ответа ждёт человека");
+  assert.equal(alarms.filter((a) => /не пришёл чёткий ответ/.test(a)).length, 1);
+  // вслепую не повторяем: ни следующие тики, ни кнопка
+  for (const [d, h, mi] of [[12, 10, 30], [13, 12, 0], [15, 11, 0]]) {
+    at(d, h, mi, 5);
+    await waTick();
+  }
+  assert.equal(creates(), 1, "второго запроса на создание нет");
+  assert.equal((await waEventCreateNow(clock.t)).code, "pending");
+  // человек проверил телефон (лишнего сообщества нет) и снял ожидание: следующий тик создаёт
+  evo.fail = null;
+  assert.match(waResume().message, /Неподтверждённое создание снято с учёта/);
+  at(15, 11, 1, 5);
+  assert.equal((await waTick()).created, 1);
+  assert.equal(creates(), 2);
+  assert.equal(event15(w).source, "event");
 });

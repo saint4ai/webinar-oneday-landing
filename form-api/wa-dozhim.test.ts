@@ -16,7 +16,8 @@ import { EVO_KEY, evo, TPL_LINK, TPL_MAIN, TPL_REMINDER, tg, wazzup, WZ_CHANNEL,
 import { HELP_TEXT, getStore, initTgWorkshop, processUpdate, registerWa, registerWaReport } from "./tg-workshop";
 import { resetAdminCache } from "./tg-admin";
 import { approvedOf, normalizeTemplates } from "./wazzup";
-import { _waRt, initWaGroups, resetWaGroups, waCommand, waPanel, waReportLine } from "./wa-groups";
+import { _waRt, initWaGroups, resetWaGroups, waCommand, waPanel, waPause, waReportLine, waResume } from "./wa-groups";
+import { setAutomation } from "./automation";
 import {
   DECLINE_TEXT, LINK_TEXT, _dz, buildValues, cleanName, dateWord, defaultMap, dzCommand, dzFlush, dzHookSet, dzPanel, dzSave, dzSetEnabled, dzTemplates, dzTestSend, dzTick,
   evaluate, handleWazzupHook, isDecline, normalizePhone, windowStart,
@@ -981,7 +982,7 @@ test("команды владельца: /wa_dozhim показывает сос�
   const w = boot({ dz: { enabled: false } });
   assert.match(HELP_TEXT, /\/wa_dozhim on\|off/);
   assert.match(HELP_TEXT, /\/wa_dozhim_test/);
-  assert.ok(HELP_TEXT.length < 1500);
+  assert.ok(HELP_TEXT.length < 1700);
   const say1 = async (id: number, text: string) => {
     tg.reset();
     await processUpdate({ message: { chat: { id, type: "private" }, from: { id, first_name: "Аня", username: `u${id}` }, text } }, clock.t);
@@ -1224,4 +1225,29 @@ test("команды владельца без пульта: шаблон по �
   assert.match(await dzCommand("wa_dozhim", "set foo=1"), /Не понял/);
   assert.match(await dzCommand("wa_dozhim", "hook on"), /Вебхук Wazzup поставлен/);
   assert.equal(_dz()!.host.state().hookOn, true);
+});
+
+test("Задача 1.3 и 2: пауза модуля останавливает отправку шаблонов дожима, но ответ на кнопку шаблона по-прежнему присылает ссылку; общий рубильник «Автоматизация» дожим не трогает", async () => {
+  const { w } = await sent1(); // дожим включён, вебхук стоит, номеру A уже ушёл шаблон
+  addLeads(w, [lead({ phone: "77033334455", at: alm(2026, 10, 8, 10, 5) })]);
+  // пауза модуля: новый шаблон не уходит
+  waPause(clock.t);
+  const p = await tick();
+  assert.deepEqual([p.sent, p.skipped], [0, "no_run"]);
+  assert.equal(sentChats().length, 1, "новый шаблон на паузе не уходит");
+  assert.match(String((dzPanel(clock.t) as any).reason), /Сейчас не отправляет: модуль на паузе/);
+  // а ответ на уже отправленный шаблон по-прежнему приносит ссылку
+  wazzup.windows.add("77022223344");
+  assert.equal(await hook(wzInbound({ chatId: "77022223344", text: "Пришлите ссылку", messageId: "pause-1" })), 200);
+  assert.equal(texts().length, 1, "ответ на кнопку работает и на паузе");
+  waResume();
+  // общий рубильник выключен: шаблон новой заявке уходит, ответ на кнопку тоже
+  setAutomation(false, "тест", "", clock.t);
+  assert.doesNotMatch(String((dzPanel(clock.t) as any).reason), /Сейчас не отправляет|рубильник|Автоматизация/i);
+  const r = await tick();
+  assert.equal(r.sent, 1, "дожим рубильнику не подчиняется");
+  assert.equal(sentChats().at(-1), "77033334455");
+  wazzup.windows.add("77033334455");
+  assert.equal(await hook(wzInbound({ chatId: "77033334455", text: "Да, жду ссылку", messageId: "pause-2" })), 200);
+  assert.equal(texts().length, 2, "ссылка пришла и при выключенном рубильнике");
 });

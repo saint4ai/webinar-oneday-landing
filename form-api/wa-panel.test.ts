@@ -14,7 +14,10 @@ import { runInNewContext } from "node:vm";
 import { EVO_KEY, evo, openai, OPENAI_KEY, TPL_LINK, TPL_REMINDER, tg, wazzup, WZ_CHANNEL, WZ_KEY } from "./wa-testkit";
 import { aiFlush, aiHookBody, aiNumber, aiSetEnabled, aiTest } from "./wa-assistant";
 import { dzHookSet, dzSave, dzSetEnabled, dzTemplates, dzTestSend } from "./wa-dozhim";
-import { initWaGroups, resetWaGroups, waConnection, waGroups, waLogout, waPairing, waPanel, waQr, waStatus } from "./wa-groups";
+import { initWaGroups, resetWaGroups, waConnection, waEventCreateNow, waEventLaunch, waGroups, waLogout, waPairing, waPanel, waPause, waQr, waResume, waSetEvent, waSetMode, waStatus } from "./wa-groups";
+import { automationView } from "./automation-admin";
+import { resetAutomation, setAutomation } from "./automation";
+import { switchAutomation } from "./tg-workshop";
 import { setUtcOffsetMinutes } from "./tg-time";
 
 process.env.EVOLUTION_API_KEY = EVO_KEY;
@@ -191,6 +194,14 @@ function loadPanel() {
         return res(body.on === false || body.confirm === true ? await dzHookSet(body.on) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
       case "wa/dozhim/test":
         return res(body.confirm === true ? await dzTestSend(body.number) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
+      case "wa/event/launch":
+        return res(body.confirm === true ? waEventLaunch(clock.t) : { ok: false, code: "confirm", message: "Нужно подтверждение действия." });
+      case "automation": {
+        if (init?.method !== "POST") return res(automationView());
+        if (typeof body.on !== "boolean" || body.confirm !== true) return { status: 400, body: { ok: false, code: "confirm", message: "Нужно подтверждение действия." } };
+        const r = await switchAutomation(body.on, "из админки, id 1", String(body.reason || "вручную, из админки"));
+        return res({ ...automationView(), changed: r.changed, message: r.changed ? (body.on ? "Автоматизация включена." : "Автоматизация выключена.") : r.text });
+      }
     }
     return { status: 404, body: { ok: false, error: "not_found" } };
   };
@@ -276,6 +287,7 @@ test.beforeEach(() => {
   process.env.OPENAI_API_KEY = OPENAI_KEY;
   process.env.WA_AI_QUIET_MS = "100000";
   clock.t = alm(2026, 10, 8, 12, 0);
+  resetAutomation();
   resetWaGroups();
   initWaGroups({ dir: mkdtempSync(join(tmpdir(), "wa-panel-")), seriesFile: join(REPO, "form-api", "wa-series.json"), deps: { now: () => clock.t, sleep: async () => {}, rand: () => 0.5, notify: async () => 1 } });
 });
@@ -645,4 +657,116 @@ test("панель: в карточках сообществ строка «Вс
   assert.ok(cur && nxt, "карточки сообществ есть");
   assert.match(cur.textContent, /Вступили 7 из 12 записавшихся на этот день \(замер 3 мин назад\)\./);
   assert.match(nxt.textContent, /Записавшихся на этот день: 3\. Кто из них вступил, пока не замеряно: замер идёт, когда включён дожим WABA\./);
+});
+
+// ───────────────────────── общий рубильник и план прямого эфира (docs/tasks/automation_master_switch_event_mode.md) ─────────────────────────
+
+test("панель: рубильник «Автоматизация» вверху: включена по умолчанию; выключение и включение только после подтверждения в странице, с причиной; модуль в карточке остановлен", async () => {
+  const p = loadPanel();
+  await p.settle();
+  const bar = p.byId("auto");
+  assert.equal(bar.hidden, false);
+  assert.match(bar.textContent, /^Автоматизация: включена/);
+  assert.equal(hasClass(bar, "off"), false);
+  const sw = () => all(bar, (e) => e.tag === "button" && e.getAttribute("role") === "switch")[0];
+  assert.equal(sw().getAttribute("aria-checked"), "true");
+  const posts = () => p.fetched.filter((f) => f.url.endsWith("/automation") && f.method === "POST");
+  // нажатие только открывает подтверждение: запроса нет
+  sw().dispatch("click");
+  const dlg = () => all(bar, (e) => e.attrs.get("role") === "alertdialog")[0];
+  assert.match(dlg().textContent, /^Выключить автоматизацию\? Остановятся: WhatsApp не создаёт сообщества, не шлёт рассылку и не одобряет заявки; Telegram не шлёт плановые сообщения серии, включая обязательные\. Продолжат работать: .*ИИ-ассистент в личке WhatsApp и дожим WABA.* Вернуть можно в любой момент\./);
+  assert.equal(posts().length, 0);
+  // отмена закрывает диалог
+  all(dlg(), (e) => e.tag === "button" && e.textContent === "Отмена")[0].dispatch("click");
+  assert.equal(dlg(), undefined);
+  assert.equal(posts().length, 0);
+  // подтверждение с причиной
+  sw().dispatch("click");
+  const reason = all(dlg(), (e) => e.tag === "input")[0];
+  assert.equal(reason.getAttribute("aria-label"), "Причина выключения");
+  reason.value = "перерыв";
+  reason.dispatch("input");
+  all(dlg(), (e) => e.tag === "button" && e.textContent === "Да, выключить")[0].dispatch("click");
+  await p.settle();
+  assert.equal(posts().length, 1);
+  assert.deepEqual(posts()[0].body, { on: false, confirm: true, reason: "перерыв" });
+  assert.match(bar.textContent, /^Автоматизация: выключена/);
+  assert.equal(hasClass(bar, "off"), true);
+  assert.match(bar.textContent, /Выключена с \d\d\.\d\d в \d\d:\d\d, из админки, id 1\. Причина: перерыв\./);
+  assert.equal(sw().getAttribute("aria-checked"), "false");
+  assert.equal(dlg(), undefined, "диалог закрылся");
+  // вкладка WhatsApp: модуль остановлен рубильником, пауза модуля не включена
+  assert.match(p.text(), /Состояние\s*остановлен рубильником/);
+  assert.match(p.text(), /Автоматизация выключена переключателем вверху страницы: сообщества не создаются, рассылка и одобрение заявок стоят\. ИИ-ассистент и дожим WABA работают\./);
+  assert.ok(p.buttons().includes("Пауза"), "кнопка паузы модуля на месте: рубильник и пауза независимы");
+  // включение тоже спрашивает
+  sw().dispatch("click");
+  assert.match(dlg().textContent, /^Включить автоматизацию\? WhatsApp снова создаёт сообщества, шлёт рассылку и одобряет заявки, Telegram возобновляет серию по расписанию\./);
+  assert.equal(all(dlg(), (e) => e.tag === "input").length, 0, "причина нужна только при выключении");
+  all(dlg(), (e) => e.tag === "button" && e.textContent === "Да, включить")[0].dispatch("click");
+  await p.settle();
+  assert.deepEqual(posts().map((f) => f.body.on), [false, true]);
+  assert.match(bar.textContent, /^Автоматизация: включена/);
+  assert.doesNotMatch(p.text(), /остановлен рубильником/);
+  // пауза модуля по сбою: при включении предупреждаем, что она останется
+  waPause(clock.t);
+  setAutomation(false, "тест");
+  const p2 = loadPanel();
+  await p2.settle();
+  const bar2 = p2.byId("auto");
+  assert.match(bar2.textContent, /^Автоматизация: выключена/);
+  all(bar2, (e) => e.tag === "button" && e.getAttribute("role") === "switch")[0].dispatch("click");
+  const d2 = all(bar2, (e) => e.attrs.get("role") === "alertdialog")[0];
+  assert.match(d2.textContent, /WhatsApp-модуль отдельно стоит на паузе \(вручную, из пульта\): он останется на паузе, как был\./);
+});
+
+test("панель: прямой эфир (одна дата): режим так и называется, под формой план одной лентой из настроек и серии; кнопки «Создать сообщество сейчас», «Запустить рассылки сейчас» (с подтверждением), «Сбросить»; на паузе план говорит об этом", async () => {
+  waSetMode("event");
+  assert.equal(waSetEvent({ date: "2026-10-15", start: "20:30", recruitFrom: "2026-10-12" }, clock.t).ok, true);
+  const p = loadPanel();
+  await p.settle();
+  assert.ok(p.buttons().includes("Прямой эфир (одна дата)"));
+  assert.equal(p.buttons().includes("Живой эфир"), false);
+  const plan = () => all(p.view, (e) => hasClass(e, "plan"))[0];
+  const ribbon = () => all(plan(), (e) => e.tag === "li").map((li) => li.textContent).join(" · ");
+  assert.equal(ribbon(), "Сообщество создастся: 12.10 в 10:00 · Набор: 12.10–15.10, ссылка на сайте ведёт в это сообщество · Рассылки: только 15.10, первая в 12:00 · Эфир: 15.10 в 20:30 · Закрытие: 16.10 в 00:00");
+  assert.match(plan().textContent, /Telegram: всем записавшимся назначен день эфира 15\.10, серия идёт только в него/);
+  assert.deepEqual(all(plan(), (e) => e.tag === "li").map((li) => li.className), ["next", "next", "next", "next", "next"]);
+  // кнопки: запуск недоступен, пока нет сообщества
+  for (const b of ["Сохранить", "Создать сообщество сейчас", "Запустить рассылки сейчас", "Сбросить"]) assert.ok(p.buttons().includes(b), b);
+  assert.equal(p.button("Запустить рассылки сейчас").disabled, true);
+  // сообщество создано: запуск доступен, спрашивает подтверждение и предупреждает про тексты и Telegram
+  assert.equal((await waEventCreateNow(clock.t)).ok, true);
+  await p.tick(20000);
+  assert.equal(p.button("Запустить рассылки сейчас").disabled, false);
+  assert.match(ribbon(), /^Сообщество создано: 08\.10 в 12:00 · Набор: /);
+  const n0 = p.fetched.filter((f) => f.url.endsWith("wa/event/launch")).length;
+  p.button("Запустить рассылки сейчас").dispatch("click");
+  const dlg = all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0];
+  assert.match(dlg.textContent, /^Запустить рассылки досрочно\? По плану они ждут дня эфира \(15\.10\)\. После запуска серия пойдёт в сообщество каждый день по расписанию, с ближайшего сообщения до эфира включительно\. Тексты серии написаны под день эфира/);
+  assert.match(dlg.textContent, /Telegram по-прежнему шлёт серию только в день эфира\./);
+  assert.equal(p.fetched.filter((f) => f.url.endsWith("wa/event/launch")).length, n0, "без подтверждения запроса нет");
+  p.button("Да, запустить").dispatch("click");
+  await p.settle();
+  const launch = p.fetched.filter((f) => f.url.endsWith("wa/event/launch"));
+  assert.equal(launch.length, 1);
+  assert.equal(launch[0].body.confirm, true);
+  assert.equal(p.button("Рассылки запущены").disabled, true);
+  assert.match(ribbon(), /Рассылки: запущены досрочно 08\.10 в 12:00, дальше каждый день по расписанию, эфир 15\.10/);
+  assert.match(p.text(), /Рассылки запущены досрочно \(08\.10 в 12:00\)/);
+  // рубильник выключен: у плана красная строка
+  setAutomation(false, "тест");
+  await p.tick(20000);
+  assert.equal(hasClass(plan(), "hold"), true);
+  assert.match(plan().textContent, /^на паузе: рассылки не уйдут/);
+  assert.match(plan().textContent, /Автоматизация выключена \(переключатель вверху админки\)\./);
+  setAutomation(true, "тест");
+  waPause(clock.t);
+  await p.tick(20000);
+  assert.match(plan().textContent, /WhatsApp-модуль на паузе: вручную, из пульта\./);
+  // «Сбросить» с подтверждением
+  waResume();
+  await p.tick(20000);
+  p.button("Сбросить").dispatch("click");
+  assert.match(all(p.view, (e) => e.attrs.get("role") === "alertdialog")[0].textContent, /Telegram вернётся к ежедневной серии\./);
 });

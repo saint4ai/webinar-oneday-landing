@@ -8,6 +8,11 @@
  * Шлём, пока сейчас в окне [плановое, плановое + graceMinutes]. Опоздали сильнее:
  * пропускаем и пишем в лог `skip late`, «через час» в 20:40 не отправляем.
  *
+ * Общий рубильник «Автоматизация» (automation.ts): выключен, значит ни одного планового сообщения серии, включая
+ * essential. Итоговые отчёты владельцам идут независимо.
+ * Прямой эфир (режим event у WhatsApp, eventNow из tg-workshop): серия идёт только в день эфира, со сдвигом
+ * времени под старт эфира; записанных на ежедневный день, который ещё не закончился, тик переписывает на день эфира (moveToEvent).
+ *
  * Скорость исходящих (20 в секунду, приоритет приветствий, пауза на 429) держит общий
  * ограничитель в tg-workshop. Второй процесс не шлёт: его останавливает lock-файл data/scheduler.lock.
  */
@@ -18,7 +23,9 @@ import {
   botConfigured,
   botEnabled,
   adminCtx,
+  dayEnd,
   dayReportText,
+  eventNow,
   getStore,
   noteSendResult,
   notifyOwners,
@@ -34,7 +41,8 @@ import {
 } from "./tg-workshop";
 import { noteRuntime, type Subscriber, type TgStore } from "./tg-store";
 import { dailyKeyboard, renderDailyReport } from "./tg-admin";
-import { addDays, atTime, dayKeyOf, isStreamDay, streamEnd } from "./tg-time";
+import { automationOn } from "./automation";
+import { addDays, atTime, dayKeyOf, isStreamDay, parseHHMM, startShiftMin, type EventSched } from "./tg-time";
 
 const TICK_MS = 30_000;
 const LOCK_STALE_MS = 3 * TICK_MS;
@@ -44,9 +52,24 @@ const REPORT_WINDOW_MS = 12 * 3600_000;
 
 // ───────────────────────── чистые функции (их проверяют тесты) ─────────────────────────
 
-/** Плановое время сообщения для дня эфира D. */
-export function planTime(day: string, msg: { at: string; dayOffset?: number }): number {
-  return atTime(addDays(day, msg.dayOffset ?? 0), msg.at);
+/** Плановое время сообщения для дня эфира D. shiftMin: сдвиг дня прямого эфира под его старт (eventShiftMin), по умолчанию нет. */
+export function planTime(day: string, msg: { at: string; dayOffset?: number }, shiftMin = 0): number {
+  return atTime(addDays(day, msg.dayOffset ?? 0), msg.at) + shiftMin * 60_000;
+}
+
+const minsOf = (hhmm: string) => {
+  const p = parseHHMM(hhmm);
+  return p.h * 60 + p.m;
+};
+
+/**
+ * Сдвиг в минутах для сообщения дня прямого эфира. Двигаются сообщения, привязанные к старту (время не позже конца эфира серии,
+ * то есть до оффера включительно); дожим и «последние 30 минут» привязаны к 23:59 и остаются на месте, как у WhatsApp.
+ * Сообщения «+1 день» и любые другие дни не двигаются.
+ */
+export function eventShiftMin(sr: { streamStart: string; streamMinutes: number }, ev: EventSched | null | undefined, day: string, msg: { at: string; dayOffset?: number }): number {
+  if (!ev || ev.date !== day || msg.dayOffset) return 0;
+  return minsOf(msg.at) <= minsOf(sr.streamStart) + sr.streamMinutes ? startShiftMin(sr.streamStart, ev.start) : 0;
 }
 
 /** Окно отправки: [плановое, плановое + grace] включительно. */
@@ -65,13 +88,17 @@ function candidateDays(sr: Series, now: number): string[] {
   return out;
 }
 
-/** Какие пары (сообщение, день эфира D) сейчас в окне отправки. По возрастанию планового времени. */
-export function dueMessages(sr: Series, now: number): Due[] {
+/**
+ * Какие пары (сообщение, день эфира D) сейчас в окне отправки. По возрастанию планового времени.
+ * Прямой эфир активен (ev): только его день, со сдвигом времени под старт эфира; ежедневной серии в другие дни нет.
+ */
+export function dueMessages(sr: Series, now: number, ev: EventSched | null = eventNow(now)): Due[] {
   const out: Due[] = [];
   for (const day of candidateDays(sr, now)) {
+    if (ev && day !== ev.date) continue;
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
-      const plan = planTime(day, msg);
+      const plan = planTime(day, msg, eventShiftMin(sr, ev, day, msg));
       if (inWindow(now, plan, sr.graceMinutes)) out.push({ msg, day, plan });
     }
   }
@@ -93,6 +120,23 @@ export function pickRecipients(st: TgStore, msg: SeriesMsg, day: string, opts: {
     out.push(s);
   }
   return out.sort((a, b) => a.chatId - b.chatId);
+}
+
+/**
+ * Прямой эфир: кто записан на ежедневный день, который раньше даты эфира и ещё не закончился, переписывается на день эфира
+ * (событие rejoin, переживает рестарт). Ежедневной серии в дни до эфира нет, так что иначе такие люди остались бы без рассылки.
+ * Те, чей день уже прошёл, получили свою серию и не трогаются; заблокировавшие и отписавшиеся тоже. Возвращает, сколько переписано.
+ */
+export function moveToEvent(st: TgStore, sr: Series, ev: EventSched, now: number): number {
+  const cfg = timeCfg(sr);
+  let n = 0;
+  for (const s of [...st.subs.values()]) {
+    if (!st.isActive(s) || s.streamDay >= ev.date || now >= dayEnd(s.streamDay, cfg, now)) continue;
+    st.recordEvent({ type: "rejoin", chat_id: s.chatId, streamDay: ev.date, ts: new Date(now).toISOString() });
+    n++;
+  }
+  if (n) console.log("[tg-sched] прямой эфир %s: записано на ежедневный день %d, переписаны на день эфира", ev.date, n);
+  return n;
 }
 
 // ───────────────────────── lock-файл: один планировщик на данные ─────────────────────────
@@ -156,7 +200,8 @@ const defaultDeps: Deps = {
   send: (s, msg, day) =>
     sendContent(
       { media: msg.media, text: msg.text, buttons: msg.buttons, silent: msg.silent },
-      { series: activeSeries(), now: Date.now(), chatId: s.chatId, firstName: s.firstName, day },
+      // «+1 день» говорит про повтор в обычные 20:00: часы в нём под старт прямого эфира не подгоняем.
+      { series: activeSeries(), now: Date.now(), chatId: s.chatId, firstName: s.firstName, day, noRetime: !!msg.dayOffset },
       // Рассылка идёт в очереди «lo»: приветствия новым людям обгоняют её.
       { prio: "lo" },
     ),
@@ -166,7 +211,7 @@ const defaultDeps: Deps = {
 /** Пары «сообщение|день|чат», которые прямо сейчас отправляются: плановая и ручная отправка не задвоят. */
 const inflight = new Set<string>();
 
-export type DeliverStats = { ok: number; failed: number; blocked: number; netFail: number; skippedLate: number };
+export type DeliverStats = { ok: number; failed: number; blocked: number; netFail: number; skippedLate: number; stopped?: number };
 
 /**
  * Отправить сообщение получателям по очереди. Скорость и 429 держит общий ограничитель.
@@ -179,12 +224,18 @@ export async function deliver(
   msg: SeriesMsg,
   day: string,
   rcpts: Subscriber[],
-  opts: { deadline?: number } = {},
+  opts: { deadline?: number; gate?: () => boolean } = {},
   deps: Deps = defaultDeps,
 ): Promise<DeliverStats> {
   const stats: DeliverStats = { ok: 0, failed: 0, blocked: 0, netFail: 0, skippedLate: 0 };
   for (let i = 0; i < rcpts.length; i++) {
     const s = rcpts[i];
+    // gate: плановая рассылка останавливается на полпути, если владелец выключил общий рубильник.
+    if (opts.gate && !opts.gate()) {
+      stats.stopped = rcpts.length - i;
+      console.warn("[tg-sched] msg=%s day=%s остановлено рубильником «Автоматизация», не получили %d", msg.id, day, stats.stopped);
+      break;
+    }
     if (opts.deadline !== undefined && deps.now() > opts.deadline) {
       stats.skippedLate = rcpts.length - i;
       console.warn("[tg-sched] skip late msg=%s day=%s: окно закрылось, не успели %d", msg.id, day, stats.skippedLate);
@@ -226,11 +277,12 @@ let errStreak = 0;
 let errAlerted = false;
 
 /** Сообщения, чьё окно уже закрылось, а получатели остались: фиксируем в логе, что пропустили. */
-function logLate(st: TgStore, sr: Series, now: number) {
+function logLate(st: TgStore, sr: Series, now: number, ev: EventSched | null = null) {
   for (const day of candidateDays(sr, now)) {
+    if (ev && day !== ev.date) continue;
     for (const msg of sr.messages) {
       if (msg.enabled === false) continue;
-      const plan = planTime(day, msg);
+      const plan = planTime(day, msg, eventShiftMin(sr, ev, day, msg));
       const key = `${msg.id}|${day}`;
       if (now <= plan + sr.graceMinutes * 60_000 || lateLogged.has(key)) continue;
       const n = pickRecipients(st, msg, day, { plan }).length;
@@ -276,9 +328,12 @@ export async function dailyReport(now: number = Date.now()): Promise<boolean> {
   const st = getStore();
   const cfg = timeCfg(activeSeries());
   const today = dayKeyOf(now);
+  const ev = eventNow(now);
   for (const day of [addDays(today, -1), today]) {
-    if (!isStreamDay(day, cfg) || st.isReported(day)) continue;
-    const at = streamEnd(day, cfg) + REPORT_DELAY_MS;
+    // Прямой эфир: итог только за его день (в другие дни эфира нет), день эфира считается эфирным всегда.
+    if (ev && day !== ev.date) continue;
+    if ((!isStreamDay(day, cfg) && ev?.date !== day) || st.isReported(day)) continue;
+    const at = dayEnd(day, cfg, now) + REPORT_DELAY_MS;
     if (now < at || now > at + REPORT_WINDOW_MS) continue;
     if (!ownerIds().length) return false;
     if ((await notifyOwners(dayReportText(st, day))) > 0) {
@@ -339,20 +394,31 @@ export async function tick(now: number = Date.now(), deps: Deps = defaultDeps): 
     } catch (e) {
       console.error("[tg-sched] админ-отчёт не ушёл:", (e as Error)?.message || e);
     }
+    // Прямой эфир: записанных на ежедневный день переписываем на день эфира (учёт, не рассылка, поэтому до рубильника).
+    const ev = eventNow(now);
+    if (ev) {
+      try {
+        moveToEvent(st, activeSeries(), ev, now);
+      } catch (e) {
+        console.error("[tg-sched] перенос на прямой эфир не вышел:", (e as Error)?.message || e);
+      }
+    }
+    // Общий рубильник «Автоматизация» выключен: ни одного планового сообщения серии, включая обязательные.
+    if (!automationOn()) return 0;
     // Серия выключена: идут только обязательные сообщения (essential), остальное молчит.
     const full = activeSeries();
     const sr: Series = st.state.seriesEnabled ? full : { ...full, messages: full.messages.filter((m) => m.essential) };
     if (!sr.messages.length) return 0;
-    logLate(st, sr, now);
+    logLate(st, sr, now, ev);
     let sent = 0;
     let worked = false;
     let netDown = "";
-    for (const d of dueMessages(sr, now)) {
+    for (const d of dueMessages(sr, now, ev)) {
       const rcpts = pickRecipients(st, d.msg, d.day, { plan: d.plan });
       if (!rcpts.length) continue;
       worked = true;
       console.log("[tg-sched] msg=%s day=%s получателей=%d", d.msg.id, d.day, rcpts.length);
-      const r = await deliver(st, d.msg, d.day, rcpts, { deadline: d.plan + sr.graceMinutes * 60_000 }, deps);
+      const r = await deliver(st, d.msg, d.day, rcpts, { deadline: d.plan + sr.graceMinutes * 60_000, gate: automationOn }, deps);
       sent += r.ok;
       console.log("[tg-sched] msg=%s day=%s ушло=%d ошибок=%d заблокировали=%d", d.msg.id, d.day, r.ok, r.failed, r.blocked);
       if (r.ok === 0 && r.failed > 0 && r.netFail === r.failed) netDown = "Telegram не отвечает или отвечает ошибками 5xx";
@@ -377,9 +443,12 @@ export function firePlan(id: string, now: number = Date.now()): FirePlan {
   const st = getStore();
   const msg = activeSeries().messages.find((m) => m.id === id);
   if (!msg) return { ok: false, error: `Нет сообщения «${id}». Список: /series` };
+  if (!automationOn()) return { ok: false, error: "Автоматизация выключена, массовая отправка закрыта. Включи командой /auto_on или в админке." };
   if (!st.state.seriesEnabled) return { ok: false, error: "Серия выключена, массовая отправка закрыта. Включи командой /series_on." };
   if (msg.enabled === false) return { ok: false, error: `Сообщение «${id}» выключено (enabled: false в json или /off). Включи: /on ${id}` };
-  const day = addDays(dayKeyOf(now), -(msg.dayOffset ?? 0));
+  // Прямой эфир: «сейчас» это всем записавшимся на его день, даже если сегодня до него ещё несколько дней.
+  const ev = eventNow(now);
+  const day = ev && !msg.dayOffset ? ev.date : addDays(dayKeyOf(now), -(msg.dayOffset ?? 0));
   const count = pickRecipients(st, msg, day).length;
   if (!count) return { ok: false, error: `Некому отправлять: все, кому «${id}» положено на сегодня, уже получили его, или таких нет.` };
   return { ok: true, day, msg, count };

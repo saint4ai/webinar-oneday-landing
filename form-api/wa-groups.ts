@@ -37,6 +37,12 @@
  *    Сообщество создаётся один раз: по кнопке «Создать сейчас» или само в дату начала набора. Всё время набора ссылка на сайте
  *    ведёт в него, прогрев идёт только в день эфира, после 00:00 режим завершён и ссылка снова постоянная.
  *  Режимы взаимоисключающие, уже созданные сообщества при переключении не трогаются.
+ *  Прямой эфир (одна дата, docs/tasks/automation_master_switch_event_mode.md) подчиняет себе и Telegram: пока режим активен,
+ *  бот назначает всем записавшимся день эфира этой даты, ежедневной серии в дни до эфира нет, в день эфира она сдвигается под
+ *  время старта (eventSched отдаёт дату и старт в tg-workshop). «Запустить рассылки сейчас» отпускает серию WhatsApp досрочно.
+ *
+ * Общий рубильник «Автоматизация» (automation.ts) лежит поверх паузы модуля и её не меняет: выключен значит тик не создаёт
+ * сообщества, не шлёт серию и не одобряет заявки (как на паузе), а ИИ-ассистент в личке и дожим WABA работают, у них свои выключатели.
  *
  * Состояние: DATA_DIR/wa-state.json (перезапись через temp и rename), журналы wa-journal.jsonl (отправки и события)
  * и wa-joins.jsonl (заявки и вступления). Токены и ключи в журналы не пишутся.
@@ -46,8 +52,9 @@ import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSyn
 import { join } from "node:path";
 import * as evo from "./wa-evolution";
 import { isValidWhatsAppLink } from "../lib/whatsapp-link";
-import { DEFAULT_JOIN_MINUTES, addDays, assignStreamDay, atTime, dayKeyOf, dayWordLower, hhmmOf, isDayKey, isStreamDay, parseHHMM, type TimeCfg } from "./tg-time";
-import { getSeries, getStore, notifyOwners, registerWa, registerWaReport, timeCfg, type WaReply } from "./tg-workshop";
+import { DEFAULT_JOIN_MINUTES, addDays, assignStreamDay, atTime, dayKeyOf, dayWordLower, hhmmOf, isDayKey, isStreamDay, parseHHMM, retimeStream, type EventSched, type TimeCfg } from "./tg-time";
+import { getSeries, getStore, notifyOwners, registerEventMode, registerWa, registerWaReport, registerWaStatus, timeCfg, type WaReply } from "./tg-workshop";
+import { automationInfo, automationOn, onAutomationChange, stampText } from "./automation";
 import { aiCommand, aiInit, aiPanel, aiReset, aiTick, type AiHost, type AiState } from "./wa-assistant";
 import { dzCommand, dzInit, dzPanel, dzReset, dzTick, freshDz, normalizeDz, type DzHost, type DzState } from "./wa-dozhim";
 import { classifyPayload, readLeads } from "./tg-admin";
@@ -263,6 +270,8 @@ export type EventCfg = {
   /** Эфир прошёл (00:00 после дня эфира) или режим закрыт. */
   done?: boolean;
   doneAt?: number;
+  /** Рассылки запущены досрочно (кнопка «Запустить рассылки сейчас»): с этого момента серия WhatsApp идёт каждый день до эфира. */
+  launchedAt?: number;
 };
 
 /** Постоянная ссылка для кнопки шаблона WABA (workshop-montazh/wa.html): переадресует в сообщество текущего набора. */
@@ -485,6 +494,7 @@ function loadState(r: Rt): State {
         recruitFrom: day(ev.recruitFrom),
         ...(typeof ev.communityId === "string" && ev.communityId ? { communityId: ev.communityId } : {}),
         ...(ev.done === true ? { done: true, doneAt: num(ev.doneAt) } : {}),
+        ...(num(ev.launchedAt) > 0 ? { launchedAt: num(ev.launchedAt) } : {}),
       };
     }
     // Режимы взаимоисключающие: в живом эфире ежедневное создание всегда выключено.
@@ -591,6 +601,23 @@ export function initWaGroups(opts: InitOpts = {}): void {
   initError = "";
   aiInit(aiHostOf(r));
   dzInit(dzHostOf(r));
+  // Telegram берёт у модуля прямой эфир и паузу, рубильник пишет свои переключения в журнал.
+  registerEventMode((now) => eventSched(r, now));
+  registerWaStatus(() => ({ paused: r.state.paused, reason: r.state.pausedReason }));
+  unsubAuto?.();
+  unsubAuto = onAutomationChange((info, ev) => {
+    journal(r, ev === "off" ? { ev: "auto_off", by: info.offBy, reason: info.offReason } : { ev: "auto_on", by: info.onBy });
+  });
+}
+
+let unsubAuto: (() => void) | null = null;
+
+/** Прямой эфир для Telegram: дата и старт, пока режим event активен (дата задана, 00:00 после эфира не наступило). */
+function eventSched(r: Rt, now: number): EventSched | null {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || ev.done || !ev.date) return null;
+  if (now >= closeAtOf(r, ev.date)) return null;
+  return { date: ev.date, start: ev.start || r.cfg.streamStart };
 }
 
 /** То, что модуль даёт ИИ-ассистенту: часы, очередь запросов к Evolution, состояние, тревоги, условия отправки. */
@@ -706,6 +733,10 @@ export function resetWaGroups(): void {
   initError = "";
   aiReset();
   dzReset();
+  registerEventMode(null);
+  registerWaStatus(null);
+  unsubAuto?.();
+  unsubAuto = null;
 }
 
 /** Для тестов: текущее состояние и настройки. */
@@ -741,7 +772,7 @@ export function startWaGroups(opts: InitOpts = {}): () => void {
   console.log(
     "[wa] запущен: тип %s, режим %s%s, расписание %s, сообщений %d, тик %d с",
     r.cfg.target,
-    r.state.mode === "event" ? "живой эфир" : "ежедневный",
+    r.state.mode === "event" ? "прямой эфир" : "ежедневный",
     r.state.mode === "daily" ? (r.state.daily.enabled ? " (создание вкл)" : " (создание выкл)") : "",
     r.cfg.version,
     r.cfg.messages.length,
@@ -755,6 +786,10 @@ export function startWaGroups(opts: InitOpts = {}): () => void {
     process.off("exit", onExit);
     registerWa(null);
     registerWaReport(null);
+    registerEventMode(null);
+    registerWaStatus(null);
+    unsubAuto?.();
+    unsubAuto = null;
     releaseLock(r);
   };
 }
@@ -894,15 +929,13 @@ function daytimeMs(from: number, to: number): number {
 }
 
 /**
- * Часы в текстах серии написаны под старт в 20:00 по Алматы (18:00 по Москве). Если старт другой, подставляем его:
- * «20:00» на новое время, «18:00 по Москве» на московское (Алматы минус 2 часа). Остальные числа (23:59 и т.д.) не трогаем.
+ * Часы в текстах серии написаны под старт в 20:00 по Алматы (18:00 по Москве, ссылка на эфир в 19:50). Если старт другой, подставляем его:
+ * «20:00» на новое время, «18:00 по Москве» на московское (Алматы минус 2 часа), «19:50» на десять минут раньше старта.
+ * Остальные числа (23:59 и т.д.) не трогаем. Сама подмена общая с Telegram (retimeStream в tg-time.ts).
  */
 function retime(r: Rt, start: string | undefined, text: string): string {
   if (!start || start === r.cfg.streamStart) return text;
-  const base = r.cfg.streamStart;
-  const baseMsk = hhmmFrom(minsOf(base) - 120);
-  const msk = hhmmFrom(minsOf(start) - 120);
-  return text.split(`${baseMsk} по Москве`).join(`${msk} по Москве`).split(base).join(start);
+  return retimeStream(text, r.cfg.streamStart, start);
 }
 
 /** Сообщение серии таким, как оно уйдёт в цель: часы в тексте и в вопросе опроса подогнаны под её старт. */
@@ -1189,9 +1222,14 @@ function finishEventIfOver(r: Rt, now: number): boolean {
   ev.doneAt = now;
   r.state.mode = "daily";
   r.state.daily.enabled = false;
+  const hadCommunity = !!eventTarget(r);
   save(r);
   journal(r, { ev: "event_done", date: ev.date, target: ev.communityId || "" });
-  console.log("[wa] живой эфир %s завершён, режим вернулся на ежедневный (создание выключено)", ev.date);
+  console.log("[wa] прямой эфир %s завершён, режим вернулся на ежедневный (создание выключено)", ev.date);
+  // Дата эфира прошла, а сообщество так и не появилось (сбой WhatsApp, пауза, рубильник): об этом надо знать сразу.
+  if (!hadCommunity) {
+    void alarm(r, `Прямой эфир ${ddmm(ev.date)} прошёл, а сообщество для него так и не было создано. Ссылка на сайте снова постоянная, режим вернулся на ежедневный. Если эфир ещё нужен, задай новую дату в пульте.`);
+  }
   return true;
 }
 
@@ -1313,7 +1351,7 @@ async function setupSteps(r: Rt, t: Target): Promise<boolean> {
   for (const s of order) {
     if (t.done[s]) continue;
     const now = r.deps.now();
-    if (r.state.paused || now < r.state.retryAt || now < (t.retryAt ?? 0)) return false;
+    if (r.state.paused || !automationOn() || now < r.state.retryAt || now < (t.retryAt ?? 0)) return false;
     if (now >= closeAtOf(r, t.day)) return true;
     if (s === "avatar" && ((t.tries.avatar || 0) >= 3 || now - t.avatarAt < 5 * MIN)) continue;
     // lock (менять название, описание и аватарку может только админ): косметика безопасности, как аватарка не ломает остальные шаги и не делает цель неготовой.
@@ -1580,6 +1618,21 @@ function noteNightSkip(r: Rt, t: Target, msg: WaMsg, plan: number) {
 // Очередь живёт между тиками: за один тик в сообщество уходит одно сообщение, следующее на тике после промежутка (тик раз в 30 секунд).
 // Между разными сообществами промежуток считается отдельно, паузы между ними прежние (betweenSendsMs).
 
+/**
+ * Дни серии для сообщества. Обычно один: день самого сообщества. Если рассылки прямого эфира запущены досрочно, то и каждый день с
+ * момента запуска до дня эфира: на такой день берётся копия цели с этим днём (ключи отправки, журнал и срок рассылки у каждого дня
+ * свои), сообщения до момента запуска не досылаются. День эфира остаётся самой целью.
+ */
+function seriesViews(r: Rt, t: Target): Target[] {
+  const ev = r.state.event;
+  if (t.source !== "event" || ev.done || !ev.launchedAt || t.day !== ev.date) return [t];
+  const out: Target[] = [];
+  let day = dayKeyOf(ev.launchedAt);
+  for (let i = 0; i < 60 && day < t.day; i++, day = addDays(day, 1)) out.push({ ...t, day, createdAt: Math.max(t.createdAt, ev.launchedAt) });
+  out.push(t);
+  return out;
+}
+
 /** Эфирные ссылки: такое сообщение в очереди идёт первым, а более ранние неушедшие сообщения дня до него пропускаются. */
 export const LIVE_LINK_IDS: ReadonlySet<string> = new Set(["t-minus-10", "live-now", "live-10", "last-link", "replay-link"]);
 /** Позже этого после планового времени сообщение не досылается никогда: пропуск с записью в журнал и тревогой владельцам. */
@@ -1622,7 +1675,7 @@ function planQueue(r: Rt, now: number): QueuePlan {
   const gap = minGapMs(r);
   const grace = r.cfg.graceMinutes * MIN;
   const maxLate = MAX_LATE_MIN * MIN;
-  for (const t of r.state.targets) {
+  for (const t of r.state.targets.flatMap((x) => seriesViews(r, x))) {
     if (!isReady(t)) continue;
     const items: QItem[] = [];
     for (let idx = 0; idx < r.cfg.messages.length; idx++) {
@@ -1756,7 +1809,7 @@ async function runSends(r: Rt, now: number): Promise<number> {
   let sent = 0;
   let first = true;
   for (const d of q.go) {
-    if (r.state.paused || r.deps.now() < r.state.retryAt) break;
+    if (r.state.paused || !automationOn() || r.deps.now() < r.state.retryAt) break;
     // Между отправками в разные сообщества пауза 4 до 9 секунд со случайным разбросом.
     if (!first) await pause(r, r.cfg.pacing.betweenSendsMs);
     first = false;
@@ -1820,7 +1873,7 @@ const heldMembers = (r: Rt, t: Target) => (t.members ?? 0) + (r.approvedSince.ge
  * Лимит новых сообществ в сутки и пауза модуля действуют; при исчерпанном лимите владельцам одна тревога в день.
  */
 async function openNext(r: Rt, t: Target, now: number, members: number) {
-  if (r.state.paused || r.state.pendingCreate || r.deps.now() < r.state.retryAt || r.deps.now() < r.createRetryAt) return;
+  if (r.state.paused || !automationOn() || r.state.pendingCreate || r.deps.now() < r.state.retryAt || r.deps.now() < r.createRetryAt) return;
   if (targetsOf(r, t.day)[0].id !== t.id || now >= closeAtOf(r, t.day)) return;
   const limit = r.cfg.overflowAt[t.kind];
   if (capReached(r, now)) {
@@ -1851,7 +1904,7 @@ async function runMemberChecks(r: Rt, now: number) {
 
 // ───────────────────────── тик ─────────────────────────
 
-export type TickInfo = { skipped?: "lock" | "paused" | "no_connection" | "backoff" | "busy"; sent: number; created: number };
+export type TickInfo = { skipped?: "lock" | "paused" | "automation" | "no_connection" | "backoff" | "busy"; sent: number; created: number };
 
 /** Один тик: подключение, отправка по расписанию, достройка, создание, проверка переполнения. Тик не бросает. */
 export async function waTick(): Promise<TickInfo> {
@@ -1874,6 +1927,9 @@ export async function waTick(): Promise<TickInfo> {
       syncEventCommunity(r);
       if (r.state.paused) return { skipped: "paused" as const, sent: 0, created: 0 };
       if (!(await checkConnection(r, now))) return { skipped: "no_connection" as const, sent: 0, created: 0 };
+      // Общий рубильник «Автоматизация» выключен: ни создания, ни рассылки, ни достройки. Состояние подключения при этом обновляется:
+      // от него зависят ИИ-ассистент и дожим, которым рубильник не мешает.
+      if (!automationOn()) return { skipped: "automation" as const, sent: 0, created: 0 };
       if (now < r.state.retryAt) return { skipped: "backoff" as const, sent: 0, created: 0 };
       const sent = await runSends(r, now);
       let created = 0;
@@ -2056,12 +2112,12 @@ async function softJoinFail(r: Rt, now: number, what: string) {
 /** Цели, которые пора опросить: готовые сообщества до closeAt плюс час. Сервируемое опрашивается чаще остальных. */
 export async function joinsTick(): Promise<number> {
   const r = rt;
-  if (!r || r.joining || r.state.paused || r.conn.state !== "open") return 0;
+  if (!r || r.joining || r.state.paused || !automationOn() || r.conn.state !== "open") return 0;
   r.joining = true;
   try {
     return await exclusive(r, async () => {
       const now = r.deps.now();
-      if (r.state.paused || r.conn.state !== "open" || !holdLock(r)) return 0;
+      if (r.state.paused || !automationOn() || r.conn.state !== "open" || !holdLock(r)) return 0;
       const serving = servingTarget(r, now);
       let n = 0;
       for (const t of r.state.targets) {
@@ -2111,17 +2167,22 @@ function nextMessage(r: Rt, now: number): NextMsg | null {
     return { plan: h.plan, id: h.msg.id, topic: h.msg.topic || h.msg.id, day: h.t.day, due: h.at, queued: all.length };
   }
   let best: NextMsg | null = null;
-  const consider = (day: string, start?: string, event = false) => {
+  const consider = (day: string, start?: string, event = false, notBefore = 0) => {
     for (const m of r.cfg.messages) {
       if (m.enabled === false) continue;
       if (event && m.dayOffset) continue;
       const plan = planOf(r, { day, start }, m);
-      if (plan >= now && plan < sendUntilOf(r, day, m) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
+      if (plan >= notBefore && plan >= now && plan < sendUntilOf(r, day, m) && sendableTime(plan) && (!best || plan < best.plan)) best = { plan, id: m.id, topic: m.topic || m.id, day };
     }
   };
   if (r.state.mode === "event") {
     const ev = r.state.event;
-    if (ev.date && !ev.done) consider(ev.date, eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : undefined), true);
+    if (ev.date && !ev.done) {
+      const start = eventTarget(r)?.start ?? (ev.start && ev.start !== r.cfg.streamStart ? ev.start : undefined);
+      // Досрочный запуск: серия идёт и в дни до эфира, начиная с момента запуска.
+      if (ev.launchedAt) for (let day = dayKeyOf(ev.launchedAt), i = 0; i < 60 && day < ev.date; i++, day = addDays(day, 1)) consider(day, start, true, ev.launchedAt);
+      consider(ev.date, start, true);
+    }
     return best;
   }
   const c = tcfg(r);
@@ -2188,11 +2249,15 @@ async function cmdStatus(r: Rt, now: number): Promise<WaReply> {
   const number = r.state.ownerJid ? `+${r.state.ownerJid.replace(/@.*/, "")}` : "номер неизвестен";
   const link = waGroupLink(now, false);
   const ev = r.state.event;
+  const plan = eventPlan(r, now);
+  const auto = automationInfo();
   const lines = [
+    ...(auto.on ? [] : [`Автоматизация ВЫКЛЮЧЕНА с ${stampText(auto.offAt)} (${auto.offBy || "кем не указано"}): рассылка, создание и заявки стоят. Включить: /auto_on`]),
     `WhatsApp-модуль: ${r.state.paused ? `на паузе (${r.state.pausedReason || "причина не записана"})` : "работает"}, тип ${r.cfg.target === "community" ? "сообщество" : "группа"}`,
     r.state.mode === "event"
-      ? `Режим: живой эфир${ev.date ? ` ${ddmm(ev.date)} в ${ev.start}, набор с ${ddmm(ev.recruitFrom)}` : ", дата эфира не задана"}`
+      ? `Режим: прямой эфир${ev.date ? ` ${ddmm(ev.date)} в ${ev.start}, набор с ${ddmm(ev.recruitFrom)}` : ", дата эфира не задана"}`
       : `Режим: ежедневный, создание ${r.state.daily.enabled ? "включено" : "выключено"}`,
+    ...(plan ? [`План: ${plan.line}${plan.paused ? ` (${plan.pausedText})` : ""}`] : []),
     `Подключение: ${conn}${conn === "open" ? `, ${number}` : ""}`,
     ...(r.state.mode === "event"
       ? [ev.date ? (eventTarget(r) ? targetLine(r, "Сообщество эфира", ev.date, now) : `Сообщество эфира ${ddmm(ev.date)}: пока нет, создам ${ddmm(ev.recruitFrom)} в ${EVENT_CREATE_AT}`) : "Сообщество эфира: пока нет"]
@@ -2285,13 +2350,16 @@ const fail = (code: string, message: string): Act => ({ ok: false, code, message
  * null: создавать можно. Вызывается дважды: сразу (быстрый ответ) и первой строкой внутри очереди exclusive: пока запрос ждал очередь,
  * тик или другой вызов мог уже создать сообщество, и без повтора проверок получилось бы второе сообщество того же эфира.
  */
+const AUTO_OFF_TEXT = "Автоматизация выключена. Включи её переключателем вверху админки или командой /auto_on.";
+
 function eventCreateCheck(r: Rt, now: number): Act | null {
   const ev = r.state.event;
-  if (r.state.mode !== "event") return fail("wrong_mode", "Сейчас включён ежедневный режим. Переключись на живой эфир.");
+  if (r.state.mode !== "event") return fail("wrong_mode", "Сейчас включён ежедневный режим. Переключись на прямой эфир.");
   if (!ev.date) return fail("no_event", "Сначала задай дату эфира и сохрани.");
   if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `Эфир ${ddmm(ev.date)} уже закончился. Задай новую дату.`);
   if (r.state.pendingCreate) return fail("pending", "Прошлое создание не подтверждено. Проверь телефон и сними паузу (она обнулит ожидание).");
   if (r.state.paused) return fail("paused", "Модуль на паузе. Сначала сними паузу.");
+  if (!automationOn()) return fail("automation_off", AUTO_OFF_TEXT);
   const existing = eventTarget(r);
   if (existing) {
     syncEventCommunity(r);
@@ -2327,6 +2395,7 @@ async function eventCreateNow(r: Rt, now: number): Promise<Act> {
 function cmdNewCheck(r: Rt, day: string, now: number): WaReply | null {
   if (r.state.pendingCreate) return { text: "Прошлое создание не подтверждено. Проверь телефон и сделай /wa_resume." };
   if (r.state.paused) return { text: "Модуль на паузе. Сначала /wa_resume." };
+  if (!automationOn()) return { text: AUTO_OFF_TEXT };
   const existing = targetsOf(r, day)[0];
   if (existing) return { text: `Для эфира ${ddmm(day)} сообщество уже есть: «${existing.name}»${existing.link ? `, ссылка ${existing.link}` : ", ссылка ещё не готова"}.` };
   if (capReached(r, now)) return { text: `Лимит ${r.cfg.maxNewPerDay} новых сообществ в сутки исчерпан. Подожди.` };
@@ -2337,6 +2406,7 @@ function cmdNewCheck(r: Rt, day: string, now: number): WaReply | null {
 async function cmdNew(r: Rt, args: string, now: number): Promise<WaReply> {
   if (r.state.mode === "event") return { text: (await eventCreateNow(r, now)).message };
   if (r.state.paused) return { text: "Модуль на паузе. Сначала /wa_resume." };
+  if (!automationOn()) return { text: AUTO_OFF_TEXT };
   if (r.state.pendingCreate) return { text: "Прошлое создание не подтверждено. Проверь телефон и сделай /wa_resume." };
   const c = tcfg(r);
   const arg = args.trim();
@@ -2390,14 +2460,15 @@ async function sendSeries(r: Rt, id: string, now: number): Promise<SendRes> {
   const msg = r.cfg.messages.find((m) => m.id === id);
   if (!msg) return { ok: false, code: "bad_id", text: `Нет сообщения «${id}». Список: ${ids}`, ...zero };
   if (r.state.paused) return { ok: false, code: "paused", text: "Модуль на паузе. Сначала /wa_resume.", ...zero };
-  if (msg.dayOffset && r.state.mode === "event") return { ok: false, code: "event_next_day", text: `«${id}» это сообщение следующего дня, у живого эфира таких нет.`, ...zero };
+  if (!automationOn()) return { ok: false, code: "automation_off", text: AUTO_OFF_TEXT, ...zero };
+  if (msg.dayOffset && r.state.mode === "event") return { ok: false, code: "event_next_day", text: `«${id}» это сообщение следующего дня, у прямого эфира таких нет.`, ...zero };
   const { day, list: targets } = currentTargets(r, now, msg.dayOffset ?? 0);
   if (!targets.length) {
     const text =
       r.state.mode === "event"
         ? day
           ? `Для эфира (${ddmm(day)}) нет готового сообщества.`
-          : "Живой эфир не задан, сообщества нет."
+          : "Прямой эфир не задан, сообщества нет."
         : msg.dayOffset
           ? `Для вчерашнего эфира (${ddmm(day)}) нет готового сообщества, куда ещё можно слать «${id}».`
           : `Для сегодняшнего эфира (${ddmm(dayKeyOf(now))}) нет готового сообщества.`;
@@ -2415,7 +2486,7 @@ async function sendSeries(r: Rt, id: string, now: number): Promise<SendRes> {
         skipped++;
         continue;
       }
-      if (r.state.paused) break;
+      if (r.state.paused || !automationOn()) break;
       if (!first) await pause(r, r.cfg.pacing.betweenSendsMs);
       first = false;
       if (await sendMessageTo(r, t, msg, true)) ok++;
@@ -2490,8 +2561,8 @@ export function waSetMode(mode: unknown, nowArg?: number): Act {
     ok: true,
     message:
       mode === "event"
-        ? "Включён живой эфир. Ежедневное создание выключено. Созданные сообщества продолжают работать, но ссылка на сайте теперь ведёт в сообщество живого эфира."
-        : "Включён ежедневный режим. Создание сообществ выключено, пока не включишь его переключателем. Сообщество живого эфира продолжает работать.",
+        ? "Включён прямой эфир. Ежедневное создание выключено. Созданные сообщества продолжают работать, но ссылка на сайте теперь ведёт в сообщество прямого эфира. Telegram назначает записавшимся день эфира, как только дата будет задана."
+        : "Включён ежедневный режим. Создание сообществ выключено, пока не включишь его переключателем. Сообщество прямого эфира продолжает работать.",
   };
 }
 
@@ -2521,7 +2592,7 @@ const START_MAX = 21 * 60;
 export function waSetEvent(p: { date?: unknown; start?: unknown; recruitFrom?: unknown }, nowArg?: number): Act {
   const r = rt;
   if (!r) return MODULE_OFF;
-  if (r.state.mode !== "event") return fail("wrong_mode", "Настройки живого эфира доступны в режиме «Живой эфир». Сначала переключи режим.");
+  if (r.state.mode !== "event") return fail("wrong_mode", "Настройки прямого эфира доступны в режиме «Прямой эфир (одна дата)». Сначала переключи режим.");
   const now = clock(r, nowArg);
   const today = dayKeyOf(now);
   const cur = r.state.event;
@@ -2579,9 +2650,39 @@ export async function waEventCreateNow(nowArg?: number): Promise<Act> {
 export async function waDailyCreateNow(nowArg?: number): Promise<Act> {
   const r = rt;
   if (!r) return MODULE_OFF;
-  if (r.state.mode !== "daily") return fail("wrong_mode", "Сейчас включён живой эфир: используй «Создать сейчас» в его настройках.");
+  if (r.state.mode !== "daily") return fail("wrong_mode", "Сейчас включён прямой эфир: используй «Создать сообщество сейчас» в его настройках.");
   const text = (await cmdNew(r, "", clock(r, nowArg))).text;
   return { ok: /^Создано:/.test(text) || /сообщество уже есть/.test(text), message: text };
+}
+
+/**
+ * Кнопка «Запустить рассылки сейчас» (прямой эфир, досрочно). По умолчанию серия ждёт дня эфира. После запуска серия WhatsApp идёт в
+ * сообщество прямого эфира каждый день по расписанию, с ближайшего сообщения и до дня эфира включительно (у каждого дня свои метки
+ * отправки). Telegram запуск не меняет: он по-прежнему шлёт серию только в день эфира. Тексты серии написаны под день эфира,
+ * в другие дни они неточны, о чём пульт предупреждает в подтверждении.
+ */
+export function waEventLaunch(nowArg?: number): Act {
+  const r = rt;
+  if (!r) return MODULE_OFF;
+  const now = clock(r, nowArg);
+  const ev = r.state.event;
+  if (r.state.mode !== "event") return fail("wrong_mode", "Рассылки запускаются в режиме «Прямой эфир (одна дата)». Сначала переключи режим.");
+  if (!ev.date) return fail("no_event", "Сначала задай дату эфира и сохрани.");
+  if (ev.done || now >= closeAtOf(r, ev.date)) return fail("over", `Эфир ${ddmm(ev.date)} уже закончился. Задай новую дату.`);
+  if (ev.launchedAt) return { ok: true, code: "same", message: `Рассылки уже запущены досрочно (${when(ev.launchedAt)}).` };
+  if (dayKeyOf(now) >= ev.date) return { ok: true, code: "already", message: "День эфира наступил: рассылки идут по расписанию сами, запускать их не нужно." };
+  if (r.state.paused) return fail("paused", "Модуль на паузе. Сначала сними паузу.");
+  if (!automationOn()) return fail("automation_off", AUTO_OFF_TEXT);
+  if (!eventTarget(r)) return fail("no_community", "Сообщества эфира ещё нет, рассылать некуда. Сначала нажми «Создать сообщество сейчас».");
+  ev.launchedAt = now;
+  save(r);
+  journal(r, { ev: "event_launch", date: ev.date, by: "panel" });
+  const next = nextMessage(r, now);
+  return {
+    ok: true,
+    code: "launched",
+    message: `Рассылки запущены досрочно. Серия идёт в сообщество каждый день по расписанию до эфира ${ddmm(ev.date)} включительно${next ? `, ближайшее сообщение: ${ddmm(next.day)} в ${hhmmOf(next.plan)}` : ""}. Telegram по-прежнему шлёт серию только в день эфира.`,
+  };
 }
 
 export function waPause(nowArg?: number): Act {
@@ -3064,7 +3165,7 @@ function readJsonlTail<T>(file: string, maxBytes = 256 * 1024): T[] {
 
 export type JournalRow = { ts: number; t: string; kind: "ok" | "error" | "info"; text: string };
 
-const JOURNAL_EVENTS = new Set(["create", "send", "skip", "queued", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
+const JOURNAL_EVENTS = new Set(["create", "send", "skip", "queued", "fail", "pause", "resume", "alarm", "mode", "daily", "event_set", "event_reset", "event_done", "event_launch", "auto_off", "auto_on", "logout", "qr", "pair", "conn", "ai_on", "ai_off", "ai_handoff", "ai_skip", "dz_on", "dz_off", "dz_hook", "dz_save", "dz_tpl"]);
 const stampOf = (ms: number) => `${ddmm(dayKeyOf(ms))} ${hhmmOf(ms)}`;
 const clip = (s: unknown, n = 160) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
@@ -3125,19 +3226,30 @@ function journalView(r: Rt, limit = 20): JournalRow[] {
           text = `Тревога: ${clip(x.text, 140)}`;
           break;
         case "mode":
-          text = x.mode === "event" ? "Режим: живой эфир" : "Режим: ежедневный";
+          text = x.mode === "event" ? "Режим: прямой эфир" : "Режим: ежедневный";
           break;
         case "daily":
           text = `Ежедневное создание: ${x.enabled ? "включено" : "выключено"}`;
           break;
         case "event_set":
-          text = `Живой эфир: ${ddmm(String(x.date))} в ${x.start}, набор с ${ddmm(String(x.recruitFrom))}`;
+          text = `Прямой эфир: ${ddmm(String(x.date))} в ${x.start}, набор с ${ddmm(String(x.recruitFrom))}`;
           break;
         case "event_reset":
-          text = "Настройки живого эфира сброшены";
+          text = "Настройки прямого эфира сброшены";
+          break;
+        case "event_launch":
+          text = `Рассылки прямого эфира ${ddmm(String(x.date))} запущены досрочно`;
+          break;
+        case "auto_off":
+          kind = "error";
+          text = `Автоматизация выключена (${clip(x.by, 60)}): ${clip(x.reason, 80)}`;
+          break;
+        case "auto_on":
+          kind = "ok";
+          text = `Автоматизация включена (${clip(x.by, 60)})`;
           break;
         case "event_done":
-          text = `Живой эфир ${ddmm(String(x.date))} завершён, ссылка снова постоянная`;
+          text = `Прямой эфир ${ddmm(String(x.date))} завершён, ссылка снова постоянная`;
           break;
         case "logout":
           kind = "error";
@@ -3200,6 +3312,75 @@ function nextDailyCreate(r: Rt, now: number): { day: string; at: number } | null
     if ((now < at || createWindowOpen(r, at, now)) && now < closeAtOf(r, day)) return { day, at };
   }
   return null;
+}
+
+export type PlanItem = { key: "create" | "recruit" | "mail" | "live" | "close"; text: string; state: "done" | "now" | "next" };
+export type EventPlan = {
+  items: PlanItem[];
+  /** Все шаги одной строкой через « · ». */
+  line: string;
+  /** Рассылки не уйдут: рубильник «Автоматизация» выключен или модуль на паузе. */
+  paused: boolean;
+  pausedText: string;
+  pausedWhy: string;
+  /** Что делает Telegram, пока режим активен. */
+  telegram: string;
+};
+
+/**
+ * План прямого эфира одной лентой, считается из настроек и серии (не пишется руками): когда создастся сообщество, когда набор, когда
+ * рассылки и первое сообщение, когда эфир, когда всё закроется. null: режим не прямой эфир, дата не задана или эфир уже завершён.
+ */
+function eventPlan(r: Rt, now: number): EventPlan | null {
+  const ev = r.state.event;
+  if (r.state.mode !== "event" || ev.done || !ev.date) return null;
+  const tgt = eventTarget(r);
+  const startEff = ev.start || r.cfg.streamStart;
+  const eventStart = tgt?.start ?? (startEff !== r.cfg.streamStart ? startEff : undefined);
+  const startAt = atTime(ev.date, startEff);
+  const closeAt = closeAtOf(r, ev.date);
+  const createAt = ev.recruitFrom ? eventCreateAt(r) : 0;
+  // Первое сообщение серии в день эфира (со сдвигом под старт, только в окне 09:00 до 23:45).
+  let first = "";
+  let firstMs = Infinity;
+  for (const m of r.cfg.messages) {
+    if (m.enabled === false || m.dayOffset) continue;
+    const plan = planOf(r, { day: ev.date, start: eventStart }, m);
+    if (sendableTime(plan) && plan < firstMs) {
+      firstMs = plan;
+      first = hhmmOf(plan);
+    }
+  }
+  const items: PlanItem[] = [];
+  items.push(
+    tgt
+      ? { key: "create", text: `Сообщество создано: ${when(tgt.createdAt)}`, state: "done" }
+      : createAt && now >= createAt
+        ? { key: "create", text: `Сообщество создаётся сейчас (срок был ${when(createAt)})`, state: "now" }
+        : { key: "create", text: `Сообщество создастся: ${when(createAt)}`, state: "next" },
+  );
+  items.push({
+    key: "recruit",
+    text: `Набор: ${ddmm(ev.recruitFrom)}–${ddmm(ev.date)}, ссылка на сайте ведёт в это сообщество`,
+    state: tgt ? (now < startAt ? "now" : "done") : "next",
+  });
+  items.push(
+    ev.launchedAt
+      ? { key: "mail", text: `Рассылки: запущены досрочно ${when(ev.launchedAt)}, дальше каждый день по расписанию, эфир ${ddmm(ev.date)}`, state: now >= closeAt ? "done" : "now" }
+      : { key: "mail", text: `Рассылки: только ${ddmm(ev.date)}${first ? `, первая в ${first}` : ""}`, state: now >= closeAt ? "done" : dayKeyOf(now) === ev.date ? "now" : "next" },
+  );
+  items.push({ key: "live", text: `Эфир: ${ddmm(ev.date)} в ${startEff}`, state: now >= startAt + r.cfg.streamMinutes * MIN ? "done" : now >= startAt ? "now" : "next" });
+  items.push({ key: "close", text: `Закрытие: ${when(closeAt)}`, state: now >= closeAt ? "done" : "next" });
+  const off = !automationOn();
+  const paused = off || r.state.paused;
+  return {
+    items,
+    line: items.map((i) => i.text).join(" · "),
+    paused,
+    pausedText: "на паузе: рассылки не уйдут",
+    pausedWhy: off ? "Автоматизация выключена (переключатель вверху админки)." : r.state.paused ? `WhatsApp-модуль на паузе: ${r.state.pausedReason || "причина не записана"}.` : "",
+    telegram: `Telegram: всем записавшимся назначен день эфира ${ddmm(ev.date)}, серия идёт только в него, со сдвигом под старт ${startEff}.`,
+  };
 }
 
 type Card = {
@@ -3296,7 +3477,7 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
   if (st.mode === "event") {
     if (ev.date) {
       const cards = cardsOf(ev.date);
-      current = { title: "Сообщество живого эфира", day: ev.date, dayLabel: ddmm(ev.date), cards, pending: cards.length ? "" : evText, signups: signupsOf(ev.date) };
+      current = { title: "Сообщество прямого эфира", day: ev.date, dayLabel: ddmm(ev.date), cards, pending: cards.length ? "" : evText, signups: signupsOf(ev.date) };
     }
   } else {
     const cur = isStreamDay(today, c) ? today : assignStreamDay(now, c);
@@ -3342,7 +3523,13 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
       creationsMax: r.cfg.maxNewPerDay,
       pendingCreate: !!st.pendingCreate,
       kind: r.cfg.target,
+      /** Остановлен общим рубильником «Автоматизация» (паузу модуля он не трогает). */
+      halted: !automationOn(),
     },
+    automation: (() => {
+      const a = automationInfo();
+      return { on: a.on, offAt: a.offAt, offBy: a.offBy, offReason: a.offReason, sinceText: a.on ? "" : `Выключена с ${stampText(a.offAt)}, ${a.offBy || "кем не указано"}. Причина: ${a.offReason || "без причины"}.` };
+    })(),
     conn: { state: r.conn.state, at: r.conn.at, ago: r.conn.at ? agoText(now - r.conn.at) : "", number: r.conn.state === "open" ? numberOf(r) : "", profile: r.conn.state === "open" ? r.profileName : "" },
     /** Последний статус подключения из памяти (без запроса к Evolution): пульт показывает его сразу, пока приходит свежий. */
     status: r.statusCache ? r.statusCache.value : null,
@@ -3362,11 +3549,16 @@ export function waPanel(nowArg?: number): Record<string, unknown> {
       locked: !!(ev.communityId && evTarget),
       hasCommunity: !!evTarget,
       done: !!ev.done,
+      launched: !!ev.launchedAt,
+      launchedText: ev.launchedAt ? when(ev.launchedAt) : "",
+      /** Кнопку «Запустить рассылки сейчас» можно нажать: режим прямого эфира, сообщество есть, день эфира ещё не наступил, не запущено. */
+      canLaunch: st.mode === "event" && !!ev.date && !ev.done && !ev.launchedAt && !!evTarget && today < ev.date,
+      plan: eventPlan(r, now),
     },
     link: {
       url: link ?? "",
       kind: link ? (st.mode === "event" ? "event" : "daily") : "permanent",
-      text: link ? (st.mode === "event" ? "Ссылка на сайте ведёт в сообщество живого эфира." : "Ссылка на сайте ведёт в сообщество ближайшего набора.") : "Ссылка на сайте постоянная: подходящего сообщества нет.",
+      text: link ? (st.mode === "event" ? "Ссылка на сайте ведёт в сообщество прямого эфира." : "Ссылка на сайте ведёт в сообщество ближайшего набора.") : "Ссылка на сайте постоянная: подходящего сообщества нет.",
       /** Постоянная ссылка для кнопки шаблона WABA: страница переадресует туда же, куда ведёт сайт, а при сбое на постоянную. */
       templateUrl: TEMPLATE_URL,
       templateClicksToday: templateClicks,

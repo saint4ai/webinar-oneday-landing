@@ -19,6 +19,7 @@
  *   GET  /api/tg-web-app.js — скрипт Telegram Web App со своего адреса (общий CSP nginx не пускает telegram.org)
  *   POST /api/admin/login   — вход в админку: initData Telegram + пароль, в ответ токен сессии
  *   GET  /api/admin/{summary,leads,subscribers,errors} — данные админки (initData + токен на каждый запрос)
+ *   GET|POST /api/admin/automation: общий рубильник «Автоматизация» (вверху админки, вкл/выкл с подтверждением), см. automation-admin.ts
  *   GET|POST /api/admin/wa/*: пульт WhatsApp-сообществ (вкладка «WhatsApp» админки, те же initData и токен), см. wa-admin.ts
  *   POST /api/wa-hook       : вебхук Evolution MESSAGES_UPSERT для ИИ-ассистента в личке WhatsApp (только 127.0.0.1 и секрет в заголовке), см. wa-assistant.ts
  *   POST /api/wazzup-hook   : вебхук Wazzup для дожима WABA (секрет в адресе ?s=), ответ человека на шаблон присылает ссылку, см. wa-dozhim.ts
@@ -38,9 +39,11 @@ import { normalizeTelegram, unpackUtm } from "../lib/leads/telegram-nick";
 import { selectRetryable, supabaseConfigured } from "../lib/supabase-rest";
 import { sendOwnerAlert } from "../lib/telegram/alert";
 import { readWhatsAppLink, writeWhatsAppLink, readWhatsAppRecord, isValidWhatsAppLink } from "../lib/whatsapp-link";
-import { calendarDay, handleGo, handleTgWorkshop, handleTyClick, initTgWorkshop, tgHealth } from "./tg-workshop";
+import { calendarDay, calendarStart, handleGo, handleTgWorkshop, handleTyClick, initTgWorkshop, tgHealth } from "./tg-workshop";
 import { startScheduler } from "./tg-scheduler";
 import { handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk } from "./tg-miniapp";
+import { handleAutomationAdmin } from "./automation-admin";
+import { automationOn } from "./automation";
 import { handleWaAdmin } from "./wa-admin";
 import { startWaGroups, waGroupLink, waHealth } from "./wa-groups";
 import { handleWaHook } from "./wa-assistant";
@@ -373,17 +376,22 @@ async function handleTgLink(req: IncomingMessage, res: ServerResponse) {
  * старта, зовём на сегодняшний, позже на следующий день эфира (с учётом firstDay и skipDays).
  */
 function handleCalendar(res: ServerResponse) {
-  const [y, m, d] = calendarDay().split("-");
+  const day = calendarDay();
+  const [y, m, d] = day.split("-");
+  // Старт: обычно 20:00, у дня прямого эфира его время (режим event у WhatsApp). Эфир идёт два часа.
+  const start = calendarStart(day);
+  const [sh, sm] = start.split(":").map(Number);
+  const pad2 = (n: number) => String(n).padStart(2, "0");
 
   // Локальное время Алматы, без Z — часовой пояс передаём через ctz.
-  const dates = `${y}${m}${d}T200000/${y}${m}${d}T220000`;
+  const dates = `${y}${m}${d}T${pad2(sh)}${pad2(sm)}00/${y}${m}${d}T${pad2(Math.min(sh + 2, 23))}${pad2(sh + 2 > 23 ? 59 : sm)}00`;
 
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: "Воркшоп «Вайб-продакшен» · onAI Academy",
     dates,
     ctz: "Asia/Almaty",
-    details: "Старт в 20:00 по Алматы. Ссылка на эфир придёт в группу WhatsApp или в Telegram-бот.",
+    details: `Старт в ${start} по Алматы. Ссылка на эфир придёт в группу WhatsApp или в Telegram-бот.`,
     location: "Онлайн",
   });
 
@@ -414,6 +422,8 @@ function handleHealth(res: ServerResponse) {
       whatsapp: readWhatsAppLink(),
       tgBot: tgHealth(),
       waGroups: waHealth(),
+      // Общий рубильник «Автоматизация»: off значит WhatsApp-рассылки и плановые сообщения Telegram не идут.
+      automation: automationOn() ? "on" : "off",
       version: readVersion(),
     },
     { "Cache-Control": "no-store" },
@@ -440,6 +450,7 @@ export const server = createServer(async (req, res) => {
     if (method === "POST" && url === "/api/admin/login") return await handleAdminLogin(req, res);
     if (method === "POST" && url === "/api/wa-hook") return await handleWaHook(req, res);
     if (url === "/api/wazzup-hook") return await handleWazzupHook(req, res);
+    if (url === "/api/admin/automation") return await handleAutomationAdmin(req, res);
     if (url.startsWith("/api/admin/wa/")) return await handleWaAdmin(req, res, url);
     if (method === "GET" && url.startsWith("/api/admin/")) return handleAdminData(req, res, url);
     // /api/health виден снаружи через nginx (/workshop/api/health), /health только с самого сервера.

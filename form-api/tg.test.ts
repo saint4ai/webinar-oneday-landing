@@ -41,13 +41,17 @@ import { adminDaily } from "./tg-scheduler";
 import { createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { copyFileSync } from "node:fs";
-import { adminAppIds, adminAppUrl, isAdminAppUser, privacyUrl } from "./tg-workshop";
+import { adminAppIds, adminAppUrl, isAdminAppUser, privacyUrl, timeCfg } from "./tg-workshop";
 import {
   buildErrors, buildLeads, buildSubscribers, buildSummary, handleAdminApp, handleAdminData, handleAdminLogin, handleTgSdk, INIT_MAX_AGE_SEC,
   LOGIN_MAX_FAILS, LOGIN_WINDOW_MS, loginLockedFor, noteLoginFail, pinMatches, resetAdminAppState, SESSION_TTL_MS, signSession,
   verifyInitData, verifySession, type ListQuery,
 } from "./tg-miniapp";
 import { periodFromDates } from "./tg-admin";
+import { assignDay, calendarStart, HELP_TEXT, registerEventMode } from "./tg-workshop";
+import { eventShiftMin } from "./tg-scheduler";
+import { retimeStream, startShiftMin } from "./tg-time";
+import { automationInfo, automationOn, initAutomation, setAutomation } from "./automation";
 
 process.env.TG_WORKSHOP_BOT_TOKEN = "TESTTOKEN:abc123";
 process.env.TG_WORKSHOP_WEBHOOK_SECRET = "test-webhook-secret-0123";
@@ -135,6 +139,7 @@ test.beforeEach(() => {
   fake.reset();
   setUtcOffsetMinutes(300);
   resetTickErrors();
+  registerEventMode(null);
 });
 
 const waitFor = async (cond: () => boolean, ms = 3000) => {
@@ -2530,7 +2535,7 @@ test("/help: владельцу справка по всем командам, �
     assert.ok(help.includes(cmd), `в справке нет ${cmd}`);
   }
   assert.equal(help.includes("\u2014"), false);
-  assert.ok(help.length < 1500);
+  assert.ok(help.length < 1700);
   assert.equal(fake.of("sendMessage")[0].body.parse_mode, undefined);
   fake.reset();
   await processUpdate(upd(555, "/help"), now);
@@ -3631,5 +3636,297 @@ test("POST /api/lead на порту 4112: без Telegram заявка прох
   } finally {
     child.kill();
     await new Promise((r) => child.on("close", r));
+  }
+});
+
+// ───────────────────────── прямой эфир и общий рубильник (docs/tasks/automation_master_switch_event_mode.md) ─────────────────────────
+// Прямой эфир подключает модуль WhatsApp (registerEventMode); здесь вместо него подставной источник с тем же правилом: активен до 00:00 после дня эфира.
+
+const liveEvent = (e: { date: string; start: string } | null = { date: "2026-10-15", start: "20:30" }) =>
+  registerEventMode(e ? (now) => (now < atTime(addDays(e.date, 1), "00:00") ? e : null) : null);
+
+/** Рассылка настоящим sendContent с управляемыми часами: видно и получателей, и итоговый текст (с подогнанными часами). */
+function liveDeps(t: number, log: Array<{ id: string; chat: number; day: string; text: string }>): Deps {
+  return {
+    now: () => t,
+    send: async (s, m, day) => {
+      const r = await sendContent({ media: m.media, text: m.text, buttons: m.buttons, silent: m.silent }, { series: activeSeries(), now: t, chatId: s.chatId, firstName: s.firstName, day, noRetime: !!m.dayOffset });
+      if (r.ok) log.push({ id: m.id, chat: s.chatId, day, text: String(fake.calls[fake.calls.length - 1].body.text ?? fake.calls[fake.calls.length - 1].body.caption) });
+      return r;
+    },
+  };
+}
+
+test.afterEach(() => liveEvent(null));
+
+test("Задача 1.2 (поведение до режима): без подключённого прямого эфира записавшийся 12.10 получает ежедневную серию своего дня, а в дату 15.10 ничего", async () => {
+  const { store } = boot([msg("m1", "15:00"), msg("link", "19:50", { essential: true })]);
+  store.setSeriesEnabled(true);
+  await processUpdate(upd(701, "/start"), alm(2026, 10, 12, 14, 0));
+  assert.equal(store.subs.get(701)!.streamDay, "2026-10-12", "день регистрации, а не дата прямого эфира");
+  const ids: string[] = [];
+  const f = fakeDeps({ send: async (s, m, day) => (ids.push(`${m.id}:${day}:${s.chatId}`), { ok: true }) });
+  await tick(alm(2026, 10, 12, 15, 0, 5), f.deps);
+  await tick(alm(2026, 10, 12, 19, 50, 5), f.deps);
+  await tick(alm(2026, 10, 15, 15, 0, 5), f.deps);
+  await tick(alm(2026, 10, 15, 19, 50, 5), f.deps);
+  assert.deepEqual(ids, ["m1:2026-10-12:701", "link:2026-10-12:701"], "серия идёт в день регистрации, в дату эфира тишина");
+});
+
+test("retimeStream и eventShiftMin: старт 20:30 двигает 20:00, 18:00 по Москве и время ссылки 19:50; остальные числа на месте; подмены не цепляются", () => {
+  const t = "Эфир в 20:00 по Алматы (18:00 по Москве). Ссылка в 19:50. До 23:59 по Алматы (21:59 по Москве). Не 120:00 и не 20:001.";
+  assert.equal(retimeStream(t, "20:00", "20:30"), "Эфир в 20:30 по Алматы (18:30 по Москве). Ссылка в 20:20. До 23:59 по Алматы (21:59 по Москве). Не 120:00 и не 20:001.");
+  assert.equal(retimeStream(t, "20:00", "20:00"), t);
+  // новый старт 19:50 не превращается во «время ссылки» второй подменой
+  assert.equal(retimeStream("в 20:00, ссылка в 19:50", "20:00", "19:50"), "в 19:50, ссылка в 19:40");
+  assert.equal(startShiftMin("20:00", "19:00"), -60);
+  const sr = { streamStart: "20:00", streamMinutes: 80 };
+  const ev = { date: "2026-10-15", start: "20:30" };
+  const D15 = "2026-10-15";
+  assert.equal(eventShiftMin(sr, ev, D15, { at: "11:30" }), 30);
+  assert.equal(eventShiftMin(sr, ev, D15, { at: "21:12" }), 30, "оффер привязан к старту");
+  assert.equal(eventShiftMin(sr, ev, D15, { at: "21:20" }), 30, "ровно конец эфира серии ещё двигается");
+  assert.equal(eventShiftMin(sr, ev, D15, { at: "22:30" }), 0, "дожим привязан к 23:59");
+  assert.equal(eventShiftMin(sr, ev, D15, { at: "11:00", dayOffset: 1 }), 0, "+1 день не двигается");
+  assert.equal(eventShiftMin(sr, ev, "2026-10-14", { at: "11:30" }), 0, "другой день не двигается");
+  assert.equal(eventShiftMin(sr, null, D15, { at: "11:30" }), 0);
+  assert.equal(planTime(D15, { at: "11:30" }, 30), alm(2026, 10, 15, 12, 0));
+  assert.equal(planTime(D15, { at: "11:30" }), alm(2026, 10, 15, 11, 30));
+});
+
+test("Задача 3: пока прямой эфир активен, /start назначает всем день эфира, в приветствии его часы, эфир «идёт» только в его день; после окна и после закрытия правило прежнее", async () => {
+  const { store } = boot([msg("m1", "11:30")]);
+  liveEvent();
+  const texts = () => fake.calls.map((c) => String(c.body.caption ?? c.body.text ?? ""));
+  // набор: 12.10 в 14:00
+  await processUpdate(upd(710, "/start"), alm(2026, 10, 12, 14, 0));
+  assert.equal(store.subs.get(710)!.streamDay, "2026-10-15");
+  assert.match(texts()[0], /15 октября в 20:30 по Алматы \(18:30 по Москве\)/, "часы эфира в приветствии");
+  assert.match(texts()[0], /Ссылку пришлю сюда в 20:20/, "время ссылки сдвинуто вместе со стартом");
+  assert.doesNotMatch(texts()[0], /в 20:00 по Алматы/);
+  // вечером 12.10 обычный эфир не идёт: ни кнопки входа, ни lateToday
+  fake.reset();
+  await processUpdate(upd(711, "/start"), alm(2026, 10, 12, 20, 30));
+  assert.equal(store.subs.get(711)!.streamDay, "2026-10-15");
+  assert.deepEqual(fake.calls.map((c) => c.method), ["sendPhoto"]);
+  fake.reset();
+  await processUpdate(upd(712, "привет"), alm(2026, 10, 12, 20, 30));
+  assert.equal(fake.texts(712)[0], base.welcome.other, "кнопки входа в эфир нет, эфира в этот день нет");
+  // день эфира: старт 20:30, в 20:45 эфир идёт (по обычным 20:00 окно давно закрыто)
+  fake.reset();
+  await processUpdate(upd(713, "/start"), alm(2026, 10, 15, 20, 45));
+  assert.equal(store.subs.get(713)!.streamDay, "2026-10-15");
+  assert.match(fake.texts(713)[0], /уже идёт/);
+  // после окна «зайти» (20:30 + 40 минут = 21:10) обычное правило: завтра
+  fake.reset();
+  await processUpdate(upd(714, "/start"), alm(2026, 10, 15, 21, 15));
+  assert.equal(store.subs.get(714)!.streamDay, "2026-10-16");
+  // после 00:00 прямой эфир закрыт, всё как у ежедневного
+  fake.reset();
+  await processUpdate(upd(715, "/start"), alm(2026, 10, 16, 1, 0));
+  assert.equal(store.subs.get(715)!.streamDay, "2026-10-16");
+  assert.equal(assignDay(alm(2026, 10, 16, 1, 0), timeCfg(getSeries())), "2026-10-16");
+  // прежний подписчик, чей ежедневный день ещё не прошёл, при повторном /start переезжает на день эфира
+  const { store: s2 } = boot([msg("m1", "11:30")]);
+  liveEvent();
+  sub(s2, 716, "2026-10-12", alm(2026, 10, 12, 10, 0));
+  fake.reset();
+  await processUpdate(upd(716, "/start"), alm(2026, 10, 12, 18, 0));
+  assert.equal(s2.subs.get(716)!.streamDay, "2026-10-15");
+  // а чей день уже прошёл, получает новый по правилу (день эфира)
+  sub(s2, 717, "2026-10-11", alm(2026, 10, 11, 10, 0));
+  await processUpdate(upd(717, "/start"), alm(2026, 10, 12, 18, 0));
+  assert.equal(s2.subs.get(717)!.streamDay, "2026-10-15");
+});
+
+test("Задача 3: серия Telegram идёт только в день эфира, со сдвигом под старт; до него и ежедневных дней нет; записанных на ежедневный день переписывает на день эфира; «+1 день» после эфира как обычно", async () => {
+  const log: Array<{ id: string; chat: number; day: string; text: string }> = [];
+  const { store } = boot([
+    msg("morning", "11:30"),
+    msg("link", "19:50", { essential: true, text: "Эфир в 20:00 по Алматы (18:00 по Москве). Ссылка в 19:50. До 23:59 по Алматы (21:59 по Москве)." }),
+    msg("live", "20:00", { audience: "notClicked" }),
+    msg("offer", "21:12"),
+    msg("push", "22:30"),
+    msg("next", "11:00", { dayOffset: 1, text: "Повтор в 20:00 по Алматы (18:00 по Москве)." }),
+  ]);
+  store.setSeriesEnabled(true);
+  liveEvent();
+  await processUpdate(upd(720, "/start"), alm(2026, 10, 12, 14, 0)); // набор: день эфира
+  sub(store, 721, "2026-10-12", alm(2026, 10, 12, 10, 0)); // записан на ежедневный день, который ещё идёт
+  sub(store, 722, "2026-10-11", alm(2026, 10, 11, 10, 0)); // его день прошёл
+  sub(store, 723, "2026-10-15", alm(2026, 10, 13, 10, 0)); // уже записан на день эфира
+  const run = (t: number) => tick(t, liveDeps(t, log));
+  await run(alm(2026, 10, 12, 14, 0, 30));
+  assert.equal(store.subs.get(721)!.streamDay, "2026-10-15", "переписан на день эфира");
+  assert.equal(store.subs.get(722)!.streamDay, "2026-10-11", "чей день прошёл, не трогаем");
+  // дни до эфира: ни ссылки, ни живого, ни «+1 день» вчерашнего, ни утреннего
+  for (const [d, h, mi] of [[12, 19, 50], [12, 20, 0], [13, 11, 0], [13, 11, 30], [13, 19, 50], [14, 19, 50], [14, 20, 0], [15, 11, 30]] as number[][]) await run(alm(2026, 10, d, h, mi, 5));
+  assert.equal(log.length, 0, "до дня эфира серия не идёт");
+  // день эфира, сдвиг +30 минут: утреннее в 12:00 (а не 11:30)
+  await run(alm(2026, 10, 15, 12, 0, 5));
+  assert.deepEqual(log.map((x) => `${x.id}:${x.chat}`).sort(), ["morning:720", "morning:721", "morning:723"]);
+  log.length = 0;
+  await run(alm(2026, 10, 15, 19, 55, 5));
+  assert.equal(log.length, 0, "ссылка не в 19:50, а в 20:20");
+  await run(alm(2026, 10, 15, 20, 20, 5));
+  assert.deepEqual(log.map((x) => x.id), ["link", "link", "link"]);
+  assert.equal(log[0].text, "Эфир в 20:30 по Алматы (18:30 по Москве). Ссылка в 20:20. До 23:59 по Алматы (21:59 по Москве).", "часы подогнаны, дедлайн оффера на месте");
+  log.length = 0;
+  await run(alm(2026, 10, 15, 20, 30, 5));
+  assert.deepEqual(log.map((x) => x.id), ["live", "live", "live"]);
+  log.length = 0;
+  await run(alm(2026, 10, 15, 21, 42, 5));
+  assert.deepEqual(log.map((x) => x.id), ["offer", "offer", "offer"], "оффер 21:12 + 30");
+  log.length = 0;
+  await run(alm(2026, 10, 15, 22, 30, 5));
+  assert.deepEqual(log.map((x) => x.id), ["push", "push", "push"], "дожим остался на 22:30");
+  // после эфира: «+1 день» 16.10 в 11:00 как обычно, часы в нём не трогаем
+  log.length = 0;
+  await run(alm(2026, 10, 16, 11, 0, 5));
+  assert.deepEqual(log.map((x) => `${x.id}:${x.day}`), ["next:2026-10-15", "next:2026-10-15", "next:2026-10-15"]);
+  assert.equal(log[0].text, "Повтор в 20:00 по Алматы (18:00 по Москве).");
+  // перенос записан в журнал событий и переживает рестарт хранилища
+  const again = new TgStore(store.dir);
+  assert.equal(again.subs.get(721)!.streamDay, "2026-10-15");
+});
+
+test("Задача 3: при выключенной серии в день эфира идут только обязательные сообщения и тоже со сдвигом", async () => {
+  const log: Array<{ id: string; chat: number; day: string; text: string }> = [];
+  const { store } = boot([msg("link", "19:50", { essential: true }), msg("topic", "20:05")]);
+  liveEvent();
+  sub(store, 730, "2026-10-15", alm(2026, 10, 12, 10, 0));
+  assert.equal(store.state.seriesEnabled, false);
+  const run = (t: number) => tick(t, liveDeps(t, log));
+  await run(alm(2026, 10, 15, 19, 55, 5));
+  assert.equal(log.length, 0);
+  await run(alm(2026, 10, 15, 20, 20, 5));
+  await run(alm(2026, 10, 15, 20, 36, 5)); // topic 20:05 + 30 = 20:35, но серия выключена
+  assert.deepEqual(log.map((x) => x.id), ["link"]);
+});
+
+test("Задача 3: итог эфира владельцам только за день прямого эфира и после его (сдвинутого) конца; /fire шлёт записавшимся на день эфира; календарь знает старт", async () => {
+  const { store } = boot([msg("m1", "11:30")]);
+  liveEvent();
+  sub(store, 740, "2026-10-15", alm(2026, 10, 12, 10, 0));
+  fake.reset();
+  // 12.10 обычного эфира нет: итога нет
+  assert.equal(await dailyReport(alm(2026, 10, 12, 21, 30)), false);
+  assert.deepEqual(fake.texts(900), []);
+  // 15.10: старт 20:30, конец 21:50, итог в 21:55
+  assert.equal(await dailyReport(alm(2026, 10, 15, 21, 54)), false);
+  assert.equal(await dailyReport(alm(2026, 10, 15, 21, 56)), true);
+  assert.match(fake.texts(900)[0], /^Эфир 15 октября: записались в бота 1/);
+  // календарь: пока идёт набор, ссылка «в календарь» зовёт на день эфира и его время
+  assert.equal(calendarDay(alm(2026, 10, 12, 12, 0)), "2026-10-15");
+  assert.equal(calendarStart("2026-10-15", alm(2026, 10, 12, 12, 0)), "20:30");
+  assert.equal(calendarStart("2026-10-13", alm(2026, 10, 12, 12, 0)), "20:00", "другие дни по серии");
+  assert.equal(calendarDay(alm(2026, 10, 16, 1, 0)), "2026-10-16", "после закрытия обычное правило");
+  assert.equal(calendarStart("2026-10-16", alm(2026, 10, 16, 1, 0)), "20:00");
+  // /fire в дни до эфира: получатели записавшиеся на день эфира, а не «сегодняшние»
+  store.setSeriesEnabled(true);
+  const p = firePlan("m1", alm(2026, 10, 12, 13, 0));
+  assert.deepEqual([p.ok, (p as any).day, (p as any).count], [true, "2026-10-15", 1]);
+  liveEvent(null);
+  assert.equal(firePlan("m1", alm(2026, 10, 12, 13, 0)).ok, false, "без прямого эфира сегодня некому");
+});
+
+test("Задача 2: рубильник в Telegram: выключен, ни одного планового сообщения, включая обязательные; /start, кнопки и отчёты работают; включили, серия идёт дальше, опоздавшее не досылается", async () => {
+  const { store, dir } = boot([msg("link", "19:50", { essential: true }), msg("topic", "20:05")]);
+  store.setSeriesEnabled(true);
+  sub(store, 750, D, alm(2026, 10, 6, 10, 0));
+  sub(store, 751, D, alm(2026, 10, 6, 10, 0));
+  const ids: string[] = [];
+  const f = fakeDeps({ send: async (s, m) => (ids.push(`${m.id}:${s.chatId}`), { ok: true }) });
+  assert.equal(automationOn(), true);
+  setAutomation(false, "тест", "проверка", alm(2026, 10, 6, 12, 0));
+  assert.equal(await tick(alm(2026, 10, 6, 19, 55), f.deps), 0);
+  assert.equal(await tick(alm(2026, 10, 6, 20, 6), f.deps), 0);
+  assert.deepEqual(ids, [], "ни обязательных, ни обычных");
+  // ответы бота на действия человека работают
+  fake.reset();
+  await processUpdate(upd(752, "/start"), alm(2026, 10, 6, 20, 10));
+  assert.match(fake.texts(752)[0], /уже идёт/, "эфир идёт: приветствие с кнопкой входа");
+  assert.ok(store.subs.has(752));
+  // итоговый отчёт владельцам идёт независимо
+  fake.reset();
+  await tick(alm(2026, 10, 6, 21, 26), f.deps);
+  assert.match(fake.texts(900)[0] ?? "", /^Эфир 6 октября/);
+  // массовая отправка вручную тоже закрыта
+  const fp = firePlan("topic", alm(2026, 10, 6, 21, 0));
+  assert.equal(fp.ok, false);
+  assert.match((fp as any).error, /Автоматизация выключена/);
+  // включили: окно 19:50 ещё открыто, ссылка уходит; всё, что выключение пропустило, прошлым не наверстывается
+  setAutomation(true, "тест", "", alm(2026, 10, 6, 19, 56));
+  assert.equal(await tick(alm(2026, 10, 6, 19, 56), f.deps), 2);
+  assert.deepEqual(ids.sort(), ["link:750", "link:751"]);
+  ids.length = 0;
+  assert.equal(await tick(alm(2026, 10, 6, 20, 30), f.deps), 0, "topic 20:05 опоздал больше чем на 12 минут: не досылается");
+  // выключили посреди рассылки: останавливается на полпути
+  const m = { id: "mid", at: "20:00", audience: "all" as const, text: "x" };
+  const sent: number[] = [];
+  const stopAfterFirst = fakeDeps({ send: async (s) => (sent.push(s.chatId), setAutomation(false, "тест"), { ok: true }) });
+  const st = await deliver(store, m, D, pickRecipients(store, m, D), { gate: automationOn }, stopAfterFirst.deps);
+  assert.deepEqual([st.ok, st.stopped, sent.length], [1, 2, 1], "первому ушло, остальным нет");
+  setAutomation(true, "тест");
+  // состояние на диске переживает перезапуск
+  setAutomation(false, "из теста", "ремонт", alm(2026, 10, 6, 23, 0));
+  initAutomation(dir);
+  assert.deepEqual([automationOn(), automationInfo().offBy, automationInfo().offReason, automationInfo().offAt], [false, "из теста", "ремонт", alm(2026, 10, 6, 23, 0)]);
+  // файл повреждён: считается выключенной, одна кнопка возвращает
+  writeFileSync(join(dir, "automation-state.json"), "{не json");
+  initAutomation(dir);
+  assert.equal(automationOn(), false);
+  assert.match(automationInfo().offReason, /файл состояния не прочитался/);
+  setAutomation(true, "тест");
+  initAutomation(dir);
+  assert.equal(automationOn(), true);
+});
+
+test("Задача 2: команды /auto, /auto_off [причина], /auto_on: ответ автору, уведомление другому владельцу один раз, повтор тихий, чужим молчание", async () => {
+  boot();
+  const now = alm(2026, 10, 6, 12, 0);
+  const say = async (id: number, text: string) => {
+    fake.reset();
+    await processUpdate(upd(id, text), now);
+    return { own: fake.texts(id), other: fake.texts(id === 900 ? 901 : 900) };
+  };
+  assert.match((await say(900, "/auto")).own[0], /^Автоматизация включена\./);
+  const off = await say(900, "/auto_off отпуск до 20.10");
+  assert.equal(off.own.length, 1, "автору один ответ, без дубля уведомления");
+  assert.match(off.own[0], /^Автоматизация выключена\. Кем: командой \/auto_off, Аня @u900\. Когда: 06\.10 в 12:00\. Причина: отпуск до 20\.10\./);
+  assert.match(off.own[0], /Остановятся: WhatsApp .* Telegram .*обязательные/);
+  assert.match(off.own[0], /Продолжат работать: .*ИИ-ассистент в личке WhatsApp и дожим WABA/);
+  assert.equal(off.other.length, 1, "второму владельцу уведомление");
+  assert.equal(off.other[0], off.own[0]);
+  assert.equal(automationOn(), false);
+  const again = await say(900, "/auto_off");
+  assert.match(again.own[0], /уже выключена с 06\.10 в 12:00/);
+  assert.deepEqual(again.other, [], "повтор никого не беспокоит");
+  assert.match((await say(901, "/auto")).own[0], /^Автоматизация выключена с 06\.10 в 12:00 \(командой \/auto_off, Аня @u900\)\. Причина: отпуск до 20\.10\./);
+  // чужой аккаунт: молчание, состояние не меняется
+  assert.deepEqual((await say(555, "/auto_on")).own, []);
+  assert.equal(automationOn(), false);
+  const on = await say(901, "/auto_on");
+  assert.match(on.own[0], /^Автоматизация включена\. Кем: командой \/auto_on, Аня @u901\. Когда: 06\.10 в 12:00\./);
+  assert.equal(on.other.length, 1);
+  assert.equal(automationOn(), true);
+  assert.deepEqual((await say(901, "/auto_on")).other, []);
+  assert.ok(HELP_TEXT.includes("/auto_off"), "справка знает команды рубильника");
+  // /stats и /series показывают выключенный рубильник и прямой эфир только когда они есть
+  assert.doesNotMatch(buildStatsText(getStore(), activeSeries(), now), /Автоматизация|Прямой эфир/);
+  setAutomation(false, "тест", "", now);
+  liveEvent();
+  const stats = buildStatsText(getStore(), activeSeries(), now);
+  assert.match(stats, /^Автоматизация ВЫКЛЮЧЕНА с 06\.10 в 12:00 \(тест\)/);
+  assert.match(stats, /Прямой эфир 15 октября в 20:30/);
+  assert.match(buildSeriesText(getStore(), activeSeries(), now), /^Автоматизация ВЫКЛЮЧЕНА/);
+});
+
+test("исходники automation*.ts и tg-*.ts: без длинного тире и локальных геттеров Date", () => {
+  for (const f of ["automation.ts", "automation-admin.ts", "tg-time.ts", "tg-scheduler.ts", "tg-workshop.ts"]) {
+    const src = readFileSync(join(REPO, "form-api", f), "utf8");
+    assert.equal(src.includes(String.fromCharCode(0x2014)), false, `${f}: длинное тире`);
+    assert.equal(/\.(getHours|getMinutes|getDate|getDay|getMonth|getFullYear)\(/.test(src), false, `${f}: локальные геттеры Date`);
+    assert.equal(/toLocale|Intl\./.test(src), false, `${f}: Intl и toLocale`);
   }
 });

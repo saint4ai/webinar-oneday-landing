@@ -453,7 +453,7 @@ test("ссылка весь период набора; прогрев тольк
   assert.equal(evo.of("/message/").length, 0, "после 00:00 рассылка закрыта");
   const s = keep(await wa("GET", "state")).json;
   assert.deepEqual([s.mode, s.daily.enabled, s.event.status, s.link.kind], ["daily", false, "done", "permanent"]);
-  assert.ok(s.journal.some((j: any) => /Живой эфир 12\.10 завершён/.test(j.text)));
+  assert.ok(s.journal.some((j: any) => /Прямой эфир 12\.10 завершён/.test(j.text)));
 });
 
 test("daily: включили (с подтверждением), в 20:20 создаётся сообщество, до 20:40 ссылка прежняя, в 20:40 подмена; пауза и возобновление", async () => {
@@ -685,4 +685,57 @@ test("дожим WABA через настоящий сервер: маршрут
       else process.env[k] = saved[k];
     }
   }
+});
+
+test("рубильник «Автоматизация» через настоящий сервер: доступ только со входом, подтверждение в обе стороны, файл на диске, уведомление владельцу, health, WhatsApp стоит и возвращается", async () => {
+  const auto = (method: "GET" | "POST", body?: unknown) => call(method, "/api/admin/automation", { init: init(), token, body });
+  // без входа, без сессии, чужой аккаунт
+  assert.equal((await call("GET", "/api/admin/automation")).status, 403);
+  assert.equal((await call("POST", "/api/admin/automation", { body: { on: false, confirm: true } })).status, 403);
+  assert.equal((await call("GET", "/api/admin/automation", { init: init() })).status, 401);
+  assert.equal((await call("GET", "/api/admin/automation", { init: initDataFor(STRANGER_ID), token })).status, 403);
+  const s0 = keep(await auto("GET"));
+  assert.deepEqual([s0.status, s0.json.ok, s0.json.on, s0.json.wa.running], [200, true, true, true]);
+  assert.equal(s0.headers.get("cache-control"), "no-store");
+  assert.match(s0.json.stops, /Остановятся: WhatsApp .* Telegram /);
+  assert.match(s0.json.keeps, /ИИ-ассистент в личке WhatsApp и дожим WABA/);
+  assert.equal((await call("GET", "/api/health")).json.automation, "on");
+  // подтверждение и мусор
+  const noConfirm = await auto("POST", { on: false });
+  assert.deepEqual([noConfirm.status, noConfirm.json.code], [400, "confirm"]);
+  assert.equal((await auto("POST", { confirm: true })).status, 400);
+  assert.equal((await auto("POST", { on: "да", confirm: true })).status, 400);
+  assert.equal((await auto("GET")).json.on, true, "ничего не изменилось");
+  // подготовка: модуль подключён и не на паузе, часы стоят на дне, когда сообщения серии могли бы уйти
+  assert.equal((await wa("POST", "resume")).status, 200);
+  evo.state = "open";
+  at(9, 11, 30, 5);
+  // выключили с причиной
+  tg.reset();
+  const off = keep(await auto("POST", { on: false, confirm: true, reason: "ремонт сервера" }));
+  assert.deepEqual([off.status, off.json.on, off.json.changed, off.json.message], [200, false, true, "Автоматизация выключена."]);
+  assert.deepEqual([off.json.offBy, off.json.offReason], ["из админки, id 789638302", "ремонт сервера"]);
+  assert.match(off.json.sinceText, /^Выключена с \d\d\.\d\d в \d\d:\d\d, из админки, id 789638302\. Причина: ремонт сервера\.$/);
+  assert.equal(JSON.parse(readFileSync(join(dataDir, "automation-state.json"), "utf8")).on, false, "состояние на диске");
+  assert.equal((await call("GET", "/api/health")).json.automation, "off");
+  assert.match(tg.texts(OWNER_CHAT)[0], /^Автоматизация выключена\. Кем: из админки, id 789638302\. Когда: \d\d\.\d\d в \d\d:\d\d\. Причина: ремонт сервера\./);
+  // WhatsApp: тик ничего не создаёт и не шлёт, пульт показывает, что модуль остановлен рубильником
+  evo.calls = [];
+  assert.equal((await waTick()).skipped, "automation");
+  assert.equal(evo.of("/message/").length + evo.of("/community/create").length, 0);
+  const st = keep(await wa("GET", "state")).json;
+  assert.deepEqual([st.module.halted, st.module.paused, st.automation.on], [true, false, false]);
+  // повтор ничего не меняет и никого не беспокоит
+  const again = await auto("POST", { on: false, confirm: true });
+  assert.deepEqual([again.status, again.json.changed], [200, false]);
+  assert.match(again.json.message, /^Автоматизация уже выключена с /);
+  assert.equal(tg.texts(OWNER_CHAT).length, 1);
+  // включили
+  const on = keep(await auto("POST", { on: true, confirm: true }));
+  assert.deepEqual([on.status, on.json.on, on.json.changed, on.json.message], [200, true, true, "Автоматизация включена."]);
+  assert.equal((await call("GET", "/api/health")).json.automation, "on");
+  assert.equal(JSON.parse(readFileSync(join(dataDir, "automation-state.json"), "utf8")).on, true);
+  assert.match(tg.texts(OWNER_CHAT)[1], /^Автоматизация включена\. Кем: из админки, id 789638302\./);
+  clock.t += 60_000;
+  assert.notEqual((await waTick()).skipped, "automation");
 });

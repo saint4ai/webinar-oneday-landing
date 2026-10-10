@@ -152,6 +152,44 @@ export function assignStreamDay(now: number, cfg: TimeCfg): string {
   return nextStreamDay(addDays(today, 1), cfg);
 }
 
+/**
+ * Прямой эфир (режим event у WhatsApp, docs/tasks/automation_master_switch_event_mode.md): одна дата и своё время старта.
+ * Пока режим активен, Telegram назначает всем записавшимся этот день и шлёт серию только в него, со сдвигом под start.
+ */
+export type EventSched = { date: string; start: string };
+
+const toMin = (hhmm: string) => {
+  const p = parseHHMM(hhmm);
+  return p.h * 60 + p.m;
+};
+const fromMin = (mins: number) => {
+  const m = ((mins % 1440) + 1440) % 1440;
+  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+};
+
+/** Сдвиг старта прямого эфира относительно времени, под которое написана серия, в минутах. */
+export function startShiftMin(baseStart: string, start: string): number {
+  return toMin(start) - toMin(baseStart);
+}
+
+/**
+ * Часы в текстах серии написаны под старт в baseStart (20:00 по Алматы, 18:00 по Москве, ссылка на эфир за 10 минут до старта, 19:50).
+ * Если старт другой, подставляем его: «18:00 по Москве» на московское (Алматы минус 2 часа), baseStart на start, время ссылки на
+ * start минус 10 минут. Остальные числа (23:59, 21:59 по Москве и т.д.) не трогаем. Считает по строке, зависимости от пояса нет.
+ */
+export function retimeStream(text: string, baseStart: string, start: string): string {
+  if (!start || start === baseStart) return text;
+  const baseMsk = fromMin(toMin(baseStart) - 120);
+  const msk = fromMin(toMin(start) - 120);
+  const link = fromMin(toMin(baseStart) - 10);
+  const newLink = fromMin(toMin(start) - 10);
+  // Один проход по тексту: подмены не цепляются друг за друга (новый старт 19:50 не превращается в время ссылки).
+  // Границы цифр и двоеточия, чтобы «20:00» не задевало «120:00» или «20:001».
+  const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?<![\\d:])(${esc(`${baseMsk} по Москве`)}|${esc(baseStart)}|${esc(link)})(?![\\d:])`, "g");
+  return text.replace(re, (m) => (m === `${baseMsk} по Москве` ? `${msk} по Москве` : m === baseStart ? start : newLink));
+}
+
 /** «Сегодня», «Завтра» или «7 октября» для дня D относительно now. */
 export function dayWord(day: string, now: number): string {
   const today = dayKeyOf(now);

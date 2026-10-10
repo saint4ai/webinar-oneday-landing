@@ -217,6 +217,29 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
 .pairbox .hint{margin-top:6px}
 .howto{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
 .row > .kv{margin-top:8px}
+/* Общий рубильник «Автоматизация» */
+.autobar{margin:2px 14px 8px;padding:12px 14px;border-radius:var(--radius);border:1px solid var(--good);background:rgba(47,125,79,.10)}
+.autobar.off{border-color:var(--bad);background:var(--warn-bg)}
+.autobar .ab-row{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.autobar .ab-t{font-size:19px;font-weight:800;line-height:1.2}
+.autobar.off .ab-t{color:var(--bad)}
+.autobar .ab-d{margin-top:3px;font-size:13px;line-height:1.35;color:var(--hint);overflow-wrap:anywhere}
+.autobar .sw{width:64px;height:36px;border-radius:18px}
+.autobar .sw i{top:4px;left:4px;width:26px;height:26px}
+.autobar .sw[aria-checked=true]{background:rgba(47,125,79,.20);border-color:var(--good)}
+.autobar .sw[aria-checked=true] i{transform:translateX(28px);background:var(--good)}
+.autobar .confirm{background:var(--card)}
+.autobar .field{margin:0 0 10px}
+/* План прямого эфира одной лентой */
+.plan{margin-top:12px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--gold-soft)}
+.plan .pt{font-weight:700;margin-bottom:6px}
+.ribbon{margin:0;padding:0;list-style:none;display:block;line-height:1.6;overflow-wrap:anywhere}
+.ribbon li{display:inline}
+.ribbon li + li::before{content:" · ";color:var(--hint);font-weight:700}
+.ribbon li.done{color:var(--hint)}
+.ribbon li.now{font-weight:800;box-shadow:inset 0 -2px 0 var(--gold)}
+.plan.hold{border-color:var(--bad);background:var(--warn-bg)}
+.plan .hold-t{display:inline-block;margin-bottom:8px;font-weight:800;color:var(--bad)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 @media (max-height:700px){.login{padding:14px 20px;gap:8px}.login .logo{height:30px;margin-bottom:0}.login h1{font-size:22px}.pinform{gap:8px}.keypad{gap:8px}}
 @media (prefers-reduced-motion:reduce){.skel,.icon.spin svg,.dots.shake{animation:none}.key,.dots i{transition:none}.key:active{transform:none}}
@@ -276,6 +299,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
       </button>
     </div>
   </header>
+  <section id="auto" class="autobar" aria-label="Общий рубильник автоматизации" hidden></section>
   <div class="bar" id="bar">
     <div class="chips" id="chips" role="group" aria-label="Период"></div>
     <div class="dates" id="dates" hidden>
@@ -440,7 +464,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
   // ───────── вход ─────────
   function showLogin(msg, lock) {
     token = ''; store('adm_token', null);
-    waStop(); wa.s = null; wa.groups = null;
+    waStop(); wa.s = null; wa.groups = null; auto.s = null; auto.conf = false; $('auto').hidden = true;
     $('app').hidden = true; $('login').hidden = false;
     $('login-err').textContent = msg || '';
     setPin('');
@@ -490,7 +514,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
   });
   function showApp() {
     $('login').hidden = true; $('app').hidden = false;
-    renderBar(); renderTabs(); load();
+    renderBar(); renderTabs(); load(); autoLoad();
   }
   function attemptsText(left) {
     if (left <= 0) return 'Неверный пароль, попыток не осталось. Подождите 10 минут.';
@@ -561,7 +585,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     var sel = nav.querySelector('[aria-selected=true]');
     if (sel && sel.scrollIntoView) { try { sel.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { /* ничего */ } }
   }
-  $('refresh').addEventListener('click', function () { reset(); load(true); });
+  $('refresh').addEventListener('click', function () { reset(); load(true); autoLoad(); });
 
   // ───────── загрузка и отрисовка ─────────
   function view() { return $('view'); }
@@ -858,6 +882,61 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     v.appendChild(h('div', { class: 'hint', text: 'Счётчики процесса считаются в памяти с момента запуска и от периода не зависят.' }));
   }
 
+  // ───────── Общий рубильник «Автоматизация» ─────────
+  // Один переключатель вверху на любой вкладке. Включение и выключение с подтверждением и текстом, что именно остановится или вернётся.
+  // Состояние хранит сервер (на диске), ассистент и дожим WhatsApp ему не подчиняются. Не загрузилось: блок не показываем.
+  var auto = { s: null, conf: false, busy: false, note: '', reason: '' };
+  function autoLoad() {
+    api('automation').then(function (r) {
+      auto.s = r; autoDraw();
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { fail(err); return; }
+      /* не загрузилось: блок остаётся прежним */
+    });
+  }
+  function autoDraw() {
+    var box = $('auto'), s = auto.s;
+    box.textContent = '';
+    if (!s) { box.hidden = true; return; }
+    box.hidden = false;
+    box.className = 'autobar' + (s.on ? '' : ' off');
+    box.appendChild(h('div', { class: 'ab-row' },
+      h('div', null,
+        h('div', { class: 'ab-t', role: 'status', text: 'Автоматизация: ' + (s.on ? 'включена' : 'выключена') }),
+        h('div', { class: 'ab-d', text: s.on ? (s.sinceText || 'WhatsApp-рассылки и плановые сообщения Telegram идут по расписанию.') : s.sinceText })),
+      h('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': String(s.on), 'aria-label': 'Автоматизация', disabled: auto.busy, onclick: function () { auto.conf = !auto.conf; auto.reason = ''; autoDraw(); } }, h('i'))));
+    if (auto.note) box.appendChild(h('div', { class: 'ab-d', role: 'status', text: auto.note }));
+    if (auto.conf) box.appendChild(autoConfirm(s));
+  }
+  function autoConfirm(s) {
+    var turnOff = s.on, parts = [];
+    if (turnOff) {
+      parts.push('Выключить автоматизацию? ' + s.stops + ' ' + s.keeps + ' Вернуть можно в любой момент.');
+    } else {
+      parts.push('Включить автоматизацию? WhatsApp снова создаёт сообщества, шлёт рассылку и одобряет заявки, Telegram возобновляет серию по расписанию. Что должно было уйти, пока было выключено, не досылается: опоздавшее больше чем на 12 минут (Telegram) и больше чем на 45 минут (WhatsApp) пропускается.');
+      if (s.wa && s.wa.paused) parts.push('WhatsApp-модуль отдельно стоит на паузе (' + (s.wa.pausedReason || 'причина не записана') + '): он останется на паузе, как был.');
+      if (s.seriesEnabled === false) parts.push('Серия Telegram выключена отдельно командой /series_off: она останется выключенной.');
+    }
+    var reason = turnOff ? h('label', { class: 'field' }, h('span', { text: 'Причина (необязательно)' }),
+      h('input', { class: 'inp', type: 'text', maxlength: '120', autocomplete: 'off', value: auto.reason, 'aria-label': 'Причина выключения', oninput: function (ev) { auto.reason = ev.target.value; } })) : null;
+    return h('div', { class: 'confirm', role: 'alertdialog', 'aria-label': 'Подтверждение' },
+      h('p', { text: parts.join(' ') }), reason,
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn small' + (turnOff ? ' bad' : ''), type: 'button', text: turnOff ? 'Да, выключить' : 'Да, включить', disabled: auto.busy, onclick: function () { autoSet(!turnOff); } }),
+        h('button', { class: 'btn small ghost', type: 'button', text: 'Отмена', onclick: function () { auto.conf = false; autoDraw(); } })));
+  }
+  function autoSet(on) {
+    if (auto.busy) return;
+    auto.busy = true; auto.note = on ? 'Включаю…' : 'Выключаю…'; autoDraw();
+    api('automation', null, { method: 'POST', body: JSON.stringify({ on: on, confirm: true, reason: auto.reason }) }).then(function (r) {
+      auto.s = r; auto.conf = false; auto.note = r.message || ''; auto.reason = '';
+      if (ui.tab === 'wa') waRefresh(true);
+    }).catch(function (err) {
+      if (err instanceof HttpError && (err.status === 401 || err.status === 403)) { auto.busy = false; fail(err); return; }
+      auto.note = err instanceof HttpError && err.body && err.body.message ? err.body.message : 'Не получилось: нет связи с сервером. Проверьте состояние позже.';
+    }).then(function () { auto.busy = false; autoDraw(); autoLoad(); });
+  }
+
   // ───────── WhatsApp: пульт сообществ ─────────
   // Вкладка не знает ключей Evolution: всё идёт через form-api (/admin/wa/*), с теми же initData и токеном сессии.
   var wa = { s: null, st: null, stBusy: false, groups: null, groupsMsg: '', conf: null, notice: null, busy: '', qr: null, qrBusy: false, pairNum: '', pair: null, pairNote: '', pairBad: false, pairBusy: false, form: null, dirty: false, timers: {}, aiq: '', aiBusy: false, aiRes: null, aiNums: {}, dz: dzFresh() };
@@ -1032,9 +1111,10 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
     var m = s.module;
     var card = h('div', { class: 'card' }, h('h2', { text: 'Модуль сообществ' }),
       h('div', { class: 'kv' },
-        h('div', null, h('span', { text: 'Состояние' }), h('span', { class: 'badge ' + (m.paused ? 'no' : 'ok'), text: m.paused ? 'на паузе' : 'работает' })),
+        h('div', null, h('span', { text: 'Состояние' }), h('span', { class: 'badge ' + (m.paused || m.halted ? 'no' : 'ok'), text: m.paused ? 'на паузе' : m.halted ? 'остановлен рубильником' : 'работает' })),
         kv('Новых сообществ за сутки', m.creationsToday + ' из ' + m.creationsMax),
         kv('Ошибок подряд', m.failStreak + ' из ' + m.failMax)));
+    if (m.halted) card.appendChild(h('div', { class: 'note warn', text: 'Автоматизация выключена переключателем вверху страницы: сообщества не создаются, рассылка и одобрение заявок стоят. ИИ-ассистент и дожим WABA работают. Включить можно там же.' }));
     if (m.paused) card.appendChild(h('div', { class: 'note warn', text: 'Пауза: ' + (m.pausedReason || 'причина не записана') + '. Рассылка, создание и одобрение заявок остановлены.' }));
     if (m.pendingCreate) card.appendChild(h('div', { class: 'note warn', text: 'Прошлое создание сообщества не подтверждено. Проверь список чатов на телефоне, потом нажми «Продолжить».' }));
     card.appendChild(h('div', { class: 'actions' },
@@ -1393,15 +1473,15 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
   function waModeCard(s) {
     var card = h('div', { class: 'card' }, h('h2', { text: 'Режим работы' }));
     var seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Режим' });
-    [['daily', 'Ежедневный'], ['event', 'Живой эфир']].forEach(function (m) {
+    [['daily', 'Ежедневный'], ['event', 'Прямой эфир (одна дата)']].forEach(function (m) {
       seg.appendChild(h('button', { type: 'button', 'aria-pressed': String(s.mode === m[0]), text: m[1], disabled: !!wa.busy, onclick: function () { if (s.mode !== m[0]) ask('mode:' + m[0])(); } }));
     });
     card.appendChild(seg);
     ['daily', 'event'].forEach(function (k) {
       if (wa.conf === 'mode:' + k) {
         card.appendChild(confirmBox(k === 'event'
-          ? 'Включить живой эфир? Ежедневное создание выключится. Созданные сообщества продолжат работать, но ссылка на сайте будет вести только в сообщество живого эфира.'
-          : 'Вернуться к ежедневному режиму? Создание остаётся выключенным, пока не включишь его переключателем. Сообщество живого эфира продолжит работать.',
+          ? 'Включить прямой эфир (одна дата)? Ежедневное создание выключится. Созданные сообщества продолжат работать, но ссылка на сайте будет вести только в сообщество прямого эфира. Когда дата сохранена, Telegram назначает всем записавшимся этот день и шлёт серию только в него.'
+          : 'Вернуться к ежедневному режиму? Создание остаётся выключенным, пока не включишь его переключателем. Сообщество прямого эфира продолжит работать, Telegram вернётся к ежедневной серии.',
           'Переключить', function () { waAct('mode', { mode: k, confirm: true }, 'Переключаю режим…', function () { wa.dirty = false; wa.form = null; }); }));
       }
     });
@@ -1446,16 +1526,31 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
       });
       box.appendChild(q);
     }
-    if (ev.locked) box.appendChild(h('div', { class: 'hint', text: 'Сообщество уже создано, даты и время закреплены. Чтобы задать другой эфир, нажми «Сбросить эфир»: созданное сообщество останется.' }));
+    if (ev.locked) box.appendChild(h('div', { class: 'hint', text: 'Сообщество уже создано, даты и время закреплены. Чтобы задать другой эфир, нажми «Сбросить»: созданное сообщество останется.' }));
     box.appendChild(h('div', { class: 'actions' },
       btn('Сохранить', function () {
         if (!f.date || !f.recruit || !f.start) { waNotice('Заполни дату эфира, время старта и начало набора.', true); waDraw(); return; }
         waAct('event', { date: f.date, start: f.start, recruitFrom: f.recruit }, 'Сохраняю…', function () { wa.dirty = false; });
       }, '', ev.locked),
-      btn('Создать сейчас', ask('evcreate'), 'ghost', !ev.date),
-      btn('Сбросить эфир', ask('evreset'), 'ghost', !ev.date && !ev.done)));
+      btn('Создать сообщество сейчас', ask('evcreate'), 'ghost', !ev.date),
+      btn(ev.launched ? 'Рассылки запущены' : 'Запустить рассылки сейчас', ask('evlaunch'), 'ghost', !ev.canLaunch),
+      btn('Сбросить', ask('evreset'), 'ghost', !ev.date && !ev.done)));
+    if (ev.launched) box.appendChild(h('div', { class: 'hint', text: 'Рассылки запущены досрочно (' + ev.launchedText + '): серия идёт в сообщество каждый день по расписанию до эфира.' }));
+    else if (ev.date && !ev.canLaunch && ev.hasCommunity) box.appendChild(h('div', { class: 'hint', text: 'По умолчанию рассылки ждут дня эфира и запускаются сами. Досрочный запуск доступен до наступления дня эфира.' }));
     if (wa.conf === 'evcreate') box.appendChild(confirmBox('Создать сообщество эфира ' + (ev.dateLabel || '') + ' прямо сейчас? Ссылка на сайте сразу станет вести в него.', 'Создать', function () { waAct('event/create', { confirm: true }, 'Создаю сообщество, это займёт около минуты…'); }));
-    if (wa.conf === 'evreset') box.appendChild(confirmBox('Сбросить настройки эфира? Созданное сообщество останется и продолжит работать, но ссылка на сайте станет постоянной.', 'Сбросить', function () { waAct('event/reset', { confirm: true }, 'Сбрасываю…', function () { wa.dirty = false; wa.form = null; }); }, true));
+    if (wa.conf === 'evlaunch') box.appendChild(confirmBox('Запустить рассылки досрочно? По плану они ждут дня эфира (' + (ev.dateLabel || '') + '). После запуска серия пойдёт в сообщество каждый день по расписанию, с ближайшего сообщения до эфира включительно. Тексты серии написаны под день эфира («сегодня в ' + (ev.start || '20:00') + '», «мы в эфире»), в другие дни они будут неточными. Telegram по-прежнему шлёт серию только в день эфира. Остановить можно переключателем «Автоматизация» вверху или кнопкой «Сбросить».', 'Да, запустить', function () { waAct('event/launch', { confirm: true }, 'Запускаю рассылки…'); }));
+    if (wa.conf === 'evreset') box.appendChild(confirmBox('Сбросить настройки эфира? Созданное сообщество останется и продолжит работать, но ссылка на сайте станет постоянной, а Telegram вернётся к ежедневной серии.', 'Сбросить', function () { waAct('event/reset', { confirm: true }, 'Сбрасываю…', function () { wa.dirty = false; wa.form = null; }); }, true));
+    if (ev.plan) box.appendChild(waPlanBox(ev.plan));
+    return box;
+  }
+  // План прямого эфира одной лентой: считается сервером из настроек и серии. Рубильник выключен или модуль на паузе: сверху красная строка.
+  function waPlanBox(plan) {
+    var box = h('div', { class: 'plan' + (plan.paused ? ' hold' : ''), role: 'group', 'aria-label': 'План прямого эфира' });
+    if (plan.paused) box.appendChild(h('div', { class: 'hold-t', text: plan.pausedText }));
+    if (plan.paused && plan.pausedWhy) box.appendChild(h('div', { class: 'hint', text: plan.pausedWhy }));
+    box.appendChild(h('div', { class: 'pt', text: 'План' }));
+    box.appendChild(h('ol', { class: 'ribbon' }, plan.items.map(function (i) { return h('li', { class: i.state, text: i.text }); })));
+    box.appendChild(h('div', { class: 'hint', text: plan.telegram }));
     return box;
   }
 
@@ -1463,7 +1558,7 @@ details.ser .tp{min-width:0;overflow-wrap:anywhere}
   function waLinkCard(s) {
     var l = s.link;
     var card = h('div', { class: 'card' }, h('h2', { text: 'Ссылка на сайте' }), h('div', { class: 'kv' },
-      h('div', null, h('span', { text: 'Сейчас ведёт' }), h('span', { class: 'badge ' + (l.url ? 'ok' : 'mute'), text: l.kind === 'event' ? 'в живой эфир' : l.kind === 'daily' ? 'в сообщество набора' : 'на постоянную' }))));
+      h('div', null, h('span', { text: 'Сейчас ведёт' }), h('span', { class: 'badge ' + (l.url ? 'ok' : 'mute'), text: l.kind === 'event' ? 'в прямой эфир' : l.kind === 'daily' ? 'в сообщество набора' : 'на постоянную' }))));
     card.appendChild(h('div', { class: 'hint', text: l.text }));
     // Постоянная ссылка для кнопки шаблона WABA: сама ведёт туда же, куда сайт.
     card.appendChild(h('div', { class: 'tpl' },

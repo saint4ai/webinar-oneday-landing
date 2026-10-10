@@ -34,15 +34,20 @@ import {
   dayKeyOf,
   dayWord,
   dayWordLower,
+  hhmmOf,
   isDayKey,
   isLive,
   isStreamDay,
+  joinCloses,
   liveDayNow,
   parseHHMM,
+  retimeStream,
   setUtcOffsetMinutes,
   streamEnd,
+  type EventSched,
   type TimeCfg,
 } from "./tg-time";
+import { automationInfo, automationOn, changeText, initAutomation, KEEPS_TEXT, setAutomation, STOPS_TEXT, stampText, type AutoInfo } from "./automation";
 
 // ───────────────────────── конфиг ─────────────────────────
 
@@ -341,6 +346,58 @@ export const timeCfg = (s: Series): TimeCfg => ({
   skipDays: s.skipDays,
 });
 
+// ───────────────────────── прямой эфир (режим event у WhatsApp) ─────────────────────────
+// docs/tasks/automation_master_switch_event_mode.md, задача 3. Пока у модуля WhatsApp включён режим «Прямой эфир» с датой, бот
+// назначает всем записавшимся день эфира этой даты, ежедневная серия в дни до эфира не идёт, в день эфира серия сдвигается под
+// время старта (как в WhatsApp). С 00:00 после дня эфира режим закрыт и всё возвращается к ежедневному. Источник регистрирует
+// wa-groups.ts, без него (модуль выключен) поведение прежнее.
+
+type EventSource = (now: number) => EventSched | null;
+let eventSource: EventSource | null = null;
+/** Модуль WhatsApp регистрирует сюда прямой эфир: так tg-workshop не импортирует его по кругу. null снимает. */
+export function registerEventMode(h: EventSource | null) {
+  eventSource = h;
+}
+/** Активный прямой эфир (дата и время старта) или null. Не бросает. */
+export function eventNow(now: number): EventSched | null {
+  try {
+    return eventSource ? eventSource(now) : null;
+  } catch {
+    return null;
+  }
+}
+/** Прямой эфир этого дня (то есть day это его дата), иначе null. */
+export function eventOf(day: string, now: number): EventSched | null {
+  const e = eventNow(now);
+  return e && e.date === day ? e : null;
+}
+/** Время эфира дня day: у дня прямого эфира его старт, у остальных из серии. */
+export function cfgOn(cfg: TimeCfg, day: string, now: number): TimeCfg {
+  const e = eventOf(day, now);
+  return e && e.start !== cfg.streamStart ? { ...cfg, streamStart: e.start } : cfg;
+}
+/**
+ * День эфира для записи сейчас. Прямой эфир активен и его окно «зайти» (старт плюс joinLiveMinutes) не закрыто: его дата для всех.
+ * Иначе обычное правило ежедневного эфира.
+ */
+export function assignDay(now: number, cfg: TimeCfg): string {
+  const e = eventNow(now);
+  if (e && now < joinCloses(e.date, cfgOn(cfg, e.date, now))) return e.date;
+  return assignStreamDay(now, cfg);
+}
+/**
+ * Идёт ли эфир прямо сейчас и какого дня. Прямой эфир активен: живой только его дата (в другие дни эфира нет, кнопку входа не даём),
+ * иначе обычное правило.
+ */
+export function liveNow(now: number, cfg: TimeCfg): string | null {
+  const e = eventNow(now);
+  if (!e) return liveDayNow(now, cfg);
+  const today = dayKeyOf(now);
+  return today === e.date && isLive(today, now, cfgOn(cfg, today, now)) ? today : null;
+}
+/** Конец эфира дня day с учётом старта прямого эфира. */
+export const dayEnd = (day: string, cfg: TimeCfg, now: number): number => streamEnd(day, cfgOn(cfg, day, now));
+
 /** Серия с правками владельца поверх json (/at, /off, /on). */
 export function applyOverrides(sr: Series, ov: Overrides): Series {
   return {
@@ -379,7 +436,10 @@ export function reloadSeries(explicit?: string): { version: string; count: numbe
 export function initTgWorkshop(opts: { dir?: string; seriesFile?: string } = {}): TgStore {
   series = null;
   botError = "";
-  store = new TgStore(opts.dir || env("DATA_DIR") || join(__dirname, "data"));
+  const dataDir = opts.dir || env("DATA_DIR") || join(__dirname, "data");
+  store = new TgStore(dataDir);
+  // Общий рубильник «Автоматизация» (automation.ts) живёт в той же папке данных.
+  initAutomation(dataDir);
   if (botOff()) {
     botError = "off";
     console.log("[tg] TG_BOT=off: бот и планировщик не запущены");
@@ -563,6 +623,10 @@ export type RenderCtx = {
   liveDay?: string;
   /** Предпросмотр владельцу: пустую оплату показываем кнопкой менеджера. */
   preview?: boolean;
+  /** Время старта прямого эфира HH:MM, если оно не равно streamStart серии: часы в тексте подменяются. Обычно не задаётся, sendContent берёт его сам. */
+  start?: string;
+  /** Не подменять часы в тексте (сообщения «+1 день» говорят про повтор в обычные 20:00). */
+  noRetime?: boolean;
 };
 
 export function escapeHtml(s: string): string {
@@ -595,7 +659,8 @@ function textVars(ctx: RenderCtx): Record<string, string> {
  */
 export function expandText(tpl: string, ctx: RenderCtx): string {
   const vars = textVars(ctx);
-  return tpl.replace(/\{(\w+)\}/g, (m, k: string) => (Object.prototype.hasOwnProperty.call(vars, k) ? escapeHtml(vars[k]) : m));
+  const src = ctx.start && ctx.start !== ctx.series.streamStart ? retimeStream(tpl, ctx.series.streamStart, ctx.start) : tpl;
+  return src.replace(/\{(\w+)\}/g, (m, k: string) => (Object.prototype.hasOwnProperty.call(vars, k) ? escapeHtml(vars[k]) : m));
 }
 
 function urlVars(ctx: RenderCtx): Record<string, string> {
@@ -774,10 +839,11 @@ async function sendPhotoBytes(chatId: number, data: Buffer, caption?: string): P
   return toSend(await botCall("sendPhoto", form, 30_000));
 }
 
-/** Сообщение всем владельцам (предупреждения, отчёты). Возвращает, скольким дошло. */
-export async function notifyOwners(text: string): Promise<number> {
+/** Сообщение всем владельцам (предупреждения, отчёты). Возвращает, скольким дошло. except: этому чату не слать (он уже получил ответ на команду). */
+export async function notifyOwners(text: string, except?: number | string): Promise<number> {
   let delivered = 0;
   for (const id of ownerIds()) {
+    if (except !== undefined && String(except) === id) continue;
     const n = Number(id);
     if (Number.isFinite(n) && (await plain(n, text)).ok) delivered++;
   }
@@ -812,8 +878,11 @@ async function warnMedia(media: Media, error: string | undefined) {
  * символов: если текст длиннее, сначала медиа, потом отдельным сообщением текст с кнопками.
  * Не ушло медиа (любая ошибка): тот же текст с кнопками уходит обычным сообщением.
  */
-export async function sendContent(c: Content, ctx: RenderCtx, opts: { prio?: Prio } = {}): Promise<SendResult> {
+export async function sendContent(c: Content, ctx0: RenderCtx, opts: { prio?: Prio } = {}): Promise<SendResult> {
   const prio = opts.prio ?? "hi";
+  // День прямого эфира со своим стартом: часы в тексте подгоняем под него (в сообщениях «+1 день» не трогаем).
+  const ev = ctx0.noRetime ? null : eventOf(ctx0.day, ctx0.now);
+  const ctx: RenderCtx = ev && ev.start !== ctx0.series.streamStart ? { ...ctx0, start: ev.start } : ctx0;
   const html = expandText(c.text, ctx);
   const kb = buildKeyboard(c.buttons, ctx);
   if (!c.media) return sendText(ctx.chatId, html, kb, c.silent, prio);
@@ -839,7 +908,7 @@ export function noteSendResult(chatId: number, r: SendResult, now: number) {
 
 /** День, который показываем человеку в тексте: его день, пока эфир не прошёл, иначе ближайший. */
 function displayDay(sub: Subscriber | undefined, now: number, cfg: TimeCfg): string {
-  return sub && now < streamEnd(sub.streamDay, cfg) ? sub.streamDay : assignStreamDay(now, cfg);
+  return sub && now < dayEnd(sub.streamDay, cfg, now) ? sub.streamDay : assignDay(now, cfg);
 }
 
 function liveContent(sr: Series): Content {
@@ -855,13 +924,13 @@ async function sendGreeting(sub: Subscriber, now: number): Promise<void> {
   const sr = getSeries();
   const cfg = timeCfg(sr);
   const ctx: RenderCtx = { series: sr, now, chatId: sub.chatId, firstName: sub.firstName, day: sub.streamDay };
-  if (isLive(sub.streamDay, now, cfg)) {
+  if (isLive(sub.streamDay, now, cfgOn(cfg, sub.streamDay, now))) {
     noteSendResult(sub.chatId, await sendContent(liveContent(sr), ctx), now);
     return;
   }
   const r = await sendContent({ media: sr.welcome.media, text: sr.welcome.before, buttons: sr.welcome.beforeButtons }, ctx);
   noteSendResult(sub.chatId, r, now);
-  const live = liveDayNow(now, cfg);
+  const live = liveNow(now, cfg);
   if (r.ok && live && live !== sub.streamDay && sr.welcome.lateToday) {
     const r2 = await sendContent({ text: sr.welcome.lateToday, buttons: sr.welcome.liveButtons }, { ...ctx, liveDay: live });
     noteSendResult(sub.chatId, r2, now);
@@ -877,7 +946,7 @@ type TgCallback = { id: string; from: TgUser; message?: { message_id?: number; c
 type TgMemberUpdate = { chat: TgChat; from?: TgUser; new_chat_member?: { status?: string } };
 export type TgUpdate = { update_id?: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgMemberUpdate };
 
-const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test", "wa_dozhim", "wa_dozhim_test"]);
+const OWNER_CMDS = new Set(["stats", "admin", "app", "series", "series_on", "series_off", "auto", "auto_on", "auto_off", "preview", "fire", "paid", "reload", "at", "off", "on", "bizon", "wa", "wa_qr", "wa_pause", "wa_resume", "wa_new", "wa_send", "wa_ai", "wa_ai_test", "wa_dozhim", "wa_dozhim_test"]);
 
 // ───────────────────────── WhatsApp-модуль (wa-groups) ─────────────────────────
 
@@ -909,6 +978,7 @@ export const HELP_TEXT = [
   "/paid <chat_id или @username>: отметить оплату",
   "/reload: перечитать tg-series.json",
   "/series_on, /series_off: включить или выключить серию",
+  "/auto, /auto_off [причина], /auto_on: общий рубильник рассылок WhatsApp и Telegram",
   "/wa: состояние WhatsApp (подключение, сообщества эфира, участники, ближайшее сообщение)",
   "/wa_qr: QR для подключения номера WhatsApp, не чаще раза в минуту",
   "/wa_pause, /wa_resume: пауза и возобновление WhatsApp-рассылки",
@@ -1017,7 +1087,9 @@ async function onStart(m: TgMessage, payload: string, now: number) {
   const from = m.from as TgUser;
   const prev = st.subs.get(m.chat.id);
   // День подписчика не трогаем, пока его эфир не закончился; закончился или человек новый: назначаем по правилу.
-  const day = prev && now < streamEnd(prev.streamDay, cfg) ? prev.streamDay : assignStreamDay(now, cfg);
+  // Прямой эфир (режим event): чей ежедневный день ещё не прошёл, переезжает на день прямого эфира, ежедневной серии до него нет.
+  const ev = eventNow(now);
+  const day = prev && now < dayEnd(prev.streamDay, cfg, now) ? (ev && prev.streamDay < ev.date ? ev.date : prev.streamDay) : assignDay(now, cfg);
   st.recordEvent({
     type: "start",
     chat_id: m.chat.id,
@@ -1052,7 +1124,7 @@ async function onOther(m: TgMessage, now: number) {
   const cfg = timeCfg(sr);
   const sub = st.subs.get(m.chat.id);
   const firstName = sub?.firstName || m.from?.first_name;
-  const live = liveDayNow(now, cfg);
+  const live = liveNow(now, cfg);
   // Во время эфира вместо обычного ответа сразу даём кнопку входа.
   const ctx: RenderCtx = { series: sr, now, chatId: m.chat.id, firstName, day: live ?? displayDay(sub, now, cfg) };
   const content: Content = live ? liveContent(sr) : { text: sr.welcome.other };
@@ -1084,11 +1156,11 @@ async function onCallback(cq: TgCallback, now: number) {
   }
 
   if (cq.data === "rejoin") {
-    const day = assignStreamDay(now, cfg);
+    const day = assignDay(now, cfg);
     if (sub) st.recordEvent({ type: "rejoin", chat_id: chatId, streamDay: day, ts });
     const ctx: RenderCtx = { series: sr, now, chatId, firstName: sub?.firstName, day };
     // Эфир уже идёт: сразу даём кнопку входа, иначе обещаем ссылку в 19:50.
-    const content: Content = isLive(day, now, cfg) ? liveContent(sr) : { text: sr.welcome.rejoinAck ?? DEFAULT_REJOIN_ACK };
+    const content: Content = isLive(day, now, cfgOn(cfg, day, now)) ? liveContent(sr) : { text: sr.welcome.rejoinAck ?? DEFAULT_REJOIN_ACK };
     noteSendResult(chatId, await sendContent(content, ctx), now);
     return;
   }
@@ -1200,6 +1272,20 @@ export function buildDayTable(st: TgStore, sr: Series, now: number): string[] {
     });
 }
 
+/**
+ * Строки про общий рубильник и прямой эфир для /stats и /series. Рубильник включён и прямого эфира нет: пусто, вывод прежний.
+ */
+function automationLines(now: number): string[] {
+  const out: string[] = [];
+  if (!automationOn()) {
+    const i = automationInfo();
+    out.push(`Автоматизация ВЫКЛЮЧЕНА с ${stampText(i.offAt)} (${i.offBy || "кем не указано"}): плановые сообщения серии не идут. Включить: /auto_on`);
+  }
+  const ev = eventNow(now);
+  if (ev) out.push(`Прямой эфир ${dateLabel(ev.date)} в ${ev.start}: всем записавшимся назначен этот день, серия идёт только в него.`);
+  return out;
+}
+
 /** Текст /stats: всего, активных, на сегодня и завтра, «Спасибо», метки, таблица по эфирам. */
 export function buildStatsText(st: TgStore, sr: Series, now: number): string {
   const today = dayKeyOf(now);
@@ -1223,6 +1309,7 @@ export function buildStatsText(st: TgStore, sr: Series, now: number): string {
   const started = st.startedOn(today, dayKeyOf);
   const table = buildDayTable(st, sr, now);
   return [
+    ...automationLines(now),
     `Серия: ${st.state.seriesEnabled ? "включена" : "выключена"} (версия ${sr.version})`,
     `Подписчиков всего: ${st.subs.size}`,
     `Активных (не заблокировали, не отписались): ${active}`,
@@ -1271,6 +1358,7 @@ export function buildSeriesText(st: TgStore, sr: Series, now: number): string {
     return `${m.at} ${m.id} (${AUD_LABEL[m.audience]})${marks.length ? ` [${marks.join("; ")}]` : ""}: отправлено ${sent} из ${Math.max(sent, eligible)}`;
   });
   const head = [
+    ...automationLines(now),
     `Серия: ${st.state.seriesEnabled ? "включена" : "выключена"}, версия ${sr.version}`,
     isStreamDay(today, timeCfg(sr)) ? `Сообщения на сегодня (${today}):` : `Сегодня (${today}) эфира нет, сообщения ниже для справки:`,
   ];
@@ -1296,6 +1384,55 @@ function bizonValid(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+// ───────────────────────── общий рубильник «Автоматизация» ─────────────────────────
+
+type WaStatus = () => { paused: boolean; reason: string };
+let waStatus: WaStatus | null = null;
+/** Модуль WhatsApp регистрирует сюда свою паузу: её причину рубильник называет в уведомлениях. null снимает. */
+export function registerWaStatus(h: WaStatus | null) {
+  waStatus = h;
+}
+/** Пауза WhatsApp-модуля (по сбою или вручную): рубильник её не трогает, включение оставляет как было. */
+export function waPauseInfo(): { paused: boolean; reason: string } | null {
+  try {
+    return waStatus ? waStatus() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Состояние рубильника для /auto. */
+export function autoStatusText(): string {
+  const i = automationInfo();
+  const wa = waPauseInfo();
+  const waLine = wa?.paused ? `
+WhatsApp-модуль отдельно стоит на паузе: ${wa.reason || "причина не записана"}.` : "";
+  if (i.on) return `Автоматизация включена${i.onAt ? ` (${i.onBy || "кем не указано"}, ${stampText(i.onAt)})` : ""}. Выключить: /auto_off [причина].${waLine}`;
+  return `Автоматизация выключена с ${stampText(i.offAt)} (${i.offBy || "кем не указано"}). Причина: ${i.offReason || "без причины"}.
+${STOPS_TEXT}
+${KEEPS_TEXT}
+Включить: /auto_on.${waLine}`;
+}
+
+export type AutoSwitch = { changed: boolean; text: string; info: AutoInfo };
+
+/**
+ * Включить или выключить общий рубильник (кнопка в админке, команды /auto_on и /auto_off). Записывает состояние на диск и
+ * присылает владельцам уведомление «выключена (кем, когда)» или «включена». except: чат, который уже получил ответ на команду.
+ * Повторное нажатие ничего не меняет и никого не беспокоит.
+ */
+export async function switchAutomation(on: boolean, by: string, reason = "", opts: { now?: number; except?: number } = {}): Promise<AutoSwitch> {
+  const r = setAutomation(on, by, reason, opts.now);
+  if (!r.changed) return { changed: false, text: on ? "Автоматизация уже включена." : `Автоматизация уже выключена с ${stampText(r.info.offAt)}.`, info: r.info };
+  const text = changeText(on, r.info, waPauseInfo());
+  try {
+    await notifyOwners(text, opts.except);
+  } catch {
+    /* Telegram недоступен: состояние уже записано */
+  }
+  return { changed: true, text, info: r.info };
 }
 
 // ───────────────────────── команды владельцев ─────────────────────────
@@ -1328,6 +1465,16 @@ async function ownerCommand(cmd: string, args: string, m: TgMessage, now: number
       st.setSeriesEnabled(false);
       await plain(chatId, "Серия выключена. Приветствие работает как раньше.");
       return;
+    case "auto":
+      await plain(chatId, autoStatusText());
+      return;
+    case "auto_off":
+    case "auto_on": {
+      const who = [m.from?.first_name, m.from?.username ? `@${m.from.username}` : ""].filter(Boolean).join(" ");
+      const r = await switchAutomation(cmd === "auto_on", `командой /${cmd}${who ? `, ${who}` : ""}`, args, { now, except: chatId });
+      await plain(chatId, r.text);
+      return;
+    }
     case "reload":
       try {
         const r = reloadSeries();
@@ -1466,7 +1613,7 @@ async function runPreview(m: TgMessage, now: number) {
   previewing.add(chatId);
   try {
     const sr = activeSeries();
-    const day = assignStreamDay(now, timeCfg(sr));
+    const day = assignDay(now, timeCfg(sr));
     const msgs = [...sr.messages].sort((a, b) => (a.dayOffset ?? 0) - (b.dayOffset ?? 0) || atTime(day, a.at) - atTime(day, b.at));
     const list = msgs.map((x) => `${x.dayOffset ? `+${x.dayOffset}д ` : ""}${x.at} ${x.id} (${AUD_LABEL[x.audience]})${x.enabled === false ? " [выключено]" : ""}`);
     await plain(chatId, `Предпросмотр серии: ${msgs.length} сообщений, по одному в 1,5 секунды. Ссылка эфира и день как для тебя; пустая оплата показана кнопкой менеджера.\n\n${list.join("\n")}`);
@@ -1616,5 +1763,10 @@ export async function handleTyClick(req: IncomingMessage, res: ServerResponse): 
 
 /** День ближайшего эфира для /calendar: то же правило, что у /start (серия не загружена: 20:00, окно 40 минут). */
 export function calendarDay(now: number = Date.now()): string {
-  return assignStreamDay(now, series ? timeCfg(series) : { streamStart: "20:00", streamMinutes: 80, joinLiveMinutes: DEFAULT_JOIN_MINUTES });
+  return assignDay(now, series ? timeCfg(series) : { streamStart: "20:00", streamMinutes: 80, joinLiveMinutes: DEFAULT_JOIN_MINUTES });
+}
+
+/** Время старта эфира дня day для /calendar: у дня прямого эфира его старт, иначе из серии (не загружена: 20:00). */
+export function calendarStart(day: string, now: number = Date.now()): string {
+  return eventOf(day, now)?.start ?? series?.streamStart ?? "20:00";
 }

@@ -12,9 +12,10 @@
  *   POST /api/admin/wa/mode           режим                                             {mode:"daily"|"event", confirm:true}
  *   POST /api/admin/wa/daily          ежедневное создание вкл/выкл                      {enabled:bool, confirm:true при включении}
  *   POST /api/admin/wa/daily/create   создать сообщество следующего эфира сейчас        {confirm:true}
- *   POST /api/admin/wa/event          сохранить живой эфир                              {date, start, recruitFrom}
- *   POST /api/admin/wa/event/create   создать сообщество живого эфира сейчас            {confirm:true}
- *   POST /api/admin/wa/event/reset    сбросить настройки живого эфира                   {confirm:true}
+ *   POST /api/admin/wa/event          сохранить прямой эфир                             {date, start, recruitFrom}
+ *   POST /api/admin/wa/event/create   создать сообщество прямого эфира сейчас           {confirm:true}
+ *   POST /api/admin/wa/event/launch   запустить рассылки прямого эфира досрочно         {confirm:true}
+ *   POST /api/admin/wa/event/reset    сбросить настройки прямого эфира                  {confirm:true}
  *   POST /api/admin/wa/pause          пауза модуля
  *   POST /api/admin/wa/resume         снять паузу
  *   POST /api/admin/wa/send           отправить сообщение серии в текущее сообщество    {id, confirm:true}
@@ -139,6 +140,8 @@ export async function handleWaAdmin(req: IncomingMessage, res: ServerResponse, p
         return done(wa.waSetEvent({ date: body.date, start: body.start, recruitFrom: body.recruitFrom }));
       case "event/create":
         return confirmed ? done(await wa.waEventCreateNow()) : done(NEED_CONFIRM);
+      case "event/launch":
+        return confirmed ? done(wa.waEventLaunch()) : done(NEED_CONFIRM);
       case "event/reset":
         return confirmed ? done(wa.waEventReset()) : done(NEED_CONFIRM);
       case "pause":
